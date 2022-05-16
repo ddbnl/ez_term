@@ -8,7 +8,6 @@ use crossterm::{ExecutableCommand, execute, Result, cursor::{Hide},
                 event::{MouseEvent, MouseEventKind, MouseButton, poll, read, DisableMouseCapture,
                         EnableMouseCapture, Event, KeyCode, KeyEvent},
                 terminal::{disable_raw_mode, enable_raw_mode}};
-use crate::ez_parser;
 use crate::common::{self, StateTree, ViewTree, WidgetTree};
 use crate::widgets::layout::Layout;
 use crate::widgets::widget::{EzObject, Pixel};
@@ -143,7 +142,7 @@ fn run_loop(mut root_widget: Layout) -> Result<()>{
 /// 1. Focussed widget
 /// 2. Global key binds (this function)
 /// 3. Selected widget
-pub fn handle_key_event(key: KeyEvent, view_tree: &mut ViewTree,
+fn handle_key_event(key: KeyEvent, view_tree: &mut ViewTree,
                         state_tree: &mut StateTree, widget_tree: &WidgetTree) -> bool {
 
     match key.code {
@@ -161,7 +160,8 @@ pub fn handle_key_event(key: KeyEvent, view_tree: &mut ViewTree,
             let selected_widget =
                 common::get_selected_widget(widget_tree);
             if let Some(widget) = selected_widget {
-                widget.on_keyboard_enter(view_tree, state_tree, widget_tree);
+                widget.on_keyboard_enter(widget.get_full_path(), view_tree, state_tree,
+                                         widget_tree);
             }
             true
         },
@@ -179,7 +179,7 @@ pub fn handle_key_event(key: KeyEvent, view_tree: &mut ViewTree,
 /// 1. Focussed widget
 /// 2. Global key binds (this function)
 /// 3. Selected widget
-pub fn handle_mouse_event(event: MouseEvent, view_tree: &mut ViewTree,
+fn handle_mouse_event(event: MouseEvent, view_tree: &mut ViewTree,
                           state_tree: &mut StateTree, widget_tree: &WidgetTree) -> bool {
 
     if let MouseEventKind::Down(button) = event.kind {

@@ -9,7 +9,7 @@ use crossterm::style::{Color};
 use crate::widgets::widget_state::{WidgetState, RedrawWidgetState, SelectableWidgetState};
 use crate::widgets::widget::{EzWidget, Pixel, EzObject};
 use crate::common::{self, KeyboardCallbackFunction, Coordinates, StateTree, ViewTree, WidgetTree,
-                    PixelMap, ValueChangeCallbackFunction};
+                    PixelMap, GenericCallbackFunction};
 use crate::ez_parser::{load_color_parameter};
 
 pub struct TextInput {
@@ -53,7 +53,7 @@ pub struct TextInput {
     /// Optional function to call when this widget is keyboard entered, see
     /// [KeyboardCallbackFunction] for the callback fn type, or [set_bind_left_click] for
     /// examples.
-    pub bound_keyboard_enter: Option<fn()>,
+    pub bound_keyboard_enter: Option<GenericCallbackFunction>,
 
     /// Optional function to call when this widget is left clicked, see
     /// [MouseCallbackFunction] for the callback fn type, or [set_bind_left_click] for
@@ -63,7 +63,7 @@ pub struct TextInput {
     /// Optional function to call when the value of this widget changes, see
     /// [ValueChangeCallbackFunction] for the callback fn type, or [set_bind_on_value_change] for
     /// examples.
-    pub bound_on_value_change: Option<ValueChangeCallbackFunction>,
+    pub bound_on_value_change: Option<GenericCallbackFunction>,
 
     /// A Key to callback function lookup used to store keybinds for this widget. See
     /// [KeyboardCallbackFunction] type for callback function signature.
@@ -309,16 +309,20 @@ impl EzWidget for TextInput {
 
     fn get_selection_order(&self) -> usize { self.selection_order }
 
-    fn set_bind_on_value_change(&mut self, func: ValueChangeCallbackFunction) {
+    fn set_bind_on_value_change(&mut self, func: GenericCallbackFunction) {
         self.bound_on_value_change = Some(func)
     }
 
-    fn get_bind_on_value_change(&self) -> Option<ValueChangeCallbackFunction> {
+    fn get_bind_on_value_change(&self) -> Option<GenericCallbackFunction> {
         self.bound_on_value_change }
 
-    fn set_bind_keyboard_enter(&mut self, func: fn()) { self.bound_keyboard_enter = Some(func) }
+    fn set_bind_keyboard_enter(&mut self, func: GenericCallbackFunction) {
+        self.bound_keyboard_enter = Some(func)
+    }
 
-    fn get_bind_keyboard_enter(&self) -> Option<fn()> { self.bound_keyboard_enter }
+    fn get_bind_keyboard_enter(&self) -> Option<GenericCallbackFunction> {
+        self.bound_keyboard_enter
+    }
 
     /// On left click select the widget and also show the cursor at the position the user clicked
     /// in the widget.

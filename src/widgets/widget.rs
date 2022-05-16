@@ -5,7 +5,7 @@ use crossterm::style::{Color, StyledContent, Stylize};
 use crossterm::event::{Event, KeyCode};
 use std::io::{Error};
 use std::collections::HashMap;
-use crate::common::{self, ViewTree, WidgetTree, StateTree, Coordinates, KeyboardCallbackFunction, PixelMap, ValueChangeCallbackFunction};
+use crate::common::{self, ViewTree, WidgetTree, StateTree, Coordinates, KeyboardCallbackFunction, PixelMap, GenericCallbackFunction};
 use crate::widgets::widget_state::{WidgetState};
 use crate::widgets::layout::{Layout};
 use crate::widgets::canvas_widget::{CanvasWidget};
@@ -501,23 +501,23 @@ pub trait EzWidget: EzObject {
     }
 
     /// Set the callback for when the value of a widget changes.
-    fn set_bind_on_value_change(&mut self, _func: ValueChangeCallbackFunction) {}
+    fn set_bind_on_value_change(&mut self, _func: GenericCallbackFunction) {}
 
     /// Get the callback for when the value of a widget changes.
-    fn get_bind_on_value_change(&self) -> Option<ValueChangeCallbackFunction> {None}
+    fn get_bind_on_value_change(&self) -> Option<GenericCallbackFunction> {None}
 
     /// Set the callback for when enter is pressed when this widget is selected.
-    fn set_bind_keyboard_enter(&mut self, _func: fn()) {}
+    fn set_bind_keyboard_enter(&mut self, _func: GenericCallbackFunction) {}
 
     /// Get the callback for when enter is pressed when this widget is selected.
-    fn get_bind_keyboard_enter(&self) -> Option<fn()> {None}
+    fn get_bind_keyboard_enter(&self) -> Option<GenericCallbackFunction> {None}
 
     /// This is called automatically by a global keybind on the currently selected widget.
     /// Will active the 'on_keyboard_enter' callback.
-    fn on_keyboard_enter(&self, _view_tree: &mut ViewTree, _state_tree: &mut StateTree,
-                         _widget_tree: &WidgetTree) {
+    fn on_keyboard_enter(&self, widget_path: String, view_tree: &mut ViewTree,
+                         state_tree: &mut StateTree, widget_tree: &WidgetTree){
         match self.get_bind_keyboard_enter() {
-            Some(i) => i(),
+            Some(i) => i(widget_path, view_tree ,state_tree, widget_tree),
             None => (),
         }
     }

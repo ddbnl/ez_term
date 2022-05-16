@@ -48,11 +48,11 @@ pub type KeyboardCallbackFunction = fn(widget: String, key: KeyCode, view_tree: 
 pub type MouseCallbackFunction = fn(widget: String, mouse_pos: Coordinates, view_tree: &mut ViewTree,
                                     state_tree: &mut StateTree, widget_tree: &WidgetTree);
 
-/// # Value change callback function:
-/// This is used for binding mouse event callbacks to widgets, meaning that any callback functions
-/// user makes should use this signature.
-pub type ValueChangeCallbackFunction = fn(widget: String, view_tree: &mut ViewTree,
-                                          state_tree: &mut StateTree, widget_tree: &WidgetTree);
+/// # Generic callback function:
+/// Used for callbacks that don't require special parameter such as KeyCodes or mouse positions.
+/// Used e.g. for [on_value_change] and [on_keyboard_enter].
+pub type GenericCallbackFunction = fn(widget: String, view_tree: &mut ViewTree,
+                                      state_tree: &mut StateTree, widget_tree: &WidgetTree);
 
 
 /// Find a widget by a screen position coordinate. Used e.g. by mouse event handlers.

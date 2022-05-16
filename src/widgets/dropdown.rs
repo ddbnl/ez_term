@@ -6,7 +6,7 @@ use std::io::{Error, ErrorKind};
 use std::collections::HashMap;
 use crossterm::event::{Event, KeyCode, MouseButton, MouseEventKind};
 use crossterm::style::{Color};
-use crate::common::{KeyboardCallbackFunction, ValueChangeCallbackFunction, Coordinates,
+use crate::common::{KeyboardCallbackFunction, GenericCallbackFunction, Coordinates,
                     StateTree, ViewTree, WidgetTree, PixelMap};
 use crate::widgets::widget_state::{WidgetState, RedrawWidgetState, SelectableWidgetState};
 use crate::widgets::widget::{EzWidget, Pixel, EzObject};
@@ -85,7 +85,7 @@ pub struct Dropdown {
     /// Optional function to call when the value of this widget changes, see
     /// [ValueChangeCallbackFunction] for the callback fn type, or [set_bind_on_value_change] for
     /// examples.
-    pub bound_on_value_change: Option<ValueChangeCallbackFunction>,
+    pub bound_on_value_change: Option<GenericCallbackFunction>,
 
     /// A Key to callback function lookup used to store keybinds for this widget. See
     /// [KeyboardCallbackFunction] type for callback function signature.
@@ -342,15 +342,15 @@ impl EzWidget for Dropdown {
        self.keymap.insert(key, func);
     }
 
-    fn handle_event(&self, event: Event, _view_tree: &mut ViewTree, state_tree: & mut StateTree,
-                    _widget_tree: &WidgetTree) -> bool {
+    fn handle_event(&self, event: Event, view_tree: &mut ViewTree, state_tree: &mut StateTree,
+                    widget_tree: &WidgetTree) -> bool {
         let state = state_tree.get_mut(&self.get_full_path()).unwrap()
             .as_dropdown_mut();
         match event {
             Event::Key(key) => {
                 match key.code {
                     KeyCode::Enter => {
-                        self.handle_enter(state);
+                        self.handle_enter(view_tree, state_tree, widget_tree);
                         return true
                     }
                     KeyCode::Down => {
@@ -368,7 +368,8 @@ impl EzWidget for Dropdown {
                 let mouse_position = (event.column as usize, event.row as usize);
                 if let MouseEventKind::Down(button) = event.kind {
                     if button == MouseButton::Left {
-                        self.handle_left_click(state, mouse_position);
+                        self.handle_left_click(mouse_position, view_tree, state_tree,
+                        widget_tree);
                         return true
                     }
                 } else if event.kind == MouseEventKind::Moved && self.collides(mouse_position) {
@@ -387,16 +388,18 @@ impl EzWidget for Dropdown {
 
     fn get_selection_order(&self) -> usize { self.selection_order }
 
-    fn set_bind_on_value_change(&mut self, func: ValueChangeCallbackFunction) {
+    fn set_bind_on_value_change(&mut self, func: GenericCallbackFunction) {
         self.bound_on_value_change = Some(func)
     }
 
-    fn get_bind_on_value_change(&self) -> Option<ValueChangeCallbackFunction> {
+    fn get_bind_on_value_change(&self) -> Option<GenericCallbackFunction> {
         self.bound_on_value_change
     }
 
-    fn on_keyboard_enter(&self, _view_tree: &mut ViewTree, state_tree: &mut StateTree,
-                         widget_tree: &WidgetTree) { self.on_press(state_tree, widget_tree); }
+    fn on_keyboard_enter(&self, _widget_path: String, _view_tree: &mut ViewTree,
+                         state_tree: &mut StateTree, widget_tree: &WidgetTree) {
+        self.on_press(state_tree, widget_tree);
+    }
 
     fn on_left_click(&self, _position: Coordinates, _view_tree: &mut ViewTree,
                      state_tree: &mut StateTree, widget_tree: &WidgetTree) {
@@ -437,11 +440,14 @@ impl Dropdown {
     }
 
     /// Called when this widget is already dropped down and enter is pressed
-    fn handle_enter(&self, state: &mut DropdownState) {
-        self.exit_focus(state);
+    fn handle_enter(&self, view_tree: &mut ViewTree, state_tree: &mut StateTree,
+                    widget_tree: &WidgetTree) {
+        let state = state_tree.get_mut(
+            &self.get_full_path()).unwrap().as_dropdown_mut();
         state.selected = true;
         state.choice = self.get_dropped_down_options()
             [self.state.dropped_down_selected_row].clone();
+        self.exit_focus(view_tree, state_tree, widget_tree);
     }
 
     /// Called when this widget is already dropped down and up is pressed
@@ -464,21 +470,24 @@ impl Dropdown {
     }
 
     /// Called when this widget is already dropped down and widget is left clicked
-    fn handle_left_click(&self, state: &mut DropdownState, pos: Coordinates) {
+    fn handle_left_click(&self, pos: Coordinates, view_tree: &mut ViewTree,
+                         state_tree: &mut StateTree, widget_tree: &WidgetTree) {
+
+        let state = state_tree.get_mut(
+            &self.get_full_path()).unwrap().as_dropdown_mut();
         if self.collides(pos) {
             let clicked_row = pos.1 - self.absolute_position.1;
             // Check if not click on border
             if clicked_row != 0 && clicked_row != self.get_height() + 2 {
-                self.exit_focus(state);
                 state.selected = true;
                 state.choice = self.get_dropped_down_options()[clicked_row - 1]
                     .clone();
             }
         } else {
             // Click outside widget
-            self.exit_focus(state);
             state.selected = false;
         }
+        self.exit_focus(view_tree, state_tree, widget_tree);
     }
 
     /// Called when this widget is already dropped down and widget is hovered
@@ -493,10 +502,17 @@ impl Dropdown {
 
     /// Called when widget leaves dropdown mode. Forces a screen redraw because dropping down may
     /// have overwritten other widgets.
-    fn exit_focus(&self, state: &mut DropdownState) {
+    fn exit_focus(&self, view_tree: &mut ViewTree,
+                  state_tree: &mut StateTree, widget_tree: &WidgetTree) {
+        let state = state_tree.get_mut(
+            &self.get_full_path()).unwrap().as_dropdown_mut();
         state.focussed = false;
         state.dropped_down = false;
         state.force_redraw = true;
+        if state.choice != self.state.choice {
+            self.on_value_change(self.get_full_path(), view_tree, state_tree,
+            widget_tree);
+        }
     }
 
     /// Called when the widgets is not dropped down and enter/left mouse click occurs on it.

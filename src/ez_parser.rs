@@ -67,7 +67,7 @@ fn parse_ez(file_string: String) -> Result<Layout, Error> {
 /// definition into an initialized widget. The definition of a widget consists of two optional
 /// parts: the config of the widget itself (its' size, color, etc.) and its' sub widgets.
 /// As the definition for a widget might contain sub widgets, it is parsed recursively.
-pub struct EzWidgetDefinition<'a> {
+struct EzWidgetDefinition<'a> {
     /// Name of widget class, e.g. layout, or textBox
     pub type_name: &'a str,
     /// Id of the widget, used to create widget paths
@@ -149,7 +149,7 @@ impl<'a> EzWidgetDefinition<'a> {
 }
 
 /// Parse a single indentation level of a config file.
-pub fn parse_level<'a>(config_lines: Vec<&'a str>)
+fn parse_level<'a>(config_lines: Vec<&'a str>)
                        -> Result<(Vec<&str>, Vec<EzWidgetDefinition<'a>>), Error> {
 
     // All lines before the first widget definition are considered config lines for the widget

@@ -6,7 +6,7 @@ use std::io::{Error, ErrorKind};
 use crossterm::style::Color;
 use crate::ez_parser::{load_bool_parameter, load_color_parameter};
 use crate::widgets::widget::{EzWidget, Pixel, EzObject, EzObjects};
-use crate::common::{PixelMap, StateTree, WidgetTree, Coordinates, get_widget_by_position};
+use crate::common::{PixelMap, StateTree, WidgetTree, Coordinates};
 
 
 /// Used with Box mode, determines whether widgets are placed below or above each other.
@@ -444,7 +444,7 @@ impl Layout {
     pub fn get_state_tree(&mut self) -> StateTree {
         let mut state_tree = HashMap::new();
         for (child_path, child) in self.get_widgets_recursive_mut() {
-            if let EzObjects::Layout(i) = child {
+            if let EzObjects::Layout(_) = child {
                 // do nothing, layouts don't have states (yet)
             } else {
                 state_tree.insert(child_path, child.as_ez_widget().get_state());

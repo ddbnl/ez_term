@@ -5,7 +5,7 @@ use std::io::{Error, ErrorKind};
 use crossterm::event::{KeyCode};
 use crossterm::style::{Color};
 use crate::common::{KeyboardCallbackFunction, Coordinates, StateTree, ViewTree, WidgetTree,
-                    PixelMap, ValueChangeCallbackFunction};
+                    PixelMap, GenericCallbackFunction};
 use crate::widgets::widget::{EzWidget, Pixel, EzObject};
 use crate::widgets::widget_state::{WidgetState, RedrawWidgetState, SelectableWidgetState};
 use crate::ez_parser::{load_bool_parameter, load_color_parameter};
@@ -51,7 +51,7 @@ pub struct Checkbox {
     /// Optional function to call when the value of this widget changes, see
     /// [ValueChangeCallbackFunction] for the callback fn type, or [set_bind_on_value_change] for
     /// examples.
-    pub bound_on_value_change: Option<ValueChangeCallbackFunction>,
+    pub bound_on_value_change: Option<GenericCallbackFunction>,
 
     /// Optional function to call when this widget is right clicked, see
     /// [MouseCallbackFunction] for the callback fn type, or [set_bind_right_click] for
@@ -232,16 +232,16 @@ impl EzWidget for Checkbox {
 
     fn get_selection_order(&self) -> usize { self.selection_order }
 
-    fn set_bind_on_value_change(&mut self, func: ValueChangeCallbackFunction) {
+    fn set_bind_on_value_change(&mut self, func: GenericCallbackFunction) {
         self.bound_on_value_change = Some(func)
     }
 
-    fn get_bind_on_value_change(&self) -> Option<ValueChangeCallbackFunction> {
+    fn get_bind_on_value_change(&self) -> Option<GenericCallbackFunction> {
         self.bound_on_value_change
     }
 
-    fn on_keyboard_enter(&self, view_tree: &mut ViewTree, state_tree: &mut StateTree,
-                         widget_tree: &WidgetTree) {
+    fn on_keyboard_enter(&self, _widget_path: String, view_tree: &mut ViewTree,
+                         state_tree: &mut StateTree, widget_tree: &WidgetTree) {
 
         let state = state_tree.get_mut(&self.get_full_path()).unwrap()
             .as_checkbox_mut();
