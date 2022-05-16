@@ -1,0 +1,140 @@
+- layout: root_layout
+    mode: box
+    orientation: horizontal
+    width: 250
+    height: 75
+    - layout: map_layout
+        mode: box
+        orientation: vertical
+        width: 150
+        height: 75
+        - canvasWidget: map_widget
+            width: 150
+            height: 50
+        - layout: player_details_layout
+            mode: box
+            orientation: horizontal
+            width: 150
+            height: 25
+            - layout: status_layout
+                mode: float
+                width: 48
+                height: 23
+                border: True
+                borderForegroundColor: dark_cyan
+                borderBackgroundColor: Black
+                - labelWidget: status_title_widget
+                    text: Status:
+                    contentForegroundColor: Magenta
+                    contentBackgroundColor: Black
+                    x: 24
+                    y: 0
+                    width: 10
+                - textInputWidget: status_input_widget
+                    x: 2
+                    y: 1
+                    width: 10
+                    height: 1
+                    text: status sample
+                    selectionOrder: 2
+            - layout: target_layout
+                mode: float
+                width: 48
+                height: 23
+                border: True
+                borderForegroundColor: dark_cyan
+                borderBackgroundColor: Black
+                - labelWidget: target_title_widget
+                    text: Target:
+                    contentForegroundColor: Magenta
+                    contentBackgroundColor: Black
+                    x: 24
+                    y: 0
+                    width: 10
+                - textInputWidget: target_input_widget
+                    x: 2
+                    y: 1
+                    width: 40
+                    height: 1
+                    text: sample target
+                    maxLength: 20
+                    selectionOrder: 4
+                - labelWidget: target_checkbox_title_widget
+                    text: Disabled
+                    x: 2
+                    y: 3
+                    width: 9
+                - checkBoxWidget: target_checkbox_widget
+                    x: 12
+                    y: 3
+                    selectionOrder: 5
+                    active: False
+                    activeSymbol: X
+                    inactiveSymbol: -
+                - labelWidget: target_radio_title_widget
+                    text: option1:
+                    x: 2
+                    y: 4
+                    width: 9
+                - radioButtonWidget: option1
+                    group: target_radios
+                    x: 12
+                    y: 4
+                    selectionOrder: 6
+                    active: True
+                - labelWidget: target_option1_title_widget
+                    text: Option2:
+                    x: 18
+                    y: 4
+                - radioButtonWidget: option2
+                    group: target_radios
+                    x: 26
+                    y: 4
+                    selectionOrder: 7
+                - labelWidget: target_option3_title_widget
+                    text: Option3:
+                    x: 32
+                    y: 4
+                - radioButtonWidget: option3
+                    group: target_radios
+                    x: 40
+                    y: 4
+                    selectionOrder: 8
+                - dropdownWidget: target_dropdown_widget
+                    x: 2
+                    y: 6
+                    selectionOrder: 9
+                    allowNone: True
+                    active: option1
+                    options: option1, option2, option3, option4, option5
+                    width: 10
+            - layout: inventory_layout
+                mode: float
+                width: 48
+                height: 23
+                border: True
+                borderForegroundColor: dark_cyan
+                borderBackgroundColor: Black
+                - labelWidget: inventory_title_widget
+                    text: Inventory
+                    contentForegroundColor: Magenta
+                    contentBackgroundColor: Black
+                    x: 24
+                    y: 0
+                - textInputWidget: inventory_input_widget
+                    x: 2
+                    y: 1
+                    width: 40
+                    height: 1
+                    text: sample inventory
+                    selectionOrder: 11
+    - layout: editor_layout
+        mode: box
+        orientation: vertical
+        width: 98
+        height: 73
+        fill: True
+        fillerSymbol: T
+        fillerForegroundColor: 255,0,128
+        fillerBackgroundColor: Black
+        border: True
