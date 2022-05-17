@@ -1,3 +1,6 @@
+- App struct for convenience
+
+
 - New widgets:
     - Window manager
     - Progress bar

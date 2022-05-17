@@ -8,9 +8,11 @@ use crossterm::{ExecutableCommand, execute, Result, cursor::{Hide},
                 event::{MouseEvent, MouseEventKind, MouseButton, poll, read, DisableMouseCapture,
                         EnableMouseCapture, Event, KeyCode, KeyEvent},
                 terminal::{disable_raw_mode, enable_raw_mode}};
-use crate::common::{self, StateTree, ViewTree, WidgetTree};
+use crate::common::{self, EzContext, StateTree, ViewTree, WidgetTree};
+use crate::ez_parser::load_ez_ui;
 use crate::widgets::layout::Layout;
 use crate::widgets::widget::{EzObject, Pixel};
+use crate::scheduler::{Scheduler};
 
 
 /// Set initial state of the terminal
@@ -40,9 +42,9 @@ fn shutdown_terminal() -> Result<()>{
 /// ```
 /// After loading the root layout, make all the manual changes you require, such as setting
 /// keybindings or binding callbacks to events. Then call this function.
-pub fn run(root_widget: Layout) {
+pub fn run(root_widget: Layout, scheduler: Scheduler) {
     initialize_terminal().unwrap();
-    run_loop(root_widget).unwrap();
+    run_loop(root_widget, scheduler).unwrap();
 }
 
 
@@ -67,13 +69,14 @@ pub fn run(root_widget: Layout) {
 /// (i.e. static things). EzWidget enums can be downcast to UxObject or EzWidget trait objects to
 /// access common functions, or downcast to their specific widget type if you know for sure what it
 /// is.
-fn run_loop(mut root_widget: Layout) -> Result<()>{
+fn run_loop(mut root_widget: Layout, mut scheduler: Scheduler) -> Result<()>{
+
 
     // Create initial state and widget tree so we can pre-select the first widget before running
     let mut state_tree = root_widget.get_state_tree();
     let widget_tree = root_widget.get_widget_tree();
     common::select_next(&widget_tree, &mut state_tree);
-    // Create the initial view tree
+    // Create the initial view tree and write it to the screen
     let all_content = root_widget.get_contents();
     root_widget.propagate_absolute_positions();
     let mut view_tree = ViewTree::new();
@@ -88,9 +91,10 @@ fn run_loop(mut root_widget: Layout) -> Result<()>{
     common::update_state_tree(&mut view_tree, &mut state_tree, &mut root_widget);
     // Start app
     loop {
-        if poll(Duration::from_millis(1_000))? {
-            let mut state_tree = root_widget.get_state_tree();
-            let widget_tree = root_widget.get_widget_tree();
+        let mut state_tree = root_widget.get_state_tree();
+        let widget_tree = root_widget.get_widget_tree();
+        scheduler.run_tasks(&mut view_tree, &mut state_tree, &widget_tree);
+        if poll(Duration::from_millis(50))? {
 
             // Get the event; it can only be consumed once, then the loop continues to next iter
             let event = read().unwrap();
@@ -100,19 +104,21 @@ fn run_loop(mut root_widget: Layout) -> Result<()>{
                 common::get_selected_widget(&widget_tree);
             // Focussed widgets get priority consuming an event
             if let Some(i) = selected_widget {
+                let context = EzContext::new(i.get_full_path(), &mut view_tree, &mut state_tree,
+                                             &widget_tree, &mut scheduler);
                 consumed = i.get_focus() &&
-                    i.handle_event(event, &mut view_tree, &mut state_tree, &widget_tree)
+                    i.handle_event(event, context);
             }
             // Try to handle event as global bound event next
             if !consumed {
                 match event {
                     Event::Key(key) => {
                         consumed = handle_key_event(key, &mut view_tree, &mut state_tree,
-                                                    &widget_tree);
+                                                    &widget_tree, &mut scheduler);
                     }
                     Event::Mouse(event) => {
                         consumed = handle_mouse_event(event, &mut view_tree, &mut state_tree,
-                                                      &widget_tree);
+                                                      &widget_tree, &mut scheduler);
                     }
                     _ => ()
                 }
@@ -120,18 +126,19 @@ fn run_loop(mut root_widget: Layout) -> Result<()>{
             // Try to let currently selected widget handle and consume the event
             if !consumed {
                 if let Some(i) = selected_widget {
-                    let _ = i.handle_event(event, &mut view_tree, &mut state_tree, &widget_tree);
+                    let context = EzContext::new(i.get_full_path(), &mut view_tree, &mut state_tree,
+                                                 &widget_tree, &mut scheduler);
+                    let _ = i.handle_event(event, context);
                 };
             }
-            // Update the state tree for each widget, redrawing any that changed. If a global
-            // forced redraw was issued by a widget we'll perform one.
-            let forced_redraw = common::update_state_tree(&mut view_tree, &mut state_tree,
-                                                          &mut root_widget);
-            if forced_redraw {
-                common::write_to_screen((0, 0), root_widget.get_contents(),
-                                        &mut view_tree);
-            }
-        } else { // Timeout expired, no event for 1s
+        }
+        // Update the state tree for each widget, redrawing any that changed. If a global
+        // forced redraw was issued by a widget we'll perform one.
+        let forced_redraw = common::update_state_tree(&mut view_tree, &mut state_tree,
+                                                      &mut root_widget);
+        if forced_redraw {
+            common::write_to_screen((0, 0), root_widget.get_contents(),
+                                    &mut view_tree);
         }
     }
 }
@@ -142,8 +149,8 @@ fn run_loop(mut root_widget: Layout) -> Result<()>{
 /// 1. Focussed widget
 /// 2. Global key binds (this function)
 /// 3. Selected widget
-fn handle_key_event(key: KeyEvent, view_tree: &mut ViewTree,
-                        state_tree: &mut StateTree, widget_tree: &WidgetTree) -> bool {
+fn handle_key_event(key: KeyEvent, view_tree: &mut ViewTree, state_tree: &mut StateTree,
+                    widget_tree: &WidgetTree, scheduler: &mut Scheduler) -> bool {
 
     match key.code {
         KeyCode::Down => {
@@ -160,8 +167,9 @@ fn handle_key_event(key: KeyEvent, view_tree: &mut ViewTree,
             let selected_widget =
                 common::get_selected_widget(widget_tree);
             if let Some(widget) = selected_widget {
-                widget.on_keyboard_enter(widget.get_full_path(), view_tree, state_tree,
-                                         widget_tree);
+                let context = EzContext::new(widget.get_full_path(),
+                view_tree, state_tree, widget_tree, scheduler);
+                widget.on_keyboard_enter(context);
             }
             true
         },
@@ -179,8 +187,8 @@ fn handle_key_event(key: KeyEvent, view_tree: &mut ViewTree,
 /// 1. Focussed widget
 /// 2. Global key binds (this function)
 /// 3. Selected widget
-fn handle_mouse_event(event: MouseEvent, view_tree: &mut ViewTree,
-                          state_tree: &mut StateTree, widget_tree: &WidgetTree) -> bool {
+fn handle_mouse_event(event: MouseEvent, view_tree: &mut ViewTree, state_tree: &mut StateTree,
+                      widget_tree: &WidgetTree, scheduler: &mut Scheduler) -> bool {
 
     if let MouseEventKind::Down(button) = event.kind {
         let mouse_position = (event.column as usize, event.row as usize);
@@ -192,17 +200,18 @@ fn handle_mouse_event(event: MouseEvent, view_tree: &mut ViewTree,
                 match button {
                     MouseButton::Left => {
                         common::deselect_selected_widget(widget_tree, state_tree);
-                        widget.on_left_click(relative_position,
-                                             view_tree, state_tree,
-                                             widget_tree);
                         if widget.is_selectable() {
                             state_tree.get_mut(&widget.get_full_path()).unwrap()
-                                .as_selectable_mut().set_selected(true);
-                        }
+                                .as_selectable_mut().set_selected(true); }
+                        let context = EzContext::new(widget.get_full_path(),
+                        view_tree, state_tree, widget_tree, scheduler);
+                        widget.on_left_click(context, relative_position);
+
                     },
                     MouseButton::Right => {
-                        widget.on_right_click(relative_position, view_tree,
-                                              state_tree, widget_tree);
+                        let context = EzContext::new(widget.get_full_path(),
+                                                     view_tree, state_tree, widget_tree, scheduler);
+                        widget.on_right_click(context, relative_position);
                     }
                     _ => return false
                 }

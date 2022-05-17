@@ -8,7 +8,7 @@
         orientation: vertical
         width: 150
         height: 75
-        - canvasWidget: canvas_widget
+        - canvas: canvas_widget
             width: 150
             height: 35
         - layout: bottom_layout
@@ -23,20 +23,20 @@
                 border: True
                 borderForegroundColor: dark_cyan
                 borderBackgroundColor: Black
-                - labelWidget: layout1_title_widget
+                - label: layout1_title_widget
                     text: Layout 1:
                     contentForegroundColor: Magenta
                     contentBackgroundColor: Black
                     x: 24
                     y: 0
                     width: 10
-                - textInputWidget: layout1_input_widget
+                - textInput: layout1_input_widget
                     x: 2
                     y: 1
                     width: 10
                     height: 1
                     text: Small input sample
-                    selectionOrder: 2
+                    selectionOrder: 1
             - layout: small_layout_2
                 mode: float
                 width: 48
@@ -44,71 +44,71 @@
                 border: True
                 borderForegroundColor: dark_cyan
                 borderBackgroundColor: Black
-                - labelWidget: layout2_title_widget
+                - label: layout2_title_widget
                     text: Layout 2:
                     contentForegroundColor: Magenta
                     contentBackgroundColor: Black
                     x: 24
                     y: 0
                     width: 10
-                - textInputWidget: layout2_input_widget
+                - textInput: layout2_input_widget
                     x: 2
                     y: 1
                     width: 40
                     height: 1
                     text: sample larger input
                     maxLength: 20
-                    selectionOrder: 4
-                - labelWidget: layout2_checkbox_title_widget
+                    selectionOrder: 3
+                - label: layout2_checkbox_title_widget
                     text: Disabled
                     x: 2
                     y: 3
                     width: 9
-                - checkBoxWidget: layout2_checkbox_widget
+                - checkBox: layout2_checkbox_widget
                     x: 12
                     y: 3
-                    selectionOrder: 5
+                    selectionOrder: 4
                     active: False
                     activeSymbol: X
                     inactiveSymbol: -
-                - labelWidget: layout2_radio_title_widget
+                - label: layout2_radio_title_widget
                     text: option1:
                     x: 2
                     y: 4
                     width: 9
-                - radioButtonWidget: option1
+                - radioButton: option1
                     group: test_radios
                     x: 12
                     y: 4
-                    selectionOrder: 6
+                    selectionOrder: 5
                     active: True
-                - labelWidget: layout2_option1_title_widget
+                - label: layout2_option1_title_widget
                     text: Option2:
                     x: 18
                     y: 4
-                - radioButtonWidget: option2
+                - radioButton: option2
                     group: test_radios
                     x: 26
                     y: 4
-                    selectionOrder: 7
-                - labelWidget: layout2_option3_title_widget
+                    selectionOrder: 6
+                - label: layout2_option3_title_widget
                     text: Option3:
                     x: 32
                     y: 4
-                - radioButtonWidget: option3
+                - radioButton: option3
                     group: test_radios
                     x: 40
                     y: 4
-                    selectionOrder: 8
-                - dropdownWidget: layout2_dropdown_widget
+                    selectionOrder: 7
+                - dropdown: layout2_dropdown_widget
                     x: 2
                     y: 6
-                    selectionOrder: 9
+                    selectionOrder: 8
                     allowNone: True
                     active: option1
                     options: option1, option2, option3, option4, option5
                     width: 10
-                - labelWidget: layout2_dropdown_title_widget
+                - label: layout2_dropdown_title_widget
                     text: option1
                     x: 20
                     y: 7
@@ -120,27 +120,39 @@
                 border: True
                 borderForegroundColor: dark_cyan
                 borderBackgroundColor: Black
-                - labelWidget: layout3_title_widget
+                - label: layout3_title_widget
                     text: Layout 3
                     contentForegroundColor: Magenta
                     contentBackgroundColor: Black
                     width: 10
                     x: 24
                     y: 0
-                - textInputWidget: layout3_input_widget
+                - textInput: layout3_input_widget
                     x: 2
                     y: 1
                     width: 40
                     height: 1
                     text: sample input
-                    selectionOrder: 11
-                - labelWidget: layout3_text_input_title_widget
+                    selectionOrder: 9
+                - label: layout3_text_input_title_widget
                     text: sample input
                     contentForegroundColor: Yellow
                     contentBackgroundColor: Black
                     x: 2
                     y: 2
                     width: 40
+                - button: layout3_button
+                    text: Click me
+                    x: 2
+                    y: 4
+                    width: 10
+                    height: 1
+                    selectionOrder: 10
+                - label: layout3_button_label
+                    text: Button clicked: 0 times
+                    x: 2
+                    y: 7
+                    width:  30
     - layout: right_layout
         mode: box
         orientation: vertical

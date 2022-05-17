@@ -1,11 +1,12 @@
 //! # Widget state:
 //! A module containing the base structs and traits for widget states.
 use crate::widgets::canvas_widget::{CanvasState};
+use crate::widgets::label::{LabelState};
+use crate::widgets::button::{ButtonState};
 use crate::widgets::checkbox::{CheckboxState};
 use crate::widgets::dropdown::{ DropdownState};
 use crate::widgets::radio_button::{RadioButtonState};
 use crate::widgets::text_input::{TextInputState};
-use crate::widgets::label::{LabelState};
 
 
 /// Widget states are used to keep track of dynamic run time information of widgets, such as the
@@ -15,11 +16,12 @@ use crate::widgets::label::{LabelState};
 /// which widget has changed so it can be redrawn. The specific state struct for each widget type
 /// is defined its' own module.
 pub enum WidgetState {
+    Label(LabelState),
+    Button(ButtonState),
     CanvasWidget(CanvasState),
     Checkbox(CheckboxState),
     Dropdown(DropdownState),
     RadioButton(RadioButtonState),
-    Label(LabelState),
     TextInput(TextInputState),
 }
 impl WidgetState {
@@ -29,12 +31,13 @@ impl WidgetState {
     /// can always be called safely.
     pub fn as_redraw_state(&self) -> &dyn RedrawWidgetState {
         match self {
+            WidgetState::Label(i) => i,
+            WidgetState::Button(i) => i,
             WidgetState::Checkbox(i) => i,
             WidgetState::Dropdown(i) => i,
             WidgetState::RadioButton(i) => i,
             WidgetState::TextInput(i) => i,
             WidgetState::CanvasWidget(i) => i,
-            WidgetState::Label(i) => i,
         }
     }
 
@@ -43,12 +46,13 @@ impl WidgetState {
     /// so this method can always be called safely.
     pub fn as_redraw_state_mut(&mut self) -> &mut dyn RedrawWidgetState {
         match self {
+            WidgetState::Label(i) => i,
+            WidgetState::Button(i) => i,
             WidgetState::Checkbox(i) => i,
             WidgetState::Dropdown(i) => i,
             WidgetState::RadioButton(i) => i,
             WidgetState::TextInput(i) => i,
             WidgetState::CanvasWidget(i) => i,
-            WidgetState::Label(i) => i,
         }
     }
 
@@ -61,6 +65,7 @@ impl WidgetState {
     /// - TextInputState
     pub fn as_selectable(&self) -> &dyn SelectableWidgetState {
         match self {
+            WidgetState::Button(i) => i,
             WidgetState::Checkbox(i) => i,
             WidgetState::Dropdown(i) => i,
             WidgetState::RadioButton(i) => i,
@@ -78,6 +83,7 @@ impl WidgetState {
     /// - TextInputState
     pub fn as_selectable_mut(&mut self) -> &mut dyn SelectableWidgetState {
         match self {
+            WidgetState::Button(i) => i,
             WidgetState::Checkbox(i) => i,
             WidgetState::Dropdown(i) => i,
             WidgetState::RadioButton(i) => i,
@@ -95,6 +101,30 @@ impl WidgetState {
     /// Cast this state as a mutable Canvas widget state ref, you must be sure you have one.
     pub fn as_canvas_mut(&mut self) -> &mut CanvasState {
         if let WidgetState::CanvasWidget(i) = self { i }
+        else { panic!("wrong state.") }
+    }
+
+    /// Cast this state as a Label widget state ref, you must be sure you have one.
+    pub fn as_label(&self) -> &LabelState {
+        if let WidgetState::Label(i) = self { i }
+        else { panic!("wrong state.") }
+    }
+
+    /// Cast this state as a mutable Label widget state ref, you must be sure you have one.
+    pub fn as_label_mut(&mut self) -> &mut LabelState {
+        if let WidgetState::Label(i) = self { i }
+        else { panic!("wrong state.") }
+    }
+
+    /// Cast this state as a Label widget state ref, you must be sure you have one.
+    pub fn as_button(&self) -> &ButtonState {
+        if let WidgetState::Button(i) = self { i }
+        else { panic!("wrong state.") }
+    }
+
+    /// Cast this state as a mutable Label widget state ref, you must be sure you have one.
+    pub fn as_button_mut(&mut self) -> &mut ButtonState {
+        if let WidgetState::Button(i) = self { i }
         else { panic!("wrong state.") }
     }
 
@@ -119,18 +149,6 @@ impl WidgetState {
     /// Cast this state as a mutable Dropdown widget state ref, you must be sure you have one.
     pub fn as_dropdown_mut(&mut self) -> &mut DropdownState {
         if let WidgetState::Dropdown(i) = self { i }
-        else { panic!("wrong state.") }
-    }
-
-    /// Cast this state as a Label widget state ref, you must be sure you have one.
-    pub fn as_label(&self) -> &LabelState {
-        if let WidgetState::Label(i) = self { i }
-        else { panic!("wrong state.") }
-    }
-
-    /// Cast this state as a mutable Label widget state ref, you must be sure you have one.
-    pub fn as_label_mut(&mut self) -> &mut LabelState {
-        if let WidgetState::Label(i) = self { i }
         else { panic!("wrong state.") }
     }
 

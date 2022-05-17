@@ -8,9 +8,9 @@ use crossterm::event::{Event, KeyCode};
 use crossterm::style::{Color};
 use crate::widgets::widget_state::{WidgetState, RedrawWidgetState, SelectableWidgetState};
 use crate::widgets::widget::{EzWidget, Pixel, EzObject};
-use crate::common::{self, KeyboardCallbackFunction, Coordinates, StateTree, ViewTree, WidgetTree,
-                    PixelMap, GenericCallbackFunction};
+use crate::common::{self, KeyboardCallbackFunction, Coordinates, StateTree, ViewTree, WidgetTree, PixelMap, GenericEzFunction, MouseCallbackFunction, EzContext};
 use crate::ez_parser::{load_color_parameter};
+use crate::scheduler::Scheduler;
 
 pub struct TextInput {
 
@@ -53,17 +53,17 @@ pub struct TextInput {
     /// Optional function to call when this widget is keyboard entered, see
     /// [KeyboardCallbackFunction] for the callback fn type, or [set_bind_left_click] for
     /// examples.
-    pub bound_keyboard_enter: Option<GenericCallbackFunction>,
+    pub bound_keyboard_enter: Option<GenericEzFunction>,
 
-    /// Optional function to call when this widget is left clicked, see
-    /// [MouseCallbackFunction] for the callback fn type, or [set_bind_left_click] for
+    /// Optional function to call when this widget is right clicked, see
+    /// [MouseCallbackFunction] for the callback fn type, or [set_bind_right_click] for
     /// examples.
-    pub bound_right_mouse_click: Option<fn(pos: Coordinates)>,
+    pub bound_right_mouse_click: Option<MouseCallbackFunction>,
 
     /// Optional function to call when the value of this widget changes, see
     /// [ValueChangeCallbackFunction] for the callback fn type, or [set_bind_on_value_change] for
     /// examples.
-    pub bound_on_value_change: Option<GenericCallbackFunction>,
+    pub bound_on_value_change: Option<GenericEzFunction>,
 
     /// A Key to callback function lookup used to store keybinds for this widget. See
     /// [KeyboardCallbackFunction] type for callback function signature.
@@ -286,17 +286,15 @@ impl EzWidget for TextInput {
         self.keymap.insert(key, func);
     }
 
-    fn handle_event(&self, event: Event, view_tree: &mut ViewTree,
-                    state_tree: & mut StateTree, widget_tree: &WidgetTree) -> bool {
+    fn handle_event(&self, event: Event, context: EzContext) -> bool {
         if let Event::Key(key) = event {
             if self.get_key_map().contains_key(&key.code) {
                 let func = self.get_key_map().get(&key.code).unwrap();
-                func(self.get_full_path(), key.code, view_tree, state_tree, widget_tree);
+                func(context, key.code);
                 return true
             };
             if let KeyCode::Char(c) = key.code {
-                handle_char(self.get_full_path(), c, view_tree, state_tree,
-                            widget_tree);
+                handle_char(context, c);
                 return true
             }
         }
@@ -309,26 +307,26 @@ impl EzWidget for TextInput {
 
     fn get_selection_order(&self) -> usize { self.selection_order }
 
-    fn set_bind_on_value_change(&mut self, func: GenericCallbackFunction) {
+    fn set_bind_on_value_change(&mut self, func: GenericEzFunction) {
         self.bound_on_value_change = Some(func)
     }
 
-    fn get_bind_on_value_change(&self) -> Option<GenericCallbackFunction> {
+    fn get_bind_on_value_change(&self) -> Option<GenericEzFunction> {
         self.bound_on_value_change }
 
-    fn set_bind_keyboard_enter(&mut self, func: GenericCallbackFunction) {
+    fn set_bind_keyboard_enter(&mut self, func: GenericEzFunction) {
         self.bound_keyboard_enter = Some(func)
     }
 
-    fn get_bind_keyboard_enter(&self) -> Option<GenericCallbackFunction> {
+    fn get_bind_keyboard_enter(&self) -> Option<GenericEzFunction> {
         self.bound_keyboard_enter
     }
 
     /// On left click select the widget and also show the cursor at the position the user clicked
     /// in the widget.
-    fn on_left_click(&self, position: Coordinates, _view_tree: &mut ViewTree,
-                     state_tree: &mut StateTree, _widget_tree: &WidgetTree) {
-        let mut state = state_tree.get_mut(&self.get_full_path()).unwrap().as_text_input_mut();
+    fn on_left_click(&self, context: EzContext, position: Coordinates) {
+        let mut state = context.state_tree.get_mut(&self.get_full_path())
+            .unwrap().as_text_input_mut();
 
         let abs = self.get_absolute_position();
         let (mut x, y) = (abs.0 + position.0, abs.1 + position.1);
@@ -338,11 +336,11 @@ impl EzWidget for TextInput {
             .queue(cursor::Show).unwrap().flush().unwrap();
     }
 
-    fn set_bind_right_click(&mut self, func: fn(Coordinates)) {
+    fn set_bind_right_click(&mut self, func: MouseCallbackFunction) {
         self.bound_right_mouse_click = Some(func)
     }
 
-    fn get_bind_right_click(&self) -> Option<fn(Coordinates)> { self.bound_right_mouse_click}
+    fn get_bind_right_click(&self) -> Option<MouseCallbackFunction> { self.bound_right_mouse_click}
 
     fn state_changed(&self, other_state: &WidgetState) -> bool {
         let state = other_state.as_text_input();
@@ -421,12 +419,13 @@ fn get_view_parts(text: String, view_start: usize, widget_with: usize) -> (Strin
     (pre_view_text, view_text, post_view_text)
 }
 
-pub fn handle_right(widget: String, _key: KeyCode, _view_tree: &mut ViewTree,
-                    state_tree: &mut StateTree, widget_tree: &WidgetTree) {
+pub fn handle_right(context: EzContext, _key: KeyCode) {
 
     let (widget_obj, widget_pos, cursor_pos,
-        text_pos) = prepare_handle_function(widget.clone(), widget_tree);
-    let state = state_tree.get_mut(&widget).unwrap().as_text_input_mut();
+        text_pos) = prepare_handle_function(context.widget_path.clone(),
+                                            context.widget_tree);
+    let state = context.state_tree.get_mut(&context.widget_path).unwrap()
+        .as_text_input_mut();
 
     // Text does not fit in widget, advance view
     if state.text.len() > widget_obj.get_width() - 1 && text_pos.0 == widget_obj.get_width() - 1 &&
@@ -442,12 +441,13 @@ pub fn handle_right(widget: String, _key: KeyCode, _view_tree: &mut ViewTree,
             .flush().unwrap();
     }
 }
-pub fn handle_left(widget: String, _key: KeyCode, _view_tree: &mut ViewTree,
-                   state_tree: &mut StateTree, widget_tree: &WidgetTree) {
+pub fn handle_left(context: EzContext, _key: KeyCode) {
 
     let (widget_obj, _widget_pos, _cursor_pos,
-        text_pos) = prepare_handle_function(widget.clone(), widget_tree);
-    let state = state_tree.get_mut(&widget).unwrap().as_text_input_mut();
+        text_pos) = prepare_handle_function(context.widget_path.clone(),
+                                            context.widget_tree);
+    let state = context.state_tree.get_mut(&context.widget_path).unwrap()
+        .as_text_input_mut();
 
     // Text does not fit in widget and cursor at 0, move view to left if not at 0 already
     if state.text.len() > widget_obj.get_width() - 1 && text_pos.0 == 0 && state.view_start >  0 {
@@ -460,12 +460,13 @@ pub fn handle_left(widget: String, _key: KeyCode, _view_tree: &mut ViewTree,
     }
 }
 
-pub fn handle_delete(widget: String, _key: KeyCode, view_tree: &mut ViewTree,
-                     state_tree: &mut StateTree, widget_tree: &WidgetTree) {
+pub fn handle_delete(context: EzContext, _key: KeyCode) {
 
     let (widget_obj, _widget_pos, _cursor_pos,
-        text_pos) = prepare_handle_function(widget.clone(), widget_tree);
-    let state = state_tree.get_mut(&widget).unwrap().as_text_input_mut();
+        text_pos) = prepare_handle_function(context.widget_path.clone(),
+                                            context.widget_tree);
+    let state = context.state_tree.get_mut(&context.widget_path).unwrap()
+        .as_text_input_mut();
 
     // Check if text does not fit in widget, then we have to delete on a view
     if state.text.len() > widget_obj.get_width() - 1 {
@@ -511,16 +512,16 @@ pub fn handle_delete(widget: String, _key: KeyCode, view_tree: &mut ViewTree,
     }
     // Write changes to screen
     state.selected = true;
-    widget_obj.on_value_change(widget_obj.get_full_path(), view_tree, state_tree,
-                               widget_tree);
+    widget_obj.on_value_change(context);
 }
 
-pub fn handle_backspace(widget: String, _key: KeyCode, view_tree: &mut ViewTree,
-                        state_tree: &mut StateTree, widget_tree: &WidgetTree) {
+pub fn handle_backspace(context: EzContext, _key: KeyCode) {
 
     let (widget_obj, _widget_pos, _cursor_pos,
-        text_pos) = prepare_handle_function(widget.clone(), widget_tree);
-    let state = state_tree.get_mut(&widget).unwrap().as_text_input_mut();
+        text_pos) = prepare_handle_function(context.widget_path.clone(),
+                                            context.widget_tree);
+    let state = context.state_tree.get_mut(&context.widget_path).unwrap()
+        .as_text_input_mut();
     let mut text = state.text.clone();
 
     // Check if text does not fit in widget, then we have to backspace on a view
@@ -577,19 +578,19 @@ pub fn handle_backspace(widget: String, _key: KeyCode, view_tree: &mut ViewTree,
     }
     // Write changes to screen
     state.selected = true;
-    widget_obj.on_value_change(widget_obj.get_full_path(), view_tree, state_tree,
-                               widget_tree);
+    widget_obj.on_value_change(context);
 }
 
-pub fn handle_char(widget: String, char: char, view_tree: &mut ViewTree, state_tree: &mut StateTree,
-                   widget_tree: &WidgetTree) {
+pub fn handle_char(context: EzContext, char: char) {
 
-    let state = state_tree.get_mut(&widget).unwrap().as_text_input_mut();
+    let state = context.state_tree.get_mut(&context.widget_path).unwrap().
+        as_text_input_mut();
     if state.text.len() >= state.max_length {
         return
     }
     let (widget_obj, _widget_pos, _cursor_pos,
-        text_pos) = prepare_handle_function(widget.clone(), widget_tree);
+        text_pos) = prepare_handle_function(context.widget_path.clone(),
+                                            context.widget_tree);
     let mut text;
 
     // Text still fits in widget, add char as normal
@@ -617,6 +618,5 @@ pub fn handle_char(widget: String, char: char, view_tree: &mut ViewTree, state_t
     } else if text_pos.0 >= widget_obj.get_width() - 2 {
         state.view_start += 1;
     }
-    widget_obj.on_value_change(widget_obj.get_full_path(), view_tree, state_tree,
-                               widget_tree);
+    widget_obj.on_value_change(context);
 }

@@ -3,6 +3,10 @@ name = "ez_term"
 version = "0.1.0"
 edition = "2021"
 
+[lib]
+name = "ez_term"
+path = "src/lib.rs"
+
 [[bin]]
 name = "example"
 path = "Examples/full_example.rs"

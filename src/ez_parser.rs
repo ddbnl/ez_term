@@ -6,21 +6,26 @@ use std::io::{Error, ErrorKind};
 use crossterm::style::Color;
 use crate::widgets::layout::{Layout};
 use crate::widgets::canvas_widget::CanvasWidget;
+use crate::widgets::label::Label;
+use crate::widgets::button::Button;
 use crate::widgets::radio_button::RadioButton;
 use crate::widgets::checkbox::Checkbox;
-use crate::widgets::label::Label;
 use crate::widgets::text_input::TextInput;
 use crate::widgets::dropdown::Dropdown;
 use crate::widgets::widget::{EzObjects, EzObject};
 use std::str::FromStr;
+use crate::scheduler::Scheduler;
 
 
-/// Load a file path into a root Layout.
-pub fn load_ez_ui(file_path: &str) -> Layout {
+/// Load a file path into a root Layout. Return the root widget and a new scheduler. Both will
+/// be needed to run an [App].
+pub fn load_ez_ui(file_path: &str) -> (Layout, Scheduler) {
     let mut file = File::open(file_path).expect("Unable to open file");
     let mut contents = String::new();
     file.read_to_string(&mut contents).expect("Unable to read file");
-    parse_ez(contents).unwrap()
+    let root_widget = parse_ez(contents).unwrap();
+    let scheduler = Scheduler::new();
+    (root_widget, scheduler)
 }
 
 /// Convenience function use by widgets to load a color parameter defined in a .ez file
@@ -45,6 +50,27 @@ pub fn load_bool_parameter(value: &str) -> Result<bool, Error> {
     if value.to_lowercase() == "true" { Ok(true) }
     else if value.to_lowercase() == "false" { Ok(false) }
     else { Err(Error::new(ErrorKind::InvalidData, "bool parameter must be true/false")) }
+}
+
+
+/// Convenience function use by widgets to load a selection order parameter defined in a .ez file
+pub fn load_selection_order_parameter(value: &str) -> Result<usize, Error> {
+    
+    let value: usize = value.trim().parse().unwrap();
+    if value == 0 {
+        return Err(Error::new(ErrorKind::InvalidData,
+                              "selectionOrder must be higher than 0."))
+    }
+    Ok(value)
+}
+
+/// Convenience function use by widgets to load a selection order parameter defined in a .ez file
+pub fn load_text_parameter(mut value: &str) -> Result<String, Error> {
+    
+    if value.starts_with(' ') {
+        let value = value.strip_prefix(' ').unwrap().to_string();
+    }
+    Ok(value.to_string())
 }
 
 
@@ -95,10 +121,10 @@ impl<'a> EzWidgetDefinition<'a> {
             parse_level(self.content.clone()).unwrap();
         let mut initialized = Layout::default();
         for line in config {
-            let parameter: Vec<&str> = line.split(':').collect();
-            let parameter_name = parameter[0].to_string();
-            let parameter_value = parameter[1].to_string();
-            initialized.load_ez_parameter(parameter_name, parameter_value).unwrap();
+            let (parameter_name, parameter_value) = line.split_once(':')
+                .unwrap();
+            initialized.load_ez_parameter(parameter_name.to_string(),
+                                          parameter_value.to_string()).unwrap();
         }
         for sub_widget in sub_widgets.iter_mut() {
             let initialized_sub_widget = sub_widget.parse();
@@ -130,17 +156,19 @@ impl<'a> EzWidgetDefinition<'a> {
     fn initialize(&mut self, config: Vec<&str>) -> Result<EzObjects, Error> {
         match self.type_name {
             "layout" => Ok(EzObjects::Layout(Layout::from_config(config, self.id.to_string()))),
-            "canvasWidget" => Ok(EzObjects::CanvasWidget(
+            "canvas" => Ok(EzObjects::CanvasWidget(
                 CanvasWidget::from_config(config, self.id.to_string()))),
-            "checkBoxWidget" => Ok(EzObjects::Checkbox(
-                Checkbox::from_config(config, self.id.to_string()))),
-            "radioButtonWidget" => Ok(EzObjects::RadioButton(
-                RadioButton::from_config(config, self.id.to_string()))),
-            "labelWidget" => Ok(EzObjects::Label(
+            "label" => Ok(EzObjects::Label(
                 Label::from_config(config, self.id.to_string()))),
-            "textInputWidget" => Ok(EzObjects::TextInput(
+            "button" => Ok(EzObjects::Button(
+                Button::from_config(config, self.id.to_string()))),
+            "checkBox" => Ok(EzObjects::Checkbox(
+                Checkbox::from_config(config, self.id.to_string()))),
+            "radioButton" => Ok(EzObjects::RadioButton(
+                RadioButton::from_config(config, self.id.to_string()))),
+            "textInput" => Ok(EzObjects::TextInput(
                 TextInput::from_config(config, self.id.to_string()))),
-            "dropdownWidget" => Ok(EzObjects::Dropdown(
+            "dropdown" => Ok(EzObjects::Dropdown(
                 Dropdown::from_config(config, self.id.to_string()))),
             _ => Err(Error::new(ErrorKind::InvalidData,
                                 format!("Invalid widget type {}", self.type_name)))
@@ -165,17 +193,9 @@ fn parse_level<'a>(config_lines: Vec<&'a str>)
             // We encountered a widget, so config section of this level is over.
             parsing_config = false;
             // A new widget definition. Get it's type and ID
-            let widget_definition: Vec<&str> = line.split(':').collect();
-            if widget_definition.len() != 2 {
-                return Err(Error::new(
-                    ErrorKind::InvalidData,
-                    format!("Error at line {}: '{}'. Invalid widget definition. \
-                    Should be in the form: widget_type: widget_id", i, line)))
-            }
+            let (type_name, id) = line.split_once(':').unwrap();
             // Add to level, all next lines that are not widget definitions append to this widget
-            level.push(EzWidgetDefinition::new(
-                widget_definition[0].strip_prefix("- ").unwrap().trim(),
-                widget_definition[1].trim()));
+            level.push(EzWidgetDefinition::new(type_name.strip_prefix("- ").unwrap().trim(), id.trim()));
 
         }
         else if parsing_config {

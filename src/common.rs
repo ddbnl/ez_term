@@ -5,6 +5,7 @@ use crossterm::{QueueableCommand, cursor};
 use std::io::{stdout, Write};
 use std::collections::HashMap;
 use crossterm::event::KeyCode;
+use crate::scheduler::Scheduler;
 use crate::widgets::widget_state::{WidgetState};
 use crate::widgets::widget::{EzWidget, EzObjects, Pixel};
 use crate::widgets::layout::Layout;
@@ -39,21 +40,30 @@ pub type WidgetTree<'a> = HashMap<String, &'a EzObjects>;
 /// # Keyboard callback function:
 /// This is used for binding keyboard callbacks to widgets, meaning that any callback functions a
 /// user makes should use this signature.
-pub type KeyboardCallbackFunction = fn(widget: String, key: KeyCode, view_tree: &mut ViewTree,
-                                       state_tree: &mut StateTree, widget_tree: &WidgetTree);
+pub type KeyboardCallbackFunction = fn(EzContext, key: KeyCode);
 
 /// # Mouse callback function:
 /// This is used for binding mouse event callbacks to widgets, meaning that any callback functions
 /// user makes should use this signature.
-pub type MouseCallbackFunction = fn(widget: String, mouse_pos: Coordinates, view_tree: &mut ViewTree,
-                                    state_tree: &mut StateTree, widget_tree: &WidgetTree);
+pub type MouseCallbackFunction = fn(EzContext, mouse_pos: Coordinates);
 
-/// # Generic callback function:
-/// Used for callbacks that don't require special parameter such as KeyCodes or mouse positions.
-/// Used e.g. for [on_value_change] and [on_keyboard_enter].
-pub type GenericCallbackFunction = fn(widget: String, view_tree: &mut ViewTree,
-                                      state_tree: &mut StateTree, widget_tree: &WidgetTree);
-
+/// # Generic Ez function:
+/// Used for callbacks and scheduled tasks that don't require special parameter such as KeyCodes
+/// or mouse positions. Used e.g. for [on_value_change] and [on_keyboard_enter].
+pub type GenericEzFunction = fn(EzContext);
+pub struct EzContext<'a, 'b, 'c, 'd> {
+    pub widget_path: String,
+    pub view_tree: &'a mut ViewTree,
+    pub state_tree: &'b mut StateTree,
+    pub widget_tree: &'c WidgetTree<'c>,
+    pub scheduler: &'d mut Scheduler,
+}
+impl<'a, 'b , 'c, 'd> EzContext<'a, 'b , 'c, 'd> {
+    pub fn new(widget_path: String, view_tree: &'a mut ViewTree, state_tree: &'b mut StateTree,
+           widget_tree: &'c WidgetTree, scheduler: &'d mut Scheduler) -> Self {
+        EzContext { widget_path, view_tree, state_tree, widget_tree, scheduler }
+    }
+}
 
 /// Find a widget by a screen position coordinate. Used e.g. by mouse event handlers.
 pub fn get_widget_by_position<'a>(pos: Coordinates, widget_tree: &'a WidgetTree)
