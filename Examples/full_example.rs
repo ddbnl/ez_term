@@ -1,10 +1,13 @@
-use ez_term::{ez_parser, widgets, run, common};
+use std::time::Duration;
+use crossterm::style::Color;
+use ez_term::{ez_parser, run, common};
 use ez_term::common::{EzContext};
 use ez_term::widgets::widget::EzObject;
 
 fn main() {
 
     // Step 1: Initialize root widget from config
+
     // We will get a root widget and a scheduler. We can use the root widget to access all our
     // subwidgets and make any changes we need before starting the app.
     // We can use the scheduler to schedule any (recurring) functions we need to before starting
@@ -12,19 +15,7 @@ fn main() {
     let (mut root_widget, mut scheduler) =
         ez_parser::load_ez_ui("./Examples/full_example.ez");
 
-    // Step 2: Customize widgets where needed
-    // Manually fill a canvas widget.
-    let map_widget =
-        root_widget.get_child_by_path_mut("/root_layout/left_layout/canvas_widget").unwrap();
-    let mut map = Vec::new();
-    for x in 0..map_widget.get_width() {
-        map.push(Vec::new());
-        for _ in 0..map_widget.get_height() {
-            map[x].push(widgets::widget::Pixel::from_symbol('.'.to_string()));
-        }
-    }
-    map_widget.set_contents(map);
-
+    // Step 2: Customize widgets where needed. Here are some examples:
     // Set a checkbox on value callback
     root_widget.get_child_by_path_mut(
         "/root_layout/left_layout/bottom_layout/small_layout_2/layout2_checkbox_widget")

@@ -11,6 +11,7 @@
         - canvas: canvas_widget
             width: 150
             height: 35
+            fromFile: ./Examples/example_art.txt
         - layout: bottom_layout
             mode: box
             orientation: horizontal

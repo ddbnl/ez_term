@@ -51,7 +51,8 @@ Currently supports the following:
   - Text input (input and display text)
   - Checkbox (simple on/off switch)
   - Radio buttons (mutually exclusive groups of switches)
-  - Dropdowns (list of valus from which one can be chosen)
+  - Dropdowns (list of values from which one can be chosen)
+  - Canvases (load content from text file or can be painted manually)
   - Colors and borders for widgets.
 - Callbacks:
   - On keyboard enter

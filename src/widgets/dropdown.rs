@@ -390,11 +390,11 @@ impl EzWidget for Dropdown {
         self.bound_on_value_change
     }
 
-    fn on_keyboard_enter(&self, context: EzContext) {
+    fn on_left_click(&self, context: EzContext, position: Coordinates) {
         self.on_press(context);
     }
 
-    fn on_left_click(&self, context: EzContext, position: Coordinates) {
+    fn on_keyboard_enter(&self, context: EzContext) {
         self.on_press(context);
     }
 

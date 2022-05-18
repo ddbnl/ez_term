@@ -14,3 +14,4 @@ path = "Examples/full_example.rs"
 
 [dependencies]
 crossterm = "0.23.2"
+unicode-segmentation = "1.9.0"

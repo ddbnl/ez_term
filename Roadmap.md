@@ -2,12 +2,11 @@
 
 
 - New widgets:
-    - Window manager
     - Progress bar
     - Dropdown
-    - Template widget (take from text file or str)
-    - Modal/popup
     - Scrollview
+    - Modal/popup
+    - Window manager
     - Tabs
 
 

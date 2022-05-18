@@ -1,10 +1,15 @@
 //! # Canvas Widget
 //! Module defining a canvas widget, which does not generate any content but should be 'painted'
 //! manually by the user using the 'set_content' method.
-use crate::widgets::widget::{EzWidget, EzObject};
+use std::fs::File;
+use std::io::prelude::*;
+use crate::widgets::widget::{EzWidget, EzObject, Pixel};
 use crate::widgets::widget_state::{WidgetState, RedrawWidgetState};
 use crate::common::{Coordinates, PixelMap};
 use std::io::{Error, ErrorKind};
+use crossterm::style::{Color, Stylize};
+use unicode_segmentation::UnicodeSegmentation;
+use crate::ez_parser::load_color_parameter;
 
 pub struct CanvasWidget {
     /// ID of the widget, used to construct [path]
@@ -24,6 +29,15 @@ pub struct CanvasWidget {
 
     /// Vertical position of this widget relative to its' parent [Layout]
     pub y: usize,
+
+    /// The [Pixel.foreground_color] to use for this widgets' content
+    pub content_foreground_color: Color,
+
+    /// The [Pixel.background_color] to use for this widgets' content
+    pub content_background_color: Color,
+
+    /// Optional file path to retrieve contents from
+    pub from_file: Option<String>,
 
     /// Absolute position of this widget on screen. Automatically propagated, do not set manually
     pub absolute_position: Coordinates,
@@ -47,6 +61,9 @@ impl Default for CanvasWidget {
             height: 0,
             x: 0,
             y: 0,
+            content_foreground_color: Color::White,
+            content_background_color: Color::Black,
+            from_file: None,
             absolute_position: (0, 0),
             contents: Vec::new(),
             state: CanvasState{force_redraw: false},
@@ -73,11 +90,17 @@ impl EzObject for CanvasWidget {
 
     fn load_ez_parameter(&mut self, parameter_name: String, parameter_value: String)
                          -> Result<(), Error> {
+
         match parameter_name.as_str() {
             "x" => self.x = parameter_value.trim().parse().unwrap(),
             "y" => self.y = parameter_value.trim().parse().unwrap(),
             "width" => self.width = parameter_value.trim().parse().unwrap(),
             "height" => self.height = parameter_value.trim().parse().unwrap(),
+            "contentForegroundColor" =>
+                self.content_foreground_color = load_color_parameter(parameter_value).unwrap(),
+            "contentBackgroundColor" =>
+                self.content_background_color = load_color_parameter(parameter_value).unwrap(),
+            "fromFile" => self.from_file = Some(parameter_value.trim().to_string()),
             _ => return Err(Error::new(ErrorKind::InvalidData,
                                 format!("Invalid parameter name for canvas widget {}",
                                         parameter_name)))
@@ -110,7 +133,34 @@ impl EzObject for CanvasWidget {
        self.contents = valid_contents
     }
 
-    fn get_contents(&mut self) -> PixelMap { self.contents.clone() }
+    fn get_contents(&mut self) -> PixelMap {
+        if let Some(path) = self.from_file.clone() {
+            let mut file = File::open(path).expect("Unable to open file");
+            let mut file_content = String::new();
+            file.read_to_string(&mut file_content).expect("Unable to read file");
+            let mut lines: Vec<String> = file_content.lines()
+                .map(|x| x.graphemes(true).rev().collect())
+                .collect();
+            let mut widget_content = PixelMap::new();
+            for x in 0..self.get_width() {
+                widget_content.push(Vec::new());
+                for y in 0..self.get_height() {
+                    if y < lines.len() && !lines[y].is_empty() {
+                        widget_content[x].push(Pixel { symbol: lines[y].pop().unwrap().to_string(),
+                            foreground_color: self.content_foreground_color,
+                            background_color: self.content_background_color, underline: false})
+                    } else {
+                        widget_content[x].push(Pixel { symbol: " ".to_string(),
+                            foreground_color: self.content_foreground_color,
+                            background_color: self.content_background_color, underline: false})
+                    }
+                }
+            }
+            widget_content
+        } else {
+            self.contents.clone()
+        }
+    }
 
     fn set_width(&mut self, width: usize) { self.width = width; }
 
@@ -137,6 +187,14 @@ impl EzWidget for CanvasWidget {
     fn get_state(&self) -> WidgetState {
         WidgetState::CanvasWidget(self.state.clone())
     }
+
+    fn set_content_foreground_color(&mut self, color: Color) { self.content_foreground_color = color }
+
+    fn get_content_foreground_color(&self) -> Color { self.content_foreground_color }
+
+    fn set_content_background_color(&mut self, color: Color) { self.content_background_color = color }
+
+    fn get_content_background_color(&self) -> Color { self.content_background_color }
     fn state_changed(&self, other_state: &WidgetState) -> bool {
         let _state = other_state.as_canvas();
         false
