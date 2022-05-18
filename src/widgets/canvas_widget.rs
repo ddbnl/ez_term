@@ -30,12 +30,6 @@ pub struct CanvasWidget {
     /// Vertical position of this widget relative to its' parent [Layout]
     pub y: usize,
 
-    /// The [Pixel.foreground_color] to use for this widgets' content
-    pub content_foreground_color: Color,
-
-    /// The [Pixel.background_color] to use for this widgets' content
-    pub content_background_color: Color,
-
     /// Optional file path to retrieve contents from
     pub from_file: Option<String>,
 
@@ -61,12 +55,11 @@ impl Default for CanvasWidget {
             height: 0,
             x: 0,
             y: 0,
-            content_foreground_color: Color::White,
-            content_background_color: Color::Black,
             from_file: None,
             absolute_position: (0, 0),
             contents: Vec::new(),
-            state: CanvasState{force_redraw: false},
+            state: CanvasState{force_redraw: false, content_foreground_color: Color::White,
+            content_background_color: Color::Black },
         }
     }
 }
@@ -75,10 +68,17 @@ impl Default for CanvasWidget {
 /// [WidgetState] implementation.
 #[derive(Clone)]
 pub struct CanvasState {
+
     /// If true this forces a global screen redraw on the next frame. Screen redraws are diffed
     /// so this can be called when needed without degrading performance. If only screen positions
     /// that fall within this widget must be redrawn, call [EzObject.redraw] instead.
     pub force_redraw: bool,
+
+    /// The [Pixel.foreground_color] to use for this widgets' content
+    pub content_foreground_color: Color,
+
+    /// The [Pixel.background_color] to use for this widgets' content
+    pub content_background_color: Color,
 }
 impl RedrawWidgetState for CanvasState {
     fn set_force_redraw(&mut self, redraw: bool) { self.force_redraw = redraw }
@@ -97,9 +97,9 @@ impl EzObject for CanvasWidget {
             "width" => self.width = parameter_value.trim().parse().unwrap(),
             "height" => self.height = parameter_value.trim().parse().unwrap(),
             "contentForegroundColor" =>
-                self.content_foreground_color = load_color_parameter(parameter_value).unwrap(),
+                self.state.content_foreground_color = load_color_parameter(parameter_value).unwrap(),
             "contentBackgroundColor" =>
-                self.content_background_color = load_color_parameter(parameter_value).unwrap(),
+                self.state.content_background_color = load_color_parameter(parameter_value).unwrap(),
             "fromFile" => self.from_file = Some(parameter_value.trim().to_string()),
             _ => return Err(Error::new(ErrorKind::InvalidData,
                                 format!("Invalid parameter name for canvas widget {}",
@@ -147,12 +147,12 @@ impl EzObject for CanvasWidget {
                 for y in 0..self.get_height() {
                     if y < lines.len() && !lines[y].is_empty() {
                         widget_content[x].push(Pixel { symbol: lines[y].pop().unwrap().to_string(),
-                            foreground_color: self.content_foreground_color,
-                            background_color: self.content_background_color, underline: false})
+                            foreground_color: self.state.content_foreground_color,
+                            background_color: self.state.content_background_color, underline: false})
                     } else {
                         widget_content[x].push(Pixel { symbol: " ".to_string(),
-                            foreground_color: self.content_foreground_color,
-                            background_color: self.content_background_color, underline: false})
+                            foreground_color: self.state.content_foreground_color,
+                            background_color: self.state.content_background_color, underline: false})
                     }
                 }
             }
@@ -188,15 +188,17 @@ impl EzWidget for CanvasWidget {
         WidgetState::CanvasWidget(self.state.clone())
     }
 
-    fn set_content_foreground_color(&mut self, color: Color) { self.content_foreground_color = color }
+    fn set_content_foreground_color(&mut self, color: Color) { self.state.content_foreground_color = color }
 
-    fn get_content_foreground_color(&self) -> Color { self.content_foreground_color }
+    fn get_content_foreground_color(&self) -> Color { self.state.content_foreground_color }
 
-    fn set_content_background_color(&mut self, color: Color) { self.content_background_color = color }
+    fn set_content_background_color(&mut self, color: Color) { self.state.content_background_color = color }
 
-    fn get_content_background_color(&self) -> Color { self.content_background_color }
+    fn get_content_background_color(&self) -> Color { self.state.content_background_color }
     fn state_changed(&self, other_state: &WidgetState) -> bool {
-        let _state = other_state.as_canvas();
+        let state = other_state.as_canvas();
+        if state.content_foreground_color != self.state.content_foreground_color { return true }
+        if state.content_background_color != self.state.content_background_color { return true }
         false
     }
     fn update_state(&mut self, new_state: &WidgetState) {

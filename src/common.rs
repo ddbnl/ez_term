@@ -51,6 +51,7 @@ pub type MouseCallbackFunction = fn(EzContext, mouse_pos: Coordinates);
 /// Used for callbacks and scheduled tasks that don't require special parameter such as KeyCodes
 /// or mouse positions. Used e.g. for [on_value_change] and [on_keyboard_enter].
 pub type GenericEzFunction = fn(EzContext);
+pub type GenericEzTask = Box<dyn FnMut(EzContext)>;
 pub struct EzContext<'a, 'b, 'c, 'd> {
     pub widget_path: String,
     pub view_tree: &'a mut ViewTree,

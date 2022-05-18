@@ -1,5 +1,5 @@
 use std::time::{Duration, Instant};
-use crate::common::{EzContext, GenericEzFunction, StateTree, ViewTree, WidgetTree};
+use crate::common::{EzContext, GenericEzFunction, GenericEzTask, StateTree, ViewTree, WidgetTree};
 
 pub struct Scheduler {
     pub tasks: Vec<Task>,
@@ -7,7 +7,7 @@ pub struct Scheduler {
 
 pub struct Task {
     pub widget: String,
-    pub func: GenericEzFunction,
+    pub func: GenericEzTask,
     pub recurring: bool,
     pub canceled: bool,
     pub interval: Duration,
@@ -21,12 +21,12 @@ impl Scheduler {
         Scheduler { tasks: Vec::new() }
     }
 
-    pub fn schedule_once(&mut self, widget: String, func: GenericEzFunction, after: Duration) {
+    pub fn schedule_once(&mut self, widget: String, func: GenericEzTask, after: Duration) {
         let task = Task::new(widget, func, false, after);
         self.tasks.push(task);
     }
 
-    pub fn schedule_interval(&mut self, widget: String,  func: GenericEzFunction, interval: Duration)
+    pub fn schedule_interval(&mut self, widget: String,  func: GenericEzTask, interval: Duration)
         -> &mut Task {
         let task = Task::new(widget, func, true, interval);
         self.tasks.push(task);
@@ -58,7 +58,7 @@ impl Scheduler {
 
 impl Task {
 
-    pub fn new(widget: String, func: GenericEzFunction, recurring: bool, interval: Duration)
+    pub fn new(widget: String, func: GenericEzTask, recurring: bool, interval: Duration)
         -> Self {
         Task { widget, func, recurring, interval, canceled: false, last_execution: Instant::now() }
     }

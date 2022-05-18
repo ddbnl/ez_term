@@ -398,8 +398,9 @@ impl Button {
                 context.state_tree.get_mut(&context.widget_path).unwrap().as_button_mut()
                     .flashing = false
             };
-        context.scheduler.schedule_once(self.get_full_path(), scheduled_func,
-                                Duration::from_millis(50));
+        context.scheduler.schedule_once(self.get_full_path(),
+                                        Box::new(scheduled_func),
+                                        Duration::from_millis(50));
         self.on_press(context);
     }
 }

@@ -51,6 +51,24 @@ fn main() {
         "/root_layout/left_layout/bottom_layout/small_layout_3/layout3_button")
         .unwrap().set_bind_on_press(test_on_button_keyboard_enter);
 
+    let mut neon = (0, 0, 0);
+    let neon_banner = move | context: EzContext | {
+        let color = Color::from(neon);
+        if neon.0 < 255 {
+            neon = (neon.0 + 1, neon.1, neon.2);
+        } else if neon.1 < 255 {
+            neon = (neon.0, neon.1 + 1, neon.2);
+        } else if neon.2 < 255 {
+            neon = (neon.0, neon.1, neon.2 + 1);
+        } else {
+            neon = (0, 0, 0)
+        }
+        context.state_tree.get_mut(&context.widget_path).unwrap().as_canvas_mut()
+            .content_foreground_color = color;
+    };
+    scheduler.schedule_interval("/root_layout/left_layout/canvas_widget".to_string(),
+    Box::new(neon_banner), Duration::from_millis(100));
+
     /// # Step 3: Run app
     /// Now everything must happen from bindings as root widget is passed over
     run::run(root_widget, scheduler);
