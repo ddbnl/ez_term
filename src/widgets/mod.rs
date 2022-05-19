@@ -1,5 +1,5 @@
 pub mod widget;
-pub mod widget_state;
+pub mod state;
 pub mod layout;
 pub mod label;
 pub mod button;

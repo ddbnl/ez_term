@@ -1,6 +1,9 @@
 - App struct for convenience
 
 
+- Closures for callbacks to capture environment
+
+
 - New widgets:
     - Progress bar
     - Dropdown

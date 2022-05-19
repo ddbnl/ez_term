@@ -5,9 +5,9 @@ use crossterm::style::{Color, StyledContent, Stylize};
 use crossterm::event::{Event, KeyCode};
 use std::io::{Error};
 use std::collections::HashMap;
-use crate::common::{self, ViewTree, Coordinates, KeyboardCallbackFunction,
-                    PixelMap, GenericEzFunction, MouseCallbackFunction, EzContext};
-use crate::widgets::widget_state::{WidgetState};
+use crate::common::{self, ViewTree, Coordinates, KeyboardCallbackFunction, PixelMap,
+                    GenericEzFunction, MouseCallbackFunction, EzContext, WidgetTree, StateTree};
+use crate::widgets::state::{State};
 use crate::widgets::layout::{Layout};
 use crate::widgets::label::{Label};
 use crate::widgets::button::{Button};
@@ -97,96 +97,96 @@ impl EzObjects {
     /// Cast this as a layout ref, you must be sure you have one.
     pub fn as_layout(&self) -> &Layout {
         if let EzObjects::Layout(i) = self { i }
-        else { panic!("wrong state.") }
+        else { panic!("wrong EzObject.") }
     }
 
     /// Cast this as a mutable layout ref, you must be sure you have one.
     pub fn as_layout_mut(&mut self) -> &mut Layout {
         if let EzObjects::Layout(i) = self { i }
-        else { panic!("wrong state.") }
+        else { panic!("wrong EzObject.") }
     }
     /// Cast this as a Canvas widget ref, you must be sure you have one.
     pub fn as_canvas(&self) -> &CanvasWidget {
         if let EzObjects::CanvasWidget(i) = self { i }
-        else { panic!("wrong state.") }
+        else { panic!("wrong EzObject.") }
     }
 
     /// Cast this as a mutable Canvas widget ref, you must be sure you have one.
     pub fn as_canvas_mut(&mut self) -> &mut CanvasWidget {
         if let EzObjects::CanvasWidget(i) = self { i }
-        else { panic!("wrong state.") }
+        else { panic!("wrong EzObject.") }
     }
 
     /// Cast this state as a Label widget ref, you must be sure you have one.
     pub fn as_label(&self) -> &Label {
         if let EzObjects::Label(i) = self { i }
-        else { panic!("wrong state.") }
+        else { panic!("wrong EzObject.") }
     }
 
     /// Cast this state as a mutable Label widget ref, you must be sure you have one.
     pub fn as_label_mut(&mut self) -> &mut Label {
         if let EzObjects::Label(i) = self { i }
-        else { panic!("wrong state.") }
+        else { panic!("wrong EzObject.") }
     }
 
     /// Cast this state as a Label widget ref, you must be sure you have one.
     pub fn as_button(&self) -> &Button {
         if let EzObjects::Button(i) = self { i }
-        else { panic!("wrong state.") }
+        else { panic!("wrong EzObject.") }
     }
 
     /// Cast this state as a mutable Label widget ref, you must be sure you have one.
     pub fn as_button_mut(&mut self) -> &mut Button {
         if let EzObjects::Button(i) = self { i }
-        else { panic!("wrong state.") }
+        else { panic!("wrong EzObject.") }
     }
 
     /// Cast this as a Checkbox widget ref, you must be sure you have one.
     pub fn as_checkbox(&self) -> &Checkbox {
         if let EzObjects::Checkbox(i) = self { i }
-        else { panic!("wrong state.") }
+        else { panic!("wrong EzObject.") }
     }
 
     /// Cast this as a mutable Checkbox widget ref, you must be sure you have one.
     pub fn as_checkbox_mut(&mut self) -> &mut Checkbox {
         if let EzObjects::Checkbox(i) = self { i }
-        else { panic!("wrong state.") }
+        else { panic!("wrong EzObject.") }
     }
 
     /// Cast this state as a Dropdown widget ref, you must be sure you have one.
     pub fn as_dropdown(&self) -> &Dropdown {
         if let EzObjects::Dropdown(i) = self { i }
-        else { panic!("wrong state.") }
+        else { panic!("wrong EzObject.") }
     }
 
     /// Cast this state as a mutable Dropdown widget ref, you must be sure you have one.
     pub fn as_dropdown_mut(&mut self) -> &mut Dropdown {
         if let EzObjects::Dropdown(i) = self { i }
-        else { panic!("wrong state.") }
+        else { panic!("wrong EzObject.") }
     }
 
     /// Cast this state as a RadioButton widget ref, you must be sure you have one.
     pub fn as_radio_button(&self) -> &RadioButton {
         if let EzObjects::RadioButton(i) = self { i }
-        else { panic!("wrong state.") }
+        else { panic!("wrong EzObject.") }
     }
 
     /// Cast this state as a mutable RadioButton widget ref, you must be sure you have one.
     pub fn as_radio_button_mut(&mut self) -> &mut RadioButton {
         if let EzObjects::RadioButton(i) = self { i }
-        else { panic!("wrong state.") }
+        else { panic!("wrong EzObject.") }
     }
 
     /// Cast this state as a TextInput widget ref, you must be sure you have one.
     pub fn as_text_input(&self) -> &TextInput {
         if let EzObjects::TextInput(i) = self { i }
-        else { panic!("wrong state.") }
+        else { panic!("wrong EzObject.") }
     }
 
     /// Cast this state as a mutable TextInput widget ref, you must be sure you have one.
     pub fn as_text_input_mut(&mut self) -> &mut TextInput {
         if let EzObjects::TextInput(i) = self { i }
-        else { panic!("wrong state.") }
+        else { panic!("wrong EzObject.") }
     }
 }
 
@@ -219,8 +219,7 @@ pub trait EzObject {
     /// Get ID of the widget. IDs are used to create widgets paths. E.g.
     /// "/root_layout/sub_layout/widget_1".
     fn get_id(&self) -> String;
-
-
+    
     /// Set full path to a widget. E.g. "/root_layout/sub_layout/widget_1". Call "get_by_path"
     /// method on the root layout and pass a full widget pass to retrieve a widget.
     fn set_full_path(&mut self, path: String);
@@ -229,11 +228,17 @@ pub trait EzObject {
     /// method on the root layout and pass a full widget pass to retrieve a widget.
     fn get_full_path(&self) -> String;
 
+    /// Set a passed state as the current state.
+    fn update_state(&mut self, new_state: &State);
+
+    /// Get the State object belonging to this widget.
+    fn get_state(&self) -> State;
+
     /// Redraw the widget on the screen. Using the view tree, only changed content is written to
     /// improve performance.
-    fn redraw(&mut self, view_tree: &mut ViewTree) {
+    fn redraw(&self, view_tree: &mut ViewTree, state_tree: &mut StateTree) {
         let pos = self.get_absolute_position();
-        let content = self.get_contents();
+        let content = self.get_contents(state_tree);
         common::write_to_screen(pos, content, view_tree);
     }
 
@@ -244,29 +249,22 @@ pub trait EzObject {
 
     /// Gets the visual content for this widget. Overloaded by each widget module. E.g. a label
     /// gets its' content from its' text, a checkbox from whether it has been checked, etc.
-    fn get_contents(&mut self) -> PixelMap;
+    fn get_contents(&self, state_tree: &mut StateTree) -> PixelMap;
 
-    /// Manually set the width for a widget. Only allowed for some widgets, while others get their
-    /// width from some other source.
-    fn set_width(&mut self, _width: usize) {
-        panic!("Manually setting width not allowed for this widget: {}", self.get_id()); }
+    /// Set the absolute position of a widget, i.e. the position on screen rather than within its'
+    /// parent widget. Should be set automatically through the "propagate_absolute_positions"
+    /// function.
+    fn set_absolute_position(&mut self, pos:Coordinates);
 
-    /// Get current width of a widget.
-    fn get_width(&self) -> usize;
-
-    /// Manually set the height for a widget. Only allowed for some widgets, while others get their
-    /// height from some other source.
-    fn set_height(&mut self, _height: usize) {
-        panic!("Manually setting width not allowed for this widget: {}", self.get_id()); }
-
-
-    /// Get current height of a widget.
-    fn get_height(&self) -> usize;
+    /// Get the absolute position of a widget, i.e. the position on screen rather than within its'
+    /// parent widget.
+    fn get_absolute_position(&self) -> Coordinates;
 
     /// Get the top left and bottom right corners of a widget in (X, Y) coordinate tuples.
     fn get_box(&self) -> (Coordinates, Coordinates) {
         let top_left = self.get_absolute_position();
-        let top_right = (top_left.0 + self.get_width(), top_left.1 + self.get_height());
+        let top_right = (top_left.0 + self.get_state().as_generic_state().get_width(), 
+                         top_left.1 + self.get_state().as_generic_state().get_height());
         (top_left, top_right)
     }
 
@@ -287,26 +285,12 @@ pub trait EzObject {
         if self.has_border() {
             starting_pos = (starting_pos.0 + 1, starting_pos.1 + 1);
         }
-        let end_pos = (starting_pos.0 + self.get_width() - 1,
-                                  starting_pos.1 + self.get_height() - 1);
+        let end_pos =
+            (starting_pos.0 + self.get_state().as_generic_state().get_width() - 1,
+             starting_pos.1 + self.get_state().as_generic_state().get_height() - 1);
         pos.0 >= starting_pos.0 && pos.0 <= end_pos.0 &&
             pos.1 >= starting_pos.1 && pos.1 <= end_pos.1
     }
-
-    /// Set the position of a widget. Can be done manually or automatically by a layout.
-    fn set_position(&mut self, position: Coordinates);
-
-    /// Get the position of a widget inside its' layout.
-    fn get_position(&self) -> Coordinates;
-
-    /// Set the absolute position of a widget, i.e. the position on screen rather than within its'
-    /// parent widget. Should be set automatically through the "propagate_absolute_positions"
-    /// function.
-    fn set_absolute_position(&mut self, pos:Coordinates);
-
-    /// Get the absolute position of a widget, i.e. the position on screen rather than within its'
-    /// parent widget.
-    fn get_absolute_position(&self) -> Coordinates;
 
     /// Set the symbol used to create the horizontal parts of the border for a widget.
     fn set_border_horizontal_symbol(&mut self, _symbol: String) {
@@ -350,20 +334,6 @@ pub trait EzObject {
     /// Get the symbol used to create the top right part of the border for a widget.
     fn get_border_top_right_symbol(&self) -> String { "┐".to_string() }
 
-    /// Set the foreground color used to create the border around a widget.
-    fn set_border_foreground_color(&mut self, _color: Color) {
-        panic!("Cannot manually set border for this widget"); }
-
-    /// Get the foreground color used to create the border around a widget.
-    fn get_border_foreground_color(&self) -> Color { Color::White }
-
-    /// Set the background color used to create the border around a widget.
-    fn set_border_background_color(&mut self, _color: Color) {
-        panic!("Cannot manually set border for this widget"); }
-
-    /// Get the background color used to create the border around a widget.
-    fn get_border_background_color(&self) -> Color { Color::Black }
-
     /// Set whether a border will be painted around this widget.
     fn set_border(&mut self, _enabled: bool) {
         panic!("Widget has no border implementation: {}", self.get_id())
@@ -372,63 +342,12 @@ pub trait EzObject {
     /// Returns whether this widget has (or should get) a border.
     fn has_border(&self) -> bool { false }
 
-    /// Add a border around the content of this widget.
-    fn add_border(&self, mut content: PixelMap) -> PixelMap {
-        // Create border elements
-        let horizontal_border = Pixel{ symbol: self.get_border_horizontal_symbol(),
-            background_color: self.get_border_background_color(),
-            foreground_color: self.get_border_foreground_color(), underline: false};
-        let vertical_border = Pixel{ symbol:self.get_border_vertical_symbol(),
-            background_color: self.get_border_background_color(),
-            foreground_color: self.get_border_foreground_color(), underline: false};
-        let top_left_border = Pixel{ symbol:self.get_border_top_left_symbol(),
-            background_color: self.get_border_background_color(),
-            foreground_color: self.get_border_foreground_color(), underline: false};
-        let top_right_border = Pixel{ symbol: self.get_border_top_right_symbol(),
-            background_color: self.get_border_background_color(),
-            foreground_color: self.get_border_foreground_color(), underline: false};
-        let bottom_left_border = Pixel{ symbol: self.get_border_bottom_left_symbol(),
-            background_color: self.get_border_background_color(),
-            foreground_color: self.get_border_foreground_color(), underline: false};
-        let bottom_right_border = Pixel{ symbol: self.get_border_bottom_right_symbol(),
-            background_color: self.get_border_background_color(),
-            foreground_color: self.get_border_foreground_color(), underline: false};
-        // Create horizontal borders
-        for x in 0..content.len() {
-            let mut new_x = vec!(horizontal_border.clone());
-            for y in &content[x] {
-                new_x.push(y.clone());
-            }
-            new_x.push(horizontal_border.clone());
-            content[x] = new_x
-        }
-        // Create left border
-        let mut left_border = vec!(top_left_border);
-        for _ in 0..self.get_height() {
-            left_border.push(vertical_border.clone());
-        }
-        left_border.push(bottom_left_border);
-        // Create right border
-        let mut right_border = vec!(top_right_border);
-        for _ in 0..self.get_height() {
-            right_border.push(vertical_border.clone())
-        }
-        right_border.push(bottom_right_border);
-        // Merge all borders around the content
-        let mut new_content = vec!(left_border);
-        for x in content {
-            new_content.push(x);
-        }
-        new_content.push(right_border);
-        new_content
-
-    }
 }
 
 
-/// Trait representing both widgets only, implementing methods which are common to all widgets but
-/// not layouts. You can cast a EzObjects enum into this trait using 'common::cast_as_ez_widget',
-/// if you know for sure the object you're dealing with is a widget and not a layout.
+/// Trait representing widgets only, implementing methods which are common to all widgets but
+/// not layouts. You can cast an EzObjects enum into this trait using [as_ez_widget]
+/// if you know for sure the [EzObject] you're dealing with is a widget and not a layout.
 pub trait EzWidget: EzObject {
 
     /// Set the focus state of a widget. When a widget is focussed it alone consumes all events.
@@ -437,48 +356,27 @@ pub trait EzWidget: EzObject {
     /// Get the focus state of a widget. When a widget is focussed it alone consumes all events.
     fn get_focus(&self) -> bool { false }
 
-    /// Get the WidgetState object belonging to this widget.
-    fn get_state(&self) -> WidgetState;
+    /// Returns a bool representing whether this widget can be select by keyboard or mouse. E.g.
+    /// labels cannot be selected, but checkboxes can.
+    fn is_selectable(&self) -> bool { false }
 
-    /// Set the foreground color used for this widget.
-    fn set_content_foreground_color(&mut self, _color: Color) {
-        panic!("Cannot manually set content color for this widget {}", self.get_id()); }
+    /// Returns a bool representing whether this widget is currently selected.
+    fn is_selected(&self) -> bool { false }
 
-    /// Get the foreground color used for this widget.
-    fn get_content_foreground_color(&self) -> Color {
-        panic!("Cannot manually get content color for this widget {}", self.get_id()); }
+    /// Get the order in which this widget should be selected, represented by a usize number. E.g.
+    /// if there is a '1' widget, a '2' widget, and this widget is '3', calling 'select_next_widget'
+    /// will select 1, then 2, then this widget. Used for keyboard up and down keys.
+    fn get_selection_order(&self) -> usize { 0 }
 
-    /// Set the background color used for this widget.
-    fn set_content_background_color(&mut self, _color: Color) {
-        panic!("Cannot manually set content color for this widget {}", self.get_id()); }
+    /// Bool representing whether this widget shows the terminal cursor. It is hidden by default.
+    fn shows_cursor(&self) -> bool { false }
 
-    /// Get the background color used for this widget.
-    fn get_content_background_color(&self) -> Color {
-        panic!("Cannot manually get content color for this widget {}", self.get_id()); }
-
-    /// Get the foreground color used for this widget when selected.
-    fn set_selection_foreground_color(&mut self, _color: Color) {}
-
-    /// Get the foreground color used for this widget when selected.
-    fn get_selection_foreground_color(&self) -> Color { Color::Yellow}
-
-    /// Get the background color used for this widget when selected.
-    fn set_selection_background_color(&mut self, _color: Color) {}
-
-    /// Get the background color used for this widget when selected.
-    fn get_selection_background_color(&self) -> Color { Color::Blue}
-
-    /// Get the foreground color used for this widget when flash.
-    fn set_flash_foreground_color(&mut self, _color: Color) {}
-
-    /// Get the foreground color used for this widget when flash.
-    fn get_flash_foreground_color(&self) -> Color { Color::Red}
-
-    /// Get the background color used for this widget when flash.
-    fn set_flash_background_color(&mut self, _color: Color) {}
-
-    /// Get the background color used for this widget when flash.
-    fn get_flash_background_color(&self) -> Color { Color::Black}
+    /// Set the order in which this widget should be selected, represented by a usize number. E.g.
+    /// if there is a '1' widget, a '2' widget, and this widget is '3', calling 'select_next_widget'
+    /// will select 1, then 2, then this widget. Used for keyboard up and down keys.
+    fn set_selection_order(&mut self, _order: usize) {
+        panic!("Widget has no selection implementation: {}", self.get_id())
+    }
 
     /// Get the key map belonging to a widget. Any keys bound to the widget are in here along with
     /// their callbacks. Key map should be used inside the "handle_event" method of a widget.
@@ -503,25 +401,6 @@ pub trait EzWidget: EzObject {
             }
         }
         false
-    }
-
-    /// Returns a bool representing whether this widget can be select by keyboard or mouse. E.g.
-    /// labels cannot be selected, but checkboxes can.
-    fn is_selectable(&self) -> bool { false }
-
-    /// Returns a bool representing whether this widget is currently selected.
-    fn is_selected(&self) -> bool { false }
-
-    /// Get the order in which this widget should be selected, represented by a usize number. E.g.
-    /// if there is a '1' widget, a '2' widget, and this widget is '3', calling 'select_next_widget'
-    /// will select 1, then 2, then this widget. Used for keyboard up and down keys.
-    fn get_selection_order(&self) -> usize { 0 }
-
-    /// Set the order in which this widget should be selected, represented by a usize number. E.g.
-    /// if there is a '1' widget, a '2' widget, and this widget is '3', calling 'select_next_widget'
-    /// will select 1, then 2, then this widget. Used for keyboard up and down keys.
-    fn set_selection_order(&mut self, _order: usize) {
-        panic!("Widget has no selection implementation: {}", self.get_id())
     }
 
     /// Set the callback for when the value of a widget changes.
@@ -610,14 +489,6 @@ pub trait EzWidget: EzObject {
             None => (),
         }
     }
-
-    /// Returns a bool representing whether the state of this widget has changed by comparing a
-    /// passed state to its' current state.
-    fn state_changed(&self, other_state: &WidgetState) -> bool;
-
-    /// Set a passed state as the current state.
-    fn update_state(&mut self, new_state: &WidgetState);
-
 }
 
 /// Struct representing a single X,Y position on the screen. It has a symbol, colors, and other

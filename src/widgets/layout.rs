@@ -6,7 +6,8 @@ use std::io::{Error, ErrorKind};
 use crossterm::style::Color;
 use crate::ez_parser::{load_bool_parameter, load_color_parameter};
 use crate::widgets::widget::{EzWidget, Pixel, EzObject, EzObjects};
-use crate::common::{PixelMap, StateTree, WidgetTree, Coordinates};
+use crate::widgets::state::{State, GenericState};
+use crate::common::{self, PixelMap, StateTree, WidgetTree, Coordinates};
 
 
 /// Used with Box mode, determines whether widgets are placed below or above each other.
@@ -46,18 +47,6 @@ pub struct Layout {
     /// Orientation enum, see [LayoutOrientation] for options
     pub orientation: LayoutOrientation,
 
-    /// Width of this layout
-    pub width: usize,
-
-    /// Height of this layout
-    pub height: usize,
-
-    /// Horizontal position of this layout relative to its' parent (or to 0, 0 for root layout)
-    pub x: usize,
-
-    /// Vertical position of this layout relative to its' parent (or to 0, 0 for root layout)
-    pub y: usize,
-
     /// Absolute position of this layout on screen. Automatically propagated, do not set manually
     pub absolute_position: Coordinates,
 
@@ -73,12 +62,6 @@ pub struct Layout {
 
     /// The [Pixel.Symbol] to use for filler pixels if [fill] is true
     pub filler_symbol: String,
-
-    /// The [Pixel.foreground_color] to use for filler pixels if [fill] is true
-    pub filler_foreground_color: Color,
-
-    /// The [Pixel.background_color] to use for filler pixels if [fill] is true
-    pub filler_background_color: Color,
 
     /// Bool representing whether this layout should have a surrounding border
     pub border: bool,
@@ -101,11 +84,8 @@ pub struct Layout {
     /// The [Pixel.symbol] to use for the bottom right border if [border] is true
     pub border_bottom_right_symbol: String,
 
-    /// The[Pixel.foreground_color]  to use for the border if [border] is true
-    pub border_foreground_color: Color,
-
-    /// The [Pixel.background_color] to use for the border if [border] is true
-    pub border_background_color: Color,
+    /// Runtime state of this Layout, see [LayoutState] and [State]
+    pub state: LayoutState,
 }
 
 
@@ -116,17 +96,11 @@ impl Default for Layout {
             path: String::new(),
             orientation: LayoutOrientation::Horizontal,
             mode: LayoutMode::Box,
-            height: 0,
-            width: 0,
-            x: 0,
-            y:0,
             absolute_position: (0, 0),
             children: Vec::new(),
             child_lookup: HashMap::new(),
             fill: false,
             filler_symbol: String::new(),
-            filler_background_color: Color::Black,
-            filler_foreground_color: Color::White,
             border: false,
             border_horizontal_symbol: "━".to_string(),
             border_vertical_symbol: "│".to_string(),
@@ -134,22 +108,167 @@ impl Default for Layout {
             border_top_right_symbol: "┐".to_string(),
             border_bottom_left_symbol: "└".to_string(),
             border_bottom_right_symbol: "┘".to_string(),
-            border_foreground_color: Color::White,
-            border_background_color: Color::Black,
+            state: LayoutState::default(),
         }
     }
 }
 
+
+/// [State] implementation.
+#[derive(Clone)]
+pub struct LayoutState {
+
+    /// Horizontal position of this widget relative to its' parent [Layout]
+    pub x: usize,
+
+    /// Vertical position of this widget relative to its' parent [Layout]
+    pub y: usize,
+
+    /// Width of this widget
+    pub width: usize,
+
+    /// Height of this layout
+    pub height: usize,
+
+    /// The [Pixel.foreground_color] to use for filler pixels if [fill] is true
+    pub filler_foreground_color: Color,
+
+    /// The [Pixel.background_color] to use for filler pixels if [fill] is true
+    pub filler_background_color: Color,
+
+    /// The[Pixel.foreground_color]  to use for the border if [border] is true
+    pub border_foreground_color: Color,
+
+    /// The [Pixel.background_color] to use for the border if [border] is true
+    pub border_background_color: Color,
+
+    /// The [Pixel.foreground_color] to use for this widgets' content
+    pub content_foreground_color: Color,
+
+    /// The [Pixel.background_color] to use for this widgets' content
+    pub content_background_color: Color,
+
+    /// Bool representing if state has changed. Triggers widget redraw.
+    pub changed: bool,
+
+    /// If true this forces a global screen redraw on the next frame. Screen redraws are diffed
+    /// so this can be called when needed without degrading performance. If only screen positions
+    /// that fall within this widget must be redrawn, call [EzObject.redraw] instead.
+    pub force_redraw: bool,
+}
+impl Default for LayoutState {
+    fn default() -> Self {
+        LayoutState {
+            x: 0,
+            y: 0,
+            width: 0,
+            height: 0,
+            filler_background_color: Color::Black,
+            filler_foreground_color: Color::White,
+            border_foreground_color: Color::White,
+            border_background_color: Color::Black,
+            content_background_color: Color::Black,
+            content_foreground_color: Color::White,
+            changed: false,
+            force_redraw: false
+        }
+    }
+}
+impl GenericState for LayoutState {
+
+    fn set_changed(&mut self, changed: bool) { self.changed = changed }
+
+    fn get_changed(&self) -> bool { self.changed }
+
+    fn set_width(&mut self, width: usize) { self.width = width; self.changed = true; }
+
+    fn get_width(&self) -> usize { self.width }
+
+    fn set_height(&mut self, height: usize) { self.height = height; self.changed = true; }
+
+    fn get_height(&self) -> usize { self.height }
+
+    fn set_position(&mut self, position: Coordinates) {
+        self.x = position.0;
+        self.y = position.1;
+        self.changed = true;
+    }
+
+    fn get_position(&self) -> Coordinates { (self.x, self.y) }
+
+    fn set_force_redraw(&mut self, redraw: bool) {
+        self.force_redraw = redraw;
+        self.changed = true;
+    }
+
+    fn get_force_redraw(&self) -> bool { self.force_redraw }
+}
+impl LayoutState {
+
+    pub fn set_border_foreground_color(&mut self, color: Color) {
+        self.border_foreground_color = color;
+        self.changed = true;
+    }
+
+    pub fn get_border_foreground_color(&self) -> Color {
+        self.border_foreground_color
+    }
+
+    pub fn set_border_background_color(&mut self, color: Color) {
+        self.border_background_color = color;
+        self.changed = true;
+    }
+
+    pub fn get_border_background_color(&self) -> Color {
+        self.border_background_color
+    }
+
+    pub fn set_content_foreground_color(&mut self, color: Color) {
+        self.content_foreground_color = color;
+        self.changed = true;
+    }
+
+    pub fn get_content_foreground_color(&self) -> Color {
+        self.content_foreground_color
+    }
+
+    pub fn set_content_background_color(&mut self, color: Color) {
+        self.content_background_color = color;
+        self.changed = true;
+    }
+
+    pub fn get_content_background_color(&self) -> Color {
+        self.content_background_color
+    }
+
+    pub fn set_filler_foreground_color(&mut self, color: Color) {
+        self.filler_foreground_color = color;
+        self.changed = true;
+    }
+
+    pub fn get_filler_foreground_color(&self) -> Color {
+        self.filler_foreground_color
+    }
+
+    pub fn set_filler_background_color(&mut self, color: Color) {
+        self.filler_background_color = color;
+        self.changed = true;
+    }
+
+    pub fn get_filler_background_color(&self) -> Color {
+        self.filler_background_color
+    }
+}
 
 impl EzObject for Layout {
 
     fn load_ez_parameter(&mut self, parameter_name: String, parameter_value: String)
         -> Result<(), Error> {
         match parameter_name.as_str() {
-            "x" => self.x = parameter_value.trim().parse().unwrap(),
-            "y" => self.y = parameter_value.trim().parse().unwrap(),
-            "width" => self.width = parameter_value.trim().parse().unwrap(),
-            "height" => self.height = parameter_value.trim().parse().unwrap(),
+            "x" => self.state.x = parameter_value.trim().parse().unwrap(),
+            "y" => self.state.y = parameter_value.trim().parse().unwrap(),
+            "width" => self.state.width = parameter_value.trim().parse().unwrap(),
+            "height" => self.state.height = parameter_value.trim().parse().unwrap(),
             "mode" => {
                 match parameter_value.trim() {
                     "box" => self.set_mode(LayoutMode::Box),
@@ -182,13 +301,13 @@ impl EzObject for Layout {
             "borderBottomRightSymbol" => self.border_bottom_right_symbol =
                 parameter_value.trim().to_string(),
             "borderForegroundColor" =>
-                self.border_foreground_color = load_color_parameter(parameter_value).unwrap(),
+                self.state.border_foreground_color = load_color_parameter(parameter_value).unwrap(),
             "borderBackgroundColor" =>
-                self.border_background_color = load_color_parameter(parameter_value).unwrap(),
+                self.state.border_background_color = load_color_parameter(parameter_value).unwrap(),
             "fillerForegroundColor" =>
-                self.filler_foreground_color = load_color_parameter(parameter_value).unwrap(),
+                self.state.filler_foreground_color = load_color_parameter(parameter_value).unwrap(),
             "fillerBackgroundColor" =>
-                self.filler_background_color = load_color_parameter(parameter_value).unwrap(),
+                self.state.filler_background_color = load_color_parameter(parameter_value).unwrap(),
             "fill" => self.fill = load_bool_parameter(parameter_value.trim())?,
             "fillerSymbol" => self.set_filler_symbol(parameter_value.trim().to_string()),
             _ => return Err(Error::new(ErrorKind::InvalidData,
@@ -201,15 +320,22 @@ impl EzObject for Layout {
 
     fn get_id(&self) -> String { self.id.clone() }
 
-    fn set_full_path(&mut self, path: String) {
-        self.path = path
+    fn set_full_path(&mut self, path: String) { self.path = path }
+
+    fn get_full_path(&self) -> String { self.path.clone() }
+
+    fn update_state(&mut self, new_state: &State) {
+        let state = new_state.as_layout();
+        self.state = state.clone();
+        self.state.changed = false;
+        self.state.force_redraw = false;
     }
 
-    fn get_full_path(&self) -> String {
-        self.path.clone()
+    fn get_state(&self) -> State {
+        State::Layout(self.state.clone())
     }
 
-    fn get_contents(&mut self) -> PixelMap {
+    fn get_contents(&self, state_tree: &mut StateTree) -> PixelMap {
 
         let mut merged_content = PixelMap::new();
         match self.get_mode() {
@@ -217,11 +343,11 @@ impl EzObject for Layout {
                 match self.get_orientation() {
                     LayoutOrientation::Horizontal => {
                         merged_content = self.get_box_mode_horizontal_orientation_contents(
-                            merged_content);
+                            merged_content, state_tree);
                     },
                     LayoutOrientation::Vertical => {
                         merged_content = self.get_box_mode_vertical_orientation_contents(
-                            merged_content);
+                            merged_content, state_tree);
                     },
                 }
                 if self.fill {
@@ -229,28 +355,22 @@ impl EzObject for Layout {
                 }
             },
             LayoutMode::Float => {
-                merged_content = self.get_float_mode_contents(merged_content);
+                merged_content = self.get_float_mode_contents(merged_content, state_tree);
             }
         }
         if self.border {
-            merged_content = self.add_border(merged_content);
+            merged_content = common::add_border(merged_content,
+                                          self.border_horizontal_symbol.clone(),
+                                          self.border_vertical_symbol.clone(),
+                                          self.border_top_left_symbol.clone(),
+                                          self.border_top_right_symbol.clone(),
+                                          self.border_bottom_left_symbol.clone(),
+                                          self.border_bottom_right_symbol.clone(),
+                                          self.state.border_background_color,
+                                          self.state.border_foreground_color);
         }
         merged_content
     }
-    fn set_width(&mut self, width: usize) { self.width = width; }
-
-    fn get_width(&self) -> usize { self.width }
-
-    fn set_height(&mut self, height: usize) { self.height = height; }
-
-    fn get_height(&self) -> usize { self.height }
-
-    fn set_position(&mut self, position: Coordinates) {
-        self.x = position.0;
-        self.y = position.1;
-    }
-
-    fn get_position(&self) -> Coordinates { (self.x, self.y) }
 
     fn set_absolute_position(&mut self, pos: Coordinates) { self.absolute_position = pos }
 
@@ -285,14 +405,6 @@ impl EzObject for Layout {
 
     fn get_border_top_right_symbol(&self) -> String { self.border_top_right_symbol.clone() }
 
-    fn set_border_foreground_color(&mut self, color: Color) { self.border_foreground_color = color }
-
-    fn get_border_foreground_color(&self) -> Color { self.border_foreground_color }
-
-    fn set_border_background_color(&mut self, color: Color) { self.border_background_color = color }
-
-    fn get_border_background_color(&self) -> Color { self.border_background_color }
-
     fn set_border(&mut self, enabled: bool) { self.border = enabled }
 
     fn has_border(&self) -> bool { self.border }
@@ -311,16 +423,19 @@ impl Layout {
     /// Used by [get_contents] when the [LayoutMode] is set to [Box] and [LayoutOrientation] is
     /// set to [Horizontal]. Merges contents of sub layouts and/or widgets horizontally, using
     /// own [height] for each.
-    fn get_box_mode_horizontal_orientation_contents(&mut self, mut content: PixelMap) -> PixelMap {
+    fn get_box_mode_horizontal_orientation_contents(&self, mut content: PixelMap,
+        state_tree: &mut StateTree) -> PixelMap {
         
         let mut position: Coordinates = (0, 0);
         if self.has_border() {
             position = (1, 1);
         }
-        for child in self.get_children_mut() {
-            let generic_child= child.as_ez_object_mut();
-            generic_child.set_position(position);
-            let child_content = generic_child.get_contents();
+        for child in self.get_children() {
+            let generic_child= child.as_ez_object();
+            let state = state_tree.get_mut(&generic_child.get_full_path())
+                .unwrap().as_generic_mut();
+            state.set_position(position);
+            let child_content = generic_child.get_contents(state_tree);
             content = merge_horizontal_contents( content, child_content);
             position = (content.len(), 0);
         }
@@ -330,16 +445,19 @@ impl Layout {
     /// Used by [get_contents] when the [LayoutMode] is set to [Box] and [LayoutOrientation] is
     /// set to [Vertical]. Merges contents of sub layouts and/or widgets vertically, using
     /// own [width] for each.
-    fn get_box_mode_vertical_orientation_contents(&mut self, mut content: PixelMap) -> PixelMap {
+    fn get_box_mode_vertical_orientation_contents(&self, mut content: PixelMap,
+        state_tree: &mut StateTree) -> PixelMap {
 
-        for _ in 0..self.get_width() {
+        for _ in 0..self.state.get_width() {
             content.push(Vec::new())
         }
         let mut position:Coordinates = (0, 0);
-        for child in self.get_children_mut() {
-            let generic_child= child.as_ez_object_mut();
-            generic_child.set_position(position);
-            let child_content = generic_child.get_contents();
+        for child in self.get_children() {
+            let generic_child= child.as_ez_object();
+            let state = state_tree.get_mut(&generic_child.get_full_path())
+                .unwrap().as_generic_mut();
+            state.set_position(position);
+            let child_content = generic_child.get_contents(state_tree);
             content = merge_vertical_contents(content, child_content);
             position = (0, content[0].len());
         }
@@ -349,31 +467,36 @@ impl Layout {
     /// Used by [get_contents] when the [LayoutMode] is set to [Float]. Places each child in the
     /// XY coordinates defined by that child, relative to itself, and uses
     /// childs' [width] and [height].
-    fn get_float_mode_contents(&mut self, mut content: PixelMap) -> PixelMap {
+    fn get_float_mode_contents(&self, mut content: PixelMap, state_tree: &mut StateTree)
+        -> PixelMap {
 
-        for _ in 0..self.width {
+        for _ in 0..self.state.get_width() {
             content.push(Vec::new());
-            for _ in 0..self.height {
+            for _ in 0..self.state.get_height() {
                 if self.fill {
-                    content.last_mut().unwrap()
-                        .push(self.get_filler());
+                    content.last_mut().unwrap().push(self.get_filler());
                 } else {
-                    content.last_mut().unwrap()
-                        .push(Pixel{symbol:" ".to_string(),
+                    content.last_mut().unwrap().push(Pixel{symbol:" ".to_string(),
                             background_color: Color::Black, foreground_color: Color::White,
                             underline: false});
                 }
             }
         }
 
-        for child in self.get_children_mut() {
-            let generic_child= child.as_ez_object_mut();
-            let (child_x, child_y) = generic_child.get_position();
-            let child_content = generic_child.get_contents();
-            let child_width = if generic_child.has_border() {generic_child.get_width() + 2}
-            else {generic_child.get_width()};
-            let child_height = if generic_child.has_border() {generic_child.get_height() + 2}
-            else {generic_child.get_height()};
+        for child in self.get_children() {
+            let generic_child = child.as_ez_widget();
+            let child_state = state_tree.get(
+                &generic_child.get_full_path()).unwrap().as_generic_state();
+
+            let (child_x, child_y) = child_state.get_position();
+            let (mut child_width, mut child_height) = (child_state.get_width(),
+                                                                   child_state.get_height());
+
+            let child_content = generic_child.get_contents(state_tree);
+            child_width = if generic_child.has_border() { child_width + 2}
+            else { child_width };
+            child_height = if generic_child.has_border() { child_height + 2}
+            else { child_height};
             for width in 0..child_width {
                 for height in 0..child_height {
                     content[child_x + width][child_y + height] =
@@ -392,7 +515,7 @@ impl Layout {
         let border_offset = if self.has_border() {1} else {0};
         for child in self.get_children_mut() {
             if let EzObjects::Layout(i) = child {
-                let pos = i.get_position();
+                let pos = i.state.get_position();
                 let new_absolute_position =
                     (absolute_position.0 + pos.0 + border_offset,
                      absolute_position.1 + pos.1 + border_offset);
@@ -400,7 +523,7 @@ impl Layout {
                 i.propagate_absolute_positions();
             } else {
                 let generic_child = child.as_ez_object_mut();
-                let pos = generic_child.get_position();
+                let pos = generic_child.get_state().as_generic_state().get_position();
                 generic_child.set_absolute_position((absolute_position.0 + pos.0 + border_offset,
                                                      absolute_position.1 + pos.1 + border_offset));
             }
@@ -439,16 +562,12 @@ impl Layout {
         self.children.push(child);
     }
 
-    /// Get the WidgetState for each child [EzWidget] and return it in a <[path], [WidgetState]>
+    /// Get the State for each child [EzWidget] and return it in a <[path], [State]>
     /// HashMap.
     pub fn get_state_tree(&mut self) -> StateTree {
         let mut state_tree = HashMap::new();
-        for (child_path, child) in self.get_widgets_recursive_mut() {
-            if let EzObjects::Layout(_) = child {
-                // do nothing, layouts don't have states (yet)
-            } else {
-                state_tree.insert(child_path, child.as_ez_widget().get_state());
-            }
+        for (child_path, child) in self.get_widgets_recursive() {
+            state_tree.insert(child_path, child.as_ez_object().get_state());
         }
         state_tree
     }
@@ -485,8 +604,9 @@ impl Layout {
 
     /// Get a specific child ref by its' [path]. Call on root Layout to find any EzObject that
     /// exists
-    pub fn get_child_by_path(&self, path: &str) -> Option<&dyn EzWidget> {
-        let mut paths: Vec<&str> = path.split('/').collect();
+    pub fn get_child_by_path(&self, path: &str) -> Option<&EzObjects> {
+
+        let mut paths: Vec<&str> = path.split('/').filter(|x| !x.is_empty()).collect();
         // If user passed a path starting with this layout, take it off first.
         if *paths.first().unwrap() == self.get_id() {
             paths.remove(0);
@@ -498,11 +618,11 @@ impl Layout {
                 root = i.get_child(paths.pop().unwrap());
             }
         }
-        Some(root.as_ez_widget())
+        Some(root)
     }
     /// Get a specific child mutable ref by its' [path]. Call on root Layout to find any
     /// [EzObject] that exists
-    pub fn get_child_by_path_mut(&mut self, path: &str) -> Option<&mut dyn EzWidget> {
+    pub fn get_child_by_path_mut(&mut self, path: &str) -> Option<&mut EzObjects> {
 
         let mut paths: Vec<&str> = path.split('/').filter(|x| !x.is_empty()).collect();
         if paths.first().unwrap() == &self.get_id() {
@@ -515,7 +635,7 @@ impl Layout {
                 root = i.get_child_mut(paths.pop().unwrap());
             }
         }
-        Some(root.as_ez_widget_mut())
+        Some(root)
     }
 
     /// Get a list of all children refs recursively. Call on root [Layout] for all [EzWidgets] that
@@ -528,23 +648,9 @@ impl Layout {
                 for (sub_child_path, sub_child) in i.get_widgets_recursive() {
                     results.insert(sub_child_path, sub_child);
                 }
+                results.insert(child.as_ez_object().get_full_path(), child);
             } else {
                 results.insert(child.as_ez_object().get_full_path(), child);
-            }
-        }
-        results
-    }
-    /// Get a list of all widget mutable refs recursively. Call on root [Layout] for all
-    /// [EzWidgets] that exist.
-    pub fn get_widgets_recursive_mut(&mut self) -> HashMap<String, &mut EzObjects> {
-        let mut results = HashMap::new();
-        for child in self.get_children_mut() {
-            if let EzObjects::Layout(i) = child {
-                for (sub_child_path, sub_child) in i.get_widgets_recursive_mut() {
-                    results.insert(sub_child_path, sub_child);
-                }
-            } else {
-                results.insert(child.as_ez_widget().get_full_path(), child);
             }
         }
         results
@@ -569,21 +675,21 @@ impl Layout {
     pub fn get_filler_symbol(&self) -> String { self.filler_symbol.clone() }
 
     /// Set [filler_background_color]
-    pub fn get_filler_background_color(&self) -> Color { self.filler_background_color }
+    pub fn get_filler_background_color(&self) -> Color { self.state.filler_background_color }
 
     /// Set [filler_foreground_color]
-    pub fn get_filler_foreground_color(&self) -> Color { self.filler_foreground_color }
+    pub fn get_filler_foreground_color(&self) -> Color { self.state.filler_foreground_color }
 
     /// Fill any empty positions with [Pixel] from [get_filler]
     pub fn fill(&self, mut contents: PixelMap) -> PixelMap {
-        for x in 0..self.width {
-            while contents[x].len() < self.get_height() {
+        for x in 0..self.state.get_width() {
+            while contents[x].len() < self.state.get_height() {
                 contents[x].push(self.get_filler().clone());
             }
         }
-        while contents.len() < self.get_width() {
+        while contents.len() < self.state.get_width() {
             let mut new_x = Vec::new();
-            for _ in 0..self.get_height() {
+            for _ in 0..self.state.get_height() {
                 new_x.push(self.get_filler().clone());
             }
             contents.push(new_x);

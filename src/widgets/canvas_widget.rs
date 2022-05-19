@@ -4,8 +4,8 @@
 use std::fs::File;
 use std::io::prelude::*;
 use crate::widgets::widget::{EzWidget, EzObject, Pixel};
-use crate::widgets::widget_state::{WidgetState, RedrawWidgetState};
-use crate::common::{Coordinates, PixelMap};
+use crate::widgets::state::{State, GenericState};
+use crate::common::{Coordinates, PixelMap, StateTree, ViewTree, WidgetTree};
 use std::io::{Error, ErrorKind};
 use crossterm::style::{Color, Stylize};
 use unicode_segmentation::UnicodeSegmentation;
@@ -17,6 +17,40 @@ pub struct CanvasWidget {
 
     /// Full path to this widget, e.g. "/root_layout/layout_2/THIS_ID"
     pub path: String,
+
+    /// Optional file path to retrieve contents from
+    pub from_file: Option<String>,
+
+    /// Absolute position of this widget on screen. Automatically propagated, do not set manually
+    pub absolute_position: Coordinates,
+
+    /// Grid of pixels that will be written to screen for this widget
+    pub contents: PixelMap,
+
+    /// Runtime state of this widget, see [CanvasState] and [State]
+    pub state: CanvasState,
+}
+
+
+impl Default for CanvasWidget {
+
+    fn default() -> Self {
+
+        CanvasWidget {
+            id: "".to_string(),
+            path: String::new(),
+            from_file: None,
+            absolute_position: (0, 0),
+            contents: Vec::new(),
+            state: CanvasState::default(),
+        }
+    }
+}
+
+
+/// [State] implementation.
+#[derive(Clone)]
+pub struct CanvasState {
 
     /// Width of this widget
     pub width: usize,
@@ -30,72 +64,94 @@ pub struct CanvasWidget {
     /// Vertical position of this widget relative to its' parent [Layout]
     pub y: usize,
 
-    /// Optional file path to retrieve contents from
-    pub from_file: Option<String>,
-
-    /// Absolute position of this widget on screen. Automatically propagated, do not set manually
-    pub absolute_position: Coordinates,
-
-    /// Grid of pixels that will be written to screen for this widget
-    pub contents: PixelMap,
-
-    /// Runtime state of this widget, see [CanvasState] and [WidgetState]
-    pub state: CanvasState,
-}
-
-
-impl Default for CanvasWidget {
-
-    fn default() -> Self {
-
-        CanvasWidget {
-            id: "".to_string(),
-            path: String::new(),
-            width: 0,
-            height: 0,
-            x: 0,
-            y: 0,
-            from_file: None,
-            absolute_position: (0, 0),
-            contents: Vec::new(),
-            state: CanvasState{force_redraw: false, content_foreground_color: Color::White,
-            content_background_color: Color::Black },
-        }
-    }
-}
-
-
-/// [WidgetState] implementation.
-#[derive(Clone)]
-pub struct CanvasState {
-
-    /// If true this forces a global screen redraw on the next frame. Screen redraws are diffed
-    /// so this can be called when needed without degrading performance. If only screen positions
-    /// that fall within this widget must be redrawn, call [EzObject.redraw] instead.
-    pub force_redraw: bool,
-
     /// The [Pixel.foreground_color] to use for this widgets' content
     pub content_foreground_color: Color,
 
     /// The [Pixel.background_color] to use for this widgets' content
     pub content_background_color: Color,
+
+    /// Bool representing if state has changed. Triggers widget redraw.
+    pub changed: bool,
+
+    /// If true this forces a global screen redraw on the next frame. Screen redraws are diffed
+    /// so this can be called when needed without degrading performance. If only screen positions
+    /// that fall within this widget must be redrawn, call [EzObject.redraw] instead.
+    pub force_redraw: bool,
 }
-impl RedrawWidgetState for CanvasState {
-    fn set_force_redraw(&mut self, redraw: bool) { self.force_redraw = redraw }
+impl Default for CanvasState {
+    fn default() -> Self {
+        CanvasState{
+            x: 0,
+            y: 0,
+            width: 0,
+            height: 0,
+            content_foreground_color: Color::White,
+            content_background_color: Color::Black,
+            changed: false,
+            force_redraw: false,
+        }
+    }
+}
+impl GenericState for CanvasState {
+
+    fn set_changed(&mut self, changed: bool) { self.changed = changed }
+
+    fn get_changed(&self) -> bool { self.changed }
+
+    fn set_width(&mut self, width: usize) { self.width = width; self.changed = true; }
+
+    fn get_width(&self) -> usize { self.width }
+
+    fn set_height(&mut self, height: usize) { self.height = height; self.changed = true; }
+
+    fn get_height(&self) -> usize { self.height }
+
+    fn set_position(&mut self, position: Coordinates) {
+        self.x = position.0;
+        self.y = position.1;
+        self.changed = true;
+    }
+
+    fn get_position(&self) -> Coordinates { (self.x, self.y) }
+
+    fn set_force_redraw(&mut self, redraw: bool) {
+        self.force_redraw = redraw;
+        self.changed = true;
+    }
+
     fn get_force_redraw(&self) -> bool { self.force_redraw }
 }
+impl CanvasState {
 
+    pub fn set_content_foreground_color(&mut self, color: Color) {
+        self.content_foreground_color = color;
+        self.changed = true;
+    }
+
+    pub fn get_content_foreground_color(&self) -> Color {
+        self.content_foreground_color
+    }
+
+    pub fn set_content_background_color(&mut self, color: Color) {
+        self.content_background_color = color;
+        self.changed = true;
+    }
+
+    pub fn get_content_background_color(&self) -> Color {
+        self.content_background_color
+    }
+
+}
 
 impl EzObject for CanvasWidget {
-
     fn load_ez_parameter(&mut self, parameter_name: String, parameter_value: String)
                          -> Result<(), Error> {
 
         match parameter_name.as_str() {
-            "x" => self.x = parameter_value.trim().parse().unwrap(),
-            "y" => self.y = parameter_value.trim().parse().unwrap(),
-            "width" => self.width = parameter_value.trim().parse().unwrap(),
-            "height" => self.height = parameter_value.trim().parse().unwrap(),
+            "x" => self.state.x = parameter_value.trim().parse().unwrap(),
+            "y" => self.state.y = parameter_value.trim().parse().unwrap(),
+            "width" => self.state.width = parameter_value.trim().parse().unwrap(),
+            "height" => self.state.height = parameter_value.trim().parse().unwrap(),
             "contentForegroundColor" =>
                 self.state.content_foreground_color = load_color_parameter(parameter_value).unwrap(),
             "contentBackgroundColor" =>
@@ -120,20 +176,33 @@ impl EzObject for CanvasWidget {
         self.path.clone()
     }
 
+    fn update_state(&mut self, new_state: &State) {
+
+        let state = new_state.as_canvas();
+        self.state = state.clone();
+        self.state.changed = false;
+        self.state.force_redraw = false;
+    }
+
+    fn get_state(&self) -> State {
+        State::CanvasWidget(self.state.clone())
+    }
+
     /// Set the content of this Widget. You must manually fill a [PixelMap] of the same
     /// [height] and [width] as this widget and pass it here.
     fn set_contents(&mut self, contents: PixelMap) {
        let mut valid_contents = Vec::new();
-       for x in 0..self.width as usize {
+       for x in 0..self.state.width as usize {
            valid_contents.push(Vec::new());
-           for y in 0..self.height as usize {
+           for y in 0..self.state.height as usize {
                valid_contents[x].push(contents[x][y].clone())
            }
        }
        self.contents = valid_contents
     }
 
-    fn get_contents(&mut self) -> PixelMap {
+    fn get_contents(&self, state_tree: &mut StateTree) -> PixelMap {
+
         if let Some(path) = self.from_file.clone() {
             let mut file = File::open(path).expect("Unable to open file");
             let mut file_content = String::new();
@@ -142,9 +211,9 @@ impl EzObject for CanvasWidget {
                 .map(|x| x.graphemes(true).rev().collect())
                 .collect();
             let mut widget_content = PixelMap::new();
-            for x in 0..self.get_width() {
+            for x in 0..self.state.get_width() {
                 widget_content.push(Vec::new());
-                for y in 0..self.get_height() {
+                for y in 0..self.state.get_height() {
                     if y < lines.len() && !lines[y].is_empty() {
                         widget_content[x].push(Pixel { symbol: lines[y].pop().unwrap().to_string(),
                             foreground_color: self.state.content_foreground_color,
@@ -162,52 +231,13 @@ impl EzObject for CanvasWidget {
         }
     }
 
-    fn set_width(&mut self, width: usize) { self.width = width; }
-
-    fn get_width(&self) -> usize { self.width }
-
-    fn set_height(&mut self, height: usize) { self.height = height; }
-
-    fn get_height(&self) -> usize { self.height }
-
-    fn set_position(&mut self, position: Coordinates) {
-        self.x = position.0;
-        self.y = position.1;
-    }
-
-    fn get_position(&self) -> Coordinates { (self.x, self.y) }
-
     fn set_absolute_position(&mut self, pos: Coordinates) { self.absolute_position = pos }
 
     fn get_absolute_position(&self) -> Coordinates { self.absolute_position }
+
 }
 
-impl EzWidget for CanvasWidget {
-
-    fn get_state(&self) -> WidgetState {
-        WidgetState::CanvasWidget(self.state.clone())
-    }
-
-    fn set_content_foreground_color(&mut self, color: Color) { self.state.content_foreground_color = color }
-
-    fn get_content_foreground_color(&self) -> Color { self.state.content_foreground_color }
-
-    fn set_content_background_color(&mut self, color: Color) { self.state.content_background_color = color }
-
-    fn get_content_background_color(&self) -> Color { self.state.content_background_color }
-    fn state_changed(&self, other_state: &WidgetState) -> bool {
-        let state = other_state.as_canvas();
-        if state.content_foreground_color != self.state.content_foreground_color { return true }
-        if state.content_background_color != self.state.content_background_color { return true }
-        false
-    }
-    fn update_state(&mut self, new_state: &WidgetState) {
-
-        let state = new_state.as_canvas();
-        self.state = state.clone();
-        self.state.force_redraw = false;
-    }
-}
+impl EzWidget for CanvasWidget {}
 
 impl CanvasWidget {
 

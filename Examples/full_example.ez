@@ -35,7 +35,6 @@
                     x: 2
                     y: 1
                     width: 10
-                    height: 1
                     text: Small input sample
                     selectionOrder: 1
             - layout: small_layout_2
@@ -56,7 +55,6 @@
                     x: 2
                     y: 1
                     width: 40
-                    height: 1
                     text: sample larger input
                     maxLength: 20
                     selectionOrder: 3
@@ -132,7 +130,6 @@
                     x: 2
                     y: 1
                     width: 40
-                    height: 1
                     text: sample input
                     selectionOrder: 9
                 - label: layout3_text_input_title_widget
@@ -147,7 +144,6 @@
                     x: 2
                     y: 4
                     width: 10
-                    height: 1
                     selectionOrder: 10
                 - label: layout3_button_label
                     text: Button clicked: 0 times

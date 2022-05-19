@@ -1,14 +1,14 @@
 //! # Common:
 //! A module containing common static functions used by other modules, as well as common types.
-use crossterm::style::{PrintStyledContent, StyledContent};
+use crossterm::style::{Color, PrintStyledContent, StyledContent};
 use crossterm::{QueueableCommand, cursor};
 use std::io::{stdout, Write};
 use std::collections::HashMap;
 use crossterm::event::KeyCode;
 use crate::scheduler::Scheduler;
-use crate::widgets::widget_state::{WidgetState};
-use crate::widgets::widget::{EzWidget, EzObjects, Pixel};
 use crate::widgets::layout::Layout;
+use crate::widgets::state::{State};
+use crate::widgets::widget::{EzWidget, EzObjects, Pixel};
 
 
 /// Convenience types
@@ -24,15 +24,15 @@ pub type Coordinates = (usize, usize);
 /// an updated ViewTree is diffed to the old one, and only changed parts of the screen are updated.
 pub type ViewTree = Vec<Vec<StyledContent<String>>>;
 /// # State tree:
-/// A <WidgetPath, WidgetState> HashMap. The WidgetState contains all run-time information for a
+/// A <WidgetPath, State> HashMap. The State contains all run-time information for a
 /// widget, such as the text of a label, or whether a checkbox is currently checked. Callbacks
 /// receive a mutable reference to the widget state and can change what they need. Then after each
 /// frame the updated StateTree is diffed with the old one, and only changed widgets are redrawn.
-pub type StateTree = HashMap<String, WidgetState>;
+pub type StateTree = HashMap<String, State>;
 
 /// # Widget tree:
 /// A read-only list of all widgets, passed to callbacks. Can be used to access static information
-/// of a widget that is not in its' WidgetState. Widgets are represented by the EzWidget enum, but
+/// of a widget that is not in its' State. Widgets are represented by the EzWidget enum, but
 /// can be cast to the generic UxObject or IsWidget trait. If you are sure of the type of widget
 /// you are dealing with it can also be cast to specific widget types.
 pub type WidgetTree<'a> = HashMap<String, &'a EzObjects>;
@@ -70,6 +70,7 @@ impl<'a, 'b , 'c, 'd> EzContext<'a, 'b , 'c, 'd> {
 pub fn get_widget_by_position<'a>(pos: Coordinates, widget_tree: &'a WidgetTree)
     -> Option<&'a dyn EzWidget> {
     for widget in widget_tree.values() {
+        if let EzObjects::Layout(_) = widget { continue }
         let generic_widget = widget.as_ez_widget();
         if generic_widget.collides(pos) {
             return Some(generic_widget)
@@ -81,9 +82,8 @@ pub fn get_widget_by_position<'a>(pos: Coordinates, widget_tree: &'a WidgetTree)
 
 /// Write content to screen. Only writes differences between the passed view tree (current content)
 /// and passed content (new content). The view tree is updated when changes are made.
-pub fn write_to_screen(base_position: Coordinates, content: PixelMap,
-                       view_tree: &mut ViewTree) {
-    stdout().queue(cursor::SavePosition).unwrap().flush().unwrap();
+pub fn write_to_screen(base_position: Coordinates, content: PixelMap, view_tree: &mut ViewTree) {
+    stdout().queue(cursor::SavePosition).unwrap().queue(cursor::Hide).unwrap();
     for x in 0..content.len() {
         for y in 0..content[0].len() {
             let write_pos = (base_position.0 + x, base_position.1 + y);
@@ -96,7 +96,9 @@ pub fn write_to_screen(base_position: Coordinates, content: PixelMap,
             }
         }
     }
-    stdout().queue(cursor::RestorePosition).unwrap().flush().unwrap();
+    stdout().queue(cursor::RestorePosition).unwrap();
+
+    stdout().flush().unwrap();
 }
 
 
@@ -109,16 +111,23 @@ pub fn write_to_screen(base_position: Coordinates, content: PixelMap,
 pub fn update_state_tree(view_tree: &mut ViewTree, state_tree: &mut StateTree,
                          root_widget: &mut Layout) -> bool {
     let mut force_redraw = false;
+    let mut widgets_to_redraw = Vec::new();
     for widget_path in state_tree.keys() {
         let state = state_tree.get(widget_path).unwrap();
-        let widget = root_widget.get_child_by_path_mut(widget_path).unwrap();
-        let redraw_state = state.as_redraw_state();
-        if redraw_state.get_force_redraw() {
+        if state.as_generic_state().get_force_redraw() {
             force_redraw = true;
         }
-        if widget.state_changed(state) {
+        if state.as_generic_state().get_changed() {
+            let widget = root_widget.get_child_by_path_mut(widget_path).unwrap()
+                .as_ez_object_mut();
             widget.update_state(state);
-            if !force_redraw { widget.redraw(view_tree); }
+            widgets_to_redraw.push(widget_path.clone());
+        }
+    }
+    if !force_redraw {
+        for widget_path in widgets_to_redraw {
+            root_widget.get_child_by_path_mut(&widget_path).unwrap().as_ez_object_mut()
+                .redraw(view_tree, state_tree);
         }
     }
     force_redraw
@@ -128,6 +137,7 @@ pub fn update_state_tree(view_tree: &mut ViewTree, state_tree: &mut StateTree,
 /// Return the widget that is currently selected. Can be none.
 pub fn get_selected_widget<'a>(widget_tree: &'a WidgetTree) -> Option<&'a dyn EzWidget> {
     for widget in widget_tree.values() {
+        if let EzObjects::Layout(_) = widget { continue }  // Layouts cannot be selected
         let generic_widget = widget.as_ez_widget();
         if generic_widget.is_selectable() && generic_widget.is_selected() {
             return Some(generic_widget)
@@ -174,6 +184,7 @@ pub fn find_next_selection(current_selection: usize, widget_tree: &WidgetTree) -
     let mut next_order: Option<usize> = None;
     let mut next_widget: Option<String> = None;
     for widget in widget_tree.values()  {
+        if let EzObjects::Layout(i) = widget { continue }  // Layouts cannot be selected
         let generic_widget = widget.as_ez_widget();
         if generic_widget.is_selectable() {
             if let Some(i) = next_order {
@@ -222,6 +233,7 @@ pub fn find_previous_selection(current_selection: usize, widget_tree: &WidgetTre
     let mut previous_order: Option<usize> = None;
     let mut previous_widget: Option<String> = None;
     for widget in widget_tree.values()  {
+        if let EzObjects::Layout(i) = widget { continue }  // Layouts cannot be selected
         let generic_widget = widget.as_ez_widget();
         if generic_widget.is_selectable() {
             if let Some(i) = previous_order {
@@ -237,4 +249,53 @@ pub fn find_previous_selection(current_selection: usize, widget_tree: &WidgetTre
         }
     }
     previous_widget
+}
+
+
+/// Add a border around a PixelMap.
+pub fn add_border(mut content: PixelMap, horizontal_symbol: String, vertical_symbol: String,
+              top_left_symbol: String, top_right_symbol: String, bottom_left_symbol: String,
+              bottom_right_symbol: String, bg_color: Color, fg_color: Color) -> PixelMap {
+    // Create border elements
+    let horizontal_border = Pixel{ symbol: horizontal_symbol, background_color: bg_color,
+        foreground_color: fg_color, underline: false};
+    let vertical_border = Pixel{ symbol: vertical_symbol, background_color: bg_color,
+        foreground_color: fg_color, underline: false};
+    let top_left_border = Pixel{ symbol:top_left_symbol, background_color: bg_color,
+        foreground_color: fg_color, underline: false};
+    let top_right_border = Pixel{ symbol: top_right_symbol, background_color: bg_color,
+        foreground_color: fg_color, underline: false};
+    let bottom_left_border = Pixel{ symbol: bottom_left_symbol, background_color: bg_color,
+        foreground_color: fg_color, underline: false};
+    let bottom_right_border = Pixel{ symbol: bottom_right_symbol, background_color: bg_color,
+        foreground_color: fg_color, underline: false};
+    // Create horizontal borders
+    for x in 0..content.len() {
+        let mut new_x = vec!(horizontal_border.clone());
+        for y in &content[x] {
+            new_x.push(y.clone());
+        }
+        new_x.push(horizontal_border.clone());
+        content[x] = new_x
+    }
+    // Create left border
+    let mut left_border = vec!(top_left_border);
+    for _ in 0..content[0].len() -  2{
+        left_border.push(vertical_border.clone());
+    }
+    left_border.push(bottom_left_border);
+    // Create right border
+    let mut right_border = vec!(top_right_border);
+    for _ in 0..content[0].len() - 2 {
+        right_border.push(vertical_border.clone())
+    }
+    right_border.push(bottom_right_border);
+    // Merge all borders around the content
+    let mut new_content = vec!(left_border);
+    for x in content {
+        new_content.push(x);
+    }
+    new_content.push(right_border);
+    new_content
+
 }

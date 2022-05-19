@@ -1,15 +1,14 @@
 //! # Run:
 //! A module containing the functions to start and stop the main App run loop. The exposed "Run"
 //! functions allows starting the app based on a root layout.
-use std::io::{stdout};
+use std::io::{stdout, Write};
 use std::process::exit;
 use std::time::{Duration};
-use crossterm::{ExecutableCommand, execute, Result, cursor::{Hide},
+use crossterm::{ExecutableCommand, execute, Result, cursor::{Hide, Show},
                 event::{MouseEvent, MouseEventKind, MouseButton, poll, read, DisableMouseCapture,
                         EnableMouseCapture, Event, KeyCode, KeyEvent},
-                terminal::{disable_raw_mode, enable_raw_mode}};
+                terminal::{disable_raw_mode, enable_raw_mode}, QueueableCommand};
 use crate::common::{self, EzContext, StateTree, ViewTree, WidgetTree};
-use crate::ez_parser::load_ez_ui;
 use crate::widgets::layout::Layout;
 use crate::widgets::widget::{EzObject, Pixel};
 use crate::scheduler::{Scheduler};
@@ -28,7 +27,7 @@ fn initialize_terminal() -> Result<()> {
 /// Set terminal to initial state before exit
 fn shutdown_terminal() -> Result<()>{
 
-    execute!(stdout(), DisableMouseCapture)?;
+    stdout().queue(DisableMouseCapture)?.queue(Show)?.flush()?;
     //stdout().execute(terminal::Clear(terminal::ClearType::All))?;
     disable_raw_mode()?;
     Ok(())
@@ -58,7 +57,7 @@ pub fn run(root_widget: Layout, scheduler: Scheduler) {
 /// update the screen only where needed by diffing the old view state to the current view state.
 /// # State tree:
 /// The state tree is a HashMap<String, EzWidget>, a dictionary with full widget path as the key,
-/// and a WidgetState object as the value. The WidgetState contains all important run time
+/// and a State object as the value. The State contains all important run time
 /// information of a widget, e.g. the text of a label, or whether a checkbox is checked. Callbacks
 /// are passed a mutable ref to the state tree and can alter it as they like. After a single run
 /// loop the updated state tree is diffed against the state of each widget, triggering a redraw if
@@ -71,14 +70,16 @@ pub fn run(root_widget: Layout, scheduler: Scheduler) {
 /// is.
 fn run_loop(mut root_widget: Layout, mut scheduler: Scheduler) -> Result<()>{
 
-
-    // Create initial state and widget tree so we can pre-select the first widget before running
     let mut state_tree = root_widget.get_state_tree();
-    let widget_tree = root_widget.get_widget_tree();
-    common::select_next(&widget_tree, &mut state_tree);
-    // Create the initial view tree and write it to the screen
-    let all_content = root_widget.get_contents();
-    root_widget.propagate_absolute_positions();
+    // Create the initial view tree and write it to the screen. Composing the screen will also
+    // set positions for widgets that don't have them hardcoded. That's why we update the state for
+    // all widgets after.
+    let all_content = root_widget.get_contents(&mut state_tree);
+    for widget in root_widget.get_state_tree().keys() {
+        root_widget.get_child_by_path_mut(&widget).unwrap().as_ez_object_mut().update_state(
+            state_tree.get(widget).unwrap())
+    }
+    // Create initial trees so we can pre-select the first widget before running
     let mut view_tree = ViewTree::new();
     for x in 0..all_content.len() {
         view_tree.push(Vec::new());
@@ -86,9 +87,9 @@ fn run_loop(mut root_widget: Layout, mut scheduler: Scheduler) -> Result<()>{
             view_tree[x].push(Pixel::from_symbol("".to_string()).get_pixel())
         }
     }
+    root_widget.propagate_absolute_positions();
     common::write_to_screen((0, 0), all_content, &mut view_tree);
     // Process the widget selection we made
-    common::update_state_tree(&mut view_tree, &mut state_tree, &mut root_widget);
     // Start app
     loop {
         let mut state_tree = root_widget.get_state_tree();
@@ -100,14 +101,17 @@ fn run_loop(mut root_widget: Layout, mut scheduler: Scheduler) -> Result<()>{
             let event = read().unwrap();
             let mut consumed = false;
 
-            let selected_widget =
-                common::get_selected_widget(&widget_tree);
+            let selected_widget = common::get_selected_widget(&widget_tree);
+            if let Some(i) = selected_widget {
+                if i.shows_cursor() {
+                    stdout().execute(Show).unwrap();
+                }
+            }
             // Focussed widgets get priority consuming an event
             if let Some(i) = selected_widget {
-                let context = EzContext::new(i.get_full_path(), &mut view_tree, &mut state_tree,
-                                             &widget_tree, &mut scheduler);
-                consumed = i.get_focus() &&
-                    i.handle_event(event, context);
+                let context = EzContext::new(i.get_full_path(), &mut view_tree,
+                                             &mut state_tree, &widget_tree, &mut scheduler);
+                consumed = i.get_focus() && i.handle_event(event, context);
             }
             // Try to handle event as global bound event next
             if !consumed {
@@ -134,11 +138,11 @@ fn run_loop(mut root_widget: Layout, mut scheduler: Scheduler) -> Result<()>{
         }
         // Update the state tree for each widget, redrawing any that changed. If a global
         // forced redraw was issued by a widget we'll perform one.
-        let forced_redraw = common::update_state_tree(&mut view_tree, &mut state_tree,
-                                                      &mut root_widget);
+        let forced_redraw = common::update_state_tree(
+            &mut view_tree, &mut state_tree, &mut root_widget);
         if forced_redraw {
-            common::write_to_screen((0, 0), root_widget.get_contents(),
-                                    &mut view_tree);
+            let contents = root_widget.get_contents(&mut state_tree);
+            common::write_to_screen((0, 0), contents, &mut view_tree);
         }
     }
 }
