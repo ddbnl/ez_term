@@ -1,7 +1,7 @@
 //! # Common:
 //! A module containing common static functions used by other modules, as well as common types.
 use crossterm::style::{Color, PrintStyledContent, StyledContent};
-use crossterm::{QueueableCommand, cursor};
+use crossterm::{QueueableCommand, cursor, ExecutableCommand};
 use std::io::{stdout, Write};
 use std::collections::HashMap;
 use crossterm::event::KeyCode;
@@ -11,52 +11,72 @@ use crate::widgets::state::{State};
 use crate::widgets::widget::{EzWidget, EzObjects, Pixel};
 
 
-/// Convenience types
-/// # Pixel maps:
+/// # Convenience types
+/// ## Pixel maps:
 /// Used to represent the visual content of widgets. Pixels are a wrapper around
 /// Crossterm StyledContent, so PixelMaps are essentially a grid of StyledContent to display.
 pub type PixelMap = Vec<Vec<Pixel>>;
-/// # Coordinates:
+
+/// ## Key map
+/// A crossterm KeyCode > Callback function lookup. Used for custom user keybinds
+pub type KeyMap = HashMap<KeyCode, KeyboardCallbackFunction>;
+
+/// ## Coordinates:
 /// Convenience wrapper around an XY tuple.
 pub type Coordinates = (usize, usize);
-/// # View tree:
+
+/// ## View tree:
 /// Grid of StyledContent representing the entire screen currently being displayed. After each frame
 /// an updated ViewTree is diffed to the old one, and only changed parts of the screen are updated.
 pub type ViewTree = Vec<Vec<StyledContent<String>>>;
-/// # State tree:
+
+/// ## State tree:
 /// A <WidgetPath, State> HashMap. The State contains all run-time information for a
 /// widget, such as the text of a label, or whether a checkbox is currently checked. Callbacks
 /// receive a mutable reference to the widget state and can change what they need. Then after each
 /// frame the updated StateTree is diffed with the old one, and only changed widgets are redrawn.
 pub type StateTree = HashMap<String, State>;
 
-/// # Widget tree:
+/// ## Widget tree:
 /// A read-only list of all widgets, passed to callbacks. Can be used to access static information
 /// of a widget that is not in its' State. Widgets are represented by the EzWidget enum, but
 /// can be cast to the generic UxObject or IsWidget trait. If you are sure of the type of widget
 /// you are dealing with it can also be cast to specific widget types.
 pub type WidgetTree<'a> = HashMap<String, &'a EzObjects>;
 
-/// # Keyboard callback function:
+/// ## Keyboard callback function:
 /// This is used for binding keyboard callbacks to widgets, meaning that any callback functions a
 /// user makes should use this signature.
 pub type KeyboardCallbackFunction = fn(EzContext, key: KeyCode);
 
-/// # Mouse callback function:
+/// ## Mouse callback function:
 /// This is used for binding mouse event callbacks to widgets, meaning that any callback functions
 /// user makes should use this signature.
 pub type MouseCallbackFunction = fn(EzContext, mouse_pos: Coordinates);
 
-/// # Generic Ez function:
+/// ## Generic Ez function:
 /// Used for callbacks and scheduled tasks that don't require special parameter such as KeyCodes
 /// or mouse positions. Used e.g. for [on_value_change] and [on_keyboard_enter].
 pub type GenericEzFunction = fn(EzContext);
-pub type GenericEzTask = Box<dyn FnMut(EzContext)>;
+pub type GenericEzTask = Box<dyn FnMut(EzContext) -> bool>;
+
+/// ## Ez Context:
+/// Used for providing context to callbacks and scheduled tasks.
 pub struct EzContext<'a, 'b, 'c, 'd> {
+
+    /// Path to the widget this context refers to, e.g. the widget a callback originatec from
     pub widget_path: String,
+
+    /// The current [ViewTree]
     pub view_tree: &'a mut ViewTree,
+
+    /// The current [StateTree]
     pub state_tree: &'b mut StateTree,
+
+    /// The current [WidgetTree]
     pub widget_tree: &'c WidgetTree<'c>,
+
+    /// The current [Scheduler]
     pub scheduler: &'d mut Scheduler,
 }
 impl<'a, 'b , 'c, 'd> EzContext<'a, 'b , 'c, 'd> {
@@ -83,7 +103,7 @@ pub fn get_widget_by_position<'a>(pos: Coordinates, widget_tree: &'a WidgetTree)
 /// Write content to screen. Only writes differences between the passed view tree (current content)
 /// and passed content (new content). The view tree is updated when changes are made.
 pub fn write_to_screen(base_position: Coordinates, content: PixelMap, view_tree: &mut ViewTree) {
-    stdout().queue(cursor::SavePosition).unwrap().queue(cursor::Hide).unwrap();
+    stdout().execute(cursor::SavePosition).unwrap();
     for x in 0..content.len() {
         for y in 0..content[0].len() {
             let write_pos = (base_position.0 + x, base_position.1 + y);
@@ -96,9 +116,8 @@ pub fn write_to_screen(base_position: Coordinates, content: PixelMap, view_tree:
             }
         }
     }
-    stdout().queue(cursor::RestorePosition).unwrap();
-
     stdout().flush().unwrap();
+    stdout().execute(cursor::RestorePosition).unwrap();
 }
 
 
@@ -148,10 +167,13 @@ pub fn get_selected_widget<'a>(widget_tree: &'a WidgetTree) -> Option<&'a dyn Ez
 
 
 /// If any widget is currently selected, deselect it. Can always be called safely.
-pub fn deselect_selected_widget(widget_tree: &WidgetTree, state_tree: &mut StateTree) {
+pub fn deselect_selected_widget(view_tree: &mut ViewTree, state_tree: &mut StateTree,
+        widget_tree: &WidgetTree, scheduler: &mut Scheduler) {
     let selected_widget = get_selected_widget(widget_tree);
     if let Some(i) = selected_widget {
-        state_tree.get_mut(&i.get_full_path()).unwrap().as_selectable_mut().set_selected(false);
+        let context = EzContext::new(i.get_full_path(), view_tree,
+                                      state_tree, widget_tree, scheduler);
+        i.on_deselect(context)
     }
 
 }
@@ -160,19 +182,26 @@ pub fn deselect_selected_widget(widget_tree: &WidgetTree, state_tree: &mut State
 /// Select the next widget by selection order as defined in each selectable widget. If the last
 /// widget is currently selected wrap around and select the first. This function can always be
 /// called safely.
-pub fn select_next(widget_tree: &WidgetTree, state_tree: &mut StateTree) {
+pub fn select_next(view_tree: &mut ViewTree, state_tree: &mut StateTree,
+                   widget_tree: &WidgetTree, scheduler: &mut Scheduler) {
     let current_selection = get_selected_widget(widget_tree);
     let mut current_order = if let Some(i) = current_selection {
         i.get_selection_order() } else { 0 };
     let result = find_next_selection(current_order,
                                      widget_tree);
     if let Some( next_widget) = result {
-        state_tree.get_mut(&next_widget).unwrap().as_selectable_mut().set_selected(true);
+        let context = EzContext::new(next_widget.clone(), view_tree,
+                                     state_tree, widget_tree, scheduler);
+        widget_tree.get(&next_widget).unwrap().as_ez_widget().on_select(context,
+                                                                        None);
     } else  {
         current_order = 0;
         let result = find_next_selection(current_order, widget_tree);
         if let Some( next_widget) = result {
-            state_tree.get_mut(&next_widget).unwrap().as_selectable_mut().set_selected(true);
+            let context = EzContext::new(next_widget.clone(), view_tree,
+                                         state_tree, widget_tree, scheduler);
+            widget_tree.get(&next_widget).unwrap()
+                .as_ez_widget().on_select(context,None);
         }
     }
 }
@@ -184,7 +213,7 @@ pub fn find_next_selection(current_selection: usize, widget_tree: &WidgetTree) -
     let mut next_order: Option<usize> = None;
     let mut next_widget: Option<String> = None;
     for widget in widget_tree.values()  {
-        if let EzObjects::Layout(i) = widget { continue }  // Layouts cannot be selected
+        if let EzObjects::Layout(_) = widget { continue }  // Layouts cannot be selected
         let generic_widget = widget.as_ez_widget();
         if generic_widget.is_selectable() {
             if let Some(i) = next_order {
@@ -206,20 +235,28 @@ pub fn find_next_selection(current_selection: usize, widget_tree: &WidgetTree) -
 /// Select the previous widget by selection order as defined in each selectable widget. If the first
 /// widget is currently selected wrap around and select the last. This function can always be
 /// called safely.
-pub fn select_previous(widget_tree: &WidgetTree, state_tree: &mut StateTree) {
+pub fn select_previous(view_tree: &mut ViewTree, state_tree: &mut StateTree,
+                       widget_tree: &WidgetTree, scheduler: &mut Scheduler) {
 
     let current_selection = get_selected_widget(widget_tree);
     let mut current_order = if let Some(i) = current_selection {
         i.get_selection_order() } else { 0 };
-    let result = find_previous_selection(current_order,
-                                         widget_tree);
+    let result = find_previous_selection(current_order, widget_tree);
     if let Some( previous_widget) = result {
+
+        let context = EzContext::new(previous_widget.clone(), view_tree,
+                                     state_tree, widget_tree, scheduler);
+        widget_tree.get(&previous_widget).unwrap()
+            .as_ez_widget().on_select(context,None);
         state_tree.get_mut(&previous_widget).unwrap().as_selectable_mut().set_selected(true);
     } else {
         current_order = 99999999;
         let result = find_previous_selection(current_order, widget_tree);
         if let Some( previous_widget) = result {
-            state_tree.get_mut(&previous_widget).unwrap().as_selectable_mut().set_selected(true);
+            let context = EzContext::new(previous_widget.clone(), view_tree,
+                                         state_tree, widget_tree, scheduler);
+            widget_tree.get(&previous_widget).unwrap()
+                .as_ez_widget().on_select(context,None);
         }
     }
 }
@@ -233,7 +270,7 @@ pub fn find_previous_selection(current_selection: usize, widget_tree: &WidgetTre
     let mut previous_order: Option<usize> = None;
     let mut previous_widget: Option<String> = None;
     for widget in widget_tree.values()  {
-        if let EzObjects::Layout(i) = widget { continue }  // Layouts cannot be selected
+        if let EzObjects::Layout(_) = widget { continue }  // Layouts cannot be selected
         let generic_widget = widget.as_ez_widget();
         if generic_widget.is_selectable() {
             if let Some(i) = previous_order {

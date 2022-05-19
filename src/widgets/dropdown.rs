@@ -6,7 +6,7 @@ use std::io::{Error, ErrorKind};
 use std::collections::HashMap;
 use crossterm::event::{Event, KeyCode, MouseButton, MouseEventKind};
 use crossterm::style::{Color};
-use crate::common::{self, KeyboardCallbackFunction, GenericEzFunction, Coordinates, ViewTree, WidgetTree, PixelMap, MouseCallbackFunction, EzContext, StateTree};
+use crate::common::{self, KeyboardCallbackFunction, GenericEzFunction, Coordinates, PixelMap, MouseCallbackFunction, EzContext, StateTree, KeyMap};
 use crate::widgets::state::{State, GenericState, SelectableState};
 use crate::widgets::widget::{EzWidget, Pixel, EzObject};
 use crate::ez_parser::{load_bool_parameter, load_color_parameter, load_selection_order_parameter};
@@ -42,7 +42,16 @@ pub struct Dropdown {
 
     /// Global order number in which this widget will be selection when user presses down/up keys
     pub selection_order: usize,
+    
+    /// Optional function to call when this widget is selected via keyboard up/down or mouse hover,
+    /// see [set_bind_on_select] for examples.
+    pub bound_on_select: Option<fn(context: EzContext, mouse_position: Option<Coordinates>)>,
 
+    /// Optional function to call when this widget is right clicked, see
+    /// [MouseCallbackFunction] for the callback fn type, or [set_right_left_click] for
+    /// examples.
+    pub bound_on_deselect: Option<GenericEzFunction>,
+    
     /// Optional function to call when this widget is right clicked, see
     /// [MouseCallbackFunction] for the callback fn type, or [set_bind_right_click] for
     /// examples.
@@ -55,7 +64,7 @@ pub struct Dropdown {
 
     /// A Key to callback function lookup used to store keybinds for this widget. See
     /// [KeyboardCallbackFunction] type for callback function signature.
-    pub keymap: HashMap<KeyCode, KeyboardCallbackFunction>,
+    pub keymap: KeyMap,
 
     /// Runtime state of this widget, see [DropdownState] and [State]
     pub state: DropdownState,
@@ -74,6 +83,8 @@ impl Default for Dropdown {
             border_bottom_left_symbol: "└".to_string(),
             border_bottom_right_symbol: "┘".to_string(),
             selection_order: 0,
+            bound_on_select: None,
+            bound_on_deselect: None,
             bound_right_mouse_click: None,
             bound_on_value_change: None,
             keymap: HashMap::new(),
@@ -179,7 +190,7 @@ impl GenericState for DropdownState {
 
     fn get_width(&self) -> usize { self.width }
 
-    fn set_height(&mut self, height: usize) {
+    fn set_height(&mut self, _height: usize) {
         panic!("Cannot set height directly for dropdown state")
     }
 
@@ -386,7 +397,7 @@ impl EzObject for Dropdown {
     /// then display a label with a border representing the currently selected value. If dropped
     /// down show a list of all options, with the currently selected one on top.
 
-    fn get_contents(&self, state_tree: &mut StateTree) -> PixelMap {
+    fn get_contents(&self, _state_tree: &mut StateTree) -> PixelMap {
 
         // If dropped down get full content instead
         if self.state.dropped_down {
@@ -476,7 +487,7 @@ impl EzWidget for Dropdown {
 
     fn get_selection_order(&self) -> usize { self.selection_order }
 
-    fn get_key_map(&self) -> &HashMap<KeyCode, KeyboardCallbackFunction> {
+    fn get_key_map(&self) -> &KeyMap {
        &self.keymap
     }
 
@@ -529,14 +540,18 @@ impl EzWidget for Dropdown {
     fn get_bind_on_value_change(&self) -> Option<GenericEzFunction> {
         self.bound_on_value_change
     }
-
-    fn on_left_click(&self, context: EzContext, position: Coordinates) {
-        self.on_press(context);
+    
+    fn set_bind_on_select(&mut self, func: fn(EzContext, Option<Coordinates>)) {
+        self.bound_on_select = Some(func);
     }
 
-    fn on_keyboard_enter(&self, context: EzContext) {
-        self.on_press(context);
+    fn get_bind_on_select(&self) -> Option<fn(EzContext, Option<Coordinates>)> {
+        self.bound_on_select
     }
+    
+    fn on_left_click(&self, context: EzContext, _position: Coordinates) { self.on_press(context); }
+
+    fn on_keyboard_enter(&self, context: EzContext) { self.on_press(context); }
 
     fn set_bind_right_click(&mut self, func: MouseCallbackFunction) {
         self.bound_right_mouse_click = Some(func)

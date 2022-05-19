@@ -5,7 +5,6 @@ use crate::common::{Coordinates, PixelMap, StateTree};
 use crate::widgets::widget::{Pixel, EzObject, EzWidget};
 use crate::widgets::state::{State, GenericState};
 use crate::ez_parser::{load_color_parameter, load_bool_parameter};
-use crate::widgets::layout::LayoutState;
 
 pub struct Label {
 
@@ -124,7 +123,7 @@ impl GenericState for LabelState {
 
     fn get_width(&self) -> usize { self.width }
 
-    fn set_height(&mut self, height: usize) {
+    fn set_height(&mut self, _height: usize) {
         panic!("Cannot set height directly for label state")
     }
     fn get_height(&self) -> usize { 1 }
@@ -258,7 +257,7 @@ impl EzObject for Label {
         State::Label(self.state.clone())
     }
 
-    fn get_contents(&self, state_tree: &mut StateTree) -> PixelMap {
+    fn get_contents(&self, _state_tree: &mut StateTree) -> PixelMap {
 
         let mut text = self.state.text.clone().chars().rev().collect::<String>();
         let mut contents = Vec::new();

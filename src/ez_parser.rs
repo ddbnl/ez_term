@@ -68,7 +68,7 @@ pub fn load_selection_order_parameter(value: &str) -> Result<usize, Error> {
 pub fn load_text_parameter(mut value: &str) -> Result<String, Error> {
     
     if value.starts_with(' ') {
-        let value = value.strip_prefix(' ').unwrap().to_string();
+        value = value.strip_prefix(' ').unwrap();
     }
     Ok(value.to_string())
 }
@@ -100,8 +100,6 @@ struct EzWidgetDefinition<'a> {
     pub id: &'a str,
     /// All raw text content belonging to this definition
     pub content: Vec<&'a str>,
-    /// Lines representing the config only of this widget.
-    pub config: Vec<&'a str>,
 }
 impl<'a> EzWidgetDefinition<'a> {
     fn new(type_name: &'a str, id: &'a str) -> Self {
@@ -109,7 +107,6 @@ impl<'a> EzWidgetDefinition<'a> {
             type_name,
             id,
             content: Vec::new(),
-            config: Vec::new(),
         }
     }
 

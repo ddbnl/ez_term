@@ -4,6 +4,10 @@
 - Closures for callbacks to capture environment
 
 
+- Docs:
+  - Document possible callbacks for each widget clearly with examples
+
+
 - New widgets:
     - Progress bar
     - Dropdown

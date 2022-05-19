@@ -1,8 +1,8 @@
 use std::time::Duration;
 use crossterm::style::Color;
-use ez_term::{ez_parser, run, common};
+use ez_term::{ez_parser, run};
 use ez_term::common::{EzContext};
-use ez_term::widgets::state::{GenericState, SelectableState};
+use ez_term::widgets::state::{SelectableState};
 use ez_term::widgets::widget::EzObject;
 
 fn main() {
@@ -55,23 +55,24 @@ fn main() {
     let mut neon = (0, 0, 0);
     let neon_banner = move | context: EzContext | {
         let color = Color::from(neon);
-        if neon.0 < 255 {
-            neon = (neon.0 + 1, neon.1, neon.2);
-        } else if neon.1 < 255 {
-            neon = (neon.0, neon.1 + 1, neon.2);
-        } else if neon.2 < 255 {
-            neon = (neon.0, neon.1, neon.2 + 1);
+        if neon.0 < 200 {
+            neon = (neon.0 + 2, neon.1, neon.2);
+        } else if neon.1 < 200 {
+            neon = (neon.0, neon.1 + 2, neon.2);
+        } else if neon.2 < 200 {
+            neon = (neon.0, neon.1, neon.2 + 2);
         } else {
-            neon = (0, 0, 0)
+            neon = (50, 0, 0)
         }
         context.state_tree.get_mut(&context.widget_path).unwrap().as_canvas_mut()
             .set_content_foreground_color(color);
+        true
     };
     scheduler.schedule_interval("/root_layout/left_layout/canvas_widget".to_string(),
-    Box::new(neon_banner), Duration::from_millis(500));
+    Box::new(neon_banner), Duration::from_millis(200));
 
-    /// # Step 3: Run app
-    /// Now everything must happen from bindings as root widget is passed over
+    // Step 3: Run app
+    // Now everything must happen from bindings as root widget is passed over
     run::run(root_widget, scheduler);
 }
 
@@ -187,14 +188,7 @@ fn test_text_input_on_keyboard_enter(context: EzContext) {
 // an enter on the text input. We will also deselect the widget.
 fn test_on_button_keyboard_enter(context: EzContext) {
 
-    // First we get the widget state object of the widget that changed value, using the 'widget_path'
-    // parameter as a key. The state contains the current value. Then we cast the generic widget
-    // state as a TextInputState, so we can access all its fields.
-    let button_state = context.state_tree
-        .get_mut(&context.widget_path)
-        .unwrap()
-        .as_button_mut();
-    // Next we will retrieve a label widget and change the 'text' field of its' state. This will
+    // We will retrieve a label widget and change the 'text' field of its' state. This will
     // cause the text to change on the next frame.
     let label_state = context.state_tree
         .get_mut("/root_layout/left_layout/bottom_layout/small_layout_3/layout3_button_label")

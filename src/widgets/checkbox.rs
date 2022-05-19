@@ -4,12 +4,10 @@ use std::collections::HashMap;
 use std::io::{Error, ErrorKind};
 use crossterm::event::{KeyCode};
 use crossterm::style::{Color};
-use crate::common::{KeyboardCallbackFunction, Coordinates, StateTree, ViewTree, WidgetTree, PixelMap, GenericEzFunction, MouseCallbackFunction, EzContext};
+use crate::common::{KeyboardCallbackFunction, Coordinates, StateTree, PixelMap, GenericEzFunction, MouseCallbackFunction, EzContext, KeyMap};
 use crate::widgets::widget::{EzWidget, Pixel, EzObject};
 use crate::widgets::state::{State, GenericState, SelectableState};
 use crate::ez_parser::{load_bool_parameter, load_color_parameter};
-use crate::scheduler::Scheduler;
-use crate::widgets::canvas_widget::CanvasState;
 
 pub struct Checkbox {
 
@@ -35,7 +33,16 @@ pub struct Checkbox {
     /// [ValueChangeCallbackFunction] for the callback fn type, or [set_bind_on_value_change] for
     /// examples.
     pub bound_on_value_change: Option<GenericEzFunction>,
+    
+    /// Optional function to call when this widget is selected via keyboard up/down or mouse hover,
+    /// see [set_bind_on_select] for examples.
+    pub bound_on_select: Option<fn(context: EzContext, mouse_position: Option<Coordinates>)>,
 
+    /// Optional function to call when this widget is right clicked, see
+    /// [MouseCallbackFunction] for the callback fn type, or [set_right_left_click] for
+    /// examples.
+    pub bound_on_deselect: Option<GenericEzFunction>,
+    
     /// Optional function to call when this widget is right clicked, see
     /// [MouseCallbackFunction] for the callback fn type, or [set_bind_right_click] for
     /// examples.
@@ -43,7 +50,7 @@ pub struct Checkbox {
 
     /// A Key to callback function lookup used to store keybinds for this widget. See
     /// [KeyboardCallbackFunction] type for callback function signature.
-    pub keymap: HashMap<KeyCode, KeyboardCallbackFunction>,
+    pub keymap: KeyMap,
 
     /// Runtime state of this widget, see [CheckboxState] and [State]
     pub state: CheckboxState,
@@ -59,6 +66,8 @@ impl Default for Checkbox {
             absolute_position: (0, 0),
             selection_order: 0,
             bound_on_value_change: None,
+            bound_on_select: None,
+            bound_on_deselect: None,
             bound_right_mouse_click: None,
             keymap: HashMap::new(),
             state: CheckboxState::default(),
@@ -124,13 +133,13 @@ impl GenericState for CheckboxState {
 
     fn get_changed(&self) -> bool { self.changed }
 
-    fn set_width(&mut self, width: usize) {
+    fn set_width(&mut self, _width: usize) {
         panic!("Cannot set width directly for checkbox state")
     }
 
     fn get_width(&self) -> usize { 5 }
 
-    fn set_height(&mut self, height: usize) {
+    fn set_height(&mut self, _height: usize) {
         panic!("Cannot set height directly for checkbox state")
     }
 
@@ -163,7 +172,7 @@ impl SelectableState for CheckboxState {
 impl CheckboxState {
 
     pub fn set_active(&mut self, active: bool) {
-        self.active = active;;
+        self.active = active;
         self.changed = true;
     }
 
@@ -269,7 +278,7 @@ impl EzObject for Checkbox {
 
     fn get_state(&self) -> State { State::Checkbox(self.state.clone()) }
 
-    fn get_contents(&self, state_tree: &mut StateTree) -> PixelMap {
+    fn get_contents(&self, _state_tree: &mut StateTree) -> PixelMap {
 
         let active_symbol = { if self.state.active {self.active_symbol}
                               else {self.inactive_symbol} };
@@ -305,7 +314,7 @@ impl EzWidget for Checkbox {
 
     fn get_selection_order(&self) -> usize { self.selection_order }
 
-    fn get_key_map(&self) -> &HashMap<KeyCode, KeyboardCallbackFunction> { &self.keymap }
+    fn get_key_map(&self) -> &KeyMap { &self.keymap }
 
     fn bind_key(&mut self, key: KeyCode, func: KeyboardCallbackFunction) {
         self.keymap.insert(key, func);
@@ -316,8 +325,15 @@ impl EzWidget for Checkbox {
     }
 
     fn get_bind_on_value_change(&self) -> Option<GenericEzFunction> { self.bound_on_value_change }
+    
+    fn set_bind_on_select(&mut self, func: fn(EzContext, Option<Coordinates>)) {
+        self.bound_on_select = Some(func);
+    }
 
-    fn on_left_click(&self, context: EzContext, position: Coordinates) {
+    fn get_bind_on_select(&self) -> Option<fn(EzContext, Option<Coordinates>)> {
+        self.bound_on_select
+    }
+    fn on_left_click(&self, context: EzContext, _position: Coordinates) {
         let state = context.state_tree.get_mut(&self.get_full_path()).unwrap()
             .as_checkbox_mut();
         self.toggle(state);
@@ -351,12 +367,6 @@ impl Checkbox {
         obj.load_ez_config(config).unwrap();
         obj
     }
-
-    /// Gets [active]
-    fn get_active(&self) -> bool { self.state.active }
-
-    /// Sets [active]
-    fn set_active(&mut self, active: bool) { self.state.active = active }
 
     /// Sets [active] to true if false, and false if true
     fn toggle(&self, state: &mut CheckboxState) {

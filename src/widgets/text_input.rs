@@ -3,12 +3,13 @@
 //! and on_keyboard_enter callbacks.
 use std::collections::HashMap;
 use std::io::{Error, ErrorKind, stdout, Write};
+use std::time::Duration;
 use crossterm::{cursor, QueueableCommand};
 use crossterm::event::{Event, KeyCode};
-use crossterm::style::{Color};
+use crossterm::style::{Color, PrintStyledContent, Stylize};
 use crate::widgets::state::{State, GenericState, SelectableState};
-use crate::widgets::widget::{EzWidget, Pixel, EzObject, EzObjects};
-use crate::common::{self, KeyboardCallbackFunction, Coordinates, StateTree, ViewTree, WidgetTree, PixelMap, GenericEzFunction, MouseCallbackFunction, EzContext};
+use crate::widgets::widget::{EzWidget, Pixel, EzObject};
+use crate::common::{self, KeyboardCallbackFunction, Coordinates, StateTree, ViewTree, WidgetTree, PixelMap, GenericEzFunction, MouseCallbackFunction, EzContext, KeyMap};
 use crate::ez_parser::{load_color_parameter};
 use crate::scheduler::Scheduler;
 
@@ -25,6 +26,15 @@ pub struct TextInput {
 
     /// Global order number in which this widget will be selection when user presses down/up keys
     pub selection_order: usize,
+
+    /// Optional function to call when this widget is selected via keyboard up/down or mouse hover,
+    /// see [set_bind_on_select] for examples.
+    pub bound_on_select: Option<fn(context: EzContext, mouse_position: Option<Coordinates>)>,
+
+    /// Optional function to call when this widget is right clicked, see
+    /// [MouseCallbackFunction] for the callback fn type, or [set_right_left_click] for
+    /// examples.
+    pub bound_on_deselect: Option<GenericEzFunction>,
 
     /// Optional function to call when this widget is keyboard entered, see
     /// [KeyboardCallbackFunction] for the callback fn type, or [set_bind_left_click] for
@@ -43,7 +53,7 @@ pub struct TextInput {
 
     /// A Key to callback function lookup used to store keybinds for this widget. See
     /// [KeyboardCallbackFunction] type for callback function signature.
-    pub keymap: HashMap<KeyCode, KeyboardCallbackFunction>,
+    pub keymap: KeyMap,
 
     /// Runtime state of this widget, see [TextInputState] and [State]
     pub state: TextInputState,
@@ -57,6 +67,8 @@ impl Default for TextInput {
             path: String::new(),
             absolute_position: (0, 0),
             selection_order: 0,
+            bound_on_select: None,
+            bound_on_deselect: None,
             bound_keyboard_enter: None,
             bound_right_mouse_click: None,
             bound_on_value_change: None,
@@ -77,6 +89,9 @@ impl Default for TextInput {
 pub struct TextInputState {
     /// Text currently being displayed by the text input
     pub text: String,
+
+    /// Position of cursor relative to this widget
+    pub cursor_pos: Coordinates,
 
     /// If text is larger than the widget, only a part of the text can be displayed. This is the
     /// index of where to start viewing the text.
@@ -123,6 +138,7 @@ impl Default for TextInputState {
            x: 0,
            y: 0,
            width: 0,
+           cursor_pos: (0, 0),
            view_start: 0,
            selected: false,
            text: String::new(),
@@ -146,7 +162,7 @@ impl GenericState for TextInputState {
 
     fn get_width(&self) -> usize { self.width }
 
-    fn set_height(&mut self, height: usize) {
+    fn set_height(&mut self, _height: usize) {
         panic!("Cannot set height directly for text input state")
     }
 
@@ -184,9 +200,14 @@ impl TextInputState {
         self.changed = true;
     }
 
-    pub fn get_text(&self) -> String {
-        self.text.clone()
+    pub fn get_text(&self) -> String { self.text.clone() }
+
+    pub fn set_cursor_pos(&mut self, cursor_pos: Coordinates) {
+        self.cursor_pos = cursor_pos;
+        self.changed = true;
     }
+
+    pub fn get_cursor_pos(&self) -> Coordinates { self.cursor_pos }
 
     pub fn set_view_start(&mut self, view_start: usize) {
         self.view_start = view_start;
@@ -304,14 +325,9 @@ impl EzObject for TextInput {
         let pos = self.get_absolute_position();
         let content = self.get_contents(state_tree);
         common::write_to_screen(pos, content, view_tree);
-        if self.state.selected {
-            self.select().unwrap();
-        } else {
-            self.deselect().unwrap();
-        }
     }
 
-    fn get_contents(&self, state_tree: &mut StateTree) -> PixelMap {
+    fn get_contents(&self, _state_tree: &mut StateTree) -> PixelMap {
 
         let fg_color = if self.state.selected {self.state.selection_foreground_color}
                            else {self.state.content_foreground_color};
@@ -366,9 +382,7 @@ impl EzWidget for TextInput {
 
     fn get_selection_order(&self) -> usize { self.selection_order }
 
-    fn shows_cursor(&self) -> bool { true }
-
-    fn get_key_map(&self) -> &HashMap<KeyCode, KeyboardCallbackFunction> { &self.keymap }
+    fn get_key_map(&self) -> &KeyMap { &self.keymap }
 
     fn bind_key(&mut self, key: KeyCode, func: KeyboardCallbackFunction) {
         self.keymap.insert(key, func);
@@ -396,20 +410,6 @@ impl EzWidget for TextInput {
     fn get_bind_on_value_change(&self) -> Option<GenericEzFunction> {
         self.bound_on_value_change }
 
-    /// On left click select the widget and also show the cursor at the position the user clicked
-    /// in the widget.
-    fn on_left_click(&self, context: EzContext, position: Coordinates) {
-        let mut state = context.state_tree.get_mut(&self.get_full_path())
-            .unwrap().as_text_input_mut();
-
-        let abs = self.get_absolute_position();
-        let (mut x, y) = (abs.0 + position.0, abs.1 + position.1);
-        if position.0 > state.text.len() {x = abs.0 + state.text.len()};
-        state.set_selected(true);
-        stdout().queue(cursor::MoveTo(x as u16, y as u16)).unwrap()
-            .queue(cursor::Show).unwrap().flush().unwrap();
-    }
-
     fn set_bind_keyboard_enter(&mut self, func: GenericEzFunction) {
         self.bound_keyboard_enter = Some(func)
     }
@@ -424,6 +424,46 @@ impl EzWidget for TextInput {
 
     fn get_bind_right_click(&self) -> Option<MouseCallbackFunction> { self.bound_right_mouse_click}
 
+    fn set_bind_on_select(&mut self, func: fn(EzContext, Option<Coordinates>)) {
+        self.bound_on_select = Some(func);
+    }
+
+    fn get_bind_on_select(&self) -> Option<fn(EzContext, Option<Coordinates>)> {
+        self.bound_on_select
+    }
+
+    fn on_select(&self, context: EzContext, mouse_pos: Option<Coordinates>) {
+
+        let state = context.state_tree.get_mut(&self.get_full_path())
+            .unwrap().as_text_input_mut();
+        state.set_selected(true);
+
+        // Handle blinking of cursor
+        let target_pos;
+        // Handle this widget being selected from mouse, follow user click position
+        if let Some(pos) = mouse_pos {
+            let abs = self.get_absolute_position();
+            let (mut x, y) = (abs.0 + pos.0, abs.1 + pos.1);
+            if pos.0 > state.text.len() {x = abs.0 + state.text.len()};
+            target_pos = (x, y);
+        // Handle this widget being selected from keyboard. We choose the position.
+        } else {
+            let abs_pos = self.get_absolute_position();
+            // If text fills the widget move to end of widget. If not, move to end of text.
+            let target_pos_in_widget =
+                if self.state.text.len() > (self.state.width - 1) {self.state.width - 1}
+                else {self.state.text.len()};
+            target_pos = (abs_pos.0 + target_pos_in_widget, abs_pos.1);
+        }
+
+        start_cursor_blink(target_pos, state, context.scheduler, self.get_full_path());
+
+        // Call user callback if any
+        if let Some(func) = self.bound_on_select {
+            func(context, mouse_pos);
+        }
+    }
+
 }
 
 
@@ -436,47 +476,64 @@ impl TextInput {
         obj.load_ez_config(config).unwrap();
         obj
     }
+}
 
-    /// Called when this widget is selected by keyboard. Moves the cursor to the end of the text
-    /// if it was not already inside the text.
-    fn select(&self) -> crossterm::Result<()> {
-        stdout().queue(cursor::Hide)?.flush()?;
-        let pos = self.get_absolute_position();
-        let cursor_pos = cursor::position().unwrap();
-        if !self.collides((cursor_pos.0 as usize, cursor_pos.1 as usize)) {
-            let move_to_pos = if self.state.text.len() > (self.state.width - 1) {self.state.width - 1}
-            else {self.state.text.len()};
-            stdout().queue(cursor::MoveTo((pos.0 + move_to_pos) as u16,
-                                          pos.1 as u16))?.queue(cursor::Show)?.flush()?;
+/// Start blink the position on which the cursor is currently located. This is a custom cursor not
+/// the actual terminal cursor. This is because in dynamic interfaces with scheduled tasks changing
+/// visual content, the crossterm cursor is constantly jumping around, which cannot seem to be
+/// resolved using the Hide/Show/SavePosition/RestorePosition methods.
+fn start_cursor_blink(target_pos: Coordinates, state: &mut TextInputState,
+                      scheduler: &mut Scheduler, name: String) {
+
+    state.set_cursor_pos(target_pos);
+    let initial_pos = target_pos;
+    let mut switch = false;
+    let blink_func = move | context: EzContext | {
+
+        let state = context.state_tree.get(&context.widget_path).unwrap()
+            .as_text_input();
+        if !state.selected || state.cursor_pos != initial_pos {
+            return false
+        };
+        let target_pos = state.cursor_pos;
+        let content = context.view_tree[target_pos.0][target_pos.1].clone();
+        if !switch {
+            stdout()
+                .queue(cursor::MoveTo(target_pos.0 as u16, target_pos.1 as u16)).unwrap()
+                .queue(PrintStyledContent(content.on_dark_yellow())).unwrap()
+                .flush().unwrap();
+            switch = true;
+        } else {
+            stdout()
+                .queue(cursor::MoveTo(target_pos.0 as u16, target_pos.1 as u16)).unwrap()
+                .queue(PrintStyledContent(content.on_blue())).unwrap()
+                .flush().unwrap();
+            switch = false;
         }
-        stdout().queue(cursor::Show)?.flush()?;
-        Ok(())
-    }
-
-    /// Called when the widget is deselected; hides the cursor again.
-    fn deselect(&self) -> crossterm::Result<()> {
-        stdout().queue(cursor::Hide)?.flush()?;
-        Ok(())
-    }
+        true
+    };
+    scheduler.schedule_interval(name, Box::new(blink_func),
+                                Duration::from_millis(500));
 }
 
 
-fn prepare_handle_function<'a>(widget_name: String, widget_tree: &'a WidgetTree)
+/// Get the widget object, absolute position, cursor position, and position of the cursor
+/// relative to the widget. These are commonly used data for keyboard callbcks for text input
+/// widgets.
+fn prepare_handle_function<'a>(widget_name: String, widget_tree: &'a WidgetTree,
+                               state: &TextInputState)
     -> (&'a dyn EzWidget, Coordinates, Coordinates, Coordinates) {
 
-    for widget_obj in widget_tree.values() {
-        if let EzObjects::Layout(_) = widget_obj { continue }
-        let widget_obj = widget_obj.as_ez_widget();
-        if widget_obj.get_full_path() != widget_name { continue }
-        let widget_pos = widget_obj.get_absolute_position();
-        let cursor_pos = cursor::position().unwrap();
-        let cursor_pos = (cursor_pos.0 as usize, cursor_pos.1 as usize);
-        let text_pos = (cursor_pos.0 - (widget_pos.0), cursor_pos.1 - (widget_pos.1));
-        return (widget_obj, widget_pos, cursor_pos, text_pos)
-    }
-    panic!("Widget does not exist")
+    let widget_obj = widget_tree.get(&widget_name).unwrap();
+    let widget_obj = widget_obj.as_ez_widget();
+    let widget_pos = widget_obj.get_absolute_position();
+    let cursor_pos = state.cursor_pos;
+    let text_pos = (cursor_pos.0 - (widget_pos.0), cursor_pos.1 - (widget_pos.1));
+    (widget_obj, widget_pos, cursor_pos, text_pos)
 }
 
+/// Given a view, return which parts of the widget text are visible. Also return the part that
+/// comes before the view and after the view. Used by keyboard callbacks to alter the view.
 fn get_view_parts(text: String, view_start: usize, widget_with: usize) -> (String, String, String) {
 
     let pre_view_text = if view_start == 0 { "".to_string() }
@@ -490,55 +547,59 @@ fn get_view_parts(text: String, view_start: usize, widget_with: usize) -> (Strin
     (pre_view_text, view_text, post_view_text)
 }
 
+/// Handle a right arrow button press by user. Move cursor to the right or move the
+/// view if the cursor was at the edge of the widget.
 pub fn handle_right(context: EzContext, _key: KeyCode) {
 
-    let (widget_obj, widget_pos, cursor_pos,
-        text_pos) = prepare_handle_function(context.widget_path.clone(),
-                                            context.widget_tree);
     let state = context.state_tree.get_mut(&context.widget_path).unwrap()
         .as_text_input_mut();
+    let (_widget_obj, widget_pos, cursor_pos,
+        text_pos) = prepare_handle_function(context.widget_path.clone(),
+                                            context.widget_tree, &state);
 
     // Text does not fit in widget, advance view
     if state.text.len() > state.get_width() - 1 && text_pos.0 == state.get_width() - 1 &&
              state.text.len() - state.view_start > (state.get_width() - 1) {
         state.set_view_start(state.view_start + 1);
-        state.set_selected(true);
     // Text does not fit in widget but can't move further
     } else if state.text.len() > state.get_width() - 1 &&
         text_pos.0 == state.get_width() - 1 { // Max view, nothing to do
     // Text fits in widget, handle normally
     } else if cursor_pos.0 < widget_pos.0 + state.text.len() {
-        stdout().queue(cursor::MoveRight(1)).unwrap()
-            .flush().unwrap();
+        start_cursor_blink((state.cursor_pos.0 + 1, state.cursor_pos.1),
+                           state, context.scheduler, context.widget_path);
     }
 }
+
+/// Handle a left arrow button press by user. Move cursor to the left or move the
+/// view if the cursor was at the edge of the widget.
 pub fn handle_left(context: EzContext, _key: KeyCode) {
 
-    let (widget_obj, _widget_pos, _cursor_pos,
-        text_pos) = prepare_handle_function(context.widget_path.clone(),
-                                            context.widget_tree);
     let state = context.state_tree.get_mut(&context.widget_path).unwrap()
         .as_text_input_mut();
+    let (_widget_obj, _widget_pos, _cursor_pos,
+        text_pos) = prepare_handle_function(context.widget_path.clone(),
+                                            context.widget_tree, &state);
 
     // Text does not fit in widget and cursor at 0, move view to left if not at 0 already
     if state.text.len() > state.get_width() - 1 && text_pos.0 == 0 && state.view_start >  0 {
         state.set_view_start(state.view_start - 1);
-        state.set_selected(true);
     // Text fits in widget or cursor pos is not at 0, move cursor normally
     } else if text_pos.0 > 0 {
-        stdout().queue(cursor::MoveLeft(1)).unwrap()
-            .flush().unwrap();
+        start_cursor_blink((state.cursor_pos.0 - 1, state.cursor_pos.1),
+                           state, context.scheduler, context.widget_path);
     }
 }
 
+/// Handle a delete button press by user. Delete character to the right of the widget. Move the
+/// view as necessary.
 pub fn handle_delete(context: EzContext, _key: KeyCode) {
 
-    let (widget_obj, _widget_pos, _cursor_pos,
-        text_pos) = prepare_handle_function(context.widget_path.clone(),
-                                            context.widget_tree);
     let state = context.state_tree.get_mut(&context.widget_path).unwrap()
         .as_text_input_mut();
-
+    let (widget_obj, _widget_pos, _cursor_pos,
+        text_pos) = prepare_handle_function(context.widget_path.clone(),
+                                            context.widget_tree, &state);
     // Check if text does not fit in widget, then we have to delete on a view
     if state.text.len() > state.get_width() - 1 {
         // Get the view on the string, as well pre- and post to reconstruct it later
@@ -582,17 +643,18 @@ pub fn handle_delete(context: EzContext, _key: KeyCode) {
         state.set_text(text);
     }
     // Write changes to screen
-    state.set_selected(true);
     widget_obj.on_value_change(context);
 }
 
+/// Handle a backspace button press by user. Delete character to the left of the widget. Move the
+/// cursor and/or view as necessary.
 pub fn handle_backspace(context: EzContext, _key: KeyCode) {
 
-    let (widget_obj, _widget_pos, _cursor_pos,
-        text_pos) = prepare_handle_function(context.widget_path.clone(),
-                                            context.widget_tree);
     let state = context.state_tree.get_mut(&context.widget_path).unwrap()
         .as_text_input_mut();
+    let (widget_obj, _widget_pos, _cursor_pos,
+        text_pos) = prepare_handle_function(context.widget_path.clone(),
+                                            context.widget_tree, &state);
     let mut text = state.text.clone();
 
     // Check if text does not fit in widget, then we have to backspace on a view
@@ -632,7 +694,8 @@ pub fn handle_backspace(context: EzContext, _key: KeyCode) {
         // come into view from the left instead.
         if (text_pos.0 < state.get_width() - 1 && text_pos.0 != 0) ||
             (text_pos.0 == state.get_width() - 1 && !post_view_text.is_empty()) {
-            stdout().queue(cursor::MoveLeft(1)).unwrap();
+            start_cursor_blink((state.cursor_pos.0 - 1, state.cursor_pos.1),
+                               state, context.scheduler, context.widget_path.clone());
         }
     }
     // Check if text fits in widget, then backspace text as normal
@@ -645,13 +708,15 @@ pub fn handle_backspace(context: EzContext, _key: KeyCode) {
         text = format!("{}{}", text[0..(text_pos.0 - 1) as usize].to_string(),
                        text[text_pos.0 as usize..text.len()].to_string());
         state.set_text(text);
-        stdout().queue(cursor::MoveLeft(1)).unwrap();
+        state.set_cursor_pos((state.cursor_pos.0 - 1, state.cursor_pos.1));
     }
     // Write changes to screen
     state.set_selected(true);
     widget_obj.on_value_change(context);
 }
 
+/// Handle a char button press by user. insert the char at the cursor and move the cursor and/or
+/// view where necessary.
 pub fn handle_char(context: EzContext, char: char) {
 
     let state = context.state_tree.get_mut(&context.widget_path).unwrap().
@@ -661,7 +726,7 @@ pub fn handle_char(context: EzContext, char: char) {
     }
     let (widget_obj, _widget_pos, _cursor_pos,
         text_pos) = prepare_handle_function(context.widget_path.clone(),
-                                            context.widget_tree);
+                                            context.widget_tree, &state);
     let mut text;
 
     // Text still fits in widget, add char as normal
@@ -685,7 +750,8 @@ pub fn handle_char(context: EzContext, char: char) {
     }
 
     if state.text.len() < (state.get_width() - 1){
-        stdout().queue(cursor::MoveRight(1)).unwrap().flush().unwrap();
+        start_cursor_blink((state.cursor_pos.0 + 1, state.cursor_pos.1),
+                           state, context.scheduler, context.widget_path.clone());
     } else if text_pos.0 >= state.get_width() - 2 {
         state.set_view_start(state.view_start + 1);
     }

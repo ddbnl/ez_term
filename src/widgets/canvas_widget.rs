@@ -5,9 +5,9 @@ use std::fs::File;
 use std::io::prelude::*;
 use crate::widgets::widget::{EzWidget, EzObject, Pixel};
 use crate::widgets::state::{State, GenericState};
-use crate::common::{Coordinates, PixelMap, StateTree, ViewTree, WidgetTree};
+use crate::common::{Coordinates, PixelMap, StateTree};
 use std::io::{Error, ErrorKind};
-use crossterm::style::{Color, Stylize};
+use crossterm::style::{Color};
 use unicode_segmentation::UnicodeSegmentation;
 use crate::ez_parser::load_color_parameter;
 
@@ -201,7 +201,7 @@ impl EzObject for CanvasWidget {
        self.contents = valid_contents
     }
 
-    fn get_contents(&self, state_tree: &mut StateTree) -> PixelMap {
+    fn get_contents(&self, _state_tree: &mut StateTree) -> PixelMap {
 
         if let Some(path) = self.from_file.clone() {
             let mut file = File::open(path).expect("Unable to open file");

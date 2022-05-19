@@ -5,7 +5,7 @@ use std::collections::HashMap;
 use std::io::{Error, ErrorKind};
 use crossterm::style::Color;
 use crate::ez_parser::{load_bool_parameter, load_color_parameter};
-use crate::widgets::widget::{EzWidget, Pixel, EzObject, EzObjects};
+use crate::widgets::widget::{Pixel, EzObject, EzObjects};
 use crate::widgets::state::{State, GenericState};
 use crate::common::{self, PixelMap, StateTree, WidgetTree, Coordinates};
 

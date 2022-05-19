@@ -76,7 +76,7 @@ fn run_loop(mut root_widget: Layout, mut scheduler: Scheduler) -> Result<()>{
     // all widgets after.
     let all_content = root_widget.get_contents(&mut state_tree);
     for widget in root_widget.get_state_tree().keys() {
-        root_widget.get_child_by_path_mut(&widget).unwrap().as_ez_object_mut().update_state(
+        root_widget.get_child_by_path_mut(widget).unwrap().as_ez_object_mut().update_state(
             state_tree.get(widget).unwrap())
     }
     // Create initial trees so we can pre-select the first widget before running
@@ -95,18 +95,14 @@ fn run_loop(mut root_widget: Layout, mut scheduler: Scheduler) -> Result<()>{
         let mut state_tree = root_widget.get_state_tree();
         let widget_tree = root_widget.get_widget_tree();
         scheduler.run_tasks(&mut view_tree, &mut state_tree, &widget_tree);
-        if poll(Duration::from_millis(50))? {
+        let selected_widget = common::get_selected_widget(&widget_tree);
+        if poll(Duration::from_millis(200))? {
 
             // Get the event; it can only be consumed once, then the loop continues to next iter
             let event = read().unwrap();
             let mut consumed = false;
 
-            let selected_widget = common::get_selected_widget(&widget_tree);
-            if let Some(i) = selected_widget {
-                if i.shows_cursor() {
-                    stdout().execute(Show).unwrap();
-                }
-            }
+
             // Focussed widgets get priority consuming an event
             if let Some(i) = selected_widget {
                 let context = EzContext::new(i.get_full_path(), &mut view_tree,
@@ -130,7 +126,8 @@ fn run_loop(mut root_widget: Layout, mut scheduler: Scheduler) -> Result<()>{
             // Try to let currently selected widget handle and consume the event
             if !consumed {
                 if let Some(i) = selected_widget {
-                    let context = EzContext::new(i.get_full_path(), &mut view_tree, &mut state_tree,
+                    let context = EzContext::new(i.get_full_path(),
+                                                 &mut view_tree, &mut state_tree,
                                                  &widget_tree, &mut scheduler);
                     let _ = i.handle_event(event, context);
                 };
@@ -158,18 +155,18 @@ fn handle_key_event(key: KeyEvent, view_tree: &mut ViewTree, state_tree: &mut St
 
     match key.code {
         KeyCode::Down => {
-            common::deselect_selected_widget(widget_tree, state_tree);
-            common::select_next(widget_tree, state_tree);
+            common::deselect_selected_widget(view_tree, state_tree, widget_tree, scheduler);
+            common::select_next(view_tree, state_tree, widget_tree, scheduler);
             true
         },
         KeyCode::Up => {
-            common::deselect_selected_widget(widget_tree, state_tree);
-            common::select_previous(widget_tree, state_tree);
+            common::deselect_selected_widget(view_tree, state_tree, widget_tree,
+                                             scheduler);
+            common::select_previous(view_tree, state_tree, widget_tree, scheduler);
             true
         },
         KeyCode::Enter => {
-            let selected_widget =
-                common::get_selected_widget(widget_tree);
+            let selected_widget = common::get_selected_widget(widget_tree);
             if let Some(widget) = selected_widget {
                 let context = EzContext::new(widget.get_full_path(),
                 view_tree, state_tree, widget_tree, scheduler);
@@ -202,13 +199,17 @@ fn handle_mouse_event(event: MouseEvent, view_tree: &mut ViewTree, state_tree: &
                 let relative_position = (mouse_position.0 - abs.0,
                                          mouse_position.1 - abs.1);
                 match button {
-                    MouseButton::Left => {
-                        common::deselect_selected_widget(widget_tree, state_tree);
-                        if widget.is_selectable() {
-                            state_tree.get_mut(&widget.get_full_path()).unwrap()
-                                .as_selectable_mut().set_selected(true); }
+                    MouseButton::Left =>
+                        {
+                        common::deselect_selected_widget(view_tree, state_tree, widget_tree,
+                                                         scheduler);
                         let context = EzContext::new(widget.get_full_path(),
-                        view_tree, state_tree, widget_tree, scheduler);
+                                                     view_tree, state_tree, widget_tree, scheduler);
+                        if widget.is_selectable() {
+                            widget.on_select(context, Some(relative_position));
+                        }
+                        let context = EzContext::new(widget.get_full_path(),
+                                                     view_tree, state_tree, widget_tree, scheduler);
                         widget.on_left_click(context, relative_position);
 
                     },

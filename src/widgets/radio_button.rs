@@ -7,7 +7,7 @@ use std::collections::HashMap;
 use std::io::{Error, ErrorKind};
 use crossterm::event::{KeyCode};
 use crossterm::style::{Color};
-use crate::common::{KeyboardCallbackFunction, Coordinates, ViewTree, WidgetTree, PixelMap, GenericEzFunction, MouseCallbackFunction, EzContext, StateTree};
+use crate::common::{KeyboardCallbackFunction, Coordinates, PixelMap, GenericEzFunction, MouseCallbackFunction, EzContext, StateTree, KeyMap};
 use crate::widgets::state::{State, GenericState, SelectableState};
 use crate::widgets::widget::{EzWidget, Pixel, EzObject, EzObjects};
 use crate::ez_parser::{load_bool_parameter, load_color_parameter};
@@ -36,7 +36,16 @@ pub struct RadioButton {
     /// [ValueChangeCallbackFunction] for the callback fn type, or [set_bind_on_value_change] for
     /// examples.
     pub bound_on_value_change: Option<GenericEzFunction>,
+    
+    /// Optional function to call when this widget is selected via keyboard up/down or mouse hover,
+    /// see [set_bind_on_select] for examples.
+    pub bound_on_select: Option<fn(context: EzContext, mouse_position: Option<Coordinates>)>,
 
+    /// Optional function to call when this widget is right clicked, see
+    /// [MouseCallbackFunction] for the callback fn type, or [set_right_left_click] for
+    /// examples.
+    pub bound_on_deselect: Option<GenericEzFunction>,
+    
     /// Optional function to call when this widget is left clicked, see
     /// [MouseCallbackFunction] for the callback fn type, or [set_bind_left_click] for
     /// examples.
@@ -44,7 +53,7 @@ pub struct RadioButton {
 
     /// A Key to callback function lookup used to store keybinds for this widget. See
     /// [KeyboardCallbackFunction] type for callback function signature.
-    pub keymap: HashMap<KeyCode, KeyboardCallbackFunction>,
+    pub keymap: KeyMap,
 
     /// Group this radio button belongs to. Set the same group value for a number of radio buttons
     /// to make them mutually exclusive.
@@ -65,6 +74,8 @@ impl Default for RadioButton {
             absolute_position: (0, 0),
             selection_order: 0,
             bound_on_value_change: None,
+            bound_on_select: None,
+            bound_on_deselect: None,
             bound_right_mouse_click: None,
             keymap: HashMap::new(),
             state: RadioButtonState::default(),
@@ -131,13 +142,13 @@ impl GenericState for RadioButtonState {
 
     fn get_changed(&self) -> bool { self.changed }
 
-    fn set_width(&mut self, width: usize) {
+    fn set_width(&mut self, _width: usize) {
         panic!("Cannot set height directly for radio button state")
     }
 
     fn get_width(&self) -> usize { 5 }
 
-    fn set_height(&mut self, height: usize) {
+    fn set_height(&mut self, _height: usize) {
         panic!("Cannot set height directly for radio button state")
     }
 
@@ -170,21 +181,17 @@ impl SelectableState for RadioButtonState {
 impl RadioButtonState {
 
     pub fn set_active(&mut self, active: bool) {
-        self.active = active;;
+        self.active = active;
         self.changed = true;
     }
 
-    pub fn get_active(&self) -> bool {
-        self.active
-    }
+    pub fn get_active(&self) -> bool { self.active }
     pub fn set_content_foreground_color(&mut self, color: Color) {
         self.content_foreground_color = color;
         self.changed = true;
     }
 
-    pub fn get_content_foreground_color(&self) -> Color {
-        self.content_foreground_color
-    }
+    pub fn get_content_foreground_color(&self) -> Color { self.content_foreground_color }
 
     pub fn set_content_background_color(&mut self, color: Color) {
         self.content_background_color = color;
@@ -274,7 +281,7 @@ impl EzObject for RadioButton {
 
     fn get_state(&self) -> State { State::RadioButton(self.state.clone()) }
 
-    fn get_contents(&self, state_tree: &mut StateTree) -> PixelMap {
+    fn get_contents(&self, _state_tree: &mut StateTree) -> PixelMap {
 
         let active_symbol = { if self.state.active {self.active_symbol}
                                     else {self.inactive_symbol} };
@@ -313,7 +320,7 @@ impl EzWidget for RadioButton {
 
     fn get_selection_order(&self) -> usize { self.selection_order }
 
-    fn get_key_map(&self) -> &HashMap<KeyCode, KeyboardCallbackFunction> {
+    fn get_key_map(&self) -> &KeyMap {
        &self.keymap
     }
 
@@ -339,6 +346,14 @@ impl EzWidget for RadioButton {
 
     fn get_bind_right_click(&self) -> Option<MouseCallbackFunction> { self.bound_right_mouse_click }
 
+    fn set_bind_on_select(&mut self, func: fn(EzContext, Option<Coordinates>)) {
+        self.bound_on_select = Some(func);
+    }
+
+    fn get_bind_on_select(&self) -> Option<fn(EzContext, Option<Coordinates>)> {
+        self.bound_on_select
+    }
+
 }
 
 impl RadioButton {
@@ -361,7 +376,7 @@ impl RadioButton {
         for widget in context.widget_tree.values() {
             if let EzObjects::RadioButton(i) = widget {
                 if i.get_group() == self.group && i.get_id() != self.get_id() {
-                    let mut other_state =
+                    let other_state =
                         context.state_tree.get_mut(&i.get_full_path()).unwrap()
                             .as_radio_button_mut();
                     other_state.set_active(false);
@@ -369,7 +384,7 @@ impl RadioButton {
             }
         }
         // Set entered radio button to active and select it
-        let mut state = context.state_tree.
+        let state = context.state_tree.
             get_mut(&self.get_full_path()).unwrap().as_radio_button_mut();
         if !self.state.active {
             self.toggle(state);

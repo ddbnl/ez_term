@@ -4,9 +4,7 @@
 use crossterm::style::{Color, StyledContent, Stylize};
 use crossterm::event::{Event, KeyCode};
 use std::io::{Error};
-use std::collections::HashMap;
-use crate::common::{self, ViewTree, Coordinates, KeyboardCallbackFunction, PixelMap,
-                    GenericEzFunction, MouseCallbackFunction, EzContext, WidgetTree, StateTree};
+use crate::common::{self, ViewTree, Coordinates, KeyboardCallbackFunction, PixelMap, GenericEzFunction, MouseCallbackFunction, EzContext, StateTree, KeyMap};
 use crate::widgets::state::{State};
 use crate::widgets::layout::{Layout};
 use crate::widgets::label::{Label};
@@ -368,9 +366,6 @@ pub trait EzWidget: EzObject {
     /// will select 1, then 2, then this widget. Used for keyboard up and down keys.
     fn get_selection_order(&self) -> usize { 0 }
 
-    /// Bool representing whether this widget shows the terminal cursor. It is hidden by default.
-    fn shows_cursor(&self) -> bool { false }
-
     /// Set the order in which this widget should be selected, represented by a usize number. E.g.
     /// if there is a '1' widget, a '2' widget, and this widget is '3', calling 'select_next_widget'
     /// will select 1, then 2, then this widget. Used for keyboard up and down keys.
@@ -380,8 +375,9 @@ pub trait EzWidget: EzObject {
 
     /// Get the key map belonging to a widget. Any keys bound to the widget are in here along with
     /// their callbacks. Key map should be used inside the "handle_event" method of a widget.
-    fn get_key_map(&self) -> &HashMap<KeyCode, KeyboardCallbackFunction> {
-        panic!("Widget does not support keymap: {}", self.get_id()) }
+    fn get_key_map(&self) -> &KeyMap {
+        panic!("Widget does not support keymap: {}", self.get_id())
+    }
 
     /// Bind a new key to the widget and the callback it should activate. Focussed widgets have
     /// priority consuming events, next are global key binds, and then the selected widget.
@@ -486,6 +482,45 @@ pub trait EzWidget: EzObject {
     fn on_right_click(&self, context: EzContext, position: Coordinates) {
         match self.get_bind_right_click() {
             Some(i) => i(context, position),
+            None => (),
+        }
+    }
+
+    /// Set the callback for when this widget is selected.
+    fn set_bind_on_select(&mut self, _func: fn(context: EzContext, mouse_pos: Option<Coordinates>)) {
+        panic!("Cannot set on deselect bind for: {}", self.get_id())
+    }
+
+    /// Get the callback for when this widget is selected.
+    fn get_bind_on_select(&self) -> Option<fn(context: EzContext, mouse_pos: Option<Coordinates>)> {
+        None
+    }
+
+    /// This is called when the widget is selected.
+    fn on_select(&self, context: EzContext, mouse_pos: Option<Coordinates>) {
+        context.state_tree.get_mut(&context.widget_path).unwrap().as_selectable_mut()
+            .set_selected(true);
+        match self.get_bind_on_select() {
+            Some(i) => i(context, mouse_pos),
+            None => (),
+        }
+    }
+
+    /// Set the callback for when this widget is deselected.
+    fn set_bind_on_deselect(&mut self, _func: GenericEzFunction) {
+        panic!("Cannot set on deselect bind for: {}", self.get_id())
+    }
+
+    /// Get the callback for when this widget is deselected.
+    fn get_bind_on_deselect(&self) -> Option<GenericEzFunction> {None}
+
+    /// This is called when the widget is deselected.
+    fn on_deselect(&self, context: EzContext) {
+
+        context.state_tree.get_mut(&context.widget_path).unwrap().as_selectable_mut()
+            .set_selected(false);
+        match self.get_bind_on_deselect() {
+            Some(i) => i(context),
             None => (),
         }
     }

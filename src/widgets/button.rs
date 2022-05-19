@@ -1,8 +1,10 @@
 //! A widget that displays text non-interactively.
 use std::io::{Error, ErrorKind};
 use std::time::Duration;
+use crossterm::event::KeyCode;
 use crossterm::style::{Color};
-use crate::common::{self, Coordinates, PixelMap, MouseCallbackFunction, GenericEzFunction, EzContext, ViewTree, StateTree, WidgetTree};
+use crate::common::{self, Coordinates, PixelMap, MouseCallbackFunction, GenericEzFunction,
+                    EzContext, StateTree, KeyMap, KeyboardCallbackFunction};
 use crate::widgets::widget::{EzWidget, Pixel, EzObject};
 use crate::widgets::state::{State, GenericState, SelectableState};
 use crate::ez_parser::{load_color_parameter, load_bool_parameter, load_text_parameter,
@@ -40,6 +42,15 @@ pub struct Button {
     /// Global order number in which this widget will be selection when user presses down/up keys
     pub selection_order: usize,
 
+    /// Optional function to call when this widget is selected via keyboard up/down or mouse hover,
+    /// see [set_bind_on_select] for examples.
+    pub bound_on_select: Option<fn(context: EzContext, mouse_position: Option<Coordinates>)>,
+
+    /// Optional function to call when this widget is right clicked, see
+    /// [MouseCallbackFunction] for the callback fn type, or [set_right_left_click] for
+    /// examples.
+    pub bound_on_deselect: Option<GenericEzFunction>,
+
     /// Optional function to call when this widget is keyboard entered or left clicked,
     /// [GenericCallbackFunction] for the callback fn type, or [set_bind_on_press] for
     /// examples.
@@ -49,6 +60,10 @@ pub struct Button {
     /// [MouseCallbackFunction] for the callback fn type, or [set_right_left_click] for
     /// examples.
     pub bound_right_mouse_click: Option<MouseCallbackFunction>,
+
+    /// A Key to callback function lookup used to store keybinds for this widget. See
+    /// [KeyboardCallbackFunction] type for callback function signature.
+    pub keymap: KeyMap,
 
     /// Runtime state of this widget, see [LabelState] and [State]
     pub state: ButtonState,
@@ -67,8 +82,11 @@ impl Default for Button {
             border_bottom_left_symbol: "└".to_string(),
             border_bottom_right_symbol: "┘".to_string(),
             selection_order: 0,
+            bound_on_select: None,
+            bound_on_deselect: None,
             bound_on_press: None,
             bound_right_mouse_click: None,
+            keymap: KeyMap::new(),
             state: ButtonState::default(),
         }
     }
@@ -161,7 +179,7 @@ impl GenericState for ButtonState {
 
     fn get_width(&self) -> usize { self.width }
 
-    fn set_height(&mut self, height: usize) {
+    fn set_height(&mut self, _height: usize) {
         panic!("Cannot set height directly for button state")
     }
     fn get_height(&self) -> usize { 1 }
@@ -284,7 +302,7 @@ impl ButtonState {
 
 impl EzObject for Button {
 
-    fn load_ez_parameter(&mut self, parameter_name: String, mut parameter_value: String)
+    fn load_ez_parameter(&mut self, parameter_name: String, parameter_value: String)
                          -> Result<(), Error> {
         match parameter_name.as_str() {
             "x" => self.state.x = parameter_value.trim().parse().unwrap(),
@@ -361,7 +379,7 @@ impl EzObject for Button {
 
     fn get_state(&self) -> State { State::Button(self.state.clone()) }
 
-    fn get_contents(&self, state_tree: &mut StateTree) -> PixelMap {
+    fn get_contents(&self, _state_tree: &mut StateTree) -> PixelMap {
 
         let mut text = self.state.text.clone().chars().rev().collect::<String>();
         let mut contents = Vec::new();
@@ -447,6 +465,15 @@ impl EzWidget for Button {
 
     fn is_selected(&self) -> bool { self.state.selected }
 
+
+    fn get_key_map(&self) -> &KeyMap {
+        &self.keymap
+    }
+
+    fn bind_key(&mut self, key: KeyCode, func: KeyboardCallbackFunction) {
+        self.keymap.insert(key, func);
+    }
+
     fn get_selection_order(&self) -> usize { self.selection_order }
 
     fn set_bind_on_press(&mut self, func: GenericEzFunction) { self.bound_on_press = Some(func) }
@@ -456,6 +483,14 @@ impl EzWidget for Button {
     fn on_left_click(&self, context: EzContext, _position: Coordinates) { self._on_press(context) }
 
     fn on_keyboard_enter(&self, context: EzContext) { self._on_press(context) }
+
+    fn set_bind_on_select(&mut self, func: fn(EzContext, Option<Coordinates>)) {
+       self.bound_on_select = Some(func);
+    }
+
+    fn get_bind_on_select(&self) -> Option<fn(EzContext, Option<Coordinates>)> {
+       self.bound_on_select
+    }
 }
 
 impl Button {
@@ -476,6 +511,7 @@ impl Button {
             | context: EzContext | {
                 context.state_tree.get_mut(&context.widget_path).unwrap().as_button_mut()
                     .set_flashing(false);
+                true
             };
         context.scheduler.schedule_once(self.get_full_path(),
                                         Box::new(scheduled_func),
