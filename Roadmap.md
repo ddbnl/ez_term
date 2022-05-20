@@ -6,24 +6,29 @@
 
 - Docs:
   - Document possible callbacks for each widget clearly with examples
+  - Document Ez file params
 
 
 - New widgets:
     - Progress bar
-    - Dropdown
     - Scrollview
     - Modal/popup
+      - right click context menu as a modal of buttons
     - Window manager
     - Tabs
 
 
 - Extra features for existing widgets:
+    - general:
+      - padding
+      - alignment
+      - size_hints
+      - change border symbols to struct, clean up code
     - text input:
         - multi line
     - label
-        - multiline
-        - underline text
         - text alignment
+        - inline formatting
 
 
 - Ez format:

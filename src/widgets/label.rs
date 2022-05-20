@@ -1,4 +1,6 @@
 //! A widget that displays text non-interactively.
+use std::fs::File;
+use std::io::prelude::*;
 use std::io::{Error, ErrorKind};
 use crossterm::style::{Color};
 use crate::common::{Coordinates, PixelMap, StateTree};
@@ -38,6 +40,9 @@ pub struct Label {
     /// The [Pixel.symbol] to use for the bottom right border if [border] is true
     pub border_bottom_right_symbol: String,
 
+    /// Optional file path to retrieve text from
+    pub from_file: Option<String>,
+
     /// Runtime state of this widget, see [LabelState] and [State]
     pub state: LabelState,
 }
@@ -55,6 +60,7 @@ impl Default for Label {
             border_top_right_symbol: "┐".to_string(),
             border_bottom_left_symbol: "└".to_string(),
             border_bottom_right_symbol: "┘".to_string(),
+            from_file: None,
             state: LabelState::default(),
         }
     }
@@ -76,6 +82,9 @@ pub struct LabelState {
 
     /// Width of this widget
     pub width: usize,
+
+    /// Height of this widget
+    pub height: usize,
 
     /// The[Pixel.foreground_color]  to use for the border if [border] is true
     pub border_foreground_color: Color,
@@ -103,6 +112,7 @@ impl Default for LabelState {
            x: 0,
            y: 0,
            width: 0,
+           height: 0,
            text: String::new(),
            border_foreground_color: Color::White,
            border_background_color: Color::Black,
@@ -123,10 +133,9 @@ impl GenericState for LabelState {
 
     fn get_width(&self) -> usize { self.width }
 
-    fn set_height(&mut self, _height: usize) {
-        panic!("Cannot set height directly for label state")
-    }
-    fn get_height(&self) -> usize { 1 }
+    fn set_height(&mut self, height: usize) { self.height = height; self.changed = true; }
+
+    fn get_height(&self) -> usize { self.height }
 
     fn set_position(&mut self, position: Coordinates) {
         self.x = position.0;
@@ -150,45 +159,35 @@ impl LabelState {
         self.changed = true;
     }
 
-    pub fn get_text(&self) -> String {
-        self.text.clone()
-    }
+    pub fn get_text(&self) -> String { self.text.clone() }
 
     pub fn set_border_foreground_color(&mut self, color: Color) {
         self.border_foreground_color = color;
         self.changed = true;
     }
 
-    pub fn get_border_foreground_color(&self) -> Color {
-        self.border_foreground_color
-    }
+    pub fn get_border_foreground_color(&self) -> Color { self.border_foreground_color }
 
     pub fn set_border_background_color(&mut self, color: Color) {
         self.border_background_color = color;
         self.changed = true;
     }
 
-    pub fn get_border_background_color(&self) -> Color {
-        self.border_background_color
-    }
+    pub fn get_border_background_color(&self) -> Color { self.border_background_color }
 
     pub fn set_content_foreground_color(&mut self, color: Color) {
         self.content_foreground_color = color;
         self.changed = true;
     }
 
-    pub fn get_content_foreground_color(&self) -> Color {
-        self.content_foreground_color
-    }
+    pub fn get_content_foreground_color(&self) -> Color { self.content_foreground_color }
 
     pub fn set_content_background_color(&mut self, color: Color) {
         self.content_background_color = color;
         self.changed = true;
     }
 
-    pub fn get_content_background_color(&self) -> Color {
-        self.content_background_color
-    }
+    pub fn get_content_background_color(&self) -> Color { self.content_background_color }
 
 }
 
@@ -200,6 +199,7 @@ impl EzObject for Label {
             "x" => self.state.x = parameter_value.trim().parse().unwrap(),
             "y" => self.state.y = parameter_value.trim().parse().unwrap(),
             "width" => self.state.width = parameter_value.trim().parse().unwrap(),
+            "height" => self.state.height = parameter_value.trim().parse().unwrap(),
             "contentForegroundColor" =>
                 self.state.content_foreground_color = load_color_parameter(parameter_value).unwrap(),
             "contentBackgroundColor" =>
@@ -210,6 +210,7 @@ impl EzObject for Label {
                 }
                 self.state.text = parameter_value
             },
+            "fromFile" => self.from_file = Some(parameter_value.trim().to_string()),
             "border" => self.set_border(load_bool_parameter(parameter_value.trim())?),
             "borderHorizontalSymbol" => self.border_horizontal_symbol =
                 parameter_value.trim().to_string(),
@@ -253,20 +254,80 @@ impl EzObject for Label {
         self.state.force_redraw = false;
     }
 
-    fn get_state(&self) -> State {
-        State::Label(self.state.clone())
-    }
+    fn get_state(&self) -> State { State::Label(self.state.clone()) }
 
     fn get_contents(&self, _state_tree: &mut StateTree) -> PixelMap {
 
-        let mut text = self.state.text.clone().chars().rev().collect::<String>();
+        let mut text;
+        // Load text from file
+        if let Some(path) = self.from_file.clone() {
+            let mut file = File::open(path).expect("Unable to open file");
+            text = String::new();
+            file.read_to_string(&mut text).expect("Unable to read file");
+        // Take text from widget state
+        } else {
+            text = self.state.text.clone();
+        }
+
+        // We are going to make a list of lines, splitting into lines at line breaks in
+        // the text or when the widget width has been exceeded. If the latter occurs, we will try
+        // to split on a word boundary if there is any in that chunk of text, to keep things
+        // readable. When we're done, the Y coordinate of this widget indexes this list of lines
+        // for a string and the X coordinate indexes that string.
+        let mut content_lines = Vec::new();
+        let chunk_size = self.state.get_width(); // Split lines at widget width to make it fit
+        loop {
+            if text.len() >= chunk_size {
+                let peek= text[0..chunk_size].to_string();
+                let lines: Vec<&str> = peek.lines().collect();
+                // There's a line break in the sentence.
+                if lines.len() > 1 {
+                    // Push all lines except the last one. If there's line breaks within a text
+                    // chunk that's smaller than widget width, we know for sure that all lines
+                    // within it fit as well. We don't push the last line because it might be part
+                    // of a larger sentence, and we're no longer filling full widget width.
+                    for line in lines[0..lines.len() - 1].iter() {
+                        if line.is_empty() {
+                            content_lines.push(' '.to_string());
+                        } else {
+                            content_lines.push(line.to_string());
+                        }
+                    }
+                    if !lines.last().unwrap().is_empty() {
+                        text = text[peek.rfind(lines.last().unwrap()).unwrap()..].to_string();
+                    } else {
+                        text = text[chunk_size..].to_string();
+                    }
+                }
+                // Chunk naturally ends on word boundary, so just push the chunk.
+                else if peek.ends_with(' ') {
+                    content_lines.push(peek);
+                    text = text[chunk_size..].to_string();
+                // We can find a word boundary somewhere to split the string on. Push up until the
+                // boundary.
+                } else if let Some(index) = peek.rfind(' ') {
+                    content_lines.push(peek[..index].to_string());
+                    text = text[index+1..].to_string();
+                // No boundaries at all, just push the entire chunk.
+                } else {
+                    content_lines.push(peek);
+                    text = text[chunk_size..].to_string();
+                }
+            // Not enough content left to fill widget width. Just push entire text
+            } else {
+                content_lines.push(text);
+                break
+            }
+        }
+
+        // Now we'll create the actual PixelMap using the lines we've created.
         let mut contents = Vec::new();
-        for _ in 0..self.state.get_width() {
+        for x in 0..self.state.get_width() {
             let mut new_y = Vec::new();
-            for _ in 0..self.state.get_height() {
-                if !text.is_empty() {
+            for y in 0..self.state.get_height() {
+                if y < content_lines.len() && x < content_lines[y].len() {
                     new_y.push(Pixel {
-                        symbol: text.pop().unwrap().to_string(),
+                        symbol: content_lines[y][x..x+1].to_string(),
                         foreground_color: self.state.content_foreground_color,
                         background_color: self.state.content_background_color,
                         underline: false
@@ -285,13 +346,9 @@ impl EzObject for Label {
         contents
     }
 
-    fn set_absolute_position(&mut self, pos: Coordinates) {
-        self.absolute_position = pos
-    }
+    fn set_absolute_position(&mut self, pos: Coordinates) { self.absolute_position = pos }
 
-    fn get_absolute_position(&self) -> Coordinates {
-        self.absolute_position
-    }
+    fn get_absolute_position(&self) -> Coordinates { self.absolute_position }
 
     fn set_border_horizontal_symbol(&mut self, symbol: String) {
         self.border_horizontal_symbol = symbol

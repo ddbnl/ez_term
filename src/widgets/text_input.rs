@@ -124,6 +124,10 @@ pub struct TextInputState {
     /// The [Pixel.background_color] to use for this widgets' content when selected
     pub selection_background_color: Color,
 
+    /// The [Pixel.background_color] to use for this widgets' content when a position has been
+    /// highlighted by the blinking cursor
+    pub cursor_color: Color,
+
     /// Bool representing if state has changed. Triggers widget redraw.
     pub changed: bool,
 
@@ -147,6 +151,7 @@ impl Default for TextInputState {
            content_foreground_color: Color::White,
            selection_background_color: Color::Blue,
            selection_foreground_color: Color::Yellow,
+           cursor_color: Color::DarkYellow,
            changed: false,
            force_redraw: false
        }
@@ -288,6 +293,8 @@ impl EzObject for TextInput {
                 self.state.selection_foreground_color = load_color_parameter(parameter_value).unwrap(),
             "selectionBackgroundColor" =>
                 self.state.selection_background_color = load_color_parameter(parameter_value).unwrap(),
+            "cursorColor" =>
+                self.state.cursor_color = load_color_parameter(parameter_value).unwrap(),
             "text" => {
                 if parameter_value.starts_with(' ') {
                     parameter_value = parameter_value.strip_prefix(' ').unwrap().to_string();
@@ -500,13 +507,14 @@ fn start_cursor_blink(target_pos: Coordinates, state: &mut TextInputState,
         if !switch {
             stdout()
                 .queue(cursor::MoveTo(target_pos.0 as u16, target_pos.1 as u16)).unwrap()
-                .queue(PrintStyledContent(content.on_dark_yellow())).unwrap()
-                .flush().unwrap();
+                .queue(PrintStyledContent(content.on(state.cursor_color)))
+                .unwrap().flush().unwrap();
             switch = true;
         } else {
             stdout()
                 .queue(cursor::MoveTo(target_pos.0 as u16, target_pos.1 as u16)).unwrap()
-                .queue(PrintStyledContent(content.on_blue())).unwrap()
+                .queue(PrintStyledContent(content.on(state.selection_background_color)))
+                .unwrap()
                 .flush().unwrap();
             switch = false;
         }
@@ -708,10 +716,10 @@ pub fn handle_backspace(context: EzContext, _key: KeyCode) {
         text = format!("{}{}", text[0..(text_pos.0 - 1) as usize].to_string(),
                        text[text_pos.0 as usize..text.len()].to_string());
         state.set_text(text);
-        state.set_cursor_pos((state.cursor_pos.0 - 1, state.cursor_pos.1));
+        start_cursor_blink((state.cursor_pos.0 - 1, state.cursor_pos.1),
+                           state, context.scheduler, context.widget_path.clone());
     }
     // Write changes to screen
-    state.set_selected(true);
     widget_obj.on_value_change(context);
 }
 

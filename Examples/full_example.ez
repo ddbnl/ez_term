@@ -6,21 +6,21 @@
     - layout: left_layout
         mode: box
         orientation: vertical
-        width: 150
+        width: 130
         height: 75
         - canvas: canvas_widget
-            width: 150
-            height: 35
+            width: 130
+            height: 25
             fromFile: ./Examples/example_art.txt
         - layout: bottom_layout
             mode: box
             orientation: horizontal
-            width: 150
-            height: 40
+            width: 140
+            height: 50
             - layout: small_layout_1
                 mode: float
-                width: 48
-                height: 38
+                width: 38
+                height: 48
                 border: True
                 borderForegroundColor: dark_cyan
                 borderBackgroundColor: Black
@@ -31,6 +31,7 @@
                     x: 24
                     y: 0
                     width: 10
+                    height: 1
                 - textInput: layout1_input_widget
                     x: 2
                     y: 1
@@ -40,7 +41,7 @@
             - layout: small_layout_2
                 mode: float
                 width: 48
-                height: 38
+                height: 48
                 border: True
                 borderForegroundColor: dark_cyan
                 borderBackgroundColor: Black
@@ -51,6 +52,7 @@
                     x: 24
                     y: 0
                     width: 10
+                    height: 1
                 - textInput: layout2_input_widget
                     x: 2
                     y: 1
@@ -63,6 +65,7 @@
                     x: 2
                     y: 3
                     width: 9
+                    height: 1
                 - checkBox: layout2_checkbox_widget
                     x: 12
                     y: 3
@@ -75,25 +78,18 @@
                     x: 2
                     y: 4
                     width: 9
+                    height: 1
                 - radioButton: option1
                     group: test_radios
                     x: 12
                     y: 4
                     selectionOrder: 5
                     active: True
-                - label: layout2_option1_title_widget
-                    text: Option2:
-                    x: 18
-                    y: 4
                 - radioButton: option2
                     group: test_radios
                     x: 26
                     y: 4
                     selectionOrder: 6
-                - label: layout2_option3_title_widget
-                    text: Option3:
-                    x: 32
-                    y: 4
                 - radioButton: option3
                     group: test_radios
                     x: 40
@@ -112,10 +108,11 @@
                     x: 20
                     y: 7
                     width: 10
+                    height: 1
             - layout: small_layout_3
                 mode: float
-                width: 48
-                height: 38
+                width: 38
+                height: 48
                 border: True
                 borderForegroundColor: dark_cyan
                 borderBackgroundColor: Black
@@ -124,12 +121,13 @@
                     contentForegroundColor: Magenta
                     contentBackgroundColor: Black
                     width: 10
+                    height: 1
                     x: 24
                     y: 0
                 - textInput: layout3_input_widget
                     x: 2
                     y: 1
-                    width: 40
+                    width: 30
                     text: sample input
                     selectionOrder: 9
                 - label: layout3_text_input_title_widget
@@ -138,7 +136,8 @@
                     contentBackgroundColor: Black
                     x: 2
                     y: 2
-                    width: 40
+                    width: 30
+                    height: 1
                 - button: layout3_button
                     text: Click me
                     x: 2
@@ -150,13 +149,20 @@
                     x: 2
                     y: 7
                     width:  30
+                    height: 1
     - layout: right_layout
         mode: box
         orientation: vertical
-        width: 98
+        width: 60
         height: 73
         fill: True
         fillerSymbol: T
         fillerForegroundColor: 255,0,128
         fillerBackgroundColor: Black
         border: True
+        - label: layout2_radio_title_widget
+            fromFile: ./Examples/dummy.txt
+            x: 2
+            y: 4
+            width: 60
+            height: 73

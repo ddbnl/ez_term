@@ -336,3 +336,19 @@ pub fn add_border(mut content: PixelMap, horizontal_symbol: String, vertical_sym
     new_content
 
 }
+
+/// Take a PixelMap and rotate it. Normally a Vec<Vec<Pixel>> is essentially a list
+/// of rows. Therefore "for X in PixelMap, for Y in X" let's you iterate in the Y direction.
+/// By rotating the PixelMap it is turned into a list of columns, so that it becomes
+/// "for Y in PixelMap, for X in Y", so you can iterate in the X direction.
+pub fn rotate_pixel_map(content: PixelMap) -> PixelMap {
+
+    let mut rotated_content = PixelMap::new();
+    for x in 0..content.len() {
+        for y in 0..content[0].len() {
+            if x == 0 { rotated_content.push(Vec::new()) };
+            rotated_content[y].push(content[x][y].clone())
+        }
+    }
+    rotated_content
+}
