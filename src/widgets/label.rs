@@ -6,7 +6,7 @@ use crossterm::style::{Color};
 use crate::common::{Coordinates, PixelMap, StateTree};
 use crate::widgets::widget::{Pixel, EzObject, EzWidget};
 use crate::widgets::state::{State, GenericState};
-use crate::ez_parser::{load_color_parameter, load_bool_parameter};
+use crate::ez_parser::{load_color_parameter, load_bool_parameter, load_size_hint};
 
 pub struct Label {
 
@@ -81,6 +81,12 @@ pub struct LabelState {
     pub y: usize,
 
     /// Width of this widget
+    pub size_hint_x: Option<f64>,
+
+    /// Width of this widget
+    pub size_hint_y: Option<f64>,
+
+    /// Width of this widget
     pub width: usize,
 
     /// Height of this widget
@@ -111,6 +117,8 @@ impl Default for LabelState {
        LabelState {
            x: 0,
            y: 0,
+           size_hint_x: Some(1.0),
+           size_hint_y: Some(1.0),
            width: 0,
            height: 0,
            text: String::new(),
@@ -128,6 +136,20 @@ impl GenericState for LabelState {
     fn set_changed(&mut self, changed: bool) { self.changed = changed }
 
     fn get_changed(&self) -> bool { self.changed }
+    
+    fn set_size_hint_x(&mut self, size_hint: Option<f64>) {
+        self.size_hint_x = size_hint;
+        self.changed = true;
+    }
+
+    fn get_size_hint_x(&self) -> Option<f64> { self.size_hint_x }
+
+    fn set_size_hint_y(&mut self, size_hint: Option<f64>) {
+        self.size_hint_y = size_hint;
+        self.changed = true;
+    }
+
+    fn get_size_hint_y(&self) -> Option<f64> { self.size_hint_y }
 
     fn set_width(&mut self, width: usize) { self.width = width; self.changed = true; }
 
@@ -195,14 +217,19 @@ impl EzObject for Label {
 
     fn load_ez_parameter(&mut self, parameter_name: String, mut parameter_value: String)
                          -> Result<(), Error> {
+        
         match parameter_name.as_str() {
             "x" => self.state.x = parameter_value.trim().parse().unwrap(),
             "y" => self.state.y = parameter_value.trim().parse().unwrap(),
+            "size_hint_x" => self.state.size_hint_x =
+                load_size_hint(parameter_value.trim()).unwrap(),
+            "size_hint_y" => self.state.size_hint_y =
+                load_size_hint(parameter_value.trim()).unwrap(),
             "width" => self.state.width = parameter_value.trim().parse().unwrap(),
             "height" => self.state.height = parameter_value.trim().parse().unwrap(),
-            "contentForegroundColor" =>
+            "fg_color" =>
                 self.state.content_foreground_color = load_color_parameter(parameter_value).unwrap(),
-            "contentBackgroundColor" =>
+            "bg_color" =>
                 self.state.content_background_color = load_color_parameter(parameter_value).unwrap(),
             "text" => {
                 if parameter_value.starts_with(' ') {
@@ -210,23 +237,23 @@ impl EzObject for Label {
                 }
                 self.state.text = parameter_value
             },
-            "fromFile" => self.from_file = Some(parameter_value.trim().to_string()),
+            "from_file" => self.from_file = Some(parameter_value.trim().to_string()),
             "border" => self.set_border(load_bool_parameter(parameter_value.trim())?),
-            "borderHorizontalSymbol" => self.border_horizontal_symbol =
+            "border_horizontal_symbol" => self.border_horizontal_symbol =
                 parameter_value.trim().to_string(),
-            "borderVerticalSymbol" => self.border_vertical_symbol =
+            "border_vertical_symbol" => self.border_vertical_symbol =
                 parameter_value.trim().to_string(),
-            "borderTopRightSymbol" => self.border_top_right_symbol =
+            "border_top_right_symbol" => self.border_top_right_symbol =
                 parameter_value.trim().to_string(),
-            "borderTopLeftSymbol" => self.border_top_left_symbol =
+            "border_top_left_symbol" => self.border_top_left_symbol =
                 parameter_value.trim().to_string(),
-            "borderBottomLeftSymbol" => self.border_bottom_left_symbol =
+            "border_bottom_left_symbol" => self.border_bottom_left_symbol =
                 parameter_value.trim().to_string(),
-            "borderBottomRightSymbol" => self.border_bottom_right_symbol =
+            "border_bottom_right_symbol" => self.border_bottom_right_symbol =
                 parameter_value.trim().to_string(),
-            "borderForegroundColor" =>
+            "border_fg_color" =>
                 self.state.border_foreground_color = load_color_parameter(parameter_value).unwrap(),
-            "borderBackgroundColor" =>
+            "border_bg_color" =>
                 self.state.border_background_color = load_color_parameter(parameter_value).unwrap(),
             _ => return Err(Error::new(ErrorKind::InvalidData,
                                        format!("Invalid parameter name for text box {}",
@@ -256,8 +283,9 @@ impl EzObject for Label {
 
     fn get_state(&self) -> State { State::Label(self.state.clone()) }
 
-    fn get_contents(&self, _state_tree: &mut StateTree) -> PixelMap {
+    fn get_contents(&self, state_tree: &mut StateTree) -> PixelMap {
 
+        let state = state_tree.get_mut(&self.get_full_path()).unwrap().as_label();
         let mut text;
         // Load text from file
         if let Some(path) = self.from_file.clone() {
@@ -266,7 +294,7 @@ impl EzObject for Label {
             file.read_to_string(&mut text).expect("Unable to read file");
         // Take text from widget state
         } else {
-            text = self.state.text.clone();
+            text = state.text.clone();
         }
 
         // We are going to make a list of lines, splitting into lines at line breaks in
@@ -275,7 +303,7 @@ impl EzObject for Label {
         // readable. When we're done, the Y coordinate of this widget indexes this list of lines
         // for a string and the X coordinate indexes that string.
         let mut content_lines = Vec::new();
-        let chunk_size = self.state.get_width(); // Split lines at widget width to make it fit
+        let chunk_size = state.get_width() -if self.has_border() {2} else {0}; // Split lines at widget width to make it fit
         loop {
             if text.len() >= chunk_size {
                 let peek= text[0..chunk_size].to_string();
@@ -322,21 +350,21 @@ impl EzObject for Label {
 
         // Now we'll create the actual PixelMap using the lines we've created.
         let mut contents = Vec::new();
-        for x in 0..self.state.get_width() {
+        for x in 0..state.get_width() {
             let mut new_y = Vec::new();
-            for y in 0..self.state.get_height() {
+            for y in 0..state.get_height() {
                 if y < content_lines.len() && x < content_lines[y].len() {
                     new_y.push(Pixel {
                         symbol: content_lines[y][x..x+1].to_string(),
-                        foreground_color: self.state.content_foreground_color,
-                        background_color: self.state.content_background_color,
+                        foreground_color: state.content_foreground_color,
+                        background_color: state.content_background_color,
                         underline: false
                     })
                 } else {
                     new_y.push(Pixel {
                         symbol: " ".to_string(),
-                        foreground_color: self.state.content_foreground_color,
-                        background_color: self.state.content_background_color,
+                        foreground_color: state.content_foreground_color,
+                        background_color: state.content_background_color,
                         underline: false
                     })
                 }

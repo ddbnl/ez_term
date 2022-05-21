@@ -1,168 +1,125 @@
-- layout: root_layout
+- Layout: root_layout
     mode: box
     orientation: horizontal
-    width: 250
-    height: 75
-    - layout: left_layout
+    width: 180
+    - Layout: left_layout
         mode: box
+        size_hint_x: 4/5
+        size_hint_y: 1
         orientation: vertical
-        width: 130
-        height: 75
-        - canvas: canvas_widget
-            width: 130
-            height: 25
-            fromFile: ./Examples/example_art.txt
-        - layout: bottom_layout
+        - Canvas: canvas_widget
+            size_hint_x: 1
+            size_hint_y: 1/3
+            from_file: ./Examples/example_art.txt
+        - Layout: bottom_layout
             mode: box
             orientation: horizontal
-            width: 140
-            height: 50
-            - layout: small_layout_1
-                mode: float
-                width: 38
-                height: 48
+            size_hint_x: 1
+            size_hint_y: 2/3
+            - Layout: small_layout_1
+                mode: box
+                orientation: vertical
+                size_hint_x: 1/3
+                size_hint_y: 1
                 border: True
-                borderForegroundColor: dark_cyan
-                borderBackgroundColor: Black
-                - label: layout1_title_widget
+                border_fg_color: dark_cyan
+                border_bg_color: Black
+                - Label: layout1_title_widget
                     text: Layout 1:
-                    contentForegroundColor: Magenta
-                    contentBackgroundColor: Black
-                    x: 24
-                    y: 0
-                    width: 10
+                    fg_color: Magenta
+                    bg_color: Black
+                    size_hint_x: 1
+                    size_hint_y: 1
                     height: 1
-                - textInput: layout1_input_widget
-                    x: 2
-                    y: 1
-                    width: 10
-                    text: Small input sample
-                    selectionOrder: 1
-            - layout: small_layout_2
-                mode: float
-                width: 48
-                height: 48
+            - Layout: small_layout_2
+                mode: box
+                orientation: vertical
+                size_hint_x: 1/3
+                size_hint_y: 1
                 border: True
-                borderForegroundColor: dark_cyan
-                borderBackgroundColor: Black
-                - label: layout2_title_widget
+                border_fg_color: dark_cyan
+                border_bg_color: Black
+                - Label: layout2_title_widget
                     text: Layout 2:
-                    contentForegroundColor: Magenta
-                    contentBackgroundColor: Black
-                    x: 24
-                    y: 0
-                    width: 10
+                    fg_color: Magenta
+                    bg_color: Black
+                    size_hint_y: None
+                    size_hint_x: 1
                     height: 1
-                - textInput: layout2_input_widget
-                    x: 2
-                    y: 1
-                    width: 40
+                - TextInput: layout2_input_widget
+                    size_hint_x: 1
                     text: sample larger input
-                    maxLength: 20
-                    selectionOrder: 3
-                - label: layout2_checkbox_title_widget
+                    max_length: 20
+                    selection_order: 3
+                - Label: layout2_checkbox_title_widget
                     text: Disabled
-                    x: 2
-                    y: 3
-                    width: 9
+                    size_hint_x: 1
+                    size_hint_y: None
                     height: 1
-                - checkBox: layout2_checkbox_widget
-                    x: 12
-                    y: 3
-                    selectionOrder: 4
+                - CheckBox: layout2_checkbox_widget
+                    selection_order: 4
                     active: False
-                    activeSymbol: X
-                    inactiveSymbol: -
-                - label: layout2_radio_title_widget
+                    active_symbol: X
+                    inactive_symbol: -
+                - Label: layout2_radio_title_widget
                     text: option1:
-                    x: 2
-                    y: 4
-                    width: 9
+                    size_hint_x: 1
+                    size_hint_y: None
                     height: 1
-                - radioButton: option1
+                - RadioButton: option1
                     group: test_radios
-                    x: 12
-                    y: 4
-                    selectionOrder: 5
+                    selection_order: 5
                     active: True
-                - radioButton: option2
+                - RadioButton: option2
                     group: test_radios
-                    x: 26
-                    y: 4
-                    selectionOrder: 6
-                - radioButton: option3
+                    selection_order: 6
+                - RadioButton: option3
                     group: test_radios
-                    x: 40
-                    y: 4
-                    selectionOrder: 7
-                - dropdown: layout2_dropdown_widget
-                    x: 2
-                    y: 6
-                    selectionOrder: 8
-                    allowNone: True
+                    selection_order: 7
+                - Dropdown: layout2_dropdown_widget
+                    selection_order: 8
+                    allow_none: True
                     active: option1
                     options: option1, option2, option3, option4, option5
-                    width: 10
-                - label: layout2_dropdown_title_widget
+                    size_hint_x: 1
+                - Label: layout2_dropdown_title_widget
                     text: option1
-                    x: 20
-                    y: 7
-                    width: 10
+                    size_hint_x: 1
+                    size_hint_y: None
                     height: 1
-            - layout: small_layout_3
-                mode: float
-                width: 38
-                height: 48
+            - Layout: small_layout_3
+                mode: box
+                orientation: vertical
+                size_hint_x: 1/3
+                size_hint_y: 1
                 border: True
-                borderForegroundColor: dark_cyan
-                borderBackgroundColor: Black
-                - label: layout3_title_widget
+                border_fg_color: dark_cyan
+                border_bg_color: Black
+                - Label: layout3_title_widget
                     text: Layout 3
-                    contentForegroundColor: Magenta
-                    contentBackgroundColor: Black
-                    width: 10
+                    fg_color: Magenta
+                    bg_color: Black
+                    size_hint_y: None
+                    size_hint_x: 1
                     height: 1
-                    x: 24
-                    y: 0
-                - textInput: layout3_input_widget
-                    x: 2
-                    y: 1
-                    width: 30
-                    text: sample input
-                    selectionOrder: 9
-                - label: layout3_text_input_title_widget
-                    text: sample input
-                    contentForegroundColor: Yellow
-                    contentBackgroundColor: Black
-                    x: 2
-                    y: 2
-                    width: 30
+                - Label: layout3_title_widget1
+                    text: test123!
+                    fg_color: Magenta
+                    bg_color: Black
+                    size_hint_y: None
+                    size_hint_x: 1
                     height: 1
-                - button: layout3_button
-                    text: Click me
-                    x: 2
-                    y: 4
-                    width: 10
-                    selectionOrder: 10
-                - label: layout3_button_label
-                    text: Button clicked: 0 times
-                    x: 2
-                    y: 7
-                    width:  30
-                    height: 1
-    - layout: right_layout
+    - Layout: right_layout
         mode: box
         orientation: vertical
-        width: 60
-        height: 73
+        size_hint_x: 1/5
+        size_hint_y: 1
         fill: True
-        fillerSymbol: T
-        fillerForegroundColor: 255,0,128
-        fillerBackgroundColor: Black
+        filler_symbol: T
+        filler_fg_color: 255,0,128
+        filler_bg_color: Black
         border: True
-        - label: layout2_radio_title_widget
-            fromFile: ./Examples/dummy.txt
-            x: 2
-            y: 4
-            width: 60
-            height: 73
+        - Label: layout2_radio_title_widget
+            from_file: ./Examples/dummy.txt
+            size_hint_x: 1
+            size_hint_y: 1

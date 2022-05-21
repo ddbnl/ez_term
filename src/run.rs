@@ -7,7 +7,7 @@ use std::time::{Duration};
 use crossterm::{ExecutableCommand, execute, Result, cursor::{Hide, Show},
                 event::{MouseEvent, MouseEventKind, MouseButton, poll, read, DisableMouseCapture,
                         EnableMouseCapture, Event, KeyCode, KeyEvent},
-                terminal::{disable_raw_mode, enable_raw_mode}, QueueableCommand};
+                terminal::{disable_raw_mode, enable_raw_mode, self}, QueueableCommand};
 use crate::common::{self, EzContext, StateTree, ViewTree, WidgetTree};
 use crate::widgets::layout::Layout;
 use crate::widgets::widget::{EzObject, Pixel};
@@ -20,6 +20,7 @@ fn initialize_terminal() -> Result<()> {
     enable_raw_mode()?;
     execute!(stdout(), EnableMouseCapture)?;
     stdout().execute(Hide)?;
+    stdout().execute(terminal::Clear(terminal::ClearType::All))?;
     Ok(())
 }
 
@@ -71,11 +72,16 @@ pub fn run(root_widget: Layout, scheduler: Scheduler) {
 fn run_loop(mut root_widget: Layout, mut scheduler: Scheduler) -> Result<()>{
 
     let mut state_tree = root_widget.get_state_tree();
+    root_widget.set_child_sizes(&mut state_tree);
     // Create the initial view tree and write it to the screen. Composing the screen will also
     // set positions for widgets that don't have them hardcoded. That's why we update the state for
     // all widgets after.
     let all_content = root_widget.get_contents(&mut state_tree);
     for widget in root_widget.get_state_tree().keys() {
+        if widget == &root_widget.get_full_path() {
+            root_widget.update_state(state_tree.get(widget).unwrap());
+            continue
+        }
         root_widget.get_child_by_path_mut(widget).unwrap().as_ez_object_mut().update_state(
             state_tree.get(widget).unwrap())
     }

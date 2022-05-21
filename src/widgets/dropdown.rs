@@ -9,7 +9,7 @@ use crossterm::style::{Color};
 use crate::common::{self, KeyboardCallbackFunction, GenericEzFunction, Coordinates, PixelMap, MouseCallbackFunction, EzContext, StateTree, KeyMap};
 use crate::widgets::state::{State, GenericState, SelectableState};
 use crate::widgets::widget::{EzWidget, Pixel, EzObject};
-use crate::ez_parser::{load_bool_parameter, load_color_parameter, load_selection_order_parameter};
+use crate::ez_parser::{load_bool_parameter, load_color_parameter, load_selection_order_parameter, load_size_hint};
 
 pub struct Dropdown {
 
@@ -128,6 +128,9 @@ pub struct DropdownState {
     pub y: usize,
 
     /// Width of this widget
+    pub size_hint_x: Option<f64>,
+
+    /// Width of this widget
     pub width: usize,
 
     /// The[Pixel.foreground_color]  to use for the border if [border] is true
@@ -161,6 +164,7 @@ impl Default for DropdownState {
        DropdownState {
            x: 0,
            y: 0,
+           size_hint_x: Some(1.0),
            width: 0,
            focussed: false,
            selected: false,
@@ -186,6 +190,19 @@ impl GenericState for DropdownState {
 
     fn get_changed(&self) -> bool { self.changed }
 
+    fn set_size_hint_x(&mut self, size_hint: Option<f64>) {
+        self.size_hint_x = size_hint;
+        self.changed = true;
+    }
+
+    fn get_size_hint_x(&self) -> Option<f64> { self.size_hint_x }
+
+    fn set_size_hint_y(&mut self, size_hint: Option<f64>) {
+        panic!("Cannot set size_hint_y for dropdown state")
+    }
+
+    fn get_size_hint_y(&self) -> Option<f64> { None }
+
     fn set_width(&mut self, width: usize) { self.width = width; self.changed = true }
 
     fn get_width(&self) -> usize { self.width }
@@ -195,8 +212,8 @@ impl GenericState for DropdownState {
     }
 
     fn get_height(&self) -> usize {
-        if self.dropped_down { self.total_options() }
-        else { 1 }
+        if self.dropped_down { self.total_options() + 2 }
+        else { 3 }
     }
 
     fn set_position(&mut self, position: Coordinates) {
@@ -341,27 +358,30 @@ impl EzObject for Dropdown {
 
     fn load_ez_parameter(&mut self, parameter_name: String, parameter_value: String)
                          -> Result<(), Error> {
+
         match parameter_name.as_str() {
             "x" => self.state.x = parameter_value.trim().parse().unwrap(),
             "y" => self.state.y = parameter_value.trim().parse().unwrap(),
+            "size_hint_x" => self.state.size_hint_x =
+                load_size_hint(parameter_value.trim()).unwrap(),
             "width" => self.state.width = parameter_value.trim().parse().unwrap(),
-            "selectionOrder" => {
+            "selection_order" => {
                 self.selection_order = load_selection_order_parameter(
                     parameter_value.as_str()).unwrap();
             },
-            "contentForegroundColor" =>
+            "fg_color" =>
                 self.state.content_foreground_color =
                     load_color_parameter(parameter_value).unwrap(),
-            "contentBackgroundColor" =>
+            "bg_color" =>
                 self.state.content_background_color =
                     load_color_parameter(parameter_value).unwrap(),
-            "selectionForegroundColor" =>
+            "selection_fg_color" =>
                 self.state.selection_foreground_color =
                     load_color_parameter(parameter_value).unwrap(),
-            "selectionBackgroundColor" =>
+            "selection_bg_color" =>
                 self.state.selection_background_color =
                     load_color_parameter(parameter_value).unwrap(),
-            "allowNone" =>
+            "allow_none" =>
                 self.state.allow_none = load_bool_parameter(parameter_value.trim()).unwrap(),
             "options" => {
                 self.state.options = parameter_value.split(',')
@@ -397,26 +417,28 @@ impl EzObject for Dropdown {
     /// then display a label with a border representing the currently selected value. If dropped
     /// down show a list of all options, with the currently selected one on top.
 
-    fn get_contents(&self, _state_tree: &mut StateTree) -> PixelMap {
+    fn get_contents(&self, state_tree: &mut StateTree) -> PixelMap {
 
+        let state =
+            state_tree.get_mut(&self.get_full_path()).unwrap().as_dropdown_mut();
         // If dropped down get full content instead
-        if self.state.dropped_down {
-            return self.get_dropped_down_contents()
+        if state.dropped_down {
+            return self.get_dropped_down_contents(state)
         }
         // Set a default value if user didn't give one
-        let mut active = self.state.choice.clone();
-        if active.is_empty() && !self.state.allow_none {
-            active = self.state.options.first()
+        let mut active = state.choice.clone();
+        if active.is_empty() && !state.allow_none {
+            active = state.options.first()
                 .expect("Dropdown widget must have at least one option").to_string(); // todo move to validation
         }
         // Create a bordered label representing currently active value
-        let fg_color = if self.state.selected {self.state.selection_foreground_color}
-        else {self.state.content_foreground_color};
-        let bg_color = if self.state.selected {self.state.selection_background_color}
-        else {self.state.content_background_color};
+        let fg_color = if state.selected {state.selection_foreground_color}
+        else {state.content_foreground_color};
+        let bg_color = if state.selected {state.selection_background_color}
+        else {state.content_background_color};
         let mut text = active.chars().rev().collect::<String>();
         let mut contents = Vec::new();
-        for _ in 0..self.state.get_width() {
+        for _ in 0..state.get_width() - 2 {
             let mut new_y = Vec::new();
             if !text.is_empty() {
                 new_y.push(Pixel{symbol: text.pop().unwrap().to_string(),
@@ -540,15 +562,7 @@ impl EzWidget for Dropdown {
     fn get_bind_on_value_change(&self) -> Option<GenericEzFunction> {
         self.bound_on_value_change
     }
-    
-    fn set_bind_on_select(&mut self, func: fn(EzContext, Option<Coordinates>)) {
-        self.bound_on_select = Some(func);
-    }
 
-    fn get_bind_on_select(&self) -> Option<fn(EzContext, Option<Coordinates>)> {
-        self.bound_on_select
-    }
-    
     fn on_left_click(&self, context: EzContext, _position: Coordinates) { self.on_press(context); }
 
     fn on_keyboard_enter(&self, context: EzContext) { self.on_press(context); }
@@ -558,6 +572,14 @@ impl EzWidget for Dropdown {
     }
 
     fn get_bind_right_click(&self) -> Option<MouseCallbackFunction> { self.bound_right_mouse_click }
+
+    fn set_bind_on_select(&mut self, func: fn(EzContext, Option<Coordinates>)) {
+        self.bound_on_select = Some(func);
+    }
+
+    fn get_bind_on_select(&self) -> Option<fn(EzContext, Option<Coordinates>)> {
+        self.bound_on_select
+    }
 
 }
 
@@ -576,8 +598,9 @@ impl Dropdown {
         let state = context.state_tree.get_mut(
             &self.get_full_path()).unwrap().as_dropdown_mut();
         state.set_selected(true);
-        state.set_choice(self.get_dropped_down_options()
-            [self.state.dropped_down_selected_row].clone());
+        let choice = self.get_dropped_down_options(state)
+            [state.dropped_down_selected_row].clone();
+        state.set_choice(choice);
         self.exit_focus(context);
     }
 
@@ -610,8 +633,9 @@ impl Dropdown {
             // Check if not click on border
             if clicked_row != 0 && clicked_row != self.state.get_height() + 2 {
                 state.set_selected(true);
-                state.set_choice(self.get_dropped_down_options()[clicked_row - 1]
-                    .clone());
+                let choice = self.get_dropped_down_options(state)[clicked_row - 1]
+                    .clone();
+                state.set_choice(choice);
             }
         } else {
             // Click outside widget
@@ -657,13 +681,13 @@ impl Dropdown {
     /// - Active choice
     /// - Empty (if allowed)
     /// - Rest of the options in user defined order
-    fn get_dropped_down_options(&self) -> Vec<String> {
-        let mut options = vec!(self.state.choice.clone());
-        if self.state.allow_none && !self.state.choice.is_empty() {
+    fn get_dropped_down_options(&self, state: &mut DropdownState) -> Vec<String> {
+        let mut options = vec!(state.choice.clone());
+        if state.allow_none && !state.choice.is_empty() {
             options.push("".to_string())
         }
-        for option in self.state.options.iter()
-            .filter(|x| x.to_string() != self.state.choice) {
+        for option in state.options.iter()
+            .filter(|x| x.to_string() != state.choice) {
             options.push(option.to_string());
         }
         options
@@ -671,19 +695,19 @@ impl Dropdown {
 
     /// Return a PixelMap of this widgets' content in dropped down mode. I.e. a menu of options
     /// for the user to choose from.
-    fn get_dropped_down_contents(&self) -> PixelMap {
+    fn get_dropped_down_contents(&self, state: &mut DropdownState) -> PixelMap {
 
-        let mut options:Vec<String> = self.get_dropped_down_options().iter()
+        let mut options:Vec<String> = self.get_dropped_down_options(state).iter()
             .map(|x| x.chars().rev().collect::<String>()).collect();
 
         let mut contents = Vec::new();
-        for _ in 0..self.state.get_width() {
+        for _ in 0..state.get_width() - 2{
             let mut new_y = Vec::new();
             for y in 0..options.len() {
-                let fg = if y == self.state.dropped_down_selected_row
-                {self.state.selection_foreground_color} else {self.state.content_foreground_color};
-                let bg = if y == self.state.dropped_down_selected_row
-                {self.state.selection_background_color} else {self.state.content_background_color};
+                let fg = if y == state.dropped_down_selected_row
+                {self.state.selection_foreground_color} else {state.content_foreground_color};
+                let bg = if y == state.dropped_down_selected_row
+                {self.state.selection_background_color} else {state.content_background_color};
                 if !options[y].is_empty(){
                     new_y.push(Pixel{symbol: options[y].pop().unwrap().to_string(),
                         foreground_color: fg, background_color: bg, underline: false})

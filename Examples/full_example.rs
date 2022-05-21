@@ -16,61 +16,6 @@ fn main() {
     let (mut root_widget, mut scheduler) =
         ez_parser::load_ez_ui("./Examples/full_example.ez");
 
-    // Step 2: Customize widgets where needed. Here are some examples:
-    // Set a checkbox on value callback
-    root_widget.get_child_by_path_mut(
-        "/root_layout/left_layout/bottom_layout/small_layout_2/layout2_checkbox_widget")
-        .unwrap().as_ez_widget_mut().set_bind_on_value_change(test_checkbox_on_value_change);
-
-    // Set a radio button group on value callback
-    root_widget.get_child_by_path_mut(
-        "/root_layout/left_layout/bottom_layout/small_layout_2/option1")
-        .unwrap().as_ez_widget_mut().set_bind_on_value_change(test_radio_button_on_value_change);
-    root_widget.get_child_by_path_mut(
-        "/root_layout/left_layout/bottom_layout/small_layout_2/option2")
-        .unwrap().as_ez_widget_mut().set_bind_on_value_change(test_radio_button_on_value_change);
-    root_widget.get_child_by_path_mut(
-        "/root_layout/left_layout/bottom_layout/small_layout_2/option3")
-        .unwrap().as_ez_widget_mut().set_bind_on_value_change(test_radio_button_on_value_change);
-
-    // Set a dropdown on value change callback
-    root_widget.get_child_by_path_mut(
-        "/root_layout/left_layout/bottom_layout/small_layout_2/layout2_dropdown_widget")
-        .unwrap().as_ez_widget_mut().set_bind_on_value_change(test_dropdown_on_value_change);
-
-    // Set a text input on value change callback
-    root_widget.get_child_by_path_mut(
-        "/root_layout/left_layout/bottom_layout/small_layout_3/layout3_input_widget")
-        .unwrap().as_ez_widget_mut().set_bind_on_value_change(test_text_input_on_value_change);
-    // Set a text input on keyboard enter
-    root_widget.get_child_by_path_mut(
-        "/root_layout/left_layout/bottom_layout/small_layout_3/layout3_input_widget")
-        .unwrap().as_ez_widget_mut().set_bind_keyboard_enter(test_text_input_on_keyboard_enter);
-
-    // Set a button on press
-    root_widget.get_child_by_path_mut(
-        "/root_layout/left_layout/bottom_layout/small_layout_3/layout3_button")
-        .unwrap().as_ez_widget_mut().set_bind_on_press(test_on_button_keyboard_enter);
-
-    let mut neon = (0, 0, 0);
-    let neon_banner = move | context: EzContext | {
-        let color = Color::from(neon);
-        if neon.0 < 200 {
-            neon = (neon.0 + 2, neon.1, neon.2);
-        } else if neon.1 < 200 {
-            neon = (neon.0, neon.1 + 2, neon.2);
-        } else if neon.2 < 200 {
-            neon = (neon.0, neon.1, neon.2 + 2);
-        } else {
-            neon = (50, 0, 0)
-        }
-        context.state_tree.get_mut(&context.widget_path).unwrap().as_canvas_mut()
-            .set_content_foreground_color(color);
-        true
-    };
-    scheduler.schedule_interval("/root_layout/left_layout/canvas_widget".to_string(),
-    Box::new(neon_banner), Duration::from_millis(200));
-
     // Step 3: Run app
     // Now everything must happen from bindings as root widget is passed over
     run::run(root_widget, scheduler);

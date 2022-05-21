@@ -9,7 +9,7 @@ use crate::common::{Coordinates, PixelMap, StateTree};
 use std::io::{Error, ErrorKind};
 use crossterm::style::{Color};
 use unicode_segmentation::UnicodeSegmentation;
-use crate::ez_parser::load_color_parameter;
+use crate::ez_parser::{load_color_parameter, load_size_hint};
 
 pub struct CanvasWidget {
     /// ID of the widget, used to construct [path]
@@ -52,17 +52,23 @@ impl Default for CanvasWidget {
 #[derive(Clone)]
 pub struct CanvasState {
 
-    /// Width of this widget
-    pub width: usize,
-
-    /// Height of this widget
-    pub height: usize,
-
     /// Horizontal position of this widget relative to its' parent [Layout]
     pub x: usize,
 
     /// Vertical position of this widget relative to its' parent [Layout]
     pub y: usize,
+
+    /// Width of this widget
+    pub size_hint_x: Option<f64>,
+
+    /// Width of this widget
+    pub size_hint_y: Option<f64>,
+
+    /// Width of this widget
+    pub width: usize,
+
+    /// Height of this widget
+    pub height: usize,
 
     /// The [Pixel.foreground_color] to use for this widgets' content
     pub content_foreground_color: Color,
@@ -83,6 +89,8 @@ impl Default for CanvasState {
         CanvasState{
             x: 0,
             y: 0,
+            size_hint_x: Some(1.0),
+            size_hint_y: Some(1.0),
             width: 0,
             height: 0,
             content_foreground_color: Color::White,
@@ -97,6 +105,20 @@ impl GenericState for CanvasState {
     fn set_changed(&mut self, changed: bool) { self.changed = changed }
 
     fn get_changed(&self) -> bool { self.changed }
+
+    fn set_size_hint_x(&mut self, size_hint: Option<f64>) {
+        self.size_hint_x = size_hint;
+        self.changed = true;
+    }
+
+    fn get_size_hint_x(&self) -> Option<f64> { self.size_hint_x }
+
+    fn set_size_hint_y(&mut self, size_hint: Option<f64>) {
+        self.size_hint_y = size_hint;
+        self.changed = true;
+    }
+
+    fn get_size_hint_y(&self) -> Option<f64> { self.size_hint_y }
 
     fn set_width(&mut self, width: usize) { self.width = width; self.changed = true; }
 
@@ -150,13 +172,17 @@ impl EzObject for CanvasWidget {
         match parameter_name.as_str() {
             "x" => self.state.x = parameter_value.trim().parse().unwrap(),
             "y" => self.state.y = parameter_value.trim().parse().unwrap(),
+            "size_hint_x" => self.state.size_hint_x =
+                load_size_hint(parameter_value.trim()).unwrap(),
+            "size_hint_y" => self.state.size_hint_y =
+                load_size_hint(parameter_value.trim()).unwrap(),
             "width" => self.state.width = parameter_value.trim().parse().unwrap(),
             "height" => self.state.height = parameter_value.trim().parse().unwrap(),
-            "contentForegroundColor" =>
+            "fg_color" =>
                 self.state.content_foreground_color = load_color_parameter(parameter_value).unwrap(),
-            "contentBackgroundColor" =>
+            "bg_color" =>
                 self.state.content_background_color = load_color_parameter(parameter_value).unwrap(),
-            "fromFile" => self.from_file = Some(parameter_value.trim().to_string()),
+            "from_file" => self.from_file = Some(parameter_value.trim().to_string()),
             _ => return Err(Error::new(ErrorKind::InvalidData,
                                 format!("Invalid parameter name for canvas widget {}",
                                         parameter_name)))
@@ -201,8 +227,9 @@ impl EzObject for CanvasWidget {
        self.contents = valid_contents
     }
 
-    fn get_contents(&self, _state_tree: &mut StateTree) -> PixelMap {
+    fn get_contents(&self, state_tree: &mut StateTree) -> PixelMap {
 
+        let state = state_tree.get(&self.get_full_path()).unwrap().as_canvas();
         if let Some(path) = self.from_file.clone() {
             let mut file = File::open(path).expect("Unable to open file");
             let mut file_content = String::new();
@@ -211,9 +238,9 @@ impl EzObject for CanvasWidget {
                 .map(|x| x.graphemes(true).rev().collect())
                 .collect();
             let mut widget_content = PixelMap::new();
-            for x in 0..self.state.get_width() {
+            for x in 0..state.get_width() {
                 widget_content.push(Vec::new());
-                for y in 0..self.state.get_height() {
+                for y in 0..state.get_height() {
                     if y < lines.len() && !lines[y].is_empty() {
                         widget_content[x].push(Pixel { symbol: lines[y].pop().unwrap().to_string(),
                             foreground_color: self.state.content_foreground_color,

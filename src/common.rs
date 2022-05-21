@@ -107,7 +107,7 @@ pub fn write_to_screen(base_position: Coordinates, content: PixelMap, view_tree:
     for x in 0..content.len() {
         for y in 0..content[0].len() {
             let write_pos = (base_position.0 + x, base_position.1 + y);
-            let write_content = content[x][y].get_pixel();
+            let write_content = content[x][y].get_pixel().clone();
             if view_tree[x][y] != write_content {
                 view_tree[write_pos.0][write_pos.1] = write_content.clone();
                 stdout().queue(cursor::MoveTo(

@@ -7,8 +7,7 @@ use crate::common::{self, Coordinates, PixelMap, MouseCallbackFunction, GenericE
                     EzContext, StateTree, KeyMap, KeyboardCallbackFunction};
 use crate::widgets::widget::{EzWidget, Pixel, EzObject};
 use crate::widgets::state::{State, GenericState, SelectableState};
-use crate::ez_parser::{load_color_parameter, load_bool_parameter, load_text_parameter,
-                       load_selection_order_parameter};
+use crate::ez_parser::{load_color_parameter, load_bool_parameter, load_text_parameter, load_selection_order_parameter, load_size_hint};
 
 pub struct Button {
 
@@ -113,8 +112,17 @@ pub struct ButtonState {
     pub y: usize,
 
     /// Width of this widget
+    pub size_hint_x: Option<f64>,
+
+    /// Width of this widget
+    pub size_hint_y: Option<f64>,
+
+    /// Width of this widget
     pub width: usize,
 
+    /// Width of this widget
+    pub height: usize,
+    
     /// The[Pixel.foreground_color]  to use for the border if [border] is true
     pub border_foreground_color: Color,
 
@@ -152,7 +160,10 @@ impl Default for ButtonState {
        ButtonState {
            x: 0,
            y: 0,
+           size_hint_x: Some(1.0),
+           size_hint_y: Some(1.0),
            width: 0,
+           height: 0,
            text: String::new(),
            selected: false,
            flashing: false,
@@ -175,14 +186,27 @@ impl GenericState for ButtonState {
 
     fn get_changed(&self) -> bool { self.changed }
 
+    fn set_size_hint_x(&mut self, size_hint: Option<f64>) {
+        self.size_hint_x = size_hint;
+        self.changed = true; 
+    }
+
+    fn get_size_hint_x(&self) -> Option<f64> { self.size_hint_x }
+
+    fn set_size_hint_y(&mut self, size_hint: Option<f64>) {
+        self.size_hint_y = size_hint;
+        self.changed = true;
+    }
+
+    fn get_size_hint_y(&self) -> Option<f64> { self.size_hint_y }
+
     fn set_width(&mut self, width: usize) { self.width = width; self.changed = true; }
 
     fn get_width(&self) -> usize { self.width }
 
-    fn set_height(&mut self, _height: usize) {
-        panic!("Cannot set height directly for button state")
-    }
-    fn get_height(&self) -> usize { 1 }
+    fn set_height(&mut self, height: usize) { self.height = height }
+    
+    fn get_height(&self) -> usize { self.height }
 
     fn set_position(&mut self, position: Coordinates) {
         self.x = position.0;
@@ -307,48 +331,44 @@ impl EzObject for Button {
         match parameter_name.as_str() {
             "x" => self.state.x = parameter_value.trim().parse().unwrap(),
             "y" => self.state.y = parameter_value.trim().parse().unwrap(),
+            "size_hint_x" => self.state.size_hint_x = 
+                load_size_hint(parameter_value.trim()).unwrap(),
+            "size_hint_y" => self.state.size_hint_y =
+                load_size_hint(parameter_value.trim()).unwrap(),
             "width" => self.state.width = parameter_value.trim().parse().unwrap(),
-            "contentForegroundColor" =>
-                self.state.content_foreground_color =
+            "height" => self.state.height = parameter_value.trim().parse().unwrap(),
+            "fg_color" => self.state.content_foreground_color = 
+                load_color_parameter(parameter_value).unwrap(),
+            "bg_color" => self.state.content_background_color =
+                load_color_parameter(parameter_value).unwrap(),
+            "selection_fg_color" => self.state.selection_foreground_color =
+                load_color_parameter(parameter_value).unwrap(),
+            "selection_bg_color" => self.state.selection_background_color =
+                load_color_parameter(parameter_value).unwrap(),
+            "flash_fg_color" => self.state.flash_foreground_color =
+                load_color_parameter(parameter_value).unwrap(),
+            "flash_bg_color" => self.state.flash_background_color =
                     load_color_parameter(parameter_value).unwrap(),
-            "contentBackgroundColor" =>
-                self.state.content_background_color =
-                    load_color_parameter(parameter_value).unwrap(),
-            "selectionForegroundColor" =>
-                self.state.selection_foreground_color =
-                    load_color_parameter(parameter_value).unwrap(),
-            "selectionBackgroundColor" =>
-                self.state.selection_background_color =
-                    load_color_parameter(parameter_value).unwrap(),
-            "flashForegroundColor" =>
-                self.state.flash_foreground_color =
-                    load_color_parameter(parameter_value).unwrap(),
-            "flashBackgroundColor" =>
-                self.state.flash_background_color =
-                    load_color_parameter(parameter_value).unwrap(),
-            "selectionOrder" => {
-                self.selection_order = load_selection_order_parameter(
-                    parameter_value.as_str()).unwrap();
-            },
-            "text" => {
-                self.state.text = load_text_parameter(parameter_value.as_str()).unwrap();
-            },
+            "selection_order" => { self.selection_order = load_selection_order_parameter(
+                parameter_value.as_str()).unwrap(); },
+            "text" => { self.state.text = 
+                load_text_parameter(parameter_value.as_str()).unwrap(); },
             "border" => self.set_border(load_bool_parameter(parameter_value.trim())?),
-            "borderHorizontalSymbol" => self.border_horizontal_symbol =
+            "border_horizontal_symbol" => self.border_horizontal_symbol =
                 parameter_value.trim().to_string(),
-            "borderVerticalSymbol" => self.border_vertical_symbol =
+            "border_vertical_symbol" => self.border_vertical_symbol =
                 parameter_value.trim().to_string(),
-            "borderTopRightSymbol" => self.border_top_right_symbol =
+            "border_top_right_symbol" => self.border_top_right_symbol =
                 parameter_value.trim().to_string(),
-            "borderTopLeftSymbol" => self.border_top_left_symbol =
+            "border_top_left_symbol" => self.border_top_left_symbol =
                 parameter_value.trim().to_string(),
-            "borderBottomLeftSymbol" => self.border_bottom_left_symbol =
+            "border_bottom_left_symbol" => self.border_bottom_left_symbol =
                 parameter_value.trim().to_string(),
-            "borderBottomRightSymbol" => self.border_bottom_right_symbol =
+            "border_bottom_right_symbol" => self.border_bottom_right_symbol =
                 parameter_value.trim().to_string(),
-            "borderForegroundColor" =>
+            "border_fg_color" =>
                 self.state.border_foreground_color = load_color_parameter(parameter_value).unwrap(),
-            "borderBackgroundColor" =>
+            "border_bg_color" =>
                 self.state.border_background_color = load_color_parameter(parameter_value).unwrap(),
             _ => return Err(Error::new(ErrorKind::InvalidData,
                                        format!("Invalid parameter name for button {}",
@@ -379,19 +399,20 @@ impl EzObject for Button {
 
     fn get_state(&self) -> State { State::Button(self.state.clone()) }
 
-    fn get_contents(&self, _state_tree: &mut StateTree) -> PixelMap {
+    fn get_contents(&self, state_tree: &mut StateTree) -> PixelMap {
 
-        let mut text = self.state.text.clone().chars().rev().collect::<String>();
+        let state = state_tree.get(&self.get_full_path()).unwrap().as_button();
+        let mut text = state.text.clone().chars().rev().collect::<String>();
         let mut contents = Vec::new();
-        let fg_color = if self.state.flashing {self.state.flash_foreground_color}
-            else if self.state.selected {self.state.selection_foreground_color}
-            else {self.state.content_foreground_color};
-        let bg_color = if self.state.flashing {self.state.flash_background_color}
-            else if self.state.selected {self.state.selection_background_color}
-            else {self.state.content_background_color};
-        for _ in 0..self.state.get_width() {
+        let fg_color = if state.flashing {state.flash_foreground_color}
+            else if state.selected {state.selection_foreground_color}
+            else {state.content_foreground_color};
+        let bg_color = if state.flashing {state.flash_background_color}
+            else if state.selected {state.selection_background_color}
+            else {state.content_background_color};
+        for _ in 0..state.get_width() - 2 {
             let mut new_y = Vec::new();
-            for _ in 0..self.state.get_height() {
+            for _ in 0..state.get_height() - 2 {
                 if !text.is_empty() {
                     new_y.push(Pixel { symbol: text.pop().unwrap().to_string(),
                         foreground_color: fg_color, background_color: bg_color, underline: false })

@@ -4,7 +4,7 @@
 use std::collections::HashMap;
 use std::io::{Error, ErrorKind};
 use crossterm::style::Color;
-use crate::ez_parser::{load_bool_parameter, load_color_parameter};
+use crate::ez_parser::{load_bool_parameter, load_color_parameter, load_size_hint};
 use crate::widgets::widget::{Pixel, EzObject, EzObjects};
 use crate::widgets::state::{State, GenericState};
 use crate::common::{self, PixelMap, StateTree, WidgetTree, Coordinates};
@@ -125,6 +125,12 @@ pub struct LayoutState {
     pub y: usize,
 
     /// Width of this widget
+    pub size_hint_x: Option<f64>,
+
+    /// Width of this widget
+    pub size_hint_y: Option<f64>,
+
+    /// Width of this widget
     pub width: usize,
 
     /// Height of this layout
@@ -161,6 +167,8 @@ impl Default for LayoutState {
         LayoutState {
             x: 0,
             y: 0,
+            size_hint_x: Some(1.0),
+            size_hint_y: Some(1.0),
             width: 0,
             height: 0,
             filler_background_color: Color::Black,
@@ -179,6 +187,20 @@ impl GenericState for LayoutState {
     fn set_changed(&mut self, changed: bool) { self.changed = changed }
 
     fn get_changed(&self) -> bool { self.changed }
+
+    fn set_size_hint_x(&mut self, size_hint: Option<f64>) {
+        self.size_hint_x = size_hint;
+        self.changed = true;
+    }
+
+    fn get_size_hint_x(&self) -> Option<f64> { self.size_hint_x }
+
+    fn set_size_hint_y(&mut self, size_hint: Option<f64>) {
+        self.size_hint_y = size_hint;
+        self.changed = true;
+    }
+
+    fn get_size_hint_y(&self) -> Option<f64> { self.size_hint_y }
 
     fn set_width(&mut self, width: usize) { self.width = width; self.changed = true; }
 
@@ -264,9 +286,14 @@ impl EzObject for Layout {
 
     fn load_ez_parameter(&mut self, parameter_name: String, parameter_value: String)
         -> Result<(), Error> {
+
         match parameter_name.as_str() {
             "x" => self.state.x = parameter_value.trim().parse().unwrap(),
             "y" => self.state.y = parameter_value.trim().parse().unwrap(),
+            "size_hint_x" => self.state.size_hint_x =
+                load_size_hint(parameter_value.trim()).unwrap(),
+            "size_hint_y" => self.state.size_hint_y =
+                load_size_hint(parameter_value.trim()).unwrap(),
             "width" => self.state.width = parameter_value.trim().parse().unwrap(),
             "height" => self.state.height = parameter_value.trim().parse().unwrap(),
             "mode" => {
@@ -288,28 +315,28 @@ impl EzObject for Layout {
                 }
             },
             "border" => self.set_border(load_bool_parameter(parameter_value.trim())?),
-            "borderHorizontalSymbol" => self.border_horizontal_symbol =
+            "border_horizontal_symbol" => self.border_horizontal_symbol =
                 parameter_value.trim().to_string(),
-            "borderVerticalSymbol" => self.border_vertical_symbol =
+            "border_vertical_symbol" => self.border_vertical_symbol =
                 parameter_value.trim().to_string(),
-            "borderTopRightSymbol" => self.border_top_right_symbol =
+            "border_top_right_symbol" => self.border_top_right_symbol =
                 parameter_value.trim().to_string(),
-            "borderTopLeftSymbol" => self.border_top_left_symbol =
+            "border_top_left_symbol" => self.border_top_left_symbol =
                 parameter_value.trim().to_string(),
-            "borderBottomLeftSymbol" => self.border_bottom_left_symbol =
+            "border_bottom_left_symbol" => self.border_bottom_left_symbol =
                 parameter_value.trim().to_string(),
-            "borderBottomRightSymbol" => self.border_bottom_right_symbol =
+            "border_bottom_right_symbol" => self.border_bottom_right_symbol =
                 parameter_value.trim().to_string(),
-            "borderForegroundColor" =>
+            "border_fg_color" =>
                 self.state.border_foreground_color = load_color_parameter(parameter_value).unwrap(),
-            "borderBackgroundColor" =>
+            "border_bg_color" =>
                 self.state.border_background_color = load_color_parameter(parameter_value).unwrap(),
-            "fillerForegroundColor" =>
+            "filler_fg_color" =>
                 self.state.filler_foreground_color = load_color_parameter(parameter_value).unwrap(),
-            "fillerBackgroundColor" =>
+            "filler_bg_color" =>
                 self.state.filler_background_color = load_color_parameter(parameter_value).unwrap(),
             "fill" => self.fill = load_bool_parameter(parameter_value.trim())?,
-            "fillerSymbol" => self.set_filler_symbol(parameter_value.trim().to_string()),
+            "filler_symbol" => self.set_filler_symbol(parameter_value.trim().to_string()),
             _ => return Err(Error::new(ErrorKind::InvalidData,
                                 format!("Invalid parameter name for layout {}",
                                         parameter_name)))
@@ -351,11 +378,24 @@ impl EzObject for Layout {
                     },
                 }
                 if self.fill {
-                    merged_content = self.fill(merged_content);
+                    merged_content = self.fill(merged_content, state_tree);
                 }
             },
             LayoutMode::Float => {
                 merged_content = self.get_float_mode_contents(merged_content, state_tree);
+            }
+        }
+        let state = state_tree.get(&self.get_full_path()).unwrap()
+            .as_layout();
+        while merged_content.len() < state.get_width() -if self.has_border() {2} else {0} {
+            merged_content.push(Vec::new());
+        }
+        for x in merged_content.iter_mut() {
+            while x.len() < state.get_width() -if self.has_border() {2} else {0} {
+                x.push(Pixel { symbol: " ".to_string(),
+                    foreground_color: state.content_foreground_color,
+                    background_color: state.content_background_color,
+                    underline: false});
             }
         }
         if self.border {
@@ -425,18 +465,21 @@ impl Layout {
     /// own [height] for each.
     fn get_box_mode_horizontal_orientation_contents(&self, mut content: PixelMap,
         state_tree: &mut StateTree) -> PixelMap {
-        
+
         let mut position: Coordinates = (0, 0);
         if self.has_border() {
             position = (1, 1);
         }
+
         for child in self.get_children() {
             let generic_child= child.as_ez_object();
             let state = state_tree.get_mut(&generic_child.get_full_path())
                 .unwrap().as_generic_mut();
             state.set_position(position);
             let child_content = generic_child.get_contents(state_tree);
-            content = merge_horizontal_contents( content, child_content);
+            content = self.merge_horizontal_contents(
+                content, child_content,
+                state_tree.get(&self.get_full_path()).unwrap().as_layout());
             position = (content.len(), 0);
         }
         content
@@ -448,7 +491,9 @@ impl Layout {
     fn get_box_mode_vertical_orientation_contents(&self, mut content: PixelMap,
         state_tree: &mut StateTree) -> PixelMap {
 
-        for _ in 0..self.state.get_width() {
+        let own_state = state_tree.get(&self.get_full_path()).unwrap().as_layout().clone();
+        let own_width = own_state.get_width() -if self.has_border() {2} else {0};
+        for _ in 0..own_width {
             content.push(Vec::new())
         }
         let mut position:Coordinates = (0, 0);
@@ -458,7 +503,7 @@ impl Layout {
                 .unwrap().as_generic_mut();
             state.set_position(position);
             let child_content = generic_child.get_contents(state_tree);
-            content = merge_vertical_contents(content, child_content);
+            content = self.merge_vertical_contents(content, child_content, &own_state);
             position = (0, content[0].len());
         }
         content
@@ -470,9 +515,9 @@ impl Layout {
     fn get_float_mode_contents(&self, mut content: PixelMap, state_tree: &mut StateTree)
         -> PixelMap {
 
-        for _ in 0..self.state.get_width() {
+        for _ in 0..state_tree.get_mut(&self.get_full_path()).unwrap().as_layout().get_width() -if self.has_border() {2} else {0}{
             content.push(Vec::new());
-            for _ in 0..self.state.get_height() {
+            for _ in 0..state_tree.get_mut(&self.get_full_path()).unwrap().as_layout().get_height() -if self.has_border() {2} else {0}{
                 if self.fill {
                     content.last_mut().unwrap().push(self.get_filler());
                 } else {
@@ -493,10 +538,6 @@ impl Layout {
                                                                    child_state.get_height());
 
             let child_content = generic_child.get_contents(state_tree);
-            child_width = if generic_child.has_border() { child_width + 2}
-            else { child_width };
-            child_height = if generic_child.has_border() { child_height + 2}
-            else { child_height};
             for width in 0..child_width {
                 for height in 0..child_height {
                     content[child_x + width][child_y + height] =
@@ -505,6 +546,104 @@ impl Layout {
             }
         }
         content
+    }
+
+    /// Set the sizes of children that use size_hint(s) using own proportions.
+    pub fn set_child_sizes(&self, state_tree: &mut StateTree) {
+        let mut own_width = state_tree.get_mut(&self.get_full_path()).unwrap().as_layout().get_width();
+        let mut own_height = state_tree.get_mut(&self.get_full_path()).unwrap().as_layout().get_height();
+        if self.has_border() {
+            own_width -= 2;
+            own_height -= 2;
+        }
+        let mut x_remains: f64 = 0.0;
+        let mut y_remains: f64 = 0.0;
+        let mut x_ordered_child_size = Vec::new();
+        let mut y_ordered_child_size = Vec::new();
+        for child in self.get_children() {
+            let generic_child = child.as_ez_object();
+            let state = state_tree.get_mut(&generic_child.get_full_path())
+                .unwrap().as_generic_mut();
+
+            if let Some(size_hint_x) = state.get_size_hint_x() {
+                let raw_child_size = own_width as f64 * size_hint_x;
+                let mut child_size = raw_child_size as usize;
+                state.set_width(child_size);
+                x_remains += raw_child_size - child_size as f64;
+
+                if x_ordered_child_size.is_empty() {
+                    x_ordered_child_size.push((size_hint_x, child))
+                } else {
+                    let mut ordered_index = None;
+                    for i in 0..x_ordered_child_size.len() {
+                        if size_hint_x > x_ordered_child_size[i].0 {
+                            ordered_index = Some(i);
+                            break
+                        }
+                    }
+                    if let Some(i) = ordered_index {
+                        x_ordered_child_size.insert(i, (size_hint_x, child));
+                    } else {
+                        x_ordered_child_size.push((size_hint_x, child))
+                    }
+                }
+            }
+            if let Some(size_hint_y) = state.get_size_hint_y() {
+                let raw_child_size = own_height as f64 * size_hint_y;
+                let mut child_size = raw_child_size as usize;
+                state.set_height(child_size);
+                y_remains += raw_child_size - child_size as f64;
+
+                if y_ordered_child_size.is_empty() {
+                    y_ordered_child_size.push((size_hint_y, child))
+                } else {
+                    let mut ordered_index = None;
+                    for i in 0..y_ordered_child_size.len() {
+                        if size_hint_y > y_ordered_child_size[i].0 {
+                            ordered_index = Some(i);
+                            break
+                        }
+                    }
+                    if let Some(i) = ordered_index {
+                        y_ordered_child_size.insert(i, (size_hint_y, child));
+                    } else {
+                        y_ordered_child_size.push((size_hint_y, child))
+                    }
+                }
+            }
+        }
+        let mut floored_x_remains = x_remains as usize;
+        let mut floored_y_remains = y_remains as usize;
+        if floored_x_remains > 1 {
+            'outer: loop {
+                for (size_hint, child) in &x_ordered_child_size {
+                    let generic_child = child.as_ez_object();
+                    let state = state_tree.get_mut(&generic_child.get_full_path())
+                        .unwrap().as_generic_mut();
+                    state.set_width(state.get_width() + 1);
+                    floored_x_remains -= 1;
+                    if floored_x_remains == 0 { break 'outer }
+                }
+            }
+        }
+        if floored_y_remains > 1 {
+            'outer: while floored_y_remains > 0 {
+                for (size_hint, child) in &y_ordered_child_size {
+                    let generic_child = child.as_ez_object();
+                    let state = state_tree.get_mut(&generic_child.get_full_path())
+                        .unwrap().as_generic_mut();
+                    state.set_width(state.get_width() + 1);
+                    floored_y_remains -= 1;
+                    if floored_y_remains == 0 { break 'outer }
+
+                }
+            }
+        }
+        for child in self.get_children() {
+            if let EzObjects::Layout(i) = child {
+                i.set_child_sizes(state_tree)
+            }
+        }
     }
 
     /// Takes [absolute_position] of this layout and adds the [x][y] of children to calculate and
@@ -569,6 +708,7 @@ impl Layout {
         for (child_path, child) in self.get_widgets_recursive() {
             state_tree.insert(child_path, child.as_ez_object().get_state());
         }
+        state_tree.insert(self.get_full_path(), self.get_state());
         state_tree
     }
 
@@ -681,41 +821,59 @@ impl Layout {
     pub fn get_filler_foreground_color(&self) -> Color { self.state.filler_foreground_color }
 
     /// Fill any empty positions with [Pixel] from [get_filler]
-    pub fn fill(&self, mut contents: PixelMap) -> PixelMap {
-        for x in 0..self.state.get_width() {
-            while contents[x].len() < self.state.get_height() {
+    pub fn fill(&self, mut contents: PixelMap, state_tree: &mut StateTree) -> PixelMap {
+        let state = state_tree.get(&self.get_full_path()).unwrap().as_generic_state();
+        for x in 0..(state.get_width() -if self.has_border() {2} else {0}) {
+            while contents[x].len() < (state.get_height() -if self.has_border() {2} else {0}) {
                 contents[x].push(self.get_filler().clone());
             }
         }
-        while contents.len() < self.state.get_width() {
+        while contents.len() < state.get_width() -if self.has_border() {2} else {0}{
             let mut new_x = Vec::new();
-            for _ in 0..self.state.get_height() {
+            for _ in 0..state.get_height() -if self.has_border() {2} else {0} {
                 new_x.push(self.get_filler().clone());
             }
             contents.push(new_x);
         }
         contents
     }
-}
 
+    /// Take a [PixelMap] and merge it horizontally with another [PixelMap]
+    pub fn merge_horizontal_contents(&self, mut merged_content: PixelMap, new: PixelMap, state: &LayoutState)
+                                     -> PixelMap {
 
-/// Take a [PixelMap] and merge it horizontally with another [PixelMap]
-pub fn merge_horizontal_contents(mut merged_content: PixelMap, new: PixelMap) -> PixelMap {
-    for x in 0..new.len() {
-        merged_content.push(new[x].clone());
-    }
-    merged_content
-}
-
-/// Take a [PixelMap] and merge it vertically with another [PixelMap]
-pub fn merge_vertical_contents(mut merged_content: PixelMap, new: PixelMap) -> PixelMap {
-    if new.is_empty() {
-        return merged_content
-    }
-    for x in 0..new.len() {
-        for y in 0..new[0].len() {
-            merged_content[x].push(new[x][y].clone())
+        for x in 0..new.len() {
+            merged_content.push(new[x].clone());
+            let last = merged_content.last_mut().unwrap();
+            while last.len() < state.get_height()- if self.has_border() {2} else {0} {
+                last.push(Pixel { symbol: " ".to_string(),
+                    foreground_color: state.content_foreground_color,
+                    background_color: state.content_background_color,
+                    underline: false});
+            }
         }
+        merged_content
     }
-    merged_content
+
+    /// Take a [PixelMap] and merge it vertically with another [PixelMap]
+    pub fn merge_vertical_contents(&self, mut merged_content: PixelMap, new: PixelMap, state: &LayoutState)
+                                   -> PixelMap {
+
+        if new.is_empty() {
+            return merged_content
+        }
+        for x in 0..state.get_width() -if self.has_border() {2} else {0} {
+            for y in 0..new[0].len() {
+                if x < new.len() {
+                    merged_content[x].push(new[x][y].clone())
+                } else {
+                    merged_content[x].push(Pixel { symbol: " ".to_string(),
+                        foreground_color: state.content_foreground_color,
+                        background_color: state.content_background_color,
+                        underline: false});
+                }
+            }
+        }
+        merged_content
+    }
 }

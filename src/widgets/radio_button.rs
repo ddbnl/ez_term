@@ -142,6 +142,18 @@ impl GenericState for RadioButtonState {
 
     fn get_changed(&self) -> bool { self.changed }
 
+    fn set_size_hint_x(&mut self, size_hint: Option<f64>) {
+        panic!("Cannot set size_hint_x for radio button state")
+    }
+
+    fn get_size_hint_x(&self) -> Option<f64> { None }
+
+    fn set_size_hint_y(&mut self, size_hint: Option<f64>) {
+        panic!("Cannot set size_hint_y for radio button state")
+    }
+
+    fn get_size_hint_y(&self) -> Option<f64> { None }
+
     fn set_width(&mut self, _width: usize) {
         panic!("Cannot set height directly for radio button state")
     }
@@ -229,11 +241,11 @@ impl EzObject for RadioButton {
         match parameter_name.as_str() {
             "x" => self.state.x = parameter_value.trim().parse().unwrap(),
             "y" => self.state.y = parameter_value.trim().parse().unwrap(),
-            "selectionOrder" => {
+            "selection_order" => {
                 let order = parameter_value.trim().parse().unwrap();
                 if order == 0 {
                     return Err(Error::new(ErrorKind::InvalidData,
-                                          "selectionOrder must be higher than 0."))
+                                          "selection_order must be higher than 0."))
                 }
                 self.selection_order = order;
             },
@@ -246,15 +258,15 @@ impl EzObject for RadioButton {
                 self.group = group.to_string();
             },
             "active" => self.state.active = load_bool_parameter(parameter_value.trim()).unwrap(),
-            "activeSymbol" => self.active_symbol = parameter_value.chars().last().unwrap(),
-            "inactiveSymbol" => self.inactive_symbol = parameter_value.chars().last().unwrap(),
-            "contentForegroundColor" =>
+            "active_symbol" => self.active_symbol = parameter_value.chars().last().unwrap(),
+            "inactive_symbol" => self.inactive_symbol = parameter_value.chars().last().unwrap(),
+            "fg_color" =>
                 self.state.content_foreground_color = load_color_parameter(parameter_value).unwrap(),
-            "contentBackgroundColor" =>
+            "bg_color" =>
                 self.state.content_background_color = load_color_parameter(parameter_value).unwrap(),
-            "selectionForegroundColor" =>
+            "selection_fg_color" =>
                 self.state.selection_foreground_color = load_color_parameter(parameter_value).unwrap(),
-            "selectionBackgroundColor" =>
+            "selection_bg_color" =>
                 self.state.selection_background_color = load_color_parameter(parameter_value).unwrap(),
             _ => return Err(Error::new(ErrorKind::InvalidData,
                                 format!("Invalid parameter name for radio button {}",
@@ -281,13 +293,15 @@ impl EzObject for RadioButton {
 
     fn get_state(&self) -> State { State::RadioButton(self.state.clone()) }
 
-    fn get_contents(&self, _state_tree: &mut StateTree) -> PixelMap {
+    fn get_contents(&self, state_tree: &mut StateTree) -> PixelMap {
 
-        let active_symbol = { if self.state.active {self.active_symbol}
+        let state =
+            state_tree.get_mut(&self.get_full_path()).unwrap().as_radio_button();
+        let active_symbol = { if state.active {self.active_symbol}
                                     else {self.inactive_symbol} };
-        let fg_color = if self.state.selected {self.state.selection_foreground_color}
+        let fg_color = if state.selected {state.selection_foreground_color}
         else {self.state.content_foreground_color};
-        let bg_color = if self.state.selected {self.state.selection_background_color}
+        let bg_color = if state.selected {state.selection_background_color}
         else {self.state.content_background_color};
         vec!(
             vec!(Pixel {symbol: "(".to_string(), foreground_color: fg_color,

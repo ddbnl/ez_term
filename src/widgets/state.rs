@@ -197,6 +197,10 @@ impl State {
 pub trait GenericState {
     fn set_changed(&mut self, changed: bool);
     fn get_changed(&self) -> bool;
+    fn set_size_hint_x(&mut self, size_hint: Option<f64>);
+    fn get_size_hint_x(&self) -> Option<f64>;
+    fn set_size_hint_y(&mut self, size_hint: Option<f64>);
+    fn get_size_hint_y(&self) -> Option<f64>;
     fn set_width(&mut self, width: usize);
     fn get_width(&self) -> usize;
     fn set_height(&mut self, height: usize);

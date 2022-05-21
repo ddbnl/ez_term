@@ -10,7 +10,7 @@ use crossterm::style::{Color, PrintStyledContent, Stylize};
 use crate::widgets::state::{State, GenericState, SelectableState};
 use crate::widgets::widget::{EzWidget, Pixel, EzObject};
 use crate::common::{self, KeyboardCallbackFunction, Coordinates, StateTree, ViewTree, WidgetTree, PixelMap, GenericEzFunction, MouseCallbackFunction, EzContext, KeyMap};
-use crate::ez_parser::{load_color_parameter};
+use crate::ez_parser::{load_color_parameter, load_size_hint};
 use crate::scheduler::Scheduler;
 
 pub struct TextInput {
@@ -110,6 +110,9 @@ pub struct TextInputState {
     pub y: usize,
 
     /// Width of this widget
+    pub size_hint_x: Option<f64>,
+
+    /// Width of this widget
     pub width: usize,
 
     /// The [Pixel.foreground_color] to use for this widgets' content
@@ -141,6 +144,7 @@ impl Default for TextInputState {
        TextInputState {
            x: 0,
            y: 0,
+           size_hint_x: Some(1.0),
            width: 0,
            cursor_pos: (0, 0),
            view_start: 0,
@@ -162,6 +166,19 @@ impl GenericState for TextInputState {
     fn set_changed(&mut self, changed: bool) { self.changed = changed }
 
     fn get_changed(&self) -> bool { self.changed }
+
+    fn set_size_hint_x(&mut self, size_hint: Option<f64>) {
+        self.size_hint_x = size_hint;
+        self.changed = true;
+    }
+
+    fn get_size_hint_x(&self) -> Option<f64> { self.size_hint_x }
+
+    fn set_size_hint_y(&mut self, size_hint: Option<f64>) {
+        panic!("Cannot set size_hint_y for text input state")
+    }
+
+    fn get_size_hint_y(&self) -> Option<f64> { None }
 
     fn set_width(&mut self, width: usize) { self.width = width; self.changed = true; }
 
@@ -272,28 +289,31 @@ impl EzObject for TextInput {
 
     fn load_ez_parameter(&mut self, parameter_name: String, mut parameter_value: String)
                          -> Result<(), Error> {
+        
         match parameter_name.as_str() {
             "x" => self.state.x = parameter_value.trim().parse().unwrap(),
             "y" => self.state.y = parameter_value.trim().parse().unwrap(),
+            "size_hint_x" => self.state.size_hint_x =
+                load_size_hint(parameter_value.trim()).unwrap(),
             "width" => self.state.width = parameter_value.trim().parse().unwrap(),
-            "maxLength" => self.state.max_length = parameter_value.trim().parse().unwrap(),
-            "selectionOrder" => {
+            "max_length" => self.state.max_length = parameter_value.trim().parse().unwrap(),
+            "selection_order" => {
                 let order = parameter_value.trim().parse().unwrap();
                 if order == 0 {
                     return Err(Error::new(ErrorKind::InvalidData,
-                                          "selectionOrder must be higher than 0."))
+                                          "selection_order must be higher than 0."))
                 }
                 self.selection_order = order;
             },
-            "contentForegroundColor" =>
+            "fg_color" =>
                 self.state.content_foreground_color = load_color_parameter(parameter_value).unwrap(),
-            "contentBackgroundColor" =>
+            "bg_color" =>
                 self.state.content_background_color = load_color_parameter(parameter_value).unwrap(),
-            "selectionForegroundColor" =>
+            "selection_fg_color" =>
                 self.state.selection_foreground_color = load_color_parameter(parameter_value).unwrap(),
-            "selectionBackgroundColor" =>
+            "selection_bg_color" =>
                 self.state.selection_background_color = load_color_parameter(parameter_value).unwrap(),
-            "cursorColor" =>
+            "cursor_color" =>
                 self.state.cursor_color = load_color_parameter(parameter_value).unwrap(),
             "text" => {
                 if parameter_value.starts_with(' ') {
@@ -334,28 +354,29 @@ impl EzObject for TextInput {
         common::write_to_screen(pos, content, view_tree);
     }
 
-    fn get_contents(&self, _state_tree: &mut StateTree) -> PixelMap {
+    fn get_contents(&self, state_tree: &mut StateTree) -> PixelMap {
 
-        let fg_color = if self.state.selected {self.state.selection_foreground_color}
-                           else {self.state.content_foreground_color};
-        let bg_color = if self.state.selected {self.state.selection_background_color}
-                             else {self.state.content_background_color};
-        let mut text = self.state.text.clone();
-        if text.len() > self.state.width - 1 {
-            let remains = text.len() - self.state.view_start;
+        let state = state_tree.get_mut(&self.get_full_path()).unwrap().as_text_input();
+        let fg_color = if state.selected {state.selection_foreground_color}
+                           else {state.content_foreground_color};
+        let bg_color = if state.selected {state.selection_background_color}
+                             else {state.content_background_color};
+        let mut text = state.text.clone();
+        if text.len() > state.width - 1 {
+            let remains = text.len() - state.view_start;
             let view_end =
-                if remains > (self.state.width - 1) {
-                    self.state.view_start + (self.state.width - 1)
+                if remains > (state.width - 1) {
+                    state.view_start + (state.width - 1)
                 } else {
                     text.len()
                 };
-            text = text[self.state.view_start..view_end].to_string();
+            text = text[state.view_start..view_end].to_string();
         }
         let mut contents = Vec::new();
         text = text.chars().rev().collect::<String>();
-        for _ in 0..self.state.get_width() {
+        for _ in 0..state.get_width() {
             let mut new_y = Vec::new();
-            for _ in 0..self.state.get_height() {
+            for _ in 0..state.get_height() {
                 if !text.is_empty() {
                     new_y.push(Pixel{
                         symbol: text.pop().unwrap().to_string(),
@@ -371,13 +392,9 @@ impl EzObject for TextInput {
         contents
     }
 
-    fn set_absolute_position(&mut self, pos: Coordinates) {
-       self.absolute_position = pos
-    }
+    fn set_absolute_position(&mut self, pos: Coordinates) { self.absolute_position = pos }
 
-    fn get_absolute_position(&self) -> Coordinates {
-       self.absolute_position
-    }
+    fn get_absolute_position(&self) -> Coordinates { self.absolute_position }
 
 }
 

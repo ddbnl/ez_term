@@ -14,7 +14,9 @@ use crate::widgets::text_input::TextInput;
 use crate::widgets::dropdown::Dropdown;
 use crate::widgets::widget::{EzObjects, EzObject};
 use std::str::FromStr;
+use crossterm::terminal::size;
 use crate::scheduler::Scheduler;
+use crate::widgets::state::GenericState;
 
 
 /// Load a file path into a root Layout. Return the root widget and a new scheduler. Both will
@@ -26,51 +28,6 @@ pub fn load_ez_ui(file_path: &str) -> (Layout, Scheduler) {
     let root_widget = parse_ez(contents).unwrap();
     let scheduler = Scheduler::new();
     (root_widget, scheduler)
-}
-
-/// Convenience function use by widgets to load a color parameter defined in a .ez file
-pub fn load_color_parameter(value: String) -> Result<Color, Error> {
-    if value.contains(',') {
-        let rgb: Vec<&str> = value.split(',').collect();
-        if rgb.len() != 3 {
-            return Err(Error::new(ErrorKind::InvalidData,
-            format!("Invalid rgb data: {:?}", rgb)))
-        }
-        Ok(Color::from((rgb[0].trim().parse().unwrap(),
-                                 rgb[1].trim().parse().unwrap(),
-                                 rgb[2].trim().parse().unwrap())))
-    } else {
-        Ok(Color::from_str(value.trim()).unwrap())
-    }
-}
-
-/// Convenience function use by widgets to load a bool parameter defined in a .ez file
-pub fn load_bool_parameter(value: &str) -> Result<bool, Error> {
-
-    if value.to_lowercase() == "true" { Ok(true) }
-    else if value.to_lowercase() == "false" { Ok(false) }
-    else { Err(Error::new(ErrorKind::InvalidData, "bool parameter must be true/false")) }
-}
-
-
-/// Convenience function use by widgets to load a selection order parameter defined in a .ez file
-pub fn load_selection_order_parameter(value: &str) -> Result<usize, Error> {
-    
-    let value: usize = value.trim().parse().unwrap();
-    if value == 0 {
-        return Err(Error::new(ErrorKind::InvalidData,
-                              "selectionOrder must be higher than 0."))
-    }
-    Ok(value)
-}
-
-/// Convenience function use by widgets to load a selection order parameter defined in a .ez file
-pub fn load_text_parameter(mut value: &str) -> Result<String, Error> {
-    
-    if value.starts_with(' ') {
-        value = value.strip_prefix(' ').unwrap();
-    }
-    Ok(value.to_string())
 }
 
 
@@ -127,6 +84,13 @@ impl<'a> EzWidgetDefinition<'a> {
             let initialized_sub_widget = sub_widget.parse();
             initialized.add_child(initialized_sub_widget);
         }
+        let terminal_size = size().unwrap();
+        if initialized.state.width == 0  {
+            initialized.state.set_width(terminal_size.0 as usize);
+        }
+        if initialized.state.height == 0 {
+            initialized.state.set_height(terminal_size.1 as usize);
+        }
         initialized.set_id(self.id.to_string());
         initialized.set_full_path(format!("/{}", self.id));
         initialized
@@ -152,20 +116,20 @@ impl<'a> EzWidgetDefinition<'a> {
     /// Initialize a widget object based on the type specified by the definition.
     fn initialize(&mut self, config: Vec<&str>) -> Result<EzObjects, Error> {
         match self.type_name {
-            "layout" => Ok(EzObjects::Layout(Layout::from_config(config, self.id.to_string()))),
-            "canvas" => Ok(EzObjects::CanvasWidget(
+            "Layout" => Ok(EzObjects::Layout(Layout::from_config(config, self.id.to_string()))),
+            "Canvas" => Ok(EzObjects::CanvasWidget(
                 CanvasWidget::from_config(config, self.id.to_string()))),
-            "label" => Ok(EzObjects::Label(
+            "Label" => Ok(EzObjects::Label(
                 Label::from_config(config, self.id.to_string()))),
-            "button" => Ok(EzObjects::Button(
+            "Button" => Ok(EzObjects::Button(
                 Button::from_config(config, self.id.to_string()))),
-            "checkBox" => Ok(EzObjects::Checkbox(
+            "CheckBox" => Ok(EzObjects::Checkbox(
                 Checkbox::from_config(config, self.id.to_string()))),
-            "radioButton" => Ok(EzObjects::RadioButton(
+            "RadioButton" => Ok(EzObjects::RadioButton(
                 RadioButton::from_config(config, self.id.to_string()))),
-            "textInput" => Ok(EzObjects::TextInput(
+            "TextInput" => Ok(EzObjects::TextInput(
                 TextInput::from_config(config, self.id.to_string()))),
-            "dropdown" => Ok(EzObjects::Dropdown(
+            "Dropdown" => Ok(EzObjects::Dropdown(
                 Dropdown::from_config(config, self.id.to_string()))),
             _ => Err(Error::new(ErrorKind::InvalidData,
                                 format!("Invalid widget type {}", self.type_name)))
@@ -210,4 +174,72 @@ fn parse_level<'a>(config_lines: Vec<&'a str>)
         }
     }
     Ok((config, level))
+}
+
+
+/// Convenience function use by widgets to load a color parameter defined in a .ez file
+pub fn load_color_parameter(value: String) -> Result<Color, Error> {
+    if value.contains(',') {
+        let rgb: Vec<&str> = value.split(',').collect();
+        if rgb.len() != 3 {
+            return Err(Error::new(ErrorKind::InvalidData,
+                                  format!("Invalid rgb data: {:?}", rgb)))
+        }
+        Ok(Color::from((rgb[0].trim().parse().unwrap(),
+                        rgb[1].trim().parse().unwrap(),
+                        rgb[2].trim().parse().unwrap())))
+    } else {
+        Ok(Color::from_str(value.trim()).unwrap())
+    }
+}
+
+/// Convenience function use by widgets to load a bool parameter defined in a .ez file
+pub fn load_bool_parameter(value: &str) -> Result<bool, Error> {
+
+    if value.to_lowercase() == "true" { Ok(true) }
+    else if value.to_lowercase() == "false" { Ok(false) }
+    else { Err(Error::new(ErrorKind::InvalidData, "bool parameter must be true/false")) }
+}
+
+
+/// Convenience function use by widgets to load a selection order parameter defined in a .ez file
+pub fn load_selection_order_parameter(value: &str) -> Result<usize, Error> {
+
+    let value: usize = value.trim().parse().unwrap();
+    if value == 0 {
+        return Err(Error::new(ErrorKind::InvalidData,
+                              "selection_order must be higher than 0."))
+    }
+    Ok(value)
+}
+
+/// Convenience function use by widgets to load a selection order parameter defined in a .ez file
+pub fn load_text_parameter(mut value: &str) -> Result<String, Error> {
+
+    if value.starts_with(' ') {
+        value = value.strip_prefix(' ').unwrap();
+    }
+    Ok(value.to_string())
+}
+
+/// Convenience function use by widgets to load a size_hint parameter defined in a .ez file
+pub fn load_size_hint(value: &str) -> Result<Option<f64>, Error> {
+
+    let to_parse = value.trim();
+    // Size hint can be None
+    if to_parse.to_lowercase() == "none" {
+        Ok(None)
+    }
+    // Size hint can be a fraction
+    else if to_parse.contains("/") {
+        let (left_str, right_str) = to_parse.split_once('/').unwrap();
+        let left: f64 = left_str.trim().parse().unwrap();
+        let right: f64 = right_str.trim().parse().unwrap();
+        let result = left / right;
+        Ok(Some(result))
+    }
+    // Size hint can be a straight number
+    else {
+        Ok(Some(value.parse().unwrap()))
+    }
 }
