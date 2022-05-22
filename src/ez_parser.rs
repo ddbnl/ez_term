@@ -16,7 +16,7 @@ use crate::widgets::widget::{EzObjects, EzObject};
 use std::str::FromStr;
 use crossterm::terminal::size;
 use crate::scheduler::Scheduler;
-use crate::widgets::state::GenericState;
+use crate::widgets::state::{GenericState, HorizontalAlignment, VerticalAlignment};
 
 
 /// Load a file path into a root Layout. Return the root widget and a new scheduler. Both will
@@ -86,10 +86,10 @@ impl<'a> EzWidgetDefinition<'a> {
         }
         let terminal_size = size().unwrap();
         if initialized.state.width == 0  {
-            initialized.state.set_width(terminal_size.0 as usize);
+            initialized.state.set_width(terminal_size.0 as usize - 1);
         }
         if initialized.state.height == 0 {
-            initialized.state.set_height(terminal_size.1 as usize);
+            initialized.state.set_height(terminal_size.1 as usize - 5);
         }
         initialized.set_id(self.id.to_string());
         initialized.set_full_path(format!("/{}", self.id));
@@ -242,4 +242,25 @@ pub fn load_size_hint(value: &str) -> Result<Option<f64>, Error> {
     else {
         Ok(Some(value.parse().unwrap()))
     }
+}
+
+
+/// Convenience function use by widgets to load a horizontal alignment defined in a .ez file
+pub fn load_halign_parameter(value: &str) -> Result<HorizontalAlignment, Error> {
+
+    if value.to_lowercase() == "left" { Ok(HorizontalAlignment::Left) }
+    else if value.to_lowercase() == "right" { Ok(HorizontalAlignment::Right) }
+    else if value.to_lowercase() == "center" { Ok(HorizontalAlignment::Center) }
+    else { Err(Error::new(ErrorKind::InvalidData,
+                          "halign parameter must be left/right/center")) }
+}
+
+/// Convenience function use by widgets to load a horizontal alignment defined in a .ez file
+pub fn load_valign_parameter(value: &str) -> Result<VerticalAlignment, Error> {
+
+    if value.to_lowercase() == "top" { Ok(VerticalAlignment::Top) }
+    else if value.to_lowercase() == "bottom" { Ok(VerticalAlignment::Bottom) }
+    else if value.to_lowercase() == "middle" { Ok(VerticalAlignment::Middle) }
+    else { Err(Error::new(ErrorKind::InvalidData,
+                          "halign parameter must be left/right/center")) }
 }

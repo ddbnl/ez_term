@@ -2,6 +2,7 @@
     mode: box
     orientation: horizontal
     width: 180
+    height: 70
     - Layout: left_layout
         mode: box
         size_hint_x: 4/5
@@ -58,24 +59,34 @@
                     height: 1
                 - CheckBox: layout2_checkbox_widget
                     selection_order: 4
+                    halign: center
                     active: False
                     active_symbol: X
                     inactive_symbol: -
-                - Label: layout2_radio_title_widget
-                    text: option1:
-                    size_hint_x: 1
+                - Layout: layout2_radio_button_layout
                     size_hint_y: None
-                    height: 1
-                - RadioButton: option1
-                    group: test_radios
-                    selection_order: 5
-                    active: True
-                - RadioButton: option2
-                    group: test_radios
-                    selection_order: 6
-                - RadioButton: option3
-                    group: test_radios
-                    selection_order: 7
+                    height: 3
+                    mode: box
+                    orientation: horizontal
+                    - Label: layout2_radio_title_widget
+                        text: option1:
+                        size_hint_x: 0.25
+                        size_hint_y: None
+                        height: 1
+                        valign: top
+                    - RadioButton: option1
+                        group: test_radios
+                        selection_order: 5
+                        active: True
+                        valign: middle
+                    - RadioButton: option2
+                        group: test_radios
+                        selection_order: 6
+                        valign: bottom
+                    - RadioButton: option3
+                        group: test_radios
+                        selection_order: 7
+                        valign: bottom
                 - Dropdown: layout2_dropdown_widget
                     selection_order: 8
                     allow_none: True
@@ -114,10 +125,6 @@
         orientation: vertical
         size_hint_x: 1/5
         size_hint_y: 1
-        fill: True
-        filler_symbol: T
-        filler_fg_color: 255,0,128
-        filler_bg_color: Black
         border: True
         - Label: layout2_radio_title_widget
             from_file: ./Examples/dummy.txt

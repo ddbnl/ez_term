@@ -7,10 +7,13 @@ use std::collections::HashMap;
 use std::io::{Error, ErrorKind};
 use crossterm::event::{KeyCode};
 use crossterm::style::{Color};
-use crate::common::{KeyboardCallbackFunction, Coordinates, PixelMap, GenericEzFunction, MouseCallbackFunction, EzContext, StateTree, KeyMap};
-use crate::widgets::state::{State, GenericState, SelectableState};
+use crate::common::{KeyboardCallbackFunction, Coordinates, PixelMap, GenericEzFunction,
+                    MouseCallbackFunction, EzContext, StateTree, KeyMap};
+use crate::widgets::state::{State, GenericState, SelectableState, HorizontalAlignment,
+                            VerticalAlignment};
 use crate::widgets::widget::{EzWidget, Pixel, EzObject, EzObjects};
-use crate::ez_parser::{load_bool_parameter, load_color_parameter};
+use crate::ez_parser::{load_bool_parameter, load_color_parameter, load_halign_parameter,
+                       load_valign_parameter};
 
 pub struct RadioButton {
 
@@ -100,6 +103,12 @@ pub struct RadioButtonState {
     /// Vertical position of this widget relative to its' parent [Layout]
     pub y: usize,
 
+    /// Horizontal alignment of this widget
+    pub halign: HorizontalAlignment,
+
+    /// Vertical alignment of this widget
+    pub valign: VerticalAlignment,
+
     /// The [Pixel.foreground_color] to use for this widgets' content
     pub content_foreground_color: Color,
 
@@ -125,6 +134,8 @@ impl Default for RadioButtonState {
        RadioButtonState {
            x: 0,
            y: 0,
+           halign: HorizontalAlignment::Left,
+           valign: VerticalAlignment::Top,
            active: false,
            selected: false,
            content_background_color: Color::Black,
@@ -142,13 +153,13 @@ impl GenericState for RadioButtonState {
 
     fn get_changed(&self) -> bool { self.changed }
 
-    fn set_size_hint_x(&mut self, size_hint: Option<f64>) {
+    fn set_size_hint_x(&mut self, _size_hint: Option<f64>) {
         panic!("Cannot set size_hint_x for radio button state")
     }
 
     fn get_size_hint_x(&self) -> Option<f64> { None }
 
-    fn set_size_hint_y(&mut self, size_hint: Option<f64>) {
+    fn set_size_hint_y(&mut self, _size_hint: Option<f64>) {
         panic!("Cannot set size_hint_y for radio button state")
     }
 
@@ -173,6 +184,20 @@ impl GenericState for RadioButtonState {
     }
 
     fn get_position(&self) -> Coordinates { (self.x, self.y) }
+
+    fn set_horizontal_alignment(&mut self, alignment: HorizontalAlignment) {
+        self.halign = alignment;
+        self.changed = true;
+    }
+
+    fn get_horizontal_alignment(&self) -> HorizontalAlignment { self.halign }
+
+    fn set_vertical_alignment(&mut self, alignment: VerticalAlignment) {
+        self.valign = alignment;
+        self.changed = true;
+    }
+
+    fn get_vertical_alignment(&self) -> VerticalAlignment { self.valign }
 
     fn set_force_redraw(&mut self, redraw: bool) {
         self.force_redraw = redraw;
@@ -241,6 +266,10 @@ impl EzObject for RadioButton {
         match parameter_name.as_str() {
             "x" => self.state.x = parameter_value.trim().parse().unwrap(),
             "y" => self.state.y = parameter_value.trim().parse().unwrap(),
+            "halign" =>
+                self.state.halign =  load_halign_parameter(parameter_value.trim()).unwrap(),
+            "valign" =>
+                self.state.valign =  load_valign_parameter(parameter_value.trim()).unwrap(),
             "selection_order" => {
                 let order = parameter_value.trim().parse().unwrap();
                 if order == 0 {

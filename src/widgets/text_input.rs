@@ -7,10 +7,13 @@ use std::time::Duration;
 use crossterm::{cursor, QueueableCommand};
 use crossterm::event::{Event, KeyCode};
 use crossterm::style::{Color, PrintStyledContent, Stylize};
-use crate::widgets::state::{State, GenericState, SelectableState};
+use crate::widgets::state::{State, GenericState, SelectableState, HorizontalAlignment,
+                            VerticalAlignment};
 use crate::widgets::widget::{EzWidget, Pixel, EzObject};
-use crate::common::{self, KeyboardCallbackFunction, Coordinates, StateTree, ViewTree, WidgetTree, PixelMap, GenericEzFunction, MouseCallbackFunction, EzContext, KeyMap};
-use crate::ez_parser::{load_color_parameter, load_size_hint};
+use crate::common::{self, KeyboardCallbackFunction, Coordinates, StateTree, ViewTree, WidgetTree,
+                    PixelMap, GenericEzFunction, MouseCallbackFunction, EzContext, KeyMap};
+use crate::ez_parser::{load_color_parameter, load_size_hint, load_halign_parameter,
+                       load_valign_parameter};
 use crate::scheduler::Scheduler;
 
 pub struct TextInput {
@@ -115,6 +118,12 @@ pub struct TextInputState {
     /// Width of this widget
     pub width: usize,
 
+    /// Horizontal alignment of this widget
+    pub halign: HorizontalAlignment,
+
+    /// Vertical alignment of this widget
+    pub valign: VerticalAlignment,
+
     /// The [Pixel.foreground_color] to use for this widgets' content
     pub content_foreground_color: Color,
 
@@ -140,10 +149,13 @@ pub struct TextInputState {
     pub force_redraw: bool,
 }
 impl Default for TextInputState {
+
     fn default() -> Self {
        TextInputState {
            x: 0,
            y: 0,
+           halign: HorizontalAlignment::Left,
+           valign: VerticalAlignment::Top,
            size_hint_x: Some(1.0),
            width: 0,
            cursor_pos: (0, 0),
@@ -174,7 +186,7 @@ impl GenericState for TextInputState {
 
     fn get_size_hint_x(&self) -> Option<f64> { self.size_hint_x }
 
-    fn set_size_hint_y(&mut self, size_hint: Option<f64>) {
+    fn set_size_hint_y(&mut self, _size_hint: Option<f64>) {
         panic!("Cannot set size_hint_y for text input state")
     }
 
@@ -197,6 +209,20 @@ impl GenericState for TextInputState {
     }
 
     fn get_position(&self) -> Coordinates { (self.x, self.y) }
+
+    fn set_horizontal_alignment(&mut self, alignment: HorizontalAlignment) {
+        self.halign = alignment;
+        self.changed = true;
+    }
+
+    fn get_horizontal_alignment(&self) -> HorizontalAlignment { self.halign }
+
+    fn set_vertical_alignment(&mut self, alignment: VerticalAlignment) {
+        self.valign = alignment;
+        self.changed = true;
+    }
+
+    fn get_vertical_alignment(&self) -> VerticalAlignment { self.valign }
 
     fn set_force_redraw(&mut self, redraw: bool) {
         self.force_redraw = redraw;
@@ -296,6 +322,10 @@ impl EzObject for TextInput {
             "size_hint_x" => self.state.size_hint_x =
                 load_size_hint(parameter_value.trim()).unwrap(),
             "width" => self.state.width = parameter_value.trim().parse().unwrap(),
+            "halign" =>
+                self.state.halign =  load_halign_parameter(parameter_value.trim()).unwrap(),
+            "valign" =>
+                self.state.valign =  load_valign_parameter(parameter_value.trim()).unwrap(),
             "max_length" => self.state.max_length = parameter_value.trim().parse().unwrap(),
             "selection_order" => {
                 let order = parameter_value.trim().parse().unwrap();
@@ -374,9 +404,9 @@ impl EzObject for TextInput {
         }
         let mut contents = Vec::new();
         text = text.chars().rev().collect::<String>();
-        for _ in 0..state.get_width() {
+        for _ in 0..state.get_effective_width() {
             let mut new_y = Vec::new();
-            for _ in 0..state.get_height() {
+            for _ in 0..state.get_effective_height() {
                 if !text.is_empty() {
                     new_y.push(Pixel{
                         symbol: text.pop().unwrap().to_string(),

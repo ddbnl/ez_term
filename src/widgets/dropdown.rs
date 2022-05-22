@@ -3,14 +3,17 @@
 //! time. The active value is always displayed, and when selected drops down all other possible
 //! values for the user to select.
 use std::io::{Error, ErrorKind};
-use std::collections::HashMap;
 use crossterm::event::{Event, KeyCode, MouseButton, MouseEventKind};
 use crossterm::style::{Color};
-use crate::common::{self, KeyboardCallbackFunction, GenericEzFunction, Coordinates, PixelMap, MouseCallbackFunction, EzContext, StateTree, KeyMap};
-use crate::widgets::state::{State, GenericState, SelectableState};
+use crate::common::{self, KeyboardCallbackFunction, GenericEzFunction, Coordinates, PixelMap,
+                    MouseCallbackFunction, EzContext, StateTree, KeyMap};
+use crate::widgets::state::{State, GenericState, SelectableState, HorizontalAlignment,
+                            VerticalAlignment};
 use crate::widgets::widget::{EzWidget, Pixel, EzObject};
-use crate::ez_parser::{load_bool_parameter, load_color_parameter, load_selection_order_parameter, load_size_hint};
+use crate::ez_parser::{load_bool_parameter, load_color_parameter, load_selection_order_parameter,
+                       load_size_hint, load_halign_parameter, load_valign_parameter};
 
+#[derive(Default)]
 pub struct Dropdown {
 
     /// ID of the widget, used to construct [path]
@@ -21,24 +24,6 @@ pub struct Dropdown {
 
     /// Absolute position of this layout on screen. Automatically propagated, do not set manually
     pub absolute_position: Coordinates,
-
-    /// The [Pixel.symbol] to use for the horizontal border if [border] is true
-    pub border_horizontal_symbol: String,
-
-    /// The [Pixel.symbol] to use for the vertical border if [border] is true
-    pub border_vertical_symbol: String,
-
-    /// The [Pixel.symbol] to use for the top left border if [border] is true
-    pub border_top_left_symbol: String,
-
-    /// The [Pixel.symbol] to use for the top left border if [border] is true
-    pub border_top_right_symbol: String,
-
-    /// The [Pixel.symbol] to use for the bottom left border if [border] is true
-    pub border_bottom_left_symbol: String,
-
-    /// The [Pixel.symbol] to use for the bottom right border if [border] is true
-    pub border_bottom_right_symbol: String,
 
     /// Global order number in which this widget will be selection when user presses down/up keys
     pub selection_order: usize,
@@ -68,29 +53,6 @@ pub struct Dropdown {
 
     /// Runtime state of this widget, see [DropdownState] and [State]
     pub state: DropdownState,
-}
-
-impl Default for Dropdown {
-    fn default() -> Self {
-        Dropdown {
-            id: String::new(),
-            path: String::new(),
-            absolute_position: (0, 0),
-            border_horizontal_symbol: "━".to_string(),
-            border_vertical_symbol: "│".to_string(),
-            border_top_left_symbol: "┌".to_string(),
-            border_top_right_symbol: "┐".to_string(),
-            border_bottom_left_symbol: "└".to_string(),
-            border_bottom_right_symbol: "┘".to_string(),
-            selection_order: 0,
-            bound_on_select: None,
-            bound_on_deselect: None,
-            bound_right_mouse_click: None,
-            bound_on_value_change: None,
-            keymap: HashMap::new(),
-            state: DropdownState::default(),
-        }
-    }
 }
 
 
@@ -133,6 +95,30 @@ pub struct DropdownState {
     /// Width of this widget
     pub width: usize,
 
+    /// Horizontal alignment of this widget
+    pub halign: HorizontalAlignment,
+
+    /// Vertical alignment of this widget
+    pub valign: VerticalAlignment,
+
+    /// The [Pixel.symbol] to use for the horizontal border if [border] is true
+    pub border_horizontal_symbol: String,
+
+    /// The [Pixel.symbol] to use for the vertical border if [border] is true
+    pub border_vertical_symbol: String,
+
+    /// The [Pixel.symbol] to use for the top left border if [border] is true
+    pub border_top_left_symbol: String,
+
+    /// The [Pixel.symbol] to use for the top left border if [border] is true
+    pub border_top_right_symbol: String,
+
+    /// The [Pixel.symbol] to use for the bottom left border if [border] is true
+    pub border_bottom_left_symbol: String,
+
+    /// The [Pixel.symbol] to use for the bottom right border if [border] is true
+    pub border_bottom_right_symbol: String,
+
     /// The[Pixel.foreground_color]  to use for the border if [border] is true
     pub border_foreground_color: Color,
 
@@ -166,6 +152,8 @@ impl Default for DropdownState {
            y: 0,
            size_hint_x: Some(1.0),
            width: 0,
+           halign: HorizontalAlignment::Left,
+           valign: VerticalAlignment::Top,
            focussed: false,
            selected: false,
            options: Vec::new(),
@@ -173,6 +161,12 @@ impl Default for DropdownState {
            dropped_down: false,
            dropped_down_selected_row:0,
            choice: String::new(),
+           border_horizontal_symbol: "━".to_string(),
+           border_vertical_symbol: "│".to_string(),
+           border_top_left_symbol: "┌".to_string(),
+           border_top_right_symbol: "┐".to_string(),
+           border_bottom_left_symbol: "└".to_string(),
+           border_bottom_right_symbol: "┘".to_string(),
            border_foreground_color: Color::White,
            border_background_color: Color::Black,
            content_background_color: Color::Black,
@@ -197,7 +191,7 @@ impl GenericState for DropdownState {
 
     fn get_size_hint_x(&self) -> Option<f64> { self.size_hint_x }
 
-    fn set_size_hint_y(&mut self, size_hint: Option<f64>) {
+    fn set_size_hint_y(&mut self, _size_hint: Option<f64>) {
         panic!("Cannot set size_hint_y for dropdown state")
     }
 
@@ -212,8 +206,8 @@ impl GenericState for DropdownState {
     }
 
     fn get_height(&self) -> usize {
-        if self.dropped_down { self.total_options() + 2 }
-        else { 3 }
+        if self.dropped_down { self.total_options() }
+        else { 1 }
     }
 
     fn set_position(&mut self, position: Coordinates) {
@@ -223,6 +217,25 @@ impl GenericState for DropdownState {
     }
 
     fn get_position(&self) -> Coordinates { (self.x, self.y) }
+
+    fn set_horizontal_alignment(&mut self, alignment: HorizontalAlignment) {
+        self.halign = alignment;
+        self.changed = true;
+    }
+
+    fn get_horizontal_alignment(&self) -> HorizontalAlignment { self.halign }
+
+    fn set_vertical_alignment(&mut self, alignment: VerticalAlignment) {
+        self.valign = alignment;
+        self.changed = true;
+    }
+
+    fn get_vertical_alignment(&self) -> VerticalAlignment { self.valign }
+
+    fn get_effective_position(&self) -> Coordinates {
+        (self.x +if self.has_border() {2} else {0},
+         self.y +if self.has_border() {2} else {0})
+    }
 
     fn set_force_redraw(&mut self, redraw: bool) {
         self.force_redraw = redraw;
@@ -245,17 +258,11 @@ impl DropdownState {
         self.changed = true;
     }
 
-    pub fn get_choice(&self) -> String {
-        self.choice.clone()
-    }
+    pub fn get_choice(&self) -> String { self.choice.clone() }
 
-    pub fn set_options(&mut self, options: Vec<String>) {
-        self.options = options
-    }
+    pub fn set_options(&mut self, options: Vec<String>) { self.options = options }
 
-    pub fn get_options(&self) -> Vec<String> {
-        self.options.clone()
-    }
+    pub fn get_options(&self) -> Vec<String> { self.options.clone() }
 
     pub fn set_focussed(&mut self, allow_none: bool) {
         self.focussed = allow_none;
@@ -269,18 +276,14 @@ impl DropdownState {
         self.changed = true;
     }
 
-    pub fn get_allow_none(&self) -> bool {
-        self.allow_none
-    }
+    pub fn get_allow_none(&self) -> bool { self.allow_none }
 
     pub fn set_dropped_down(&mut self, dropped_down: bool) {
         self.dropped_down = dropped_down;
         self.changed = true;
     }
 
-    pub fn get_dropped_down(&self) -> bool {
-        self.dropped_down
-    }
+    pub fn get_dropped_down(&self) -> bool { self.dropped_down }
 
     pub fn set_dropped_down_selected_row(&mut self, dropped_down_selected_row: usize) {
         self.dropped_down_selected_row = dropped_down_selected_row;
@@ -296,60 +299,77 @@ impl DropdownState {
         self.changed = true;
     }
 
-    pub fn get_border_foreground_color(&self) -> Color {
-        self.border_foreground_color
+    pub fn set_border_horizontal_symbol(&mut self, symbol: String) {
+        self.border_horizontal_symbol = symbol }
+
+    pub fn get_border_horizontal_symbol(&self) -> String { self.border_horizontal_symbol.clone() }
+
+    pub fn set_border_vertical_symbol(&mut self, symbol: String) {
+        self.border_vertical_symbol = symbol }
+
+    pub fn get_border_vertical_symbol(&self) -> String { self.border_vertical_symbol.clone() }
+
+    pub fn set_border_bottom_left_symbol(&mut self, symbol: String) {
+        self.border_bottom_left_symbol = symbol }
+
+    pub fn get_border_bottom_left_symbol(&self) -> String { self.border_bottom_left_symbol.clone() }
+
+    pub fn set_border_bottom_right_symbol(&mut self, symbol: String) {
+        self.border_bottom_right_symbol = symbol }
+    pub fn get_border_bottom_right_symbol(&self) -> String { self.border_bottom_right_symbol.clone() }
+
+    pub fn set_border_top_left_symbol(&mut self, symbol: String) {
+        self.border_top_left_symbol = symbol }
+    pub fn get_border_top_left_symbol(&self) -> String { self.border_top_left_symbol.clone() }
+
+    pub fn set_border_top_right_symbol(&mut self, symbol: String) {
+        self.border_top_right_symbol = symbol
     }
+
+    pub fn get_border_top_right_symbol(&self) -> String { self.border_top_right_symbol.clone() }
+
+    pub fn has_border(&self) -> bool { true }
+
+    pub fn get_border_foreground_color(&self) -> Color { self.border_foreground_color }
 
     pub fn set_border_background_color(&mut self, color: Color) {
         self.border_background_color = color;
         self.changed = true;
     }
 
-    pub fn get_border_background_color(&self) -> Color {
-        self.border_background_color
-    }
+    pub fn get_border_background_color(&self) -> Color { self.border_background_color }
 
     pub fn set_content_foreground_color(&mut self, color: Color) {
         self.content_foreground_color = color;
         self.changed = true;
     }
 
-    pub fn get_content_foreground_color(&self) -> Color {
-        self.content_foreground_color
-    }
+    pub fn get_content_foreground_color(&self) -> Color { self.content_foreground_color }
 
     pub fn set_content_background_color(&mut self, color: Color) {
         self.content_background_color = color;
         self.changed = true;
     }
 
-    pub fn get_content_background_color(&self) -> Color {
-        self.content_background_color
-    }
+    pub fn get_content_background_color(&self) -> Color { self.content_background_color }
 
     pub fn set_selection_foreground_color(&mut self, color: Color) {
         self.selection_foreground_color = color;
         self.changed = true;
     }
 
-    pub fn get_selection_foreground_color(&self) -> Color {
-        self.selection_foreground_color
-    }
+    pub fn get_selection_foreground_color(&self) -> Color { self.selection_foreground_color }
 
     pub fn set_selection_background_color(&mut self, color: Color) {
         self.selection_background_color = color;
         self.changed = true;
     }
 
-    pub fn get_selection_background_color(&self) -> Color {
-        self.selection_background_color
-    }
+    pub fn get_selection_background_color(&self) -> Color { self.selection_background_color }
 
     /// Return the total amount of options in this dropdown including the empty option if it is
     /// allowed.
-    fn total_options(&self) -> usize {
-        self.options.len() + if self.allow_none {1} else {0}
-    }
+    fn total_options(&self) -> usize { self.options.len() + if self.allow_none {1} else {0} }
 
 }
 
@@ -365,6 +385,10 @@ impl EzObject for Dropdown {
             "size_hint_x" => self.state.size_hint_x =
                 load_size_hint(parameter_value.trim()).unwrap(),
             "width" => self.state.width = parameter_value.trim().parse().unwrap(),
+            "halign" =>
+                self.state.halign =  load_halign_parameter(parameter_value.trim()).unwrap(),
+            "valign" =>
+                self.state.valign =  load_valign_parameter(parameter_value.trim()).unwrap(),
             "selection_order" => {
                 self.selection_order = load_selection_order_parameter(
                     parameter_value.as_str()).unwrap();
@@ -413,10 +437,10 @@ impl EzObject for Dropdown {
     }
 
     fn get_state(&self) -> State { State::Dropdown(self.state.clone()) }
+
     /// Content of this widget depends on whether it is currently dropped down or not. If not,
     /// then display a label with a border representing the currently selected value. If dropped
     /// down show a list of all options, with the currently selected one on top.
-
     fn get_contents(&self, state_tree: &mut StateTree) -> PixelMap {
 
         let state =
@@ -450,14 +474,14 @@ impl EzObject for Dropdown {
             contents.push(new_y);
         }
         contents = common::add_border(contents,
-                                      self.border_horizontal_symbol.clone(),
-                                      self.border_vertical_symbol.clone(),
-                                      self.border_top_left_symbol.clone(),
-                                      self.border_top_right_symbol.clone(),
-                                      self.border_bottom_left_symbol.clone(),
-                                      self.border_bottom_right_symbol.clone(),
-                                      self.state.border_background_color,
-                                      self.state.border_foreground_color);
+                                      state.border_horizontal_symbol.clone(),
+                                      state.border_vertical_symbol.clone(),
+                                      state.border_top_left_symbol.clone(),
+                                      state.border_top_right_symbol.clone(),
+                                      state.border_bottom_left_symbol.clone(),
+                                      state.border_bottom_right_symbol.clone(),
+                                      state.border_background_color,
+                                      state.border_foreground_color);
         contents
     }
 
@@ -465,37 +489,10 @@ impl EzObject for Dropdown {
 
     fn get_absolute_position(&self) -> Coordinates { self.absolute_position }
 
-    fn set_border_horizontal_symbol(&mut self, symbol: String) {
-        self.border_horizontal_symbol = symbol }
-
-    fn get_border_horizontal_symbol(&self) -> String { self.border_horizontal_symbol.clone() }
-
-    fn set_border_vertical_symbol(&mut self, symbol: String) {
-        self.border_vertical_symbol = symbol }
-
-    fn get_border_vertical_symbol(&self) -> String { self.border_vertical_symbol.clone() }
-
-    fn set_border_bottom_left_symbol(&mut self, symbol: String) {
-        self.border_bottom_left_symbol = symbol }
-
-    fn get_border_bottom_left_symbol(&self) -> String { self.border_bottom_left_symbol.clone() }
-
-    fn set_border_bottom_right_symbol(&mut self, symbol: String) {
-        self.border_bottom_right_symbol = symbol }
-    fn get_border_bottom_right_symbol(&self) -> String { self.border_bottom_right_symbol.clone() }
-
-    fn set_border_top_left_symbol(&mut self, symbol: String) {
-        self.border_top_left_symbol = symbol }
-    fn get_border_top_left_symbol(&self) -> String { self.border_top_left_symbol.clone() }
-
-    fn set_border_top_right_symbol(&mut self, symbol: String) {
-        self.border_top_right_symbol = symbol
+    fn get_effective_absolute_position(&self) -> Coordinates {
+        let (x, y) = self.get_absolute_position();
+        (x +if self.state.has_border() {1} else {0}, y +if self.state.has_border() {1} else {0})
     }
-
-    fn get_border_top_right_symbol(&self) -> String { self.border_top_right_symbol.clone() }
-
-    fn has_border(&self) -> bool { true }
-
 }
 
 impl EzWidget for Dropdown {
@@ -559,9 +556,7 @@ impl EzWidget for Dropdown {
         self.bound_on_value_change = Some(func)
     }
 
-    fn get_bind_on_value_change(&self) -> Option<GenericEzFunction> {
-        self.bound_on_value_change
-    }
+    fn get_bind_on_value_change(&self) -> Option<GenericEzFunction> { self.bound_on_value_change }
 
     fn on_left_click(&self, context: EzContext, _position: Coordinates) { self.on_press(context); }
 
@@ -631,7 +626,7 @@ impl Dropdown {
         if self.collides(pos) {
             let clicked_row = pos.1 - self.absolute_position.1;
             // Check if not click on border
-            if clicked_row != 0 && clicked_row != self.state.get_height() + 2 {
+            if clicked_row != 0 && clicked_row != self.state.get_effective_height() {
                 state.set_selected(true);
                 let choice = self.get_dropped_down_options(state)[clicked_row - 1]
                     .clone();
@@ -649,7 +644,7 @@ impl Dropdown {
         let hovered_row = pos.1 - self.absolute_position.1;
         // Check if not hover on border
         if hovered_row -1 != state.dropped_down_selected_row &&
-            hovered_row != 0 && hovered_row != self.state.get_height() + 2 { // +2 border
+            hovered_row != 0 && hovered_row != self.state.get_height() + 1 {
             state.set_dropped_down_selected_row(hovered_row - 1);
         }
     }
@@ -720,14 +715,14 @@ impl Dropdown {
 
         }
         contents = common::add_border(contents,
-                                      self.border_horizontal_symbol.clone(),
-                                      self.border_vertical_symbol.clone(),
-                                      self.border_top_left_symbol.clone(),
-                                      self.border_top_right_symbol.clone(),
-                                      self.border_bottom_left_symbol.clone(),
-                                      self.border_bottom_right_symbol.clone(),
-                                      self.state.border_background_color,
-                                      self.state.border_foreground_color);
+                                      state.border_horizontal_symbol.clone(),
+                                      state.border_vertical_symbol.clone(),
+                                      state.border_top_left_symbol.clone(),
+                                      state.border_top_right_symbol.clone(),
+                                      state.border_bottom_left_symbol.clone(),
+                                      state.border_bottom_right_symbol.clone(),
+                                      state.border_background_color,
+                                      state.border_foreground_color);
         contents
     }
 }

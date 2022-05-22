@@ -4,12 +4,13 @@
 use std::fs::File;
 use std::io::prelude::*;
 use crate::widgets::widget::{EzWidget, EzObject, Pixel};
-use crate::widgets::state::{State, GenericState};
+use crate::widgets::state::{State, GenericState, HorizontalAlignment, VerticalAlignment};
 use crate::common::{Coordinates, PixelMap, StateTree};
 use std::io::{Error, ErrorKind};
 use crossterm::style::{Color};
 use unicode_segmentation::UnicodeSegmentation;
-use crate::ez_parser::{load_color_parameter, load_size_hint};
+use crate::ez_parser::{load_color_parameter, load_size_hint, load_halign_parameter,
+                       load_valign_parameter};
 
 pub struct CanvasWidget {
     /// ID of the widget, used to construct [path]
@@ -70,6 +71,12 @@ pub struct CanvasState {
     /// Height of this widget
     pub height: usize,
 
+    /// Horizontal alignment of this widget
+    pub halign: HorizontalAlignment,
+
+    /// Vertical alignment of this widget
+    pub valign: VerticalAlignment,
+
     /// The [Pixel.foreground_color] to use for this widgets' content
     pub content_foreground_color: Color,
 
@@ -93,6 +100,8 @@ impl Default for CanvasState {
             size_hint_y: Some(1.0),
             width: 0,
             height: 0,
+            halign: HorizontalAlignment::Left,
+            valign: VerticalAlignment::Top,
             content_foreground_color: Color::White,
             content_background_color: Color::Black,
             changed: false,
@@ -136,6 +145,20 @@ impl GenericState for CanvasState {
 
     fn get_position(&self) -> Coordinates { (self.x, self.y) }
 
+    fn set_horizontal_alignment(&mut self, alignment: HorizontalAlignment) {
+        self.halign = alignment;
+        self.changed = true;
+    }
+
+    fn get_horizontal_alignment(&self) -> HorizontalAlignment { self.halign }
+
+    fn set_vertical_alignment(&mut self, alignment: VerticalAlignment) {
+        self.valign = alignment;
+        self.changed = true;
+    }
+
+    fn get_vertical_alignment(&self) -> VerticalAlignment { self.valign }
+
     fn set_force_redraw(&mut self, redraw: bool) {
         self.force_redraw = redraw;
         self.changed = true;
@@ -178,6 +201,10 @@ impl EzObject for CanvasWidget {
                 load_size_hint(parameter_value.trim()).unwrap(),
             "width" => self.state.width = parameter_value.trim().parse().unwrap(),
             "height" => self.state.height = parameter_value.trim().parse().unwrap(),
+            "halign" =>
+                self.state.halign =  load_halign_parameter(parameter_value.trim()).unwrap(),
+            "valign" =>
+                self.state.valign =  load_valign_parameter(parameter_value.trim()).unwrap(),
             "fg_color" =>
                 self.state.content_foreground_color = load_color_parameter(parameter_value).unwrap(),
             "bg_color" =>
@@ -238,9 +265,9 @@ impl EzObject for CanvasWidget {
                 .map(|x| x.graphemes(true).rev().collect())
                 .collect();
             let mut widget_content = PixelMap::new();
-            for x in 0..state.get_width() {
+            for x in 0..state.get_effective_width() {
                 widget_content.push(Vec::new());
-                for y in 0..state.get_height() {
+                for y in 0..state.get_effective_height() {
                     if y < lines.len() && !lines[y].is_empty() {
                         widget_content[x].push(Pixel { symbol: lines[y].pop().unwrap().to_string(),
                             foreground_color: self.state.content_foreground_color,

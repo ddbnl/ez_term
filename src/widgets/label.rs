@@ -5,8 +5,9 @@ use std::io::{Error, ErrorKind};
 use crossterm::style::{Color};
 use crate::common::{Coordinates, PixelMap, StateTree};
 use crate::widgets::widget::{Pixel, EzObject, EzWidget};
-use crate::widgets::state::{State, GenericState};
-use crate::ez_parser::{load_color_parameter, load_bool_parameter, load_size_hint};
+use crate::widgets::state::{State, GenericState, HorizontalAlignment, VerticalAlignment};
+use crate::ez_parser::{load_color_parameter, load_bool_parameter, load_size_hint,
+                       load_halign_parameter, load_valign_parameter};
 
 pub struct Label {
 
@@ -18,27 +19,6 @@ pub struct Label {
 
     /// Absolute position of this layout on screen. Automatically propagated, do not set manually
     pub absolute_position: Coordinates,
-
-    /// Bool representing whether this widget should have a surrounding border
-    pub border: bool,
-
-    /// The [Pixel.symbol] to use for the horizontal border if [border] is true
-    pub border_horizontal_symbol: String,
-
-    /// The [Pixel.symbol] to use for the vertical border if [border] is true
-    pub border_vertical_symbol: String,
-
-    /// The [Pixel.symbol] to use for the top left border if [border] is true
-    pub border_top_left_symbol: String,
-
-    /// The [Pixel.symbol] to use for the top left border if [border] is true
-    pub border_top_right_symbol: String,
-
-    /// The [Pixel.symbol] to use for the bottom left border if [border] is true
-    pub border_bottom_left_symbol: String,
-
-    /// The [Pixel.symbol] to use for the bottom right border if [border] is true
-    pub border_bottom_right_symbol: String,
 
     /// Optional file path to retrieve text from
     pub from_file: Option<String>,
@@ -53,13 +33,6 @@ impl Default for Label {
             id: "".to_string(),
             path: String::new(),
             absolute_position: (0, 0),
-            border: false,
-            border_horizontal_symbol: "━".to_string(),
-            border_vertical_symbol: "│".to_string(),
-            border_top_left_symbol: "┌".to_string(),
-            border_top_right_symbol: "┐".to_string(),
-            border_bottom_left_symbol: "└".to_string(),
-            border_bottom_right_symbol: "┘".to_string(),
             from_file: None,
             state: LabelState::default(),
         }
@@ -92,6 +65,33 @@ pub struct LabelState {
     /// Height of this widget
     pub height: usize,
 
+    /// Horizontal alignment of this widget
+    pub halign: HorizontalAlignment,
+
+    /// Vertical alignment of this widget
+    pub valign: VerticalAlignment,
+
+    /// Bool representing whether this widget should have a surrounding border
+    pub border: bool,
+
+    /// The [Pixel.symbol] to use for the horizontal border if [border] is true
+    pub border_horizontal_symbol: String,
+
+    /// The [Pixel.symbol] to use for the vertical border if [border] is true
+    pub border_vertical_symbol: String,
+
+    /// The [Pixel.symbol] to use for the top left border if [border] is true
+    pub border_top_left_symbol: String,
+
+    /// The [Pixel.symbol] to use for the top left border if [border] is true
+    pub border_top_right_symbol: String,
+
+    /// The [Pixel.symbol] to use for the bottom left border if [border] is true
+    pub border_bottom_left_symbol: String,
+
+    /// The [Pixel.symbol] to use for the bottom right border if [border] is true
+    pub border_bottom_right_symbol: String,
+
     /// The[Pixel.foreground_color]  to use for the border if [border] is true
     pub border_foreground_color: Color,
 
@@ -121,7 +121,16 @@ impl Default for LabelState {
            size_hint_y: Some(1.0),
            width: 0,
            height: 0,
+           halign: HorizontalAlignment::Left,
+           valign: VerticalAlignment::Top,
            text: String::new(),
+           border: false,
+           border_horizontal_symbol: "━".to_string(),
+           border_vertical_symbol: "│".to_string(),
+           border_top_left_symbol: "┌".to_string(),
+           border_top_right_symbol: "┐".to_string(),
+           border_bottom_left_symbol: "└".to_string(),
+           border_bottom_right_symbol: "┘".to_string(),
            border_foreground_color: Color::White,
            border_background_color: Color::Black,
            content_background_color: Color::Black,
@@ -155,9 +164,13 @@ impl GenericState for LabelState {
 
     fn get_width(&self) -> usize { self.width }
 
+    fn get_effective_width(&self) -> usize {self.get_width() -if self.has_border() {2} else {0} }
+
     fn set_height(&mut self, height: usize) { self.height = height; self.changed = true; }
 
     fn get_height(&self) -> usize { self.height }
+
+    fn get_effective_height(&self) -> usize {self.get_height() -if self.has_border() {2} else {0} }
 
     fn set_position(&mut self, position: Coordinates) {
         self.x = position.0;
@@ -166,6 +179,25 @@ impl GenericState for LabelState {
     }
 
     fn get_position(&self) -> Coordinates { (self.x, self.y) }
+
+    fn get_effective_position(&self) -> Coordinates {
+        (self.x +if self.has_border() {2} else {0},
+         self.y +if self.has_border() {2} else {0})
+    }
+
+    fn set_horizontal_alignment(&mut self, alignment: HorizontalAlignment) {
+        self.halign = alignment;
+        self.changed = true;
+    }
+
+    fn get_horizontal_alignment(&self) -> HorizontalAlignment { self.halign }
+
+    fn set_vertical_alignment(&mut self, alignment: VerticalAlignment) {
+        self.valign = alignment;
+        self.changed = true;
+    }
+
+    fn get_vertical_alignment(&self) -> VerticalAlignment { self.valign }
 
     fn set_force_redraw(&mut self, redraw: bool) {
         self.force_redraw = redraw;
@@ -182,6 +214,47 @@ impl LabelState {
     }
 
     pub fn get_text(&self) -> String { self.text.clone() }
+
+
+    pub fn set_border_horizontal_symbol(&mut self, symbol: String) {
+        self.border_horizontal_symbol = symbol
+    }
+
+    pub fn get_border_horizontal_symbol(&self) -> String { self.border_horizontal_symbol.clone() }
+
+    pub fn set_border_vertical_symbol(&mut self, symbol: String) {
+        self.border_vertical_symbol = symbol
+    }
+
+    pub fn get_border_vertical_symbol(&self) -> String { self.border_vertical_symbol.clone() }
+
+    pub fn set_border_bottom_left_symbol(&mut self, symbol: String) {
+        self.border_bottom_left_symbol = symbol
+    }
+
+    pub fn get_border_bottom_left_symbol(&self) -> String { self.border_bottom_left_symbol.clone() }
+
+    pub fn set_border_bottom_right_symbol(&mut self, symbol: String) {
+        self.border_bottom_right_symbol = symbol
+    }
+
+    pub fn get_border_bottom_right_symbol(&self) -> String { self.border_bottom_right_symbol.clone() }
+
+    pub fn set_border_top_left_symbol(&mut self, symbol: String) {
+        self.border_top_left_symbol = symbol
+    }
+
+    pub fn get_border_top_left_symbol(&self) -> String { self.border_top_left_symbol.clone() }
+
+    pub fn set_border_top_right_symbol(&mut self, symbol: String) {
+        self.border_top_right_symbol = symbol
+    }
+
+    pub fn get_border_top_right_symbol(&self) -> String { self.border_top_right_symbol.clone() }
+
+    pub fn set_border(&mut self, enabled: bool) { self.border = enabled }
+
+    pub fn has_border(&self) -> bool { self.border }
 
     pub fn set_border_foreground_color(&mut self, color: Color) {
         self.border_foreground_color = color;
@@ -227,6 +300,10 @@ impl EzObject for Label {
                 load_size_hint(parameter_value.trim()).unwrap(),
             "width" => self.state.width = parameter_value.trim().parse().unwrap(),
             "height" => self.state.height = parameter_value.trim().parse().unwrap(),
+            "halign" =>
+                self.state.halign =  load_halign_parameter(parameter_value.trim()).unwrap(),
+            "valign" =>
+                self.state.valign =  load_valign_parameter(parameter_value.trim()).unwrap(),
             "fg_color" =>
                 self.state.content_foreground_color = load_color_parameter(parameter_value).unwrap(),
             "bg_color" =>
@@ -238,18 +315,18 @@ impl EzObject for Label {
                 self.state.text = parameter_value
             },
             "from_file" => self.from_file = Some(parameter_value.trim().to_string()),
-            "border" => self.set_border(load_bool_parameter(parameter_value.trim())?),
-            "border_horizontal_symbol" => self.border_horizontal_symbol =
+            "border" => self.state.set_border(load_bool_parameter(parameter_value.trim())?),
+            "border_horizontal_symbol" => self.state.border_horizontal_symbol =
                 parameter_value.trim().to_string(),
-            "border_vertical_symbol" => self.border_vertical_symbol =
+            "border_vertical_symbol" => self.state.border_vertical_symbol =
                 parameter_value.trim().to_string(),
-            "border_top_right_symbol" => self.border_top_right_symbol =
+            "border_top_right_symbol" => self.state.border_top_right_symbol =
                 parameter_value.trim().to_string(),
-            "border_top_left_symbol" => self.border_top_left_symbol =
+            "border_top_left_symbol" => self.state.border_top_left_symbol =
                 parameter_value.trim().to_string(),
-            "border_bottom_left_symbol" => self.border_bottom_left_symbol =
+            "border_bottom_left_symbol" => self.state.border_bottom_left_symbol =
                 parameter_value.trim().to_string(),
-            "border_bottom_right_symbol" => self.border_bottom_right_symbol =
+            "border_bottom_right_symbol" => self.state.border_bottom_right_symbol =
                 parameter_value.trim().to_string(),
             "border_fg_color" =>
                 self.state.border_foreground_color = load_color_parameter(parameter_value).unwrap(),
@@ -303,7 +380,7 @@ impl EzObject for Label {
         // readable. When we're done, the Y coordinate of this widget indexes this list of lines
         // for a string and the X coordinate indexes that string.
         let mut content_lines = Vec::new();
-        let chunk_size = state.get_width() -if self.has_border() {2} else {0}; // Split lines at widget width to make it fit
+        let chunk_size = state.get_effective_width(); // Split lines at widget width to make it fit
         loop {
             if text.len() >= chunk_size {
                 let peek= text[0..chunk_size].to_string();
@@ -350,9 +427,9 @@ impl EzObject for Label {
 
         // Now we'll create the actual PixelMap using the lines we've created.
         let mut contents = Vec::new();
-        for x in 0..state.get_width() {
+        for x in 0..state.get_effective_width() {
             let mut new_y = Vec::new();
-            for y in 0..state.get_height() {
+            for y in 0..state.get_effective_height() {
                 if y < content_lines.len() && x < content_lines[y].len() {
                     new_y.push(Pixel {
                         symbol: content_lines[y][x..x+1].to_string(),
@@ -378,45 +455,10 @@ impl EzObject for Label {
 
     fn get_absolute_position(&self) -> Coordinates { self.absolute_position }
 
-    fn set_border_horizontal_symbol(&mut self, symbol: String) {
-        self.border_horizontal_symbol = symbol
+    fn get_effective_absolute_position(&self) -> Coordinates {
+        let (x, y) = self.get_absolute_position();
+        (x +if self.state.has_border() {1} else {0}, y +if self.state.has_border() {1} else {0})
     }
-
-    fn get_border_horizontal_symbol(&self) -> String { self.border_horizontal_symbol.clone() }
-
-    fn set_border_vertical_symbol(&mut self, symbol: String) {
-        self.border_vertical_symbol = symbol
-    }
-
-    fn get_border_vertical_symbol(&self) -> String { self.border_vertical_symbol.clone() }
-
-    fn set_border_bottom_left_symbol(&mut self, symbol: String) {
-        self.border_bottom_left_symbol = symbol
-    }
-
-    fn get_border_bottom_left_symbol(&self) -> String { self.border_bottom_left_symbol.clone() }
-
-    fn set_border_bottom_right_symbol(&mut self, symbol: String) {
-        self.border_bottom_right_symbol = symbol
-    }
-
-    fn get_border_bottom_right_symbol(&self) -> String { self.border_bottom_right_symbol.clone() }
-
-    fn set_border_top_left_symbol(&mut self, symbol: String) {
-        self.border_top_left_symbol = symbol
-    }
-
-    fn get_border_top_left_symbol(&self) -> String { self.border_top_left_symbol.clone() }
-
-    fn set_border_top_right_symbol(&mut self, symbol: String) {
-        self.border_top_right_symbol = symbol
-    }
-
-    fn get_border_top_right_symbol(&self) -> String { self.border_top_right_symbol.clone() }
-
-    fn set_border(&mut self, enabled: bool) { self.border = enabled }
-
-    fn has_border(&self) -> bool { self.border }
 }
 
 impl EzWidget for Label {}

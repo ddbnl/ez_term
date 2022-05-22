@@ -6,8 +6,9 @@ use crossterm::style::{Color};
 use crate::common::{self, Coordinates, PixelMap, MouseCallbackFunction, GenericEzFunction,
                     EzContext, StateTree, KeyMap, KeyboardCallbackFunction};
 use crate::widgets::widget::{EzWidget, Pixel, EzObject};
-use crate::widgets::state::{State, GenericState, SelectableState};
-use crate::ez_parser::{load_color_parameter, load_bool_parameter, load_text_parameter, load_selection_order_parameter, load_size_hint};
+use crate::widgets::state::{State, GenericState, SelectableState, HorizontalAlignment, VerticalAlignment};
+use crate::ez_parser::{load_color_parameter, load_text_parameter, load_selection_order_parameter,
+                       load_size_hint, load_halign_parameter, load_valign_parameter};
 
 pub struct Button {
 
@@ -19,24 +20,6 @@ pub struct Button {
 
     /// Absolute position of this layout on screen. Automatically propagated, do not set manually
     pub absolute_position: Coordinates,
-
-    /// The [Pixel.symbol] to use for the horizontal border if [border] is true
-    pub border_horizontal_symbol: String,
-
-    /// The [Pixel.symbol] to use for the vertical border if [border] is true
-    pub border_vertical_symbol: String,
-
-    /// The [Pixel.symbol] to use for the top left border if [border] is true
-    pub border_top_left_symbol: String,
-
-    /// The [Pixel.symbol] to use for the top left border if [border] is true
-    pub border_top_right_symbol: String,
-
-    /// The [Pixel.symbol] to use for the bottom left border if [border] is true
-    pub border_bottom_left_symbol: String,
-
-    /// The [Pixel.symbol] to use for the bottom right border if [border] is true
-    pub border_bottom_right_symbol: String,
 
     /// Global order number in which this widget will be selection when user presses down/up keys
     pub selection_order: usize,
@@ -74,12 +57,6 @@ impl Default for Button {
             id: "".to_string(),
             path: String::new(),
             absolute_position: (0, 0),
-            border_horizontal_symbol: "━".to_string(),
-            border_vertical_symbol: "│".to_string(),
-            border_top_left_symbol: "┌".to_string(),
-            border_top_right_symbol: "┐".to_string(),
-            border_bottom_left_symbol: "└".to_string(),
-            border_bottom_right_symbol: "┘".to_string(),
             selection_order: 0,
             bound_on_select: None,
             bound_on_deselect: None,
@@ -122,7 +99,31 @@ pub struct ButtonState {
 
     /// Width of this widget
     pub height: usize,
-    
+
+    /// Horizontal alignment of this widget
+    pub halign: HorizontalAlignment,
+
+    /// Vertical alignment of this widget
+    pub valign: VerticalAlignment,
+
+    /// The [Pixel.symbol] to use for the horizontal border if [border] is true
+    pub border_horizontal_symbol: String,
+
+    /// The [Pixel.symbol] to use for the vertical border if [border] is true
+    pub border_vertical_symbol: String,
+
+    /// The [Pixel.symbol] to use for the top left border if [border] is true
+    pub border_top_left_symbol: String,
+
+    /// The [Pixel.symbol] to use for the top left border if [border] is true
+    pub border_top_right_symbol: String,
+
+    /// The [Pixel.symbol] to use for the bottom left border if [border] is true
+    pub border_bottom_left_symbol: String,
+
+    /// The [Pixel.symbol] to use for the bottom right border if [border] is true
+    pub border_bottom_right_symbol: String,
+
     /// The[Pixel.foreground_color]  to use for the border if [border] is true
     pub border_foreground_color: Color,
 
@@ -157,6 +158,7 @@ pub struct ButtonState {
 }
 impl Default for ButtonState {
     fn default() -> Self {
+
        ButtonState {
            x: 0,
            y: 0,
@@ -164,9 +166,17 @@ impl Default for ButtonState {
            size_hint_y: Some(1.0),
            width: 0,
            height: 0,
+           halign: HorizontalAlignment::Left,
+           valign: VerticalAlignment::Top,
            text: String::new(),
            selected: false,
            flashing: false,
+           border_horizontal_symbol: "━".to_string(),
+           border_vertical_symbol: "│".to_string(),
+           border_top_left_symbol: "┌".to_string(),
+           border_top_right_symbol: "┐".to_string(),
+           border_bottom_left_symbol: "└".to_string(),
+           border_bottom_right_symbol: "┘".to_string(),
            border_foreground_color: Color::White,
            border_background_color: Color::Black,
            content_foreground_color: Color::White,
@@ -204,9 +214,17 @@ impl GenericState for ButtonState {
 
     fn get_width(&self) -> usize { self.width }
 
+    fn get_effective_width(&self) -> usize {
+        self.get_width() - 2 // Buttons always have borders
+    }
+
     fn set_height(&mut self, height: usize) { self.height = height }
-    
+
     fn get_height(&self) -> usize { self.height }
+
+    fn get_effective_height(&self) -> usize {
+       self.get_height() - 2 // Buttons always have borders
+    }
 
     fn set_position(&mut self, position: Coordinates) {
         self.x = position.0;
@@ -215,6 +233,25 @@ impl GenericState for ButtonState {
     }
 
     fn get_position(&self) -> Coordinates { (self.x, self.y) }
+
+    fn get_effective_position(&self) -> Coordinates {
+        (self.x +if self.has_border() {2} else {0},
+         self.y +if self.has_border() {2} else {0})
+    }
+
+    fn set_horizontal_alignment(&mut self, alignment: HorizontalAlignment) {
+        self.halign = alignment;
+        self.changed = true;
+    }
+
+    fn get_horizontal_alignment(&self) -> HorizontalAlignment { self.halign }
+
+    fn set_vertical_alignment(&mut self, alignment: VerticalAlignment) {
+        self.valign = alignment;
+        self.changed = true;
+    }
+
+    fn get_vertical_alignment(&self) -> VerticalAlignment { self.valign }
 
     fn set_force_redraw(&mut self, redraw: bool) {
         self.force_redraw = redraw;
@@ -249,6 +286,44 @@ impl ButtonState {
     pub fn get_flashing(&self) -> bool {
         self.flashing
     }
+
+    pub fn set_border_horizontal_symbol(&mut self, symbol: String) {
+        self.border_horizontal_symbol = symbol
+    }
+
+    pub fn get_border_horizontal_symbol(&self) -> String { self.border_horizontal_symbol.clone() }
+
+    pub fn set_border_vertical_symbol(&mut self, symbol: String) {
+        self.border_vertical_symbol = symbol
+    }
+
+    pub fn get_border_vertical_symbol(&self) -> String { self.border_vertical_symbol.clone() }
+
+    pub fn set_border_bottom_left_symbol(&mut self, symbol: String) {
+        self.border_bottom_left_symbol = symbol
+    }
+
+    pub fn get_border_bottom_left_symbol(&self) -> String { self.border_bottom_left_symbol.clone() }
+
+    pub fn set_border_bottom_right_symbol(&mut self, symbol: String) {
+        self.border_bottom_right_symbol = symbol
+    }
+
+    pub fn get_border_bottom_right_symbol(&self) -> String { self.border_bottom_right_symbol.clone() }
+
+    pub fn set_border_top_left_symbol(&mut self, symbol: String) {
+        self.border_top_left_symbol = symbol
+    }
+
+    pub fn get_border_top_left_symbol(&self) -> String { self.border_top_left_symbol.clone() }
+
+    pub fn set_border_top_right_symbol(&mut self, symbol: String) {
+        self.border_top_right_symbol = symbol
+    }
+
+    pub fn get_border_top_right_symbol(&self) -> String { self.border_top_right_symbol.clone() }
+
+    pub fn has_border(&self) -> bool { true }
 
     pub fn set_border_foreground_color(&mut self, color: Color) {
         self.border_foreground_color = color;
@@ -337,7 +412,11 @@ impl EzObject for Button {
                 load_size_hint(parameter_value.trim()).unwrap(),
             "width" => self.state.width = parameter_value.trim().parse().unwrap(),
             "height" => self.state.height = parameter_value.trim().parse().unwrap(),
-            "fg_color" => self.state.content_foreground_color = 
+            "halign" =>
+                self.state.halign =  load_halign_parameter(parameter_value.trim()).unwrap(),
+            "valign" =>
+                self.state.valign =  load_valign_parameter(parameter_value.trim()).unwrap(),
+            "fg_color" => self.state.content_foreground_color =
                 load_color_parameter(parameter_value).unwrap(),
             "bg_color" => self.state.content_background_color =
                 load_color_parameter(parameter_value).unwrap(),
@@ -353,18 +432,17 @@ impl EzObject for Button {
                 parameter_value.as_str()).unwrap(); },
             "text" => { self.state.text = 
                 load_text_parameter(parameter_value.as_str()).unwrap(); },
-            "border" => self.set_border(load_bool_parameter(parameter_value.trim())?),
-            "border_horizontal_symbol" => self.border_horizontal_symbol =
+            "border_horizontal_symbol" => self.state.border_horizontal_symbol =
                 parameter_value.trim().to_string(),
-            "border_vertical_symbol" => self.border_vertical_symbol =
+            "border_vertical_symbol" => self.state.border_vertical_symbol =
                 parameter_value.trim().to_string(),
-            "border_top_right_symbol" => self.border_top_right_symbol =
+            "border_top_right_symbol" => self.state.border_top_right_symbol =
                 parameter_value.trim().to_string(),
-            "border_top_left_symbol" => self.border_top_left_symbol =
+            "border_top_left_symbol" => self.state.border_top_left_symbol =
                 parameter_value.trim().to_string(),
-            "border_bottom_left_symbol" => self.border_bottom_left_symbol =
+            "border_bottom_left_symbol" => self.state.border_bottom_left_symbol =
                 parameter_value.trim().to_string(),
-            "border_bottom_right_symbol" => self.border_bottom_right_symbol =
+            "border_bottom_right_symbol" => self.state.border_bottom_right_symbol =
                 parameter_value.trim().to_string(),
             "border_fg_color" =>
                 self.state.border_foreground_color = load_color_parameter(parameter_value).unwrap(),
@@ -410,9 +488,9 @@ impl EzObject for Button {
         let bg_color = if state.flashing {state.flash_background_color}
             else if state.selected {state.selection_background_color}
             else {state.content_background_color};
-        for _ in 0..state.get_width() - 2 {
+        for _ in 0..state.get_effective_width() {
             let mut new_y = Vec::new();
-            for _ in 0..state.get_height() - 2 {
+            for _ in 0..state.get_effective_height() {
                 if !text.is_empty() {
                     new_y.push(Pixel { symbol: text.pop().unwrap().to_string(),
                         foreground_color: fg_color, background_color: bg_color, underline: false })
@@ -424,14 +502,14 @@ impl EzObject for Button {
             contents.push(new_y);
         }
         contents = common::add_border(contents,
-                                      self.border_horizontal_symbol.clone(),
-                                      self.border_vertical_symbol.clone(),
-                                      self.border_top_left_symbol.clone(),
-                                      self.border_top_right_symbol.clone(),
-                                      self.border_bottom_left_symbol.clone(),
-                                      self.border_bottom_right_symbol.clone(),
-                                      self.state.border_background_color,
-                                      self.state.border_foreground_color);
+                                      state.border_horizontal_symbol.clone(),
+                                      state.border_vertical_symbol.clone(),
+                                      state.border_top_left_symbol.clone(),
+                                      state.border_top_right_symbol.clone(),
+                                      state.border_bottom_left_symbol.clone(),
+                                      state.border_bottom_right_symbol.clone(),
+                                      state.border_background_color,
+                                      state.border_foreground_color);
         contents
     }
 
@@ -439,43 +517,10 @@ impl EzObject for Button {
 
     fn get_absolute_position(&self) -> Coordinates { self.absolute_position }
 
-    fn set_border_horizontal_symbol(&mut self, symbol: String) {
-        self.border_horizontal_symbol = symbol
+    fn get_effective_absolute_position(&self) -> Coordinates {
+        let (x, y) = self.get_absolute_position();
+        (x +if self.state.has_border() {1} else {0}, y +if self.state.has_border() {1} else {0})
     }
-
-    fn get_border_horizontal_symbol(&self) -> String { self.border_horizontal_symbol.clone() }
-
-    fn set_border_vertical_symbol(&mut self, symbol: String) {
-        self.border_vertical_symbol = symbol
-    }
-
-    fn get_border_vertical_symbol(&self) -> String { self.border_vertical_symbol.clone() }
-
-    fn set_border_bottom_left_symbol(&mut self, symbol: String) {
-        self.border_bottom_left_symbol = symbol
-    }
-
-    fn get_border_bottom_left_symbol(&self) -> String { self.border_bottom_left_symbol.clone() }
-
-    fn set_border_bottom_right_symbol(&mut self, symbol: String) {
-        self.border_bottom_right_symbol = symbol
-    }
-
-    fn get_border_bottom_right_symbol(&self) -> String { self.border_bottom_right_symbol.clone() }
-
-    fn set_border_top_left_symbol(&mut self, symbol: String) {
-        self.border_top_left_symbol = symbol
-    }
-
-    fn get_border_top_left_symbol(&self) -> String { self.border_top_left_symbol.clone() }
-
-    fn set_border_top_right_symbol(&mut self, symbol: String) {
-        self.border_top_right_symbol = symbol
-    }
-
-    fn get_border_top_right_symbol(&self) -> String { self.border_top_right_symbol.clone() }
-
-    fn has_border(&self) -> bool { true }
 
 }
 
@@ -487,6 +532,8 @@ impl EzWidget for Button {
     fn is_selected(&self) -> bool { self.state.selected }
 
 
+    fn get_selection_order(&self) -> usize { self.selection_order }
+
     fn get_key_map(&self) -> &KeyMap {
         &self.keymap
     }
@@ -494,8 +541,6 @@ impl EzWidget for Button {
     fn bind_key(&mut self, key: KeyCode, func: KeyboardCallbackFunction) {
         self.keymap.insert(key, func);
     }
-
-    fn get_selection_order(&self) -> usize { self.selection_order }
 
     fn set_bind_on_press(&mut self, func: GenericEzFunction) { self.bound_on_press = Some(func) }
 

@@ -258,6 +258,10 @@ pub trait EzObject {
     /// parent widget.
     fn get_absolute_position(&self) -> Coordinates;
 
+    /// Get the absolute position of where the actual content of the widget starts, taking out
+    /// e.g. border and padding
+    fn get_effective_absolute_position(&self) -> Coordinates { self.get_absolute_position() }
+
     /// Get the top left and bottom right corners of a widget in (X, Y) coordinate tuples.
     fn get_box(&self) -> (Coordinates, Coordinates) {
         let top_left = self.get_absolute_position();
@@ -279,67 +283,13 @@ pub trait EzObject {
 
     /// Returns a bool representing whether a single point collides with a widget.
     fn collides(&self, pos: Coordinates) -> bool {
-        let mut starting_pos = self.get_absolute_position();
-        if self.has_border() {
-            starting_pos = (starting_pos.0 + 1, starting_pos.1 + 1);
-        }
+        let starting_pos = self.get_effective_absolute_position();
         let end_pos =
             (starting_pos.0 + self.get_state().as_generic_state().get_width() - 1,
              starting_pos.1 + self.get_state().as_generic_state().get_height() - 1);
         pos.0 >= starting_pos.0 && pos.0 <= end_pos.0 &&
             pos.1 >= starting_pos.1 && pos.1 <= end_pos.1
     }
-
-    /// Set the symbol used to create the horizontal parts of the border for a widget.
-    fn set_border_horizontal_symbol(&mut self, _symbol: String) {
-        panic!("Cannot manually set border for this widget"); }
-
-    /// Get the symbol used to create the horizontal parts of the border for a widget.
-    fn get_border_horizontal_symbol(&self) -> String { "━".to_string() }
-
-    /// Set the symbol used to create the vertical parts of the border for a widget.
-    fn set_border_vertical_symbol(&mut self, _symbol: String) {
-        panic!("Cannot manually set border for this widget"); }
-
-    /// Get the symbol used to create the vertical parts of the border for a widget.
-    fn get_border_vertical_symbol(&self) -> String { "│".to_string() }
-
-    /// Set the symbol used to create the bottom left part of the border for a widget.
-    fn set_border_bottom_left_symbol(&mut self, _symbol: String) {
-        panic!("Cannot manually set border for this widget"); }
-
-    /// Get the symbol used to create the bottom left part of the border for a widget.
-    fn get_border_bottom_left_symbol(&self) -> String { "└".to_string() }
-
-    /// Set the symbol used to create the bottom right part of the border for a widget.
-    fn set_border_bottom_right_symbol(&mut self, _symbol: String) {
-        panic!("Cannot manually set border for this widget"); }
-
-    /// Get the symbol used to create the bottom right part of the border for a widget.
-    fn get_border_bottom_right_symbol(&self) -> String { "┘".to_string() }
-
-    /// Set the symbol used to create the top left part of the border for a widget.
-    fn set_border_top_left_symbol(&mut self, _symbol: String) {
-        panic!("Cannot manually set border for this widget"); }
-
-    /// Get the symbol used to create the top left part of the border for a widget.
-    fn get_border_top_left_symbol(&self) -> String { "┌".to_string() }
-
-    /// Set the symbol used to create the top right part of the border for a widget.
-    fn set_border_top_right_symbol(&mut self, _symbol: String) {
-        panic!("Cannot manually set border for this widget"); }
-
-    /// Get the symbol used to create the top right part of the border for a widget.
-    fn get_border_top_right_symbol(&self) -> String { "┐".to_string() }
-
-    /// Set whether a border will be painted around this widget.
-    fn set_border(&mut self, _enabled: bool) {
-        panic!("Widget has no border implementation: {}", self.get_id())
-    }
-
-    /// Returns whether this widget has (or should get) a border.
-    fn has_border(&self) -> bool { false }
-
 }
 
 

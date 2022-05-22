@@ -203,10 +203,17 @@ pub trait GenericState {
     fn get_size_hint_y(&self) -> Option<f64>;
     fn set_width(&mut self, width: usize);
     fn get_width(&self) -> usize;
+    fn get_effective_width(&self) -> usize { self.get_width() }
     fn set_height(&mut self, height: usize);
     fn get_height(&self) -> usize;
+    fn get_effective_height(&self) -> usize { self.get_height() }
     fn set_position(&mut self, pos: Coordinates);
     fn get_position(&self) -> Coordinates;
+    fn get_effective_position(&self) -> Coordinates { self.get_position() }
+    fn set_horizontal_alignment(&mut self, alignment: HorizontalAlignment);
+    fn get_horizontal_alignment(&self) -> HorizontalAlignment;
+    fn set_vertical_alignment(&mut self, alignment: VerticalAlignment);
+    fn get_vertical_alignment(&self) -> VerticalAlignment;
     fn set_force_redraw(&mut self, state: bool);
     fn get_force_redraw(&self) -> bool;
 }
@@ -217,4 +224,19 @@ pub trait GenericState {
 pub trait SelectableState {
     fn set_selected(&mut self, state: bool);
     fn get_selected(&self) -> bool;
+}
+
+
+#[derive(Clone, Copy)]
+pub enum HorizontalAlignment {
+    Left,
+    Right,
+    Center
+}
+
+#[derive(Clone, Copy)]
+pub enum VerticalAlignment {
+    Top,
+    Bottom,
+    Middle
 }

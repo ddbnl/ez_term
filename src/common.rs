@@ -337,6 +337,43 @@ pub fn add_border(mut content: PixelMap, horizontal_symbol: String, vertical_sym
 
 }
 
+
+/// Add padding around a PixelMap.
+pub fn add_padding(mut content: PixelMap, top: usize, bottom: usize, left: usize, right: usize,
+                  bg_color: Color, fg_color: Color) -> PixelMap {
+
+    let padding_pixel = Pixel{ symbol: " ".to_string(), background_color: bg_color,
+        foreground_color: fg_color, underline: false};
+
+    // Create vertical padding
+    let mut vertical_padding = Vec::new();
+    for _ in 0..content[0].len() {
+        vertical_padding.push(padding_pixel.clone());
+    }
+    for _ in 0..left {
+        content.insert(0, vertical_padding.clone());
+    }
+    for _ in 0..right {
+        content.push(vertical_padding.clone());
+    }
+    if top != 0 {
+        for x in content.iter_mut() {
+            for _ in 0..top {
+                x.insert(0, padding_pixel.clone());
+            }
+        }
+    }
+    if bottom != 0 {
+        for x in content.iter_mut() {
+            for _ in 0..bottom {
+                x.push(padding_pixel.clone());
+            }
+        }
+    }
+    content
+}
+
+
 /// Take a PixelMap and rotate it. Normally a Vec<Vec<Pixel>> is essentially a list
 /// of rows. Therefore "for X in PixelMap, for Y in X" let's you iterate in the Y direction.
 /// By rotating the PixelMap it is turned into a list of columns, so that it becomes

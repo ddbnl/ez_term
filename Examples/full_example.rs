@@ -1,5 +1,3 @@
-use std::time::Duration;
-use crossterm::style::Color;
 use ez_term::{ez_parser, run};
 use ez_term::common::{EzContext};
 use ez_term::widgets::state::{SelectableState};
