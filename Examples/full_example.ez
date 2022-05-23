@@ -9,14 +9,15 @@
         size_hint_y: 1
         orientation: vertical
         - Canvas: canvas_widget
-            size_hint_x: 1
-            size_hint_y: 1/3
+            auto_scale_width: true
+            auto_scale_height: true
             from_file: ./Examples/example_art.txt
+            halign: center
         - Layout: bottom_layout
             mode: box
             orientation: horizontal
             size_hint_x: 1
-            size_hint_y: 2/3
+            size_hint_y: 1
             - Layout: small_layout_1
                 mode: box
                 orientation: vertical
@@ -29,9 +30,11 @@
                     text: Layout 1:
                     fg_color: Magenta
                     bg_color: Black
-                    size_hint_x: 1
-                    size_hint_y: 1
-                    height: 1
+                    auto_scale_height: true
+                    auto_scale_width: true
+                    size_hint_x: None
+                    size_hint_y: None
+                    halign: center
             - Layout: small_layout_2
                 mode: box
                 orientation: vertical
@@ -54,9 +57,11 @@
                     selection_order: 3
                 - Label: layout2_checkbox_title_widget
                     text: Disabled
-                    size_hint_x: 1
+                    halign: center
+                    size_hint_x: None
                     size_hint_y: None
-                    height: 1
+                    auto_scale_width: true
+                    auto_scale_height: true
                 - CheckBox: layout2_checkbox_widget
                     selection_order: 4
                     halign: center
@@ -73,7 +78,7 @@
                         size_hint_x: 0.25
                         size_hint_y: None
                         height: 1
-                        valign: top
+                        valign: middle
                     - RadioButton: option1
                         group: test_radios
                         selection_order: 5
@@ -82,11 +87,11 @@
                     - RadioButton: option2
                         group: test_radios
                         selection_order: 6
-                        valign: bottom
+                        valign: middle
                     - RadioButton: option3
                         group: test_radios
                         selection_order: 7
-                        valign: bottom
+                        valign: middle
                 - Dropdown: layout2_dropdown_widget
                     selection_order: 8
                     allow_none: True

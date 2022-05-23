@@ -3,6 +3,7 @@ use std::fs::File;
 use std::io::prelude::*;
 use std::io::{Error, ErrorKind};
 use crossterm::style::{Color};
+use crate::common;
 use crate::common::{Coordinates, PixelMap, StateTree};
 use crate::widgets::widget::{Pixel, EzObject, EzWidget};
 use crate::widgets::state::{State, GenericState, HorizontalAlignment, VerticalAlignment};
@@ -65,6 +66,12 @@ pub struct LabelState {
     /// Height of this widget
     pub height: usize,
 
+    /// Automatically adjust width of widget to content
+    pub auto_scale_width: bool,
+
+    /// Automatically adjust width of widget to content
+    pub auto_scale_height: bool,
+
     /// Horizontal alignment of this widget
     pub halign: HorizontalAlignment,
 
@@ -119,6 +126,8 @@ impl Default for LabelState {
            y: 0,
            size_hint_x: Some(1.0),
            size_hint_y: Some(1.0),
+           auto_scale_width: false,
+           auto_scale_height: false,
            width: 0,
            height: 0,
            halign: HorizontalAlignment::Left,
@@ -160,15 +169,37 @@ impl GenericState for LabelState {
 
     fn get_size_hint_y(&self) -> Option<f64> { self.size_hint_y }
 
+    fn set_auto_scale_width(&mut self, auto_scale: bool) {
+        self.auto_scale_width = auto_scale;
+        self.changed = true;
+    }
+
+    fn get_auto_scale_width(&self) -> bool { self.auto_scale_width }
+
+    fn set_auto_scale_height(&mut self, auto_scale: bool) {
+        self.auto_scale_height = auto_scale;
+        self.changed = true;
+    }
+
+    fn get_auto_scale_height(&self) -> bool { self.auto_scale_height }
+
     fn set_width(&mut self, width: usize) { self.width = width; self.changed = true; }
 
     fn get_width(&self) -> usize { self.width }
+
+    fn set_effective_width(&mut self, width: usize) {
+       self.set_width(width +if self.has_border() {2} else {0})
+    }
 
     fn get_effective_width(&self) -> usize {self.get_width() -if self.has_border() {2} else {0} }
 
     fn set_height(&mut self, height: usize) { self.height = height; self.changed = true; }
 
     fn get_height(&self) -> usize { self.height }
+
+    fn set_effective_height(&mut self, height: usize) {
+        self.set_height(height +if self.has_border() {2} else {0})
+    }
 
     fn get_effective_height(&self) -> usize {self.get_height() -if self.has_border() {2} else {0} }
 
@@ -181,8 +212,8 @@ impl GenericState for LabelState {
     fn get_position(&self) -> Coordinates { (self.x, self.y) }
 
     fn get_effective_position(&self) -> Coordinates {
-        (self.x +if self.has_border() {2} else {0},
-         self.y +if self.has_border() {2} else {0})
+        (self.x +if self.has_border() {1} else {0},
+         self.y +if self.has_border() {1} else {0})
     }
 
     fn set_horizontal_alignment(&mut self, alignment: HorizontalAlignment) {
@@ -300,6 +331,10 @@ impl EzObject for Label {
                 load_size_hint(parameter_value.trim()).unwrap(),
             "width" => self.state.width = parameter_value.trim().parse().unwrap(),
             "height" => self.state.height = parameter_value.trim().parse().unwrap(),
+            "auto_scale_width" =>
+                self.state.set_auto_scale_width(load_bool_parameter(parameter_value.trim())?),
+            "auto_scale_height" =>
+                self.state.set_auto_scale_height(load_bool_parameter(parameter_value.trim())?),
             "halign" =>
                 self.state.halign =  load_halign_parameter(parameter_value.trim()).unwrap(),
             "valign" =>
@@ -362,7 +397,7 @@ impl EzObject for Label {
 
     fn get_contents(&self, state_tree: &mut StateTree) -> PixelMap {
 
-        let state = state_tree.get_mut(&self.get_full_path()).unwrap().as_label();
+        let state = state_tree.get_mut(&self.get_full_path()).unwrap().as_label_mut();
         let mut text;
         // Load text from file
         if let Some(path) = self.from_file.clone() {
@@ -380,8 +415,10 @@ impl EzObject for Label {
         // readable. When we're done, the Y coordinate of this widget indexes this list of lines
         // for a string and the X coordinate indexes that string.
         let mut content_lines = Vec::new();
+        // todo: if 0??
         let chunk_size = state.get_effective_width(); // Split lines at widget width to make it fit
         loop {
+            if chunk_size == 0 { break } // edge case: widget size 0
             if text.len() >= chunk_size {
                 let peek= text[0..chunk_size].to_string();
                 let lines: Vec<&str> = peek.lines().collect();
@@ -425,6 +462,23 @@ impl EzObject for Label {
             }
         }
 
+        // If user wants to autoscale width we set width to the longest line
+        if state.get_auto_scale_width() {
+            let longest_line = content_lines.iter().map(|x| x.len()).max();
+            let auto_scale_width =
+                if let Some(i) = longest_line { i } else { 0 };
+            if auto_scale_width < state.get_effective_width() {
+                state.set_effective_width(auto_scale_width);
+            }
+        }
+        // If user wants to autoscale height we set height to the amount of lines we generated
+        if state.get_auto_scale_height() {
+            let auto_scale_height = content_lines.len();
+            if auto_scale_height < state.get_effective_height() {
+                state.set_effective_height(auto_scale_height);
+            }
+        }
+
         // Now we'll create the actual PixelMap using the lines we've created.
         let mut contents = Vec::new();
         for x in 0..state.get_effective_width() {
@@ -447,6 +501,17 @@ impl EzObject for Label {
                 }
             }
             contents.push(new_y);
+        }
+        if state.has_border() {
+            contents = common::add_border(
+                contents, state.border_horizontal_symbol.clone(),
+                state.border_vertical_symbol.clone(),
+                state.border_top_left_symbol.clone(),
+                state.border_top_right_symbol.clone(),
+                state.border_bottom_left_symbol.clone(),
+                state.border_bottom_right_symbol.clone(),
+                state.border_background_color,
+                state.border_foreground_color)
         }
         contents
     }

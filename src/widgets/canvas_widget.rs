@@ -10,7 +10,7 @@ use std::io::{Error, ErrorKind};
 use crossterm::style::{Color};
 use unicode_segmentation::UnicodeSegmentation;
 use crate::ez_parser::{load_color_parameter, load_size_hint, load_halign_parameter,
-                       load_valign_parameter};
+                       load_valign_parameter, load_bool_parameter};
 
 pub struct CanvasWidget {
     /// ID of the widget, used to construct [path]
@@ -71,6 +71,12 @@ pub struct CanvasState {
     /// Height of this widget
     pub height: usize,
 
+    /// Automatically adjust width of widget to content
+    pub auto_scale_width: bool,
+
+    /// Automatically adjust width of widget to content
+    pub auto_scale_height: bool,
+
     /// Horizontal alignment of this widget
     pub halign: HorizontalAlignment,
 
@@ -98,6 +104,8 @@ impl Default for CanvasState {
             y: 0,
             size_hint_x: Some(1.0),
             size_hint_y: Some(1.0),
+            auto_scale_width: false,
+            auto_scale_height: false,
             width: 0,
             height: 0,
             halign: HorizontalAlignment::Left,
@@ -128,6 +136,20 @@ impl GenericState for CanvasState {
     }
 
     fn get_size_hint_y(&self) -> Option<f64> { self.size_hint_y }
+
+    fn set_auto_scale_width(&mut self, auto_scale: bool) {
+        self.auto_scale_width = auto_scale;
+        self.changed = true;
+    }
+
+    fn get_auto_scale_width(&self) -> bool { self.auto_scale_width }
+
+    fn set_auto_scale_height(&mut self, auto_scale: bool) {
+        self.auto_scale_height = auto_scale;
+        self.changed = true;
+    }
+
+    fn get_auto_scale_height(&self) -> bool { self.auto_scale_height }
 
     fn set_width(&mut self, width: usize) { self.width = width; self.changed = true; }
 
@@ -173,18 +195,14 @@ impl CanvasState {
         self.changed = true;
     }
 
-    pub fn get_content_foreground_color(&self) -> Color {
-        self.content_foreground_color
-    }
+    pub fn get_content_foreground_color(&self) -> Color { self.content_foreground_color }
 
     pub fn set_content_background_color(&mut self, color: Color) {
         self.content_background_color = color;
         self.changed = true;
     }
 
-    pub fn get_content_background_color(&self) -> Color {
-        self.content_background_color
-    }
+    pub fn get_content_background_color(&self) -> Color { self.content_background_color }
 
 }
 
@@ -201,6 +219,10 @@ impl EzObject for CanvasWidget {
                 load_size_hint(parameter_value.trim()).unwrap(),
             "width" => self.state.width = parameter_value.trim().parse().unwrap(),
             "height" => self.state.height = parameter_value.trim().parse().unwrap(),
+            "auto_scale_width" =>
+                self.state.set_auto_scale_width(load_bool_parameter(parameter_value.trim())?),
+            "auto_scale_height" =>
+                self.state.set_auto_scale_height(load_bool_parameter(parameter_value.trim())?),
             "halign" =>
                 self.state.halign =  load_halign_parameter(parameter_value.trim()).unwrap(),
             "valign" =>
@@ -221,13 +243,9 @@ impl EzObject for CanvasWidget {
 
     fn get_id(&self) -> String { self.id.clone() }
 
-    fn set_full_path(&mut self, path: String) {
-        self.path = path
-    }
+    fn set_full_path(&mut self, path: String) { self.path = path }
 
-    fn get_full_path(&self) -> String {
-        self.path.clone()
-    }
+    fn get_full_path(&self) -> String { self.path.clone() }
 
     fn update_state(&mut self, new_state: &State) {
 
@@ -237,9 +255,7 @@ impl EzObject for CanvasWidget {
         self.state.force_redraw = false;
     }
 
-    fn get_state(&self) -> State {
-        State::CanvasWidget(self.state.clone())
-    }
+    fn get_state(&self) -> State { State::CanvasWidget(self.state.clone()) }
 
     /// Set the content of this Widget. You must manually fill a [PixelMap] of the same
     /// [height] and [width] as this widget and pass it here.
@@ -256,7 +272,7 @@ impl EzObject for CanvasWidget {
 
     fn get_contents(&self, state_tree: &mut StateTree) -> PixelMap {
 
-        let state = state_tree.get(&self.get_full_path()).unwrap().as_canvas();
+        let state = state_tree.get_mut(&self.get_full_path()).unwrap().as_canvas_mut();
         if let Some(path) = self.from_file.clone() {
             let mut file = File::open(path).expect("Unable to open file");
             let mut file_content = String::new();
@@ -264,6 +280,22 @@ impl EzObject for CanvasWidget {
             let mut lines: Vec<String> = file_content.lines()
                 .map(|x| x.graphemes(true).rev().collect())
                 .collect();
+
+            if state.get_auto_scale_width() {
+                let longest_line = lines.iter().map(|x| x.chars().count()).max();
+                let auto_scale_width =
+                    if let Some(i) = longest_line { i } else { 0 };
+                if auto_scale_width < state.get_effective_width() {
+                    state.set_effective_width(auto_scale_width);
+                }
+            }
+            if state.get_auto_scale_height() {
+                let auto_scale_height = lines.len();
+                if auto_scale_height < state.get_effective_height() {
+                    state.set_effective_height(auto_scale_height);
+                }
+            }
+
             let mut widget_content = PixelMap::new();
             for x in 0..state.get_effective_width() {
                 widget_content.push(Vec::new());

@@ -214,17 +214,17 @@ impl GenericState for ButtonState {
 
     fn get_width(&self) -> usize { self.width }
 
-    fn get_effective_width(&self) -> usize {
-        self.get_width() - 2 // Buttons always have borders
-    }
+    fn set_effective_width(&mut self, width: usize) { self.set_width(width + 2) }
+
+    fn get_effective_width(&self) -> usize { self.get_width() - 2 }
 
     fn set_height(&mut self, height: usize) { self.height = height }
 
     fn get_height(&self) -> usize { self.height }
 
-    fn get_effective_height(&self) -> usize {
-       self.get_height() - 2 // Buttons always have borders
-    }
+    fn set_effective_height(&mut self, height: usize) { self.set_height(height + 2) }
+
+    fn get_effective_height(&self) -> usize { self.get_height() - 2 }
 
     fn set_position(&mut self, position: Coordinates) {
         self.x = position.0;
@@ -235,8 +235,8 @@ impl GenericState for ButtonState {
     fn get_position(&self) -> Coordinates { (self.x, self.y) }
 
     fn get_effective_position(&self) -> Coordinates {
-        (self.x +if self.has_border() {2} else {0},
-         self.y +if self.has_border() {2} else {0})
+        (self.x +if self.has_border() {1} else {0},
+         self.y +if self.has_border() {1} else {0})
     }
 
     fn set_horizontal_alignment(&mut self, alignment: HorizontalAlignment) {

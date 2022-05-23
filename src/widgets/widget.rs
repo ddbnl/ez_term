@@ -265,8 +265,8 @@ pub trait EzObject {
     /// Get the top left and bottom right corners of a widget in (X, Y) coordinate tuples.
     fn get_box(&self) -> (Coordinates, Coordinates) {
         let top_left = self.get_absolute_position();
-        let top_right = (top_left.0 + self.get_state().as_generic_state().get_width(), 
-                         top_left.1 + self.get_state().as_generic_state().get_height());
+        let top_right = (top_left.0 + self.get_state().as_generic().get_width(),
+                         top_left.1 + self.get_state().as_generic().get_height());
         (top_left, top_right)
     }
 
@@ -285,8 +285,8 @@ pub trait EzObject {
     fn collides(&self, pos: Coordinates) -> bool {
         let starting_pos = self.get_effective_absolute_position();
         let end_pos =
-            (starting_pos.0 + self.get_state().as_generic_state().get_width() - 1,
-             starting_pos.1 + self.get_state().as_generic_state().get_height() - 1);
+            (starting_pos.0 + self.get_state().as_generic().get_width() - 1,
+             starting_pos.1 + self.get_state().as_generic().get_height() - 1);
         pos.0 >= starting_pos.0 && pos.0 <= end_pos.0 &&
             pos.1 >= starting_pos.1 && pos.1 <= end_pos.1
     }

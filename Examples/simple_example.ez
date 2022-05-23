@@ -1,0 +1,37 @@
+- Layout: my_horizontal_box
+    mode: box
+    orientation: horizontal
+    - Layout: my_vertical_box_left
+        mode: box
+        orientation: vertical
+        - Label: my_upper_left_label
+            text: hello
+            border: True
+            auto_scale_width: true
+            auto_scale_height: true
+            valign: top
+            halign: left
+        - Label: my_lower_left_label
+            text: hello
+            border: True
+            auto_scale_width: true
+            auto_scale_height: true
+            valign: bottom
+            halign: left
+    - Layout: my_vertical_box_right
+        mode: box
+        orientation: vertical
+        - Label: my_upper_right_label
+            text: hello
+            border: True
+            auto_scale_width: true
+            auto_scale_height: true
+            valign: top
+            halign: right
+        - Label: my_lower_right_label
+            text: hello
+            border: True
+            auto_scale_width: true
+            auto_scale_height: true
+            valign: bottom
+            halign: right

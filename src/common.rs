@@ -105,7 +105,7 @@ pub fn get_widget_by_position<'a>(pos: Coordinates, widget_tree: &'a WidgetTree)
 pub fn write_to_screen(base_position: Coordinates, content: PixelMap, view_tree: &mut ViewTree) {
     stdout().execute(cursor::SavePosition).unwrap();
     for x in 0..content.len() {
-        for y in 0..content[0].len() {
+        for y in 0..content[x].len() {
             let write_pos = (base_position.0 + x, base_position.1 + y);
             let write_content = content[x][y].get_pixel().clone();
             if view_tree[x][y] != write_content {
@@ -133,10 +133,10 @@ pub fn update_state_tree(view_tree: &mut ViewTree, state_tree: &mut StateTree,
     let mut widgets_to_redraw = Vec::new();
     for widget_path in state_tree.keys() {
         let state = state_tree.get(widget_path).unwrap();
-        if state.as_generic_state().get_force_redraw() {
+        if state.as_generic().get_force_redraw() {
             force_redraw = true;
         }
-        if state.as_generic_state().get_changed() {
+        if state.as_generic().get_changed() {
             let widget = root_widget.get_child_by_path_mut(widget_path).unwrap()
                 .as_ez_object_mut();
             widget.update_state(state);
