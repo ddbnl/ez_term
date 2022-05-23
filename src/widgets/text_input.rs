@@ -186,10 +186,6 @@ impl GenericState for TextInputState {
 
     fn get_size_hint_x(&self) -> Option<f64> { self.size_hint_x }
 
-    fn set_size_hint_y(&mut self, _size_hint: Option<f64>) {
-        panic!("Cannot set size_hint_y for text input state")
-    }
-
     fn get_size_hint_y(&self) -> Option<f64> { None }
 
     fn set_width(&mut self, width: usize) { self.width = width; self.changed = true; }
@@ -374,14 +370,6 @@ impl EzObject for TextInput {
     }
     fn get_state(&self) -> State {
         State::TextInput(self.state.clone())
-    }
-
-
-    fn redraw(&self, view_tree: &mut ViewTree, state_tree: &mut StateTree) {
-
-        let pos = self.get_absolute_position();
-        let content = self.get_contents(state_tree);
-        common::write_to_screen(pos, content, view_tree);
     }
 
     fn get_contents(&self, state_tree: &mut StateTree) -> PixelMap {

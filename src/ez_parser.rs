@@ -38,6 +38,9 @@ fn parse_ez(file_string: String) -> Result<Layout, Error> {
     let (_, mut widgets) =
         parse_level(config_lines).unwrap();
     let mut root_widget = widgets.pop().unwrap();
+    if root_widget.type_name != "Layout" {
+        panic!("Root widget of an Ez file must be a Layout")
+    }
     let mut initialized_root_widget = root_widget.parse_as_root();
     // Set full paths for all widgets now that they have all been initialized.
     initialized_root_widget.propagate_paths();
@@ -137,7 +140,8 @@ impl<'a> EzWidgetDefinition<'a> {
     }
 }
 
-/// Parse a single indentation level of a config file.
+/// Parse a single indentation level of a config file. Returns a Vec of config lines and a Vec
+/// of [EzWidgetDefinition] of widgets found on that level
 fn parse_level<'a>(config_lines: Vec<&'a str>)
                        -> Result<(Vec<&str>, Vec<EzWidgetDefinition<'a>>), Error> {
 
@@ -149,7 +153,12 @@ fn parse_level<'a>(config_lines: Vec<&'a str>)
     let mut level = Vec::new();
 
     for (i, line) in config_lines.into_iter().enumerate() {
+        // Skip empty lines and comments
         // find all widget definitions, they start with -
+        if line.starts_with("//") || line.trim().is_empty() {
+            continue
+        }
+        // Find widget definitions which arts with -
         if line.starts_with('-') {
             // We encountered a widget, so config section of this level is over.
             parsing_config = false;
@@ -163,7 +172,7 @@ fn parse_level<'a>(config_lines: Vec<&'a str>)
             config.push(line);
         } else {
             // Line was not a new widget definition, so it must be config/content of the current one
-            if  !line.starts_with("    ") {
+            if !line.starts_with("    ") {
                 return Err(Error::new(
                     ErrorKind::InvalidData,
                     format!("Error at Line {}: '{}'. Invalid indentation. \

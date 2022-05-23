@@ -4,6 +4,7 @@
     - Layout: my_vertical_box_left
         mode: box
         orientation: vertical
+        border: true
         - Label: my_upper_left_label
             text: hello
             border: True
@@ -21,6 +22,7 @@
     - Layout: my_vertical_box_right
         mode: box
         orientation: vertical
+        border: true
         - Label: my_upper_right_label
             text: hello
             border: True

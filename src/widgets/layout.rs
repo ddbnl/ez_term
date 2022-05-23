@@ -9,7 +9,6 @@ use crate::ez_parser::{load_bool_parameter, load_color_parameter, load_size_hint
 use crate::widgets::widget::{Pixel, EzObject, EzObjects};
 use crate::widgets::state::{State, GenericState, HorizontalAlignment, VerticalAlignment};
 use crate::common::{self, PixelMap, StateTree, WidgetTree, Coordinates};
-use crate::widgets::text_input::handle_left;
 
 
 /// Used with Box mode, determines whether widgets are placed below or above each other.
@@ -235,19 +234,6 @@ impl GenericState for LayoutState {
 
     fn get_size_hint_y(&self) -> Option<f64> { self.size_hint_y }
 
-    fn set_width(&mut self, width: usize) { self.width = width; self.changed = true; }
-
-    fn get_width(&self) -> usize { self.width }
-
-    fn set_effective_width(&mut self, width: usize) {
-        self.set_width(width +if self.has_border() {2} else {0})
-    }
-
-    fn get_effective_width(&self) -> usize {
-        self.get_width()
-            -if self.has_border() {2} else {0} - self.padding_left - self.padding_right
-    }
-
     fn set_auto_scale_width(&mut self, auto_scale: bool) {
         self.auto_scale_width = auto_scale;
         self.changed = true;
@@ -261,6 +247,20 @@ impl GenericState for LayoutState {
     }
 
     fn get_auto_scale_height(&self) -> bool { self.auto_scale_height }
+
+    fn set_width(&mut self, width: usize) { self.width = width; self.changed = true; }
+
+    fn get_width(&self) -> usize { self.width }
+
+    fn set_effective_width(&mut self, width: usize) {
+        self.set_width(width +if self.has_border() {2} else {0})
+    }
+
+    fn get_effective_width(&self) -> usize {
+        if self.get_width() == 0 {0}
+        else {self.get_width()
+            -if self.has_border() {2} else {0} - self.padding_left - self.padding_right}
+    }
 
     fn set_height(&mut self, height: usize) { self.height = height; self.changed = true; }
 
@@ -537,19 +537,19 @@ impl EzObject for Layout {
         let state = state_tree.get_mut(&self.get_full_path()).unwrap()
             .as_layout_mut();
 
-        // Fill empty spaces with user defined filling
+        // Fill empty spaces with user defined filling if any
         if state.fill {
             merged_content = self.fill(merged_content, state);
         }
 
-        // If user wants to autoscale width we set width to the longest line
+        // If user wants to autoscale width we set width to length of content
         if state.get_auto_scale_width() {
             let auto_scale_width = merged_content.len();
             if auto_scale_width < state.get_effective_width() {
                 state.set_effective_width(auto_scale_width);
             }
         }
-        // If user wants to autoscale height we set height to the amount of lines we generated
+        // If user wants to autoscale height we set height to the highest column
         if state.get_auto_scale_height() {
             let auto_scale_height = merged_content.iter().map(|x| x.len()).max().unwrap();
             if auto_scale_height < state.get_effective_height() {
@@ -557,7 +557,7 @@ impl EzObject for Layout {
             }
         }
 
-        // If widget still doesn't fill its' height and/or width fill it with empty pixels
+        // If widget doesn't fill its' height and/or width at this point fill it with empty pixels
         while merged_content.len() < state.get_effective_width() {
             merged_content.push(Vec::new());
         }
@@ -569,6 +569,7 @@ impl EzObject for Layout {
                     underline: false});
             }
         }
+        if merged_content.is_empty() { return merged_content } // Empty widget
         // Put padding around content if set
         merged_content = common::add_padding(merged_content, state.padding_top,
                                              state.padding_bottom,
@@ -637,7 +638,8 @@ impl Layout {
             if state.get_auto_scale_height() {
                 state.set_height(own_state.get_effective_height())
             }
-
+            // Scale down child to remaining size in the case that the child is too large, rather
+            // panicking.
             if state.get_width() > width_left {
                 state.set_width(width_left);
             }
@@ -648,7 +650,7 @@ impl Layout {
             let valign = state.get_vertical_alignment();
             state.set_position(position);
             let child_content = generic_child.get_contents(state_tree);
-            let before = (content.len(), if content.len() > 0 {content[0].len()} else {0});
+            if child_content.is_empty() { continue }  // handle empty widget
             content = self.merge_horizontal_contents(
                 content, child_content,
                 &own_state,
@@ -675,6 +677,7 @@ impl Layout {
             let state = state_tree.get_mut(&generic_child.get_full_path())
                 .unwrap().as_generic_mut();
 
+            if content.is_empty() { return content }  // No space left in widget
             let height_left = own_state.get_effective_height() - content[0].len();
             if height_left == 0 {
                 continue
@@ -687,7 +690,8 @@ impl Layout {
             if state.get_auto_scale_height() {
                 state.set_height(height_left)
             }
-
+            // Scale down child to remaining size in the case that the child is too large, rather
+            // panicking.
             if state.get_height() > height_left {
                 state.set_height(height_left);
             }
@@ -698,15 +702,10 @@ impl Layout {
             state.set_position(position);
             let halign = state.get_horizontal_alignment();
             let child_content = generic_child.get_contents(state_tree);
-            let before = (content.len(), if content.len() > 0 {content[0].len()} else {0});
             content = self.merge_vertical_contents(
                 content, child_content,&own_state,
                 state_tree.get_mut(&generic_child.get_full_path()).unwrap().as_generic_mut(),
                 halign);
-            println!("END MERGE RES: {} {} {} {} {}", generic_child.get_id(), state_tree.get_mut(&generic_child.get_full_path())
-                .unwrap().as_generic_mut().get_width(),
-                     state_tree.get_mut(&generic_child.get_full_path())
-                         .unwrap().as_generic_mut().get_height(), content.len() - before.0, content[0].len() - before.1);
             position = (0, content[0].len());
         }
         content
@@ -758,20 +757,22 @@ impl Layout {
             .unwrap().as_layout();
         let own_width = own_state.get_effective_width();
         let own_height = own_state.get_effective_height();
-        // For convenience, check if there are multiple children who ALL have size_hint_1, and in
-        // that case give them size_hint: '1 / number_of_children'. That way the user can add
-        // multiple children in a Box layout and have them distributed equally automatically.
+        // For convenience, check if there are multiple children who ALL have size_hint=1, and in
+        // that case give them '1 / number_of_children'. That way the user can add
+        // multiple children in a Box layout and have them distributed equally automatically. Any
+        // kind of asymmetry breaks this behavior.
         if self.children.len() > 1 {
-            if let LayoutOrientation::Horizontal = self.orientation {
-                let mut all_default_size_hint_x = true;
-                for child in self.get_children() {
-                    let generic_child = child.as_ez_object();
-                    let state = state_tree.get(&generic_child.get_full_path())
-                        .unwrap().as_generic();
+            let mut all_default_size_hint_x = true;
+            let mut all_default_size_hint_y = true;
+            for child in self.get_children() {
+                let generic_child = child.as_ez_object();
+                let state = state_tree.get(&generic_child.get_full_path())
+                    .unwrap().as_generic();
+                if let LayoutOrientation::Horizontal = self.orientation {
                     if let Some(size_hint_x) = state.get_size_hint_x()
                     {
                         if size_hint_x != 1.0 || state.get_auto_scale_width() ||
-                            state.get_width() > 0{
+                            state.get_width() > 0 {
                             all_default_size_hint_x = false;
                             break
                         }
@@ -779,25 +780,14 @@ impl Layout {
                         all_default_size_hint_x = false;
                         break
                     }
+                } else {
+                    all_default_size_hint_x = false;
+                    break
                 }
-                if all_default_size_hint_x {
-                    for child in self.get_children() {
-                        let generic_child = child.as_ez_object();
-                        let state = state_tree.get_mut(&generic_child.get_full_path())
-                            .unwrap().as_generic_mut();
-                        state.set_size_hint_x(Some(1.0 / (self.children.len() as f64)));
-                    }
-                }
-            }
-            if let LayoutOrientation::Vertical = self.orientation {
-                let mut all_default_size_hint_y = true;
-                for child in self.get_children() {
-                    let generic_child = child.as_ez_object();
-                    let state = state_tree.get(&generic_child.get_full_path())
-                        .unwrap().as_generic();
+                if let LayoutOrientation::Vertical = self.orientation {
                     if let Some(size_hint_y) = state.get_size_hint_y() {
                         if size_hint_y != 1.0 || state.get_auto_scale_height() ||
-                            state.get_height() > 0{
+                            state.get_height() > 0 {
                             all_default_size_hint_y = false;
                             break
                         }
@@ -805,14 +795,25 @@ impl Layout {
                         all_default_size_hint_y = false;
                         break
                     }
+                } else {
+                    all_default_size_hint_y = false;
+                    break
                 }
-                if all_default_size_hint_y {
-                    for child in self.get_children() {
-                        let generic_child = child.as_ez_object();
-                        let state = state_tree.get_mut(&generic_child.get_full_path())
-                            .unwrap().as_generic_mut();
-                        state.set_size_hint_y(Some(1.0 / (self.children.len() as f64)));
-                    }
+            }
+            if all_default_size_hint_x {
+                for child in self.get_children() {
+                    let generic_child = child.as_ez_object();
+                    let state = state_tree.get_mut(&generic_child.get_full_path())
+                        .unwrap().as_generic_mut();
+                    state.set_size_hint_x(Some(1.0 / (self.children.len() as f64)));
+                }
+            }
+            if all_default_size_hint_y {
+                for child in self.get_children() {
+                    let generic_child = child.as_ez_object();
+                    let state = state_tree.get_mut(&generic_child.get_full_path())
+                        .unwrap().as_generic_mut();
+                    state.set_size_hint_y(Some(1.0 / (self.children.len() as f64)));
                 }
             }
         }
@@ -1031,54 +1032,13 @@ impl Layout {
                                      valign: VerticalAlignment) -> PixelMap {
 
         if parent_state.get_effective_height() > new[0].len() {
-
-            let empty_pixel = Pixel { symbol: " ".to_string(),
-                foreground_color: parent_state.content_foreground_color,
-                background_color: parent_state.content_background_color, underline: false};
-
-            let mut new_position = state.get_position();
-            match valign {
-                VerticalAlignment::Top => {
-                    // We align top by filling out empty space to the bottom
-                    for x in new.iter_mut() {
-                        for _ in 0..parent_state.get_effective_height() - x.len() {
-                            x.push(empty_pixel.clone());
-                        }
-                    }
-                },
-                VerticalAlignment::Bottom => {
-                    // We align bottom by filling out empty space to the top
-                    for (i, x) in new.iter_mut().enumerate() {
-                        for _ in 0..parent_state.get_effective_height() - x.len() {
-                            x.insert(0, empty_pixel.clone());
-                            if i == 0 {
-                                new_position = (new_position.0, new_position.1 + 1);
-                            }
-                        }
-                    }
-                },
-                VerticalAlignment::Middle => {
-                    // We align in the middle by filling out empty space alternating top and bottom
-                    let mut switch = true;
-                    for (i, x) in new.iter_mut().enumerate() {
-                        for _ in 0..parent_state.get_effective_height() - x.len() {
-                            if switch {
-                                x.push(empty_pixel.clone());
-                                switch = !switch
-                            } else {
-                                x.insert(0, empty_pixel.clone());
-                                if i == 0 {
-                                    new_position = (new_position.0, new_position.1 + 1);
-                                }
-                                switch = !switch
-                            }
-                        }
-                    }
-                }
-            }
-            state.set_position(new_position);
-        } else {
-            // TODO: log warning, widget does not fit in parent not here can be equal
+            let mut offset;
+            (new, offset) = common::align_content_vertically(
+                new, valign, parent_state.get_effective_height(),
+                parent_state.content_foreground_color,
+                parent_state.content_background_color);
+            let old_pos = state.get_position();
+            state.set_position((old_pos.0, old_pos.1 + offset));
         }
 
         for x in 0..new.len() {
@@ -1103,57 +1063,15 @@ impl Layout {
             return merged_content
         }
 
+        let offset;
         if parent_state.get_effective_width() > new.len() {
+            (new, offset) = common::align_content_horizontally(
+                new, halign, parent_state.get_effective_width(),
+            parent_state.content_foreground_color,
+                parent_state.content_background_color);
 
-            let empty_pixel = Pixel { symbol: " ".to_string(),
-                foreground_color: parent_state.content_foreground_color,
-                background_color: parent_state.content_background_color, underline: false};
-
-            let mut new_position = state.get_position();
-            match halign {
-                HorizontalAlignment::Left => {
-                    // We align left by filling out empty space to the right
-                    for _ in 0..parent_state.get_effective_width() - new.len() {
-                        new.push(Vec::new());
-                        for _ in 0..new[0].len() {
-                            new.last_mut().unwrap().push(empty_pixel.clone());
-                        }
-                    }
-                },
-                HorizontalAlignment::Right => {
-                    // We align right by filling out empty space from the left
-                    for _ in 0..parent_state.get_effective_width() - new.len() {
-                        new.insert(0, Vec::new());
-                        new_position = (new_position.0 + 1, new_position.1);
-                        for _ in 0..new.last().unwrap().len() {
-                            new.first_mut().unwrap().push(empty_pixel.clone());
-                        }
-                    }
-                },
-                HorizontalAlignment::Center => {
-                    // We align in the center by filling out empty space alternating left and right
-                    let mut switch = true;
-                    for _ in 0..parent_state.get_effective_width() - new.len() {
-                        if switch {
-                            new.push(Vec::new());
-                            for _ in 0..new[0].len() {
-                                new.last_mut().unwrap().push(empty_pixel.clone());
-                            }
-                            switch = !switch;
-                        } else {
-                            new.insert(0, Vec::new());
-                            new_position = (new_position.0 + 1, new_position.1);
-                            for _ in 0..new.last().unwrap().len() {
-                                new.first_mut().unwrap().push(empty_pixel.clone());
-                            }
-                            switch = !switch;
-                        }
-                    }
-                }
-            }
-            state.set_position(new_position);
-        } else {
-            // TODO: log warning, widget does not fit in parent, not here can be equal
+            let old_pos = state.get_position();
+            state.set_position((old_pos.0 + offset, old_pos.1));
         }
 
         for x in 0..parent_state.get_effective_width() {

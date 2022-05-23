@@ -404,64 +404,13 @@ impl EzObject for Label {
             let mut file = File::open(path).expect("Unable to open file");
             text = String::new();
             file.read_to_string(&mut text).expect("Unable to read file");
-        // Take text from widget state
+        // or take text from widget state
         } else {
             text = state.text.clone();
         }
 
-        // We are going to make a list of lines, splitting into lines at line breaks in
-        // the text or when the widget width has been exceeded. If the latter occurs, we will try
-        // to split on a word boundary if there is any in that chunk of text, to keep things
-        // readable. When we're done, the Y coordinate of this widget indexes this list of lines
-        // for a string and the X coordinate indexes that string.
-        let mut content_lines = Vec::new();
-        // todo: if 0??
-        let chunk_size = state.get_effective_width(); // Split lines at widget width to make it fit
-        loop {
-            if chunk_size == 0 { break } // edge case: widget size 0
-            if text.len() >= chunk_size {
-                let peek= text[0..chunk_size].to_string();
-                let lines: Vec<&str> = peek.lines().collect();
-                // There's a line break in the sentence.
-                if lines.len() > 1 {
-                    // Push all lines except the last one. If there's line breaks within a text
-                    // chunk that's smaller than widget width, we know for sure that all lines
-                    // within it fit as well. We don't push the last line because it might be part
-                    // of a larger sentence, and we're no longer filling full widget width.
-                    for line in lines[0..lines.len() - 1].iter() {
-                        if line.is_empty() {
-                            content_lines.push(' '.to_string());
-                        } else {
-                            content_lines.push(line.to_string());
-                        }
-                    }
-                    if !lines.last().unwrap().is_empty() {
-                        text = text[peek.rfind(lines.last().unwrap()).unwrap()..].to_string();
-                    } else {
-                        text = text[chunk_size..].to_string();
-                    }
-                }
-                // Chunk naturally ends on word boundary, so just push the chunk.
-                else if peek.ends_with(' ') {
-                    content_lines.push(peek);
-                    text = text[chunk_size..].to_string();
-                // We can find a word boundary somewhere to split the string on. Push up until the
-                // boundary.
-                } else if let Some(index) = peek.rfind(' ') {
-                    content_lines.push(peek[..index].to_string());
-                    text = text[index+1..].to_string();
-                // No boundaries at all, just push the entire chunk.
-                } else {
-                    content_lines.push(peek);
-                    text = text[chunk_size..].to_string();
-                }
-            // Not enough content left to fill widget width. Just push entire text
-            } else {
-                content_lines.push(text);
-                break
-            }
-        }
 
+        let content_lines = common::wrap_text(text, state.get_effective_width());
         // If user wants to autoscale width we set width to the longest line
         if state.get_auto_scale_width() {
             let longest_line = content_lines.iter().map(|x| x.len()).max();
@@ -479,7 +428,7 @@ impl EzObject for Label {
             }
         }
 
-        // Now we'll create the actual PixelMap using the lines we've created.
+        // Now we'll create the actual PixelMap using the lines we've created by wrapping the text
         let mut contents = Vec::new();
         for x in 0..state.get_effective_width() {
             let mut new_y = Vec::new();

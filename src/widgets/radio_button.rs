@@ -153,15 +153,7 @@ impl GenericState for RadioButtonState {
 
     fn get_changed(&self) -> bool { self.changed }
 
-    fn set_size_hint_x(&mut self, _size_hint: Option<f64>) {
-        panic!("Cannot set size_hint_x for radio button state")
-    }
-
     fn get_size_hint_x(&self) -> Option<f64> { None }
-
-    fn set_size_hint_y(&mut self, _size_hint: Option<f64>) {
-        panic!("Cannot set size_hint_y for radio button state")
-    }
 
     fn get_size_hint_y(&self) -> Option<f64> { None }
 
@@ -223,6 +215,7 @@ impl RadioButtonState {
     }
 
     pub fn get_active(&self) -> bool { self.active }
+
     pub fn set_content_foreground_color(&mut self, color: Color) {
         self.content_foreground_color = color;
         self.changed = true;
@@ -329,9 +322,9 @@ impl EzObject for RadioButton {
         let active_symbol = { if state.active {self.active_symbol}
                                     else {self.inactive_symbol} };
         let fg_color = if state.selected {state.selection_foreground_color}
-        else {self.state.content_foreground_color};
+        else {state.content_foreground_color};
         let bg_color = if state.selected {state.selection_background_color}
-        else {self.state.content_background_color};
+        else {state.content_background_color};
         vec!(
             vec!(Pixel {symbol: "(".to_string(), foreground_color: fg_color,
                 background_color: bg_color, underline: false}),

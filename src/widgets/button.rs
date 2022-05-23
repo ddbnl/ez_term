@@ -8,7 +8,8 @@ use crate::common::{self, Coordinates, PixelMap, MouseCallbackFunction, GenericE
 use crate::widgets::widget::{EzWidget, Pixel, EzObject};
 use crate::widgets::state::{State, GenericState, SelectableState, HorizontalAlignment, VerticalAlignment};
 use crate::ez_parser::{load_color_parameter, load_text_parameter, load_selection_order_parameter,
-                       load_size_hint, load_halign_parameter, load_valign_parameter};
+                       load_size_hint, load_halign_parameter, load_valign_parameter,
+                       load_bool_parameter};
 
 pub struct Button {
 
@@ -100,6 +101,12 @@ pub struct ButtonState {
     /// Width of this widget
     pub height: usize,
 
+    /// Automatically adjust width of widget to content
+    pub auto_scale_width: bool,
+
+    /// Automatically adjust width of widget to content
+    pub auto_scale_height: bool,
+
     /// Horizontal alignment of this widget
     pub halign: HorizontalAlignment,
 
@@ -164,6 +171,8 @@ impl Default for ButtonState {
            y: 0,
            size_hint_x: Some(1.0),
            size_hint_y: Some(1.0),
+           auto_scale_width: false,
+           auto_scale_height: false,
            width: 0,
            height: 0,
            halign: HorizontalAlignment::Left,
@@ -210,6 +219,20 @@ impl GenericState for ButtonState {
 
     fn get_size_hint_y(&self) -> Option<f64> { self.size_hint_y }
 
+    fn set_auto_scale_width(&mut self, auto_scale: bool) {
+        self.auto_scale_width = auto_scale;
+        self.changed = true;
+    }
+
+    fn get_auto_scale_width(&self) -> bool { self.auto_scale_width }
+
+    fn set_auto_scale_height(&mut self, auto_scale: bool) {
+        self.auto_scale_height = auto_scale;
+        self.changed = true;
+    }
+
+    fn get_auto_scale_height(&self) -> bool { self.auto_scale_height }
+
     fn set_width(&mut self, width: usize) { self.width = width; self.changed = true; }
 
     fn get_width(&self) -> usize { self.width }
@@ -220,7 +243,8 @@ impl GenericState for ButtonState {
 
     fn set_height(&mut self, height: usize) { self.height = height }
 
-    fn get_height(&self) -> usize { self.height }
+    /// Button returns always at least 3 height, as it needs 1 height for text and 2 for borders.
+    fn get_height(&self) -> usize { if self.height >= 3 {self.height} else {3}}
 
     fn set_effective_height(&mut self, height: usize) { self.set_height(height + 2) }
 
@@ -274,18 +298,14 @@ impl ButtonState {
         self.changed = true;
     }
 
-    pub fn get_text(&self) -> String {
-        self.text.clone()
-    }
+    pub fn get_text(&self) -> String { self.text.clone() }
 
     pub fn set_flashing(&mut self, flashing: bool) {
         self.flashing = flashing;
         self.changed = true;
     }
 
-    pub fn get_flashing(&self) -> bool {
-        self.flashing
-    }
+    pub fn get_flashing(&self) -> bool { self.flashing }
 
     pub fn set_border_horizontal_symbol(&mut self, symbol: String) {
         self.border_horizontal_symbol = symbol
@@ -330,45 +350,35 @@ impl ButtonState {
         self.changed = true;
     }
 
-    pub fn get_border_foreground_color(&self) -> Color {
-        self.border_foreground_color
-    }
+    pub fn get_border_foreground_color(&self) -> Color { self.border_foreground_color }
 
     pub fn set_border_background_color(&mut self, color: Color) {
         self.border_background_color = color;
         self.changed = true;
     }
 
-    pub fn get_border_background_color(&self) -> Color {
-        self.border_background_color
-    }
+    pub fn get_border_background_color(&self) -> Color { self.border_background_color }
 
     pub fn set_content_foreground_color(&mut self, color: Color) {
         self.content_foreground_color = color;
         self.changed = true;
     }
 
-    pub fn get_content_foreground_color(&self) -> Color {
-        self.content_foreground_color
-    }
+    pub fn get_content_foreground_color(&self) -> Color { self.content_foreground_color }
 
     pub fn set_content_background_color(&mut self, color: Color) {
         self.content_background_color = color;
         self.changed = true;
     }
 
-    pub fn get_content_background_color(&self) -> Color {
-        self.content_background_color
-    }
+    pub fn get_content_background_color(&self) -> Color { self.content_background_color }
 
     pub fn set_selection_foreground_color(&mut self, color: Color) {
         self.selection_foreground_color = color;
         self.changed = true;
     }
 
-    pub fn get_selection_foreground_color(&self) -> Color {
-        self.selection_foreground_color
-    }
+    pub fn get_selection_foreground_color(&self) -> Color { self.selection_foreground_color }
 
     pub fn set_selection_background_color(&mut self, color: Color) {
         self.selection_background_color = color;
@@ -384,18 +394,14 @@ impl ButtonState {
         self.changed = true;
     }
 
-    pub fn get_flash_foreground_color(&self) -> Color {
-        self.flash_foreground_color
-    }
+    pub fn get_flash_foreground_color(&self) -> Color { self.flash_foreground_color }
 
     pub fn set_flash_background_color(&mut self, color: Color) {
         self.flash_background_color = color;
         self.changed = true;
     }
 
-    pub fn get_flash_background_color(&self) -> Color {
-        self.flash_background_color
-    }
+    pub fn get_flash_background_color(&self) -> Color { self.flash_background_color }
 }
 
 
@@ -412,6 +418,10 @@ impl EzObject for Button {
                 load_size_hint(parameter_value.trim()).unwrap(),
             "width" => self.state.width = parameter_value.trim().parse().unwrap(),
             "height" => self.state.height = parameter_value.trim().parse().unwrap(),
+            "auto_scale_width" =>
+                self.state.set_auto_scale_width(load_bool_parameter(parameter_value.trim())?),
+            "auto_scale_height" =>
+                self.state.set_auto_scale_height(load_bool_parameter(parameter_value.trim())?),
             "halign" =>
                 self.state.halign =  load_halign_parameter(parameter_value.trim()).unwrap(),
             "valign" =>
@@ -480,27 +490,35 @@ impl EzObject for Button {
     fn get_contents(&self, state_tree: &mut StateTree) -> PixelMap {
 
         let state = state_tree.get(&self.get_full_path()).unwrap().as_button();
-        let mut text = state.text.clone().chars().rev().collect::<String>();
-        let mut contents = Vec::new();
+        let text = state.text.clone();
+        let content_lines = common::wrap_text(text, state.get_effective_width());
+
         let fg_color = if state.flashing {state.flash_foreground_color}
             else if state.selected {state.selection_foreground_color}
             else {state.content_foreground_color};
         let bg_color = if state.flashing {state.flash_background_color}
             else if state.selected {state.selection_background_color}
             else {state.content_background_color};
-        for _ in 0..state.get_effective_width() {
+
+        let longest_line = content_lines.iter().map(|x| x.len()).max();
+        let longest_line = if let Some(i) = longest_line { i } else { 0 };
+        let mut contents = Vec::new();
+        for x in 0..longest_line {
             let mut new_y = Vec::new();
-            for _ in 0..state.get_effective_height() {
-                if !text.is_empty() {
-                    new_y.push(Pixel { symbol: text.pop().unwrap().to_string(),
+            for y in 0..state.get_effective_height() {
+                if y < content_lines.len() && x < content_lines[y].len() {
+                    new_y.push(Pixel { symbol: content_lines[y][x..x+1].to_string(),
                         foreground_color: fg_color, background_color: bg_color, underline: false })
-                } else {
-                    new_y.push(Pixel { symbol: " ".to_string(), foreground_color: fg_color,
-                        background_color: bg_color, underline: false })
                 }
             }
             contents.push(new_y);
         }
+        (contents, _) = common::align_content_horizontally(
+            contents,HorizontalAlignment::Center, state.get_effective_width(),
+                    fg_color, bg_color);
+        (contents, _) = common::align_content_vertically(
+            contents,VerticalAlignment::Middle, state.get_effective_height(),
+            fg_color, bg_color);
         contents = common::add_border(contents,
                                       state.border_horizontal_symbol.clone(),
                                       state.border_vertical_symbol.clone(),

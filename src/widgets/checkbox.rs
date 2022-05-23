@@ -144,15 +144,7 @@ impl GenericState for CheckboxState {
 
     fn get_changed(&self) -> bool { self.changed }
 
-    fn set_size_hint_x(&mut self, _size_hint: Option<f64>) {
-        panic!("Cannot set size_hint_y for checkbox state")
-    }
-
     fn get_size_hint_x(&self) -> Option<f64> { None }
-
-    fn set_size_hint_y(&mut self, _size_hint: Option<f64>) {
-        panic!("Cannot set size_hint_x for checkbox state")
-    }
 
     fn get_size_hint_y(&self) -> Option<f64> { None }
 
@@ -367,14 +359,7 @@ impl EzWidget for Checkbox {
     }
 
     fn get_bind_on_value_change(&self) -> Option<GenericEzFunction> { self.bound_on_value_change }
-    
-    fn set_bind_on_select(&mut self, func: fn(EzContext, Option<Coordinates>)) {
-        self.bound_on_select = Some(func);
-    }
 
-    fn get_bind_on_select(&self) -> Option<fn(EzContext, Option<Coordinates>)> {
-        self.bound_on_select
-    }
     fn on_left_click(&self, context: EzContext, _position: Coordinates) {
         let state = context.state_tree.get_mut(&self.get_full_path()).unwrap()
             .as_checkbox_mut();
@@ -391,12 +376,19 @@ impl EzWidget for Checkbox {
         state.set_selected(true);
         self.on_value_change(context);
     }
-
     fn set_bind_right_click(&mut self, func: MouseCallbackFunction) {
         self.bound_right_mouse_click = Some(func)
     }
 
     fn get_bind_right_click(&self) -> Option<MouseCallbackFunction> { self.bound_right_mouse_click }
+
+    fn set_bind_on_select(&mut self, func: fn(EzContext, Option<Coordinates>)) {
+        self.bound_on_select = Some(func);
+    }
+
+    fn get_bind_on_select(&self) -> Option<fn(EzContext, Option<Coordinates>)> {
+        self.bound_on_select
+    }
 
 }
 

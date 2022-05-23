@@ -203,14 +203,14 @@ pub trait GenericState {
 
     /// Set to None for passing an absolute width, or to a value between 0 and 1 to
     /// automatically scale width based on parent width
-    fn set_size_hint_x(&mut self, size_hint: Option<f64>);
+    fn set_size_hint_x(&mut self, size_hint: Option<f64>) {}
 
     /// If not None automatically scaled width based on parent width
     fn get_size_hint_x(&self) -> Option<f64>;
 
     /// Set to None for passing an absolute height, or to a value between 0 and 1 to
     /// automatically scale width based on parent height
-    fn set_size_hint_y(&mut self, size_hint: Option<f64>);
+    fn set_size_hint_y(&mut self, size_hint: Option<f64>) {}
 
     /// If not None automatically scaled height based on parent height
     fn get_size_hint_y(&self) -> Option<f64>;

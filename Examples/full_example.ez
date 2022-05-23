@@ -1,24 +1,26 @@
+// Ez files must always start with a Layout as root widget
+
 - Layout: root_layout
     mode: box
     orientation: horizontal
     width: 180
     height: 70
-    - Layout: left_layout
+    - Layout: left_box
         mode: box
         size_hint_x: 4/5
         size_hint_y: 1
         orientation: vertical
-        - Canvas: canvas_widget
+        - Canvas: canvas
             auto_scale_width: true
             auto_scale_height: true
             from_file: ./Examples/example_art.txt
             halign: center
-        - Layout: bottom_layout
+        - Layout: bottom_box
             mode: box
             orientation: horizontal
             size_hint_x: 1
             size_hint_y: 1
-            - Layout: small_layout_1
+            - Layout: small_box_1
                 mode: box
                 orientation: vertical
                 size_hint_x: 1/3
@@ -26,7 +28,7 @@
                 border: True
                 border_fg_color: dark_cyan
                 border_bg_color: Black
-                - Label: layout1_title_widget
+                - Label: layout1_title_label
                     text: Layout 1:
                     fg_color: Magenta
                     bg_color: Black
@@ -35,7 +37,7 @@
                     size_hint_x: None
                     size_hint_y: None
                     halign: center
-            - Layout: small_layout_2
+            - Layout: small_box_2
                 mode: box
                 orientation: vertical
                 size_hint_x: 1/3
@@ -43,37 +45,37 @@
                 border: True
                 border_fg_color: dark_cyan
                 border_bg_color: Black
-                - Label: layout2_title_widget
+                - Label: layout2_title_label
                     text: Layout 2:
                     fg_color: Magenta
                     bg_color: Black
                     size_hint_y: None
                     size_hint_x: 1
                     height: 1
-                - TextInput: layout2_input_widget
+                - TextInput: layout2_input
                     size_hint_x: 1
                     text: sample larger input
                     max_length: 20
                     selection_order: 3
-                - Label: layout2_checkbox_title_widget
+                - Label: layout2_checkbox_title_label
                     text: Disabled
                     halign: center
                     size_hint_x: None
                     size_hint_y: None
                     auto_scale_width: true
                     auto_scale_height: true
-                - CheckBox: layout2_checkbox_widget
+                - CheckBox: layout2_checkbox
                     selection_order: 4
                     halign: center
                     active: False
                     active_symbol: X
                     inactive_symbol: -
-                - Layout: layout2_radio_button_layout
+                - Layout: layout2_radio_button_box
                     size_hint_y: None
                     height: 3
                     mode: box
                     orientation: horizontal
-                    - Label: layout2_radio_title_widget
+                    - Label: layout2_radio_title_label
                         text: option1:
                         size_hint_x: 0.25
                         size_hint_y: None
@@ -92,18 +94,18 @@
                         group: test_radios
                         selection_order: 7
                         valign: middle
-                - Dropdown: layout2_dropdown_widget
+                - Dropdown: layout2_dropdown
                     selection_order: 8
                     allow_none: True
                     active: option1
                     options: option1, option2, option3, option4, option5
                     size_hint_x: 1
-                - Label: layout2_dropdown_title_widget
+                - Label: layout2_dropdown_title_label
                     text: option1
                     size_hint_x: 1
                     size_hint_y: None
                     height: 1
-            - Layout: small_layout_3
+            - Layout: small_box_3
                 mode: box
                 orientation: vertical
                 size_hint_x: 1/3
@@ -111,27 +113,25 @@
                 border: True
                 border_fg_color: dark_cyan
                 border_bg_color: Black
-                - Label: layout3_title_widget
+                - Label: layout3_title_label
                     text: Layout 3
                     fg_color: Magenta
                     bg_color: Black
                     size_hint_y: None
                     size_hint_x: 1
                     height: 1
-                - Label: layout3_title_widget1
-                    text: test123!
-                    fg_color: Magenta
-                    bg_color: Black
+                - Button: layout3_button
+                    text: Click me!
+                    bg_color: red
                     size_hint_y: None
-                    size_hint_x: 1
-                    height: 1
-    - Layout: right_layout
+                    height: 6
+    - Layout: right_box
         mode: box
         orientation: vertical
         size_hint_x: 1/5
         size_hint_y: 1
         border: True
-        - Label: layout2_radio_title_widget
+        - Label: lorem_label
             from_file: ./Examples/dummy.txt
             size_hint_x: 1
             size_hint_y: 1

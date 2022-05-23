@@ -302,12 +302,12 @@ impl EzObject for CanvasWidget {
                 for y in 0..state.get_effective_height() {
                     if y < lines.len() && !lines[y].is_empty() {
                         widget_content[x].push(Pixel { symbol: lines[y].pop().unwrap().to_string(),
-                            foreground_color: self.state.content_foreground_color,
-                            background_color: self.state.content_background_color, underline: false})
+                            foreground_color: state.content_foreground_color,
+                            background_color: state.content_background_color, underline: false})
                     } else {
                         widget_content[x].push(Pixel { symbol: " ".to_string(),
-                            foreground_color: self.state.content_foreground_color,
-                            background_color: self.state.content_background_color, underline: false})
+                            foreground_color: state.content_foreground_color,
+                            background_color: state.content_background_color, underline: false})
                     }
                 }
             }

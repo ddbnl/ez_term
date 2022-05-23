@@ -191,10 +191,6 @@ impl GenericState for DropdownState {
 
     fn get_size_hint_x(&self) -> Option<f64> { self.size_hint_x }
 
-    fn set_size_hint_y(&mut self, _size_hint: Option<f64>) {
-        panic!("Cannot set size_hint_y for dropdown state")
-    }
-
     fn get_size_hint_y(&self) -> Option<f64> { None }
 
     fn set_width(&mut self, width: usize) { self.width = width; self.changed = true }
@@ -708,9 +704,9 @@ impl Dropdown {
             let mut new_y = Vec::new();
             for y in 0..options.len() {
                 let fg = if y == state.dropped_down_selected_row
-                {self.state.selection_foreground_color} else {state.content_foreground_color};
+                {state.selection_foreground_color} else {state.content_foreground_color};
                 let bg = if y == state.dropped_down_selected_row
-                {self.state.selection_background_color} else {state.content_background_color};
+                {state.selection_background_color} else {state.content_background_color};
                 if !options[y].is_empty(){
                     new_y.push(Pixel{symbol: options[y].pop().unwrap().to_string(),
                         foreground_color: fg, background_color: bg, underline: false})
