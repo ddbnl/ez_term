@@ -6,14 +6,14 @@
 use std::collections::HashMap;
 use std::io::{Error, ErrorKind};
 use crossterm::event::{KeyCode};
-use crossterm::style::{Color};
 use crate::common::{KeyboardCallbackFunction, Coordinates, PixelMap, GenericEzFunction,
                     MouseCallbackFunction, EzContext, StateTree, KeyMap};
-use crate::widgets::state::{State, GenericState, SelectableState, HorizontalAlignment,
-                            VerticalAlignment};
+use crate::states::radio_button_state::RadioButtonState;
+use crate::states::state::{EzState, SelectableState, GenericState};
 use crate::widgets::widget::{EzWidget, Pixel, EzObject, EzObjects};
 use crate::ez_parser::{load_bool_parameter, load_color_parameter, load_halign_parameter,
-                       load_valign_parameter};
+                       load_valign_parameter, load_pos_hint_x_parameter, load_pos_hint_y_parameter};
+
 
 pub struct RadioButton {
 
@@ -22,9 +22,6 @@ pub struct RadioButton {
 
     /// Full path to this widget, e.g. "/root_layout/layout_2/THIS_ID"
     pub path: String,
-
-    /// Absolute position of this layout on screen. Automatically propagated, do not set manually
-    pub absolute_position: Coordinates,
 
     /// [Pixel.symbol] used when the Checkbox is active
     pub active_symbol: char,
@@ -74,7 +71,6 @@ impl Default for RadioButton {
             group: String::new(),
             active_symbol: 'X',
             inactive_symbol: ' ',
-            absolute_position: (0, 0),
             selection_order: 0,
             bound_on_value_change: None,
             bound_on_select: None,
@@ -87,171 +83,6 @@ impl Default for RadioButton {
 }
 
 
-/// [State] implementation.
-#[derive(Clone)]
-pub struct RadioButtonState {
-
-    /// Bool representing whether this widget is currently active (i.e. checkbox is checked)
-    pub active: bool,
-
-    /// Bool representing whether this widget is currently selected.
-    pub selected: bool,
-
-    /// Horizontal position of this widget relative to its' parent [Layout]
-    pub x: usize,
-
-    /// Vertical position of this widget relative to its' parent [Layout]
-    pub y: usize,
-
-    /// Horizontal alignment of this widget
-    pub halign: HorizontalAlignment,
-
-    /// Vertical alignment of this widget
-    pub valign: VerticalAlignment,
-
-    /// The [Pixel.foreground_color] to use for this widgets' content
-    pub content_foreground_color: Color,
-
-    /// The [Pixel.background_color] to use for this widgets' content
-    pub content_background_color: Color,
-
-    /// The [Pixel.foreground_color] to use for this widgets' content when selected
-    pub selection_foreground_color: Color,
-
-    /// The [Pixel.background_color] to use for this widgets' content when selected
-    pub selection_background_color: Color,
-
-    /// Bool representing if state has changed. Triggers widget redraw.
-    pub changed: bool,
-
-    /// If true this forces a global screen redraw on the next frame. Screen redraws are diffed
-    /// so this can be called when needed without degrading performance. If only screen positions
-    /// that fall within this widget must be redrawn, call [EzObject.redraw] instead.
-    pub force_redraw: bool,
-}
-impl Default for RadioButtonState {
-    fn default() -> Self {
-       RadioButtonState {
-           x: 0,
-           y: 0,
-           halign: HorizontalAlignment::Left,
-           valign: VerticalAlignment::Top,
-           active: false,
-           selected: false,
-           content_background_color: Color::Black,
-           content_foreground_color: Color::White,
-           selection_background_color: Color::Blue,
-           selection_foreground_color: Color::Yellow,
-           changed: false,
-           force_redraw: false
-       }
-    }
-}
-impl GenericState for RadioButtonState {
-
-    fn set_changed(&mut self, changed: bool) { self.changed = changed }
-
-    fn get_changed(&self) -> bool { self.changed }
-
-    fn get_size_hint_x(&self) -> Option<f64> { None }
-
-    fn get_size_hint_y(&self) -> Option<f64> { None }
-
-    fn set_width(&mut self, _width: usize) {
-        panic!("Cannot set height directly for radio button state")
-    }
-
-    fn get_width(&self) -> usize { 5 }
-
-    fn set_height(&mut self, _height: usize) {
-        panic!("Cannot set height directly for radio button state")
-    }
-
-    fn get_height(&self) -> usize { 1 }
-
-    fn set_position(&mut self, position: Coordinates) {
-        self.x = position.0;
-        self.y = position.1;
-        self.changed = true;
-    }
-
-    fn get_position(&self) -> Coordinates { (self.x, self.y) }
-
-    fn set_horizontal_alignment(&mut self, alignment: HorizontalAlignment) {
-        self.halign = alignment;
-        self.changed = true;
-    }
-
-    fn get_horizontal_alignment(&self) -> HorizontalAlignment { self.halign }
-
-    fn set_vertical_alignment(&mut self, alignment: VerticalAlignment) {
-        self.valign = alignment;
-        self.changed = true;
-    }
-
-    fn get_vertical_alignment(&self) -> VerticalAlignment { self.valign }
-
-    fn set_force_redraw(&mut self, redraw: bool) {
-        self.force_redraw = redraw;
-        self.changed = true;
-    }
-
-    fn get_force_redraw(&self) -> bool { self.force_redraw }
-}
-impl SelectableState for RadioButtonState {
-
-    fn set_selected(&mut self, state: bool) {
-        self.selected = state;
-        self.changed = true;
-    }
-
-    fn get_selected(&self) -> bool { self.selected }
-}
-impl RadioButtonState {
-
-    pub fn set_active(&mut self, active: bool) {
-        self.active = active;
-        self.changed = true;
-    }
-
-    pub fn get_active(&self) -> bool { self.active }
-
-    pub fn set_content_foreground_color(&mut self, color: Color) {
-        self.content_foreground_color = color;
-        self.changed = true;
-    }
-
-    pub fn get_content_foreground_color(&self) -> Color { self.content_foreground_color }
-
-    pub fn set_content_background_color(&mut self, color: Color) {
-        self.content_background_color = color;
-        self.changed = true;
-    }
-
-    pub fn get_content_background_color(&self) -> Color {
-        self.content_background_color
-    }
-
-    pub fn set_selection_foreground_color(&mut self, color: Color) {
-        self.selection_foreground_color = color;
-        self.changed = true;
-    }
-
-    pub fn get_selection_foreground_color(&self) -> Color {
-        self.selection_foreground_color
-    }
-
-    pub fn set_selection_background_color(&mut self, color: Color) {
-        self.selection_background_color = color;
-        self.changed = true;
-    }
-
-    pub fn get_selection_background_color(&self) -> Color {
-        self.selection_background_color
-    }
-}
-
-
 impl EzObject for RadioButton {
 
     fn load_ez_parameter(&mut self, parameter_name: String, parameter_value: String)
@@ -259,6 +90,10 @@ impl EzObject for RadioButton {
         match parameter_name.as_str() {
             "x" => self.state.x = parameter_value.trim().parse().unwrap(),
             "y" => self.state.y = parameter_value.trim().parse().unwrap(),
+            "pos_hint_x" => self.state.set_pos_hint_x(
+                load_pos_hint_x_parameter(parameter_value.trim()).unwrap()),
+            "pos_hint_y" => self.state.set_pos_hint_y(
+                load_pos_hint_y_parameter(parameter_value.trim()).unwrap()),
             "halign" =>
                 self.state.halign =  load_halign_parameter(parameter_value.trim()).unwrap(),
             "valign" =>
@@ -305,7 +140,7 @@ impl EzObject for RadioButton {
 
     fn get_full_path(&self) -> String { self.path.clone() }
 
-    fn update_state(&mut self, new_state: &State) {
+    fn update_state(&mut self, new_state: &EzState) {
         let state = new_state.as_radio_button();
         self.state = state.clone();
         self.state.changed = false;
@@ -313,7 +148,7 @@ impl EzObject for RadioButton {
     }
 
 
-    fn get_state(&self) -> State { State::RadioButton(self.state.clone()) }
+    fn get_state(&self) -> EzState { EzState::RadioButton(self.state.clone()) }
 
     fn get_contents(&self, state_tree: &mut StateTree) -> PixelMap {
 
@@ -338,15 +173,6 @@ impl EzObject for RadioButton {
                 background_color: bg_color, underline: false}),
         )
     }
-
-    fn set_absolute_position(&mut self, pos: Coordinates) {
-       self.absolute_position = pos
-    }
-
-    fn get_absolute_position(&self) -> Coordinates {
-       self.absolute_position
-    }
-
 }
 
 impl EzWidget for RadioButton {

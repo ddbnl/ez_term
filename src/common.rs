@@ -7,8 +7,8 @@ use std::collections::HashMap;
 use crossterm::event::KeyCode;
 use crate::scheduler::Scheduler;
 use crate::widgets::layout::Layout;
-use crate::widgets::state::{HorizontalAlignment, State, VerticalAlignment};
-use crate::widgets::widget::{EzWidget, EzObjects, Pixel};
+use crate::states::state::{HorizontalAlignment, EzState, VerticalAlignment};
+use crate::widgets::widget::{EzWidget, EzObjects, Pixel, EzObject};
 
 
 /// # Convenience types
@@ -35,7 +35,7 @@ pub type ViewTree = Vec<Vec<StyledContent<String>>>;
 /// widget, such as the text of a label, or whether a checkbox is currently checked. Callbacks
 /// receive a mutable reference to the widget state and can change what they need. Then after each
 /// frame the updated StateTree is diffed with the old one, and only changed widgets are redrawn.
-pub type StateTree = HashMap<String, State>;
+pub type StateTree = HashMap<String, EzState>;
 
 /// ## Widget tree:
 /// A read-only list of all widgets, passed to callbacks. Can be used to access static information
@@ -58,7 +58,12 @@ pub type MouseCallbackFunction = fn(EzContext, mouse_pos: Coordinates);
 /// Used for callbacks and scheduled tasks that don't require special parameter such as KeyCodes
 /// or mouse positions. Used e.g. for [on_value_change] and [on_keyboard_enter].
 pub type GenericEzFunction = fn(EzContext);
+
+/// ## Generic Ez task:
+/// Scheduled task implementation. Using FnMut allows users to capture variables in their scheduled
+/// funcs.
 pub type GenericEzTask = Box<dyn FnMut(EzContext) -> bool>;
+
 
 /// ## Ez Context:
 /// Used for providing context to callbacks and scheduled tasks.
@@ -80,6 +85,7 @@ pub struct EzContext<'a, 'b, 'c, 'd> {
     pub scheduler: &'d mut Scheduler,
 }
 impl<'a, 'b , 'c, 'd> EzContext<'a, 'b , 'c, 'd> {
+
     pub fn new(widget_path: String, view_tree: &'a mut ViewTree, state_tree: &'b mut StateTree,
            widget_tree: &'c WidgetTree, scheduler: &'d mut Scheduler) -> Self {
         EzContext { widget_path, view_tree, state_tree, widget_tree, scheduler }
@@ -87,13 +93,13 @@ impl<'a, 'b , 'c, 'd> EzContext<'a, 'b , 'c, 'd> {
 }
 
 /// Find a widget by a screen position coordinate. Used e.g. by mouse event handlers.
-pub fn get_widget_by_position<'a>(pos: Coordinates, widget_tree: &'a WidgetTree)
-    -> Option<&'a dyn EzWidget> {
-    for widget in widget_tree.values() {
-        if let EzObjects::Layout(_) = widget { continue }
-        let generic_widget = widget.as_ez_widget();
-        if generic_widget.collides(pos) {
-            return Some(generic_widget)
+pub fn get_widget_by_position<'a>(pos: Coordinates, widget_tree: &'a WidgetTree,
+                                  state_tree: &StateTree) -> Option<&'a dyn EzWidget> {
+
+    for (widget_path, state) in state_tree {
+        if let EzState::Layout(_) = state { continue }
+        if state.as_generic().collides(pos) {
+            return Some(widget_tree.get(widget_path).unwrap().as_ez_widget())
         }
     }
     None
@@ -108,7 +114,8 @@ pub fn write_to_screen(base_position: Coordinates, content: PixelMap, view_tree:
         for y in 0..content[x].len() {
             let write_pos = (base_position.0 + x, base_position.1 + y);
             let write_content = content[x][y].get_pixel().clone();
-            if view_tree[write_pos.0][write_pos.1] != write_content {
+            if write_pos.0 < view_tree.len() && write_pos.1 < view_tree[write_pos.0].len() &&
+                view_tree[write_pos.0][write_pos.1] != write_content {
                 view_tree[write_pos.0][write_pos.1] = write_content.clone();
                 stdout().queue(cursor::MoveTo(
                     write_pos.0 as u16, write_pos.1 as u16)).unwrap()
@@ -118,6 +125,18 @@ pub fn write_to_screen(base_position: Coordinates, content: PixelMap, view_tree:
     }
     stdout().flush().unwrap();
     stdout().execute(cursor::RestorePosition).unwrap();
+}
+
+/// Create an empty view tree
+pub fn initialize_view_tree(width: usize, height: usize) -> ViewTree {
+    let mut view_tree = ViewTree::new();
+    for x in 0..width {
+        view_tree.push(Vec::new());
+        for _ in 0..height {
+            view_tree[x].push(Pixel::from_symbol("".to_string()).get_pixel())
+        }
+    }
+    view_tree
 }
 
 
@@ -137,10 +156,15 @@ pub fn update_state_tree(view_tree: &mut ViewTree, state_tree: &mut StateTree,
             force_redraw = true;
         }
         if state.as_generic().get_changed() {
-            let widget = root_widget.get_child_by_path_mut(widget_path).unwrap()
-                .as_ez_object_mut();
-            widget.update_state(state);
-            widgets_to_redraw.push(widget_path.clone());
+            if widget_path == &root_widget.get_full_path() {
+                root_widget.update_state(state);
+                force_redraw = true;
+            } else {
+                let widget =
+                    root_widget.get_child_by_path_mut(widget_path).unwrap().as_ez_object_mut();
+                widget.update_state(state);
+                widgets_to_redraw.push(widget_path.clone());
+            };
         }
     }
     if !force_redraw {
@@ -293,6 +317,7 @@ pub fn find_previous_selection(current_selection: usize, widget_tree: &WidgetTre
 pub fn add_border(mut content: PixelMap, horizontal_symbol: String, vertical_symbol: String,
               top_left_symbol: String, top_right_symbol: String, bottom_left_symbol: String,
               bottom_right_symbol: String, bg_color: Color, fg_color: Color) -> PixelMap {
+    if content.is_empty() { return content }
     // Create border elements
     let horizontal_border = Pixel{ symbol: horizontal_symbol, background_color: bg_color,
         foreground_color: fg_color, underline: false};
@@ -532,6 +557,7 @@ pub fn wrap_text (mut text: String, width: usize) -> Vec<String> {
     }
     content_lines
 }
+
 
 
 /// Take a PixelMap and rotate it. Normally a Vec<Vec<Pixel>> is essentially a list

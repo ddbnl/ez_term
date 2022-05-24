@@ -3,12 +3,9 @@
 - Layout: root_layout
     mode: box
     orientation: horizontal
-    width: 180
-    height: 70
     - Layout: left_box
         mode: box
         size_hint_x: 4/5
-        size_hint_y: 1
         orientation: vertical
         - Canvas: canvas
             auto_scale_width: true
@@ -18,13 +15,10 @@
         - Layout: bottom_box
             mode: box
             orientation: horizontal
-            size_hint_x: 1
-            size_hint_y: 1
             - Layout: small_box_1
                 mode: box
                 orientation: vertical
                 size_hint_x: 1/3
-                size_hint_y: 1
                 border: True
                 border_fg_color: dark_cyan
                 border_bg_color: Black
@@ -37,11 +31,49 @@
                     size_hint_x: None
                     size_hint_y: None
                     halign: center
+                - Layout: layout1_input_box_1
+                    mode: box
+                    orientation: vertical
+                    border: true
+                    auto_scale_width: true
+                    auto_scale_height: true
+                    border_fg_color: dark_cyan
+                    - Label: layout1_input_description
+                        text: This is a small text input. It's content is bigger than its' size. It allows us to test views. Try selecting it and pressing left and right button to move through the text.
+                        auto_scale_width: true
+                        auto_scale_height: true
+                    - Label: spacer
+                        size_hint_y: none
+                        height: 1
+                    - TextInput: layout1_input
+                        size_hint_x: None
+                        width: 20
+                        bg_color: blue
+                        text: small input to test views
+                        selection_order: 2
+                - Layout: layout1_input_box_2
+                    mode: box
+                    orientation: vertical
+                    border: true
+                    auto_scale_width: true
+                    auto_scale_height: true
+                    border_fg_color: dark_cyan
+                    - Label: layout1_input_description
+                        text: This is a larger input but it has a maximum length, so we can't fill it all!
+                        auto_scale_width: true
+                        auto_scale_height: true
+                    - Label: spacer
+                        size_hint_y: none
+                        height: 1
+                    - TextInput: layout2_large_input
+                        text: sample larger input
+                        bg_color: blue
+                        max_length: 25
+                        selection_order: 3
             - Layout: small_box_2
                 mode: box
                 orientation: vertical
                 size_hint_x: 1/3
-                size_hint_y: 1
                 border: True
                 border_fg_color: dark_cyan
                 border_bg_color: Black
@@ -50,13 +82,10 @@
                     fg_color: Magenta
                     bg_color: Black
                     size_hint_y: None
-                    size_hint_x: 1
+                    auto_scale_width: true
+                    halign: center
                     height: 1
-                - TextInput: layout2_input
-                    size_hint_x: 1
-                    text: sample larger input
-                    max_length: 20
-                    selection_order: 3
+
                 - Label: layout2_checkbox_title_label
                     text: Disabled
                     halign: center
@@ -99,17 +128,14 @@
                     allow_none: True
                     active: option1
                     options: option1, option2, option3, option4, option5
-                    size_hint_x: 1
                 - Label: layout2_dropdown_title_label
                     text: option1
-                    size_hint_x: 1
                     size_hint_y: None
                     height: 1
             - Layout: small_box_3
                 mode: box
                 orientation: vertical
                 size_hint_x: 1/3
-                size_hint_y: 1
                 border: True
                 border_fg_color: dark_cyan
                 border_bg_color: Black
@@ -118,9 +144,11 @@
                     fg_color: Magenta
                     bg_color: Black
                     size_hint_y: None
-                    size_hint_x: 1
+                    auto_scale_width: true
                     height: 1
+                    halign: center
                 - Button: layout3_button
+                    selection_order: 12
                     text: Click me!
                     bg_color: red
                     size_hint_y: None
@@ -129,9 +157,6 @@
         mode: box
         orientation: vertical
         size_hint_x: 1/5
-        size_hint_y: 1
         border: True
         - Label: lorem_label
             from_file: ./Examples/dummy.txt
-            size_hint_x: 1
-            size_hint_y: 1

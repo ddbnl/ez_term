@@ -1,6 +1,7 @@
 use std::time::{Duration, Instant};
 use crate::common::{EzContext, GenericEzTask, StateTree, ViewTree, WidgetTree};
 
+#[derive(Default)]
 pub struct Scheduler {
     pub tasks: Vec<Task>,
 }
@@ -16,8 +17,6 @@ pub struct Task {
 
 
 impl Scheduler {
-
-    pub fn new() -> Self { Scheduler { tasks: Vec::new() } }
 
     pub fn schedule_once(&mut self, widget: String, func: GenericEzTask, after: Duration) {
         let task = Task::new(widget, func, false, after,
@@ -73,8 +72,6 @@ impl Task {
         Task { widget, func, recurring, interval, canceled: false, last_execution }
     }
 
-    pub fn cancel(&mut self) {
-        self.canceled = true;
-    }
+    pub fn cancel(&mut self) { self.canceled = true; }
 
 }

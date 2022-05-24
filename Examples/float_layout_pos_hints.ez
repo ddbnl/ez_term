@@ -1,0 +1,37 @@
+- Layout: my_float_layout
+    mode: float
+    - Label: my_upper_left_label
+        text: hello
+        border: True
+        auto_scale_width: true
+        auto_scale_height: true
+        pos_hint_x: left
+        pos_hint_y: top
+    - Label: my_middle_label
+        text: hello
+        border: True
+        auto_scale_width: true
+        auto_scale_height: true
+        pos_hint_x: center
+        pos_hint_y: middle
+    - Label: my_lower_left_label
+        text: hello
+        border: True
+        auto_scale_width: true
+        auto_scale_height: true
+        pos_hint_x: left
+        pos_hint_y: bottom
+    - Label: my_upper_right_label
+        text: hello
+        border: True
+        auto_scale_width: true
+        auto_scale_height: true
+        pos_hint_x: right
+        pos_hint_y: top
+    - Label: my_lower_right_label
+        text: hello
+        border: True
+        auto_scale_width: true
+        auto_scale_height: true
+        pos_hint_x: right
+        pos_hint_y: bottom

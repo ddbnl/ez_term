@@ -4,12 +4,13 @@
 use crossterm::style::{Color, StyledContent, Stylize};
 use crossterm::event::{Event, KeyCode};
 use std::io::{Error};
-use crate::common::{self, ViewTree, Coordinates, KeyboardCallbackFunction, PixelMap, GenericEzFunction, MouseCallbackFunction, EzContext, StateTree, KeyMap};
-use crate::widgets::state::{State};
+use crate::common::{self, ViewTree, Coordinates, KeyboardCallbackFunction, PixelMap,
+                    GenericEzFunction, MouseCallbackFunction, EzContext, StateTree, KeyMap};
+use crate::states::state::{EzState};
 use crate::widgets::layout::{Layout};
 use crate::widgets::label::{Label};
 use crate::widgets::button::{Button};
-use crate::widgets::canvas_widget::{CanvasWidget};
+use crate::widgets::canvas::{CanvasWidget};
 use crate::widgets::checkbox::{Checkbox};
 use crate::widgets::dropdown::{Dropdown};
 use crate::widgets::radio_button::{RadioButton};
@@ -189,9 +190,9 @@ impl EzObjects {
 }
 
 
-/// Trait representing both widgets and layouts, implementing methods which are common to all UI
-/// objects (such as size, position, etc.). If you don't know if an object is a Widget or a layout
-/// (or don't care), cast the EzObjects enum into this type using 'common::cast_as_ez_object'.
+/// Trait representing both widgets and layouts implementing methods which are common to all UI
+/// objects (such as size, position, etc.). If you don't know if an object is a Widget or a Layout
+/// (or don't care), cast the EzObjects enum into this type using [az_ez_object].
 pub trait EzObject {
 
     /// Accepts config lines from the ez_parser module and prepares them to be loaded by
@@ -227,15 +228,16 @@ pub trait EzObject {
     fn get_full_path(&self) -> String;
 
     /// Set a passed state as the current state.
-    fn update_state(&mut self, new_state: &State);
+    fn update_state(&mut self, new_state: &EzState);
 
     /// Get the State object belonging to this widget.
-    fn get_state(&self) -> State;
+    fn get_state(&self) -> EzState;
 
     /// Redraw the widget on the screen. Using the view tree, only changed content is written to
     /// improve performance.
     fn redraw(&self, view_tree: &mut ViewTree, state_tree: &mut StateTree) {
-        let pos = self.get_absolute_position();
+        let pos = state_tree.get(&self.get_full_path()).unwrap().as_generic()
+            .get_absolute_position();
         let content = self.get_contents(state_tree);
         common::write_to_screen(pos, content, view_tree);
     }
@@ -248,48 +250,6 @@ pub trait EzObject {
     /// Gets the visual content for this widget. Overloaded by each widget module. E.g. a label
     /// gets its' content from its' text, a checkbox from whether it has been checked, etc.
     fn get_contents(&self, state_tree: &mut StateTree) -> PixelMap;
-
-    /// Set the absolute position of a widget, i.e. the position on screen rather than within its'
-    /// parent widget. Should be set automatically through the "propagate_absolute_positions"
-    /// function.
-    fn set_absolute_position(&mut self, pos:Coordinates);
-
-    /// Get the absolute position of a widget, i.e. the position on screen rather than within its'
-    /// parent widget.
-    fn get_absolute_position(&self) -> Coordinates;
-
-    /// Get the absolute position of where the actual content of the widget starts, taking out
-    /// e.g. border and padding
-    fn get_effective_absolute_position(&self) -> Coordinates { self.get_absolute_position() }
-
-    /// Get the top left and bottom right corners of a widget in (X, Y) coordinate tuples.
-    fn get_box(&self) -> (Coordinates, Coordinates) {
-        let top_left = self.get_absolute_position();
-        let top_right = (top_left.0 + self.get_state().as_generic().get_width(),
-                         top_left.1 + self.get_state().as_generic().get_height());
-        (top_left, top_right)
-    }
-
-    /// Returns a bool representing whether two widgets overlap at any point.
-    fn overlaps(&self, other_box: (Coordinates, Coordinates)) -> bool {
-        let (l1, r1) = self.get_box();
-        let (l2, r2) = other_box;
-        // If one rectangle is on the left of the other there's no overlap
-        if l1.0 >= r2.0 || l2.0 >= r1.0 { return false }
-        // If one rectangle is above the other there's no overlap
-        if r1.1 >= l2.1 || r2.1 >= l1.1 { return false }
-        true
-    }
-
-    /// Returns a bool representing whether a single point collides with a widget.
-    fn collides(&self, pos: Coordinates) -> bool {
-        let starting_pos = self.get_effective_absolute_position();
-        let end_pos =
-            (starting_pos.0 + self.get_state().as_generic().get_width() - 1,
-             starting_pos.1 + self.get_state().as_generic().get_height() - 1);
-        pos.0 >= starting_pos.0 && pos.0 <= end_pos.0 &&
-            pos.1 >= starting_pos.1 && pos.1 <= end_pos.1
-    }
 }
 
 

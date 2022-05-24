@@ -1,0 +1,21 @@
+- Layout: my_horizontal_box
+    mode: box
+    orientation: horizontal
+    - Layout: my_vertical_box_left
+        mode: box
+        orientation: vertical
+        - Label: my_upper_left_label
+            text: hello
+            border: true
+        - Label: my_lower_left_label
+            text: hello
+            border: true
+    - Layout: my_vertical_box_right
+        mode: box
+        orientation: vertical
+        - Label: my_upper_right_label
+            text: hello
+            border: true
+        - Label: my_lower_right_label
+            text: hello
+            border: true

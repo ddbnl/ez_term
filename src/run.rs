@@ -3,12 +3,13 @@
 //! functions allows starting the app based on a root layout.
 use std::io::{stdout, Write};
 use std::process::exit;
+use std::thread::sleep;
 use std::time::{Duration};
 use crossterm::{ExecutableCommand, execute, Result, cursor::{Hide, Show},
                 event::{MouseEvent, MouseEventKind, MouseButton, poll, read, DisableMouseCapture,
                         EnableMouseCapture, Event, KeyCode, KeyEvent},
                 terminal::{disable_raw_mode, enable_raw_mode, self}, QueueableCommand};
-use crate::common::{self, EzContext, StateTree, ViewTree, WidgetTree};
+use crate::common::{self, EzContext, initialize_view_tree, StateTree, ViewTree, WidgetTree};
 use crate::widgets::layout::Layout;
 use crate::widgets::widget::{EzObject, Pixel};
 use crate::scheduler::{Scheduler};
@@ -48,6 +49,33 @@ pub fn run(root_widget: Layout, scheduler: Scheduler) {
 }
 
 
+/// Called just before [run]. Creates initial view- and state trees and writes initial content
+/// to the screen.
+fn initialize_widgets(root_widget: &mut Layout) -> ViewTree {
+
+    // Get initial state tree, then convert all size_hints into actual sizes. After that we can
+    // set absolute positions for all children as sizes are now known.
+    let mut state_tree = root_widget.get_state_tree();
+    root_widget.set_child_sizes(&mut state_tree);
+    let all_content = root_widget.get_contents(&mut state_tree);
+    root_widget.propagate_absolute_positions(&mut state_tree);
+    // Update state tree to cement the new sizes.
+    for widget in root_widget.get_state_tree().keys() {
+        if widget == &root_widget.get_full_path() {
+            root_widget.update_state(state_tree.get(widget).unwrap());
+            continue
+        }
+        root_widget.get_child_by_path_mut(widget).unwrap().as_ez_object_mut().update_state(
+            state_tree.get(widget).unwrap())
+    }
+    // Create an initial view tree so we can diff all future changes against it.
+    let mut view_tree = common::initialize_view_tree(all_content.len(),
+                                                          all_content[0].len());
+    common::write_to_screen((0, 0), all_content, &mut view_tree);
+    view_tree
+
+}
+
 /// Main loop of the app. Consumes Crossterm events to handle key/mouse input. The app works with
 /// three trees in order play nice with Rusts' "only one mutable state" requirement. Instead of
 /// passing around a mutable root widget to all callbacks and event handlers, a widget tree,
@@ -71,32 +99,9 @@ pub fn run(root_widget: Layout, scheduler: Scheduler) {
 /// is.
 fn run_loop(mut root_widget: Layout, mut scheduler: Scheduler) -> Result<()>{
 
-    let mut state_tree = root_widget.get_state_tree();
-    root_widget.set_child_sizes(&mut state_tree);
-    // Create the initial view tree and write it to the screen. Composing the screen will also
-    // set positions for widgets that don't have them hardcoded. That's why we update the state for
-    // all widgets after.
-    let all_content = root_widget.get_contents(&mut state_tree);
-    for widget in root_widget.get_state_tree().keys() {
-        if widget == &root_widget.get_full_path() {
-            root_widget.update_state(state_tree.get(widget).unwrap());
-            continue
-        }
-        root_widget.get_child_by_path_mut(widget).unwrap().as_ez_object_mut().update_state(
-            state_tree.get(widget).unwrap())
-    }
-    // Create initial trees so we can pre-select the first widget before running
-    let mut view_tree = ViewTree::new();
-    for x in 0..all_content.len() {
-        view_tree.push(Vec::new());
-        for _ in 0..all_content[0].len() {
-            view_tree[x].push(Pixel::from_symbol("".to_string()).get_pixel())
-        }
-    }
-    root_widget.propagate_absolute_positions();
-    common::write_to_screen((0, 0), all_content, &mut view_tree);
     // Process the widget selection we made
     // Start app
+    let mut view_tree = initialize_widgets(&mut root_widget);
     loop {
         let mut state_tree = root_widget.get_state_tree();
         let widget_tree = root_widget.get_widget_tree();
@@ -126,7 +131,24 @@ fn run_loop(mut root_widget: Layout, mut scheduler: Scheduler) -> Result<()>{
                         consumed = handle_mouse_event(event, &mut view_tree, &mut state_tree,
                                                       &widget_tree, &mut scheduler);
                     }
-                    _ => ()
+                    Event::Resize(width, height) => {
+                        let state = state_tree.get_mut(
+                            &root_widget.path).unwrap().as_generic_mut();
+                        if state.get_height() == height as usize &&
+                            state.get_width() == width as usize {
+                            consumed = true;
+                        } else {
+                            state.set_width(width as usize);
+                            state.set_height(height as usize);
+                            root_widget.set_child_sizes(&mut state_tree);
+                            root_widget.propagate_absolute_positions(&mut state_tree);
+                            view_tree = initialize_view_tree(width as usize,
+                                                             height as usize);
+                            stdout().execute(terminal::Clear(terminal::ClearType::Purge))?;
+                            stdout().execute(Hide)?;
+                        }
+
+                    }
                 }
             }
             // Try to let currently selected widget handle and consume the event
@@ -199,9 +221,10 @@ fn handle_mouse_event(event: MouseEvent, view_tree: &mut ViewTree, state_tree: &
 
     if let MouseEventKind::Down(button) = event.kind {
         let mouse_position = (event.column as usize, event.row as usize);
-        return match common::get_widget_by_position(mouse_position, widget_tree) {
+        return match common::get_widget_by_position(mouse_position, widget_tree, state_tree) {
             Some(widget) => {
-                let abs = widget.get_absolute_position();
+                let abs = state_tree.get(&widget.get_full_path()).unwrap().as_generic()
+                    .get_absolute_position();
                 let relative_position = (mouse_position.0 - abs.0,
                                          mouse_position.1 - abs.1);
                 match button {

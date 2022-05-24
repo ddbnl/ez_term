@@ -1,6 +1,6 @@
 use ez_term::{ez_parser, run};
 use ez_term::common::{EzContext};
-use ez_term::widgets::state::{SelectableState};
+use ez_term::states::state::{SelectableState};
 use ez_term::widgets::widget::EzObject;
 
 fn main() {

@@ -5,7 +5,7 @@ use std::io::prelude::*;
 use std::io::{Error, ErrorKind};
 use crossterm::style::Color;
 use crate::widgets::layout::{Layout};
-use crate::widgets::canvas_widget::CanvasWidget;
+use crate::widgets::canvas::CanvasWidget;
 use crate::widgets::label::Label;
 use crate::widgets::button::Button;
 use crate::widgets::radio_button::RadioButton;
@@ -16,7 +16,7 @@ use crate::widgets::widget::{EzObjects, EzObject};
 use std::str::FromStr;
 use crossterm::terminal::size;
 use crate::scheduler::Scheduler;
-use crate::widgets::state::{GenericState, HorizontalAlignment, VerticalAlignment};
+use crate::states::state::{GenericState, HorizontalAlignment, HorizontalPositionHint, VerticalAlignment, VerticalPositionHint};
 
 
 /// Load a file path into a root Layout. Return the root widget and a new scheduler. Both will
@@ -26,12 +26,15 @@ pub fn load_ez_ui(file_path: &str) -> (Layout, Scheduler) {
     let mut contents = String::new();
     file.read_to_string(&mut contents).expect("Unable to read file");
     let root_widget = parse_ez(contents).unwrap();
-    let scheduler = Scheduler::new();
+    let scheduler = Scheduler::default();
     (root_widget, scheduler)
 }
 
 
-/// Load a string into a root widget.
+/// Load a string from an Ez file into a root widget. Parse the first level and interpret the
+/// widget definition found there as the root widget (must be a layout or panic). Then parse the
+/// root widget definition into the actual widget, which will parse sub-widgets, who will parse
+/// their sub-widgets, etc. Thus recursively loading the UI.
 fn parse_ez(file_string: String) -> Result<Layout, Error> {
 
     let config_lines:Vec<&str> = file_string.lines().collect();
@@ -191,12 +194,16 @@ pub fn load_color_parameter(value: String) -> Result<Color, Error> {
     if value.contains(',') {
         let rgb: Vec<&str> = value.split(',').collect();
         if rgb.len() != 3 {
-            return Err(Error::new(ErrorKind::InvalidData,
-                                  format!("Invalid rgb data: {:?}", rgb)))
+            panic!("Invalid rgb data in Ez file: {:?}. Must be in format: '255, 0, 0'", rgb)
         }
-        Ok(Color::from((rgb[0].trim().parse().unwrap(),
-                        rgb[1].trim().parse().unwrap(),
-                        rgb[2].trim().parse().unwrap())))
+        Ok(Color::from(
+            (rgb[0].trim().parse().unwrap_or_else(
+                |_| panic!("Could not parse the first number in this RGB value: {}", value)),
+            rgb[1].trim().parse().unwrap_or_else(
+                |_| panic!("Could not parse the second number in this RGB value: {}", value)),
+            rgb[2].trim().parse().unwrap_or_else(
+                |_| panic!("Could not parse the third number in this RGB value: {}", value)),
+            )))
     } else {
         Ok(Color::from_str(value.trim()).unwrap())
     }
@@ -207,17 +214,18 @@ pub fn load_bool_parameter(value: &str) -> Result<bool, Error> {
 
     if value.to_lowercase() == "true" { Ok(true) }
     else if value.to_lowercase() == "false" { Ok(false) }
-    else { Err(Error::new(ErrorKind::InvalidData, "bool parameter must be true/false")) }
+    else {
+        panic!("Ez file bool parameter must be true/false, not: {}", value) }
 }
 
 
 /// Convenience function use by widgets to load a selection order parameter defined in a .ez file
 pub fn load_selection_order_parameter(value: &str) -> Result<usize, Error> {
 
-    let value: usize = value.trim().parse().unwrap();
+    let value: usize = value.trim().parse().unwrap_or_else(
+        |_| panic!("Could not parse this selection order number: {}", value));
     if value == 0 {
-        return Err(Error::new(ErrorKind::InvalidData,
-                              "selection_order must be higher than 0."))
+        panic!("selection_order must be higher than 0: {}", value);
     }
     Ok(value)
 }
@@ -232,7 +240,7 @@ pub fn load_text_parameter(mut value: &str) -> Result<String, Error> {
 }
 
 /// Convenience function use by widgets to load a size_hint parameter defined in a .ez file
-pub fn load_size_hint(value: &str) -> Result<Option<f64>, Error> {
+pub fn load_size_hint_parameter(value: &str) -> Result<Option<f64>, Error> {
 
     let to_parse = value.trim();
     // Size hint can be None
@@ -240,17 +248,84 @@ pub fn load_size_hint(value: &str) -> Result<Option<f64>, Error> {
         Ok(None)
     }
     // Size hint can be a fraction
-    else if to_parse.contains("/") {
-        let (left_str, right_str) = to_parse.split_once('/').unwrap();
-        let left: f64 = left_str.trim().parse().unwrap();
-        let right: f64 = right_str.trim().parse().unwrap();
+    else if to_parse.contains('/') {
+        let (left_str, right_str) = to_parse.split_once('/').unwrap_or_else(
+            || panic!("Size hint contains an invalid fraction: {}. Must be in format '1/3'",
+                       value));
+        let left: f64 = left_str.trim().parse().unwrap_or_else(
+            |_| panic!("Could not parse left side of size hint fraction: {}", value));
+        let right: f64 = right_str.trim().parse().unwrap_or_else(
+            |_| panic!("Could not parse right side of size hint fraction: {}", value));
         let result = left / right;
         Ok(Some(result))
     }
     // Size hint can be a straight number
     else {
-        Ok(Some(value.parse().unwrap()))
+        let size_hint = value.parse().unwrap_or_else(
+            |_| panic!("Could not parse this size hint number: {}", value));
+        Ok(Some(size_hint))
     }
+}
+
+/// Convenience function use by widgets to load a pos_hint parameter defined in a .ez file
+pub fn load_pos_hint_x_parameter(value: &str)
+    -> Result<Option<(HorizontalPositionHint, f64)>, Error> {
+
+    let to_parse = value.trim();
+    // Pos hint can be None
+    if to_parse.to_lowercase() == "none" {
+        return Ok(None)
+    }
+    // pos hint can one or two values. E.g. "top" or "top:0.8"
+    let (keyword, fraction);
+    if to_parse.contains(':') {
+        let (keyword_str, fraction_str) = to_parse.split_once(':').unwrap();
+        keyword = keyword_str;
+        fraction = fraction_str.trim().parse().unwrap_or_else(
+            |_| panic!("Could not parse pos hint: {}", value));
+    } else {
+        keyword = value;
+        fraction = 1.0;  // Default fraction
+    }
+    let pos = match keyword {
+        "left" => HorizontalPositionHint::Left,
+        "right" => HorizontalPositionHint::Right,
+        "center" => HorizontalPositionHint::Center,
+        _ => panic!("This value is not allowed for pos_hint_x: {}. Use left/right/center",
+                      value)
+    };
+    Ok(Some((pos, fraction)))
+}
+
+
+/// Convenience function use by widgets to load a pos_hint_y parameter defined in a .ez file
+pub fn load_pos_hint_y_parameter(value: &str)
+    -> Result<Option<(VerticalPositionHint, f64)>, Error> {
+
+    let to_parse = value.trim();
+    // Pos hint can be None
+    if to_parse.to_lowercase() == "none" {
+        return Ok(None)
+    }
+    // pos hint can one or two values. E.g. "top" or "top:0.8"
+    let (keyword, fraction);
+    if to_parse.contains(':') {
+        let (keyword_str, fraction_str) = to_parse.split_once(':').unwrap();
+        fraction = fraction_str.trim().parse().unwrap_or_else(
+            |_| panic!("Could not parse pos hint: {}", value));
+        keyword = keyword_str;
+    } else {
+        keyword = value;
+        fraction= 1.0;  // Default fraction
+    }
+    let pos = match keyword {
+        "top" => VerticalPositionHint::Top,
+        "bottom" => VerticalPositionHint::Bottom,
+        "middle" => VerticalPositionHint::Middle,
+        _ => panic!("This value is not allowed for pos_hint_y: {}. Use left/right/middle",
+                      value)
+    };
+    Ok(Some((pos, fraction)))
 }
 
 
@@ -260,8 +335,7 @@ pub fn load_halign_parameter(value: &str) -> Result<HorizontalAlignment, Error> 
     if value.to_lowercase() == "left" { Ok(HorizontalAlignment::Left) }
     else if value.to_lowercase() == "right" { Ok(HorizontalAlignment::Right) }
     else if value.to_lowercase() == "center" { Ok(HorizontalAlignment::Center) }
-    else { Err(Error::new(ErrorKind::InvalidData,
-                          "halign parameter must be left/right/center")) }
+    else { panic!("halign parameter must be left/right/center: {}", value) }
 }
 
 /// Convenience function use by widgets to load a horizontal alignment defined in a .ez file
@@ -270,6 +344,5 @@ pub fn load_valign_parameter(value: &str) -> Result<VerticalAlignment, Error> {
     if value.to_lowercase() == "top" { Ok(VerticalAlignment::Top) }
     else if value.to_lowercase() == "bottom" { Ok(VerticalAlignment::Bottom) }
     else if value.to_lowercase() == "middle" { Ok(VerticalAlignment::Middle) }
-    else { Err(Error::new(ErrorKind::InvalidData,
-                          "halign parameter must be left/right/center")) }
+    else { panic!("valign parameter must be left/right/center: {}", value) }
 }

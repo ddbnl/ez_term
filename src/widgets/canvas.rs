@@ -4,13 +4,13 @@
 use std::fs::File;
 use std::io::prelude::*;
 use crate::widgets::widget::{EzWidget, EzObject, Pixel};
-use crate::widgets::state::{State, GenericState, HorizontalAlignment, VerticalAlignment};
-use crate::common::{Coordinates, PixelMap, StateTree};
+use crate::states::canvas_state::CanvasState;
+use crate::states::state::{EzState, GenericState};
+use crate::common::{PixelMap, StateTree};
 use std::io::{Error, ErrorKind};
-use crossterm::style::{Color};
 use unicode_segmentation::UnicodeSegmentation;
-use crate::ez_parser::{load_color_parameter, load_size_hint, load_halign_parameter,
-                       load_valign_parameter, load_bool_parameter};
+use crate::ez_parser::{load_color_parameter, load_size_hint_parameter, load_halign_parameter,
+                       load_valign_parameter, load_bool_parameter, load_pos_hint_x_parameter, load_pos_hint_y_parameter};
 
 pub struct CanvasWidget {
     /// ID of the widget, used to construct [path]
@@ -21,9 +21,6 @@ pub struct CanvasWidget {
 
     /// Optional file path to retrieve contents from
     pub from_file: Option<String>,
-
-    /// Absolute position of this widget on screen. Automatically propagated, do not set manually
-    pub absolute_position: Coordinates,
 
     /// Grid of pixels that will be written to screen for this widget
     pub contents: PixelMap,
@@ -41,170 +38,12 @@ impl Default for CanvasWidget {
             id: "".to_string(),
             path: String::new(),
             from_file: None,
-            absolute_position: (0, 0),
             contents: Vec::new(),
             state: CanvasState::default(),
         }
     }
 }
 
-
-/// [State] implementation.
-#[derive(Clone)]
-pub struct CanvasState {
-
-    /// Horizontal position of this widget relative to its' parent [Layout]
-    pub x: usize,
-
-    /// Vertical position of this widget relative to its' parent [Layout]
-    pub y: usize,
-
-    /// Width of this widget
-    pub size_hint_x: Option<f64>,
-
-    /// Width of this widget
-    pub size_hint_y: Option<f64>,
-
-    /// Width of this widget
-    pub width: usize,
-
-    /// Height of this widget
-    pub height: usize,
-
-    /// Automatically adjust width of widget to content
-    pub auto_scale_width: bool,
-
-    /// Automatically adjust width of widget to content
-    pub auto_scale_height: bool,
-
-    /// Horizontal alignment of this widget
-    pub halign: HorizontalAlignment,
-
-    /// Vertical alignment of this widget
-    pub valign: VerticalAlignment,
-
-    /// The [Pixel.foreground_color] to use for this widgets' content
-    pub content_foreground_color: Color,
-
-    /// The [Pixel.background_color] to use for this widgets' content
-    pub content_background_color: Color,
-
-    /// Bool representing if state has changed. Triggers widget redraw.
-    pub changed: bool,
-
-    /// If true this forces a global screen redraw on the next frame. Screen redraws are diffed
-    /// so this can be called when needed without degrading performance. If only screen positions
-    /// that fall within this widget must be redrawn, call [EzObject.redraw] instead.
-    pub force_redraw: bool,
-}
-impl Default for CanvasState {
-    fn default() -> Self {
-        CanvasState{
-            x: 0,
-            y: 0,
-            size_hint_x: Some(1.0),
-            size_hint_y: Some(1.0),
-            auto_scale_width: false,
-            auto_scale_height: false,
-            width: 0,
-            height: 0,
-            halign: HorizontalAlignment::Left,
-            valign: VerticalAlignment::Top,
-            content_foreground_color: Color::White,
-            content_background_color: Color::Black,
-            changed: false,
-            force_redraw: false,
-        }
-    }
-}
-impl GenericState for CanvasState {
-
-    fn set_changed(&mut self, changed: bool) { self.changed = changed }
-
-    fn get_changed(&self) -> bool { self.changed }
-
-    fn set_size_hint_x(&mut self, size_hint: Option<f64>) {
-        self.size_hint_x = size_hint;
-        self.changed = true;
-    }
-
-    fn get_size_hint_x(&self) -> Option<f64> { self.size_hint_x }
-
-    fn set_size_hint_y(&mut self, size_hint: Option<f64>) {
-        self.size_hint_y = size_hint;
-        self.changed = true;
-    }
-
-    fn get_size_hint_y(&self) -> Option<f64> { self.size_hint_y }
-
-    fn set_auto_scale_width(&mut self, auto_scale: bool) {
-        self.auto_scale_width = auto_scale;
-        self.changed = true;
-    }
-
-    fn get_auto_scale_width(&self) -> bool { self.auto_scale_width }
-
-    fn set_auto_scale_height(&mut self, auto_scale: bool) {
-        self.auto_scale_height = auto_scale;
-        self.changed = true;
-    }
-
-    fn get_auto_scale_height(&self) -> bool { self.auto_scale_height }
-
-    fn set_width(&mut self, width: usize) { self.width = width; self.changed = true; }
-
-    fn get_width(&self) -> usize { self.width }
-
-    fn set_height(&mut self, height: usize) { self.height = height; self.changed = true; }
-
-    fn get_height(&self) -> usize { self.height }
-
-    fn set_position(&mut self, position: Coordinates) {
-        self.x = position.0;
-        self.y = position.1;
-        self.changed = true;
-    }
-
-    fn get_position(&self) -> Coordinates { (self.x, self.y) }
-
-    fn set_horizontal_alignment(&mut self, alignment: HorizontalAlignment) {
-        self.halign = alignment;
-        self.changed = true;
-    }
-
-    fn get_horizontal_alignment(&self) -> HorizontalAlignment { self.halign }
-
-    fn set_vertical_alignment(&mut self, alignment: VerticalAlignment) {
-        self.valign = alignment;
-        self.changed = true;
-    }
-
-    fn get_vertical_alignment(&self) -> VerticalAlignment { self.valign }
-
-    fn set_force_redraw(&mut self, redraw: bool) {
-        self.force_redraw = redraw;
-        self.changed = true;
-    }
-
-    fn get_force_redraw(&self) -> bool { self.force_redraw }
-}
-impl CanvasState {
-
-    pub fn set_content_foreground_color(&mut self, color: Color) {
-        self.content_foreground_color = color;
-        self.changed = true;
-    }
-
-    pub fn get_content_foreground_color(&self) -> Color { self.content_foreground_color }
-
-    pub fn set_content_background_color(&mut self, color: Color) {
-        self.content_background_color = color;
-        self.changed = true;
-    }
-
-    pub fn get_content_background_color(&self) -> Color { self.content_background_color }
-
-}
 
 impl EzObject for CanvasWidget {
     fn load_ez_parameter(&mut self, parameter_name: String, parameter_value: String)
@@ -214,9 +53,13 @@ impl EzObject for CanvasWidget {
             "x" => self.state.x = parameter_value.trim().parse().unwrap(),
             "y" => self.state.y = parameter_value.trim().parse().unwrap(),
             "size_hint_x" => self.state.size_hint_x =
-                load_size_hint(parameter_value.trim()).unwrap(),
+                load_size_hint_parameter(parameter_value.trim()).unwrap(),
             "size_hint_y" => self.state.size_hint_y =
-                load_size_hint(parameter_value.trim()).unwrap(),
+                load_size_hint_parameter(parameter_value.trim()).unwrap(),
+            "pos_hint_x" => self.state.set_pos_hint_x(
+                load_pos_hint_x_parameter(parameter_value.trim()).unwrap()),
+            "pos_hint_y" => self.state.set_pos_hint_y(
+                load_pos_hint_y_parameter(parameter_value.trim()).unwrap()),
             "width" => self.state.width = parameter_value.trim().parse().unwrap(),
             "height" => self.state.height = parameter_value.trim().parse().unwrap(),
             "auto_scale_width" =>
@@ -247,7 +90,7 @@ impl EzObject for CanvasWidget {
 
     fn get_full_path(&self) -> String { self.path.clone() }
 
-    fn update_state(&mut self, new_state: &State) {
+    fn update_state(&mut self, new_state: &EzState) {
 
         let state = new_state.as_canvas();
         self.state = state.clone();
@@ -255,7 +98,7 @@ impl EzObject for CanvasWidget {
         self.state.force_redraw = false;
     }
 
-    fn get_state(&self) -> State { State::CanvasWidget(self.state.clone()) }
+    fn get_state(&self) -> EzState { EzState::CanvasWidget(self.state.clone()) }
 
     /// Set the content of this Widget. You must manually fill a [PixelMap] of the same
     /// [height] and [width] as this widget and pass it here.
@@ -316,11 +159,6 @@ impl EzObject for CanvasWidget {
             self.contents.clone()
         }
     }
-
-    fn set_absolute_position(&mut self, pos: Coordinates) { self.absolute_position = pos }
-
-    fn get_absolute_position(&self) -> Coordinates { self.absolute_position }
-
 }
 
 impl EzWidget for CanvasWidget {}

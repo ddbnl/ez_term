@@ -1,13 +1,15 @@
 //! # Layout
 //! Module implementing the Layout struct.
-
 use std::collections::HashMap;
 use std::io::{Error, ErrorKind};
 use crossterm::style::Color;
-use crate::ez_parser::{load_bool_parameter, load_color_parameter, load_size_hint,
-                       load_halign_parameter, load_valign_parameter};
+use crate::ez_parser::{load_bool_parameter, load_color_parameter, load_size_hint_parameter,
+                       load_halign_parameter, load_valign_parameter, load_pos_hint_x_parameter,
+                       load_pos_hint_y_parameter};
 use crate::widgets::widget::{Pixel, EzObject, EzObjects};
-use crate::widgets::state::{State, GenericState, HorizontalAlignment, VerticalAlignment};
+use crate::states::layout_state::LayoutState;
+use crate::states::state::{EzState, GenericState, HorizontalAlignment, VerticalAlignment,
+                           HorizontalPositionHint, VerticalPositionHint};
 use crate::common::{self, PixelMap, StateTree, WidgetTree, Coordinates};
 
 
@@ -48,9 +50,6 @@ pub struct Layout {
     /// Orientation enum, see [LayoutOrientation] for options
     pub orientation: LayoutOrientation,
 
-    /// Absolute position of this layout on screen. Automatically propagated, do not set manually
-    pub absolute_position: Coordinates,
-
     /// List of children widgets and/or layouts
     pub children: Vec<EzObjects>,
 
@@ -69,7 +68,6 @@ impl Default for Layout {
             path: String::new(),
             orientation: LayoutOrientation::Horizontal,
             mode: LayoutMode::Box,
-            absolute_position: (0, 0),
             children: Vec::new(),
             child_lookup: HashMap::new(),
             state: LayoutState::default(),
@@ -77,350 +75,6 @@ impl Default for Layout {
     }
 }
 
-
-/// [State] implementation.
-#[derive(Clone)]
-pub struct LayoutState {
-
-    /// Horizontal position of this widget relative to its' parent [Layout]
-    pub x: usize,
-
-    /// Vertical position of this widget relative to its' parent [Layout]
-    pub y: usize,
-
-    /// Width of this widget
-    pub size_hint_x: Option<f64>,
-
-    /// Width of this widget
-    pub size_hint_y: Option<f64>,
-
-    /// Width of this widget
-    pub width: usize,
-
-    /// Height of this layout
-    pub height: usize,
-
-    /// Automatically adjust width of widget to content
-    pub auto_scale_width: bool,
-
-    /// Automatically adjust width of widget to content
-    pub auto_scale_height: bool,
-
-    /// Amount of space to leave between top edge and content
-    pub padding_top: usize,
-
-    /// Amount of space to leave between bottom edge and content
-    pub padding_bottom: usize,
-
-    /// Amount of space to leave between left edge and content
-    pub padding_left: usize,
-
-    /// Amount of space to leave between right edge and content
-    pub padding_right: usize,
-
-    /// Horizontal alignment of this widget
-    pub halign: HorizontalAlignment,
-
-    /// Vertical alignment of this widget
-    pub valign: VerticalAlignment,
-
-    /// Bool representing whether this layout should be filled with [filler_symbol] in positions
-    /// where it does not get other content from [get_contents]
-    pub fill: bool,
-
-    /// The [Pixel.Symbol] to use for filler pixels if [fill] is true
-    pub filler_symbol: String,
-
-    /// Bool representing whether this layout should have a surrounding border
-    pub border: bool,
-
-    /// The [Pixel.symbol] to use for the horizontal border if [border] is true
-    pub border_horizontal_symbol: String,
-
-    /// The [Pixel.symbol] to use for the vertical border if [border] is true
-    pub border_vertical_symbol: String,
-
-    /// The [Pixel.symbol] to use for the top left border if [border] is true
-    pub border_top_left_symbol: String,
-
-    /// The [Pixel.symbol] to use for the top right border if [border] is true
-    pub border_top_right_symbol: String,
-
-    /// The [Pixel.symbol] to use for the bottom left border if [border] is true
-    pub border_bottom_left_symbol: String,
-
-    /// The [Pixel.symbol] to use for the bottom right border if [border] is true
-    pub border_bottom_right_symbol: String,
-    /// The [Pixel.foreground_color] to use for filler pixels if [fill] is true
-    pub filler_foreground_color: Color,
-
-    /// The [Pixel.background_color] to use for filler pixels if [fill] is true
-    pub filler_background_color: Color,
-
-    /// The[Pixel.foreground_color]  to use for the border if [border] is true
-    pub border_foreground_color: Color,
-
-    /// The [Pixel.background_color] to use for the border if [border] is true
-    pub border_background_color: Color,
-
-    /// The [Pixel.foreground_color] to use for this widgets' content
-    pub content_foreground_color: Color,
-
-    /// The [Pixel.background_color] to use for this widgets' content
-    pub content_background_color: Color,
-
-    /// Bool representing if state has changed. Triggers widget redraw.
-    pub changed: bool,
-
-    /// If true this forces a global screen redraw on the next frame. Screen redraws are diffed
-    /// so this can be called when needed without degrading performance. If only screen positions
-    /// that fall within this widget must be redrawn, call [EzObject.redraw] instead.
-    pub force_redraw: bool,
-}
-impl Default for LayoutState {
-    fn default() -> Self {
-        LayoutState {
-            x: 0,
-            y: 0,
-            size_hint_x: Some(1.0),
-            size_hint_y: Some(1.0),
-            width: 0,
-            height: 0,
-            auto_scale_width: false,
-            auto_scale_height: false,
-            padding_top: 0,
-            padding_bottom: 0,
-            padding_left: 0,
-            padding_right: 0,
-            halign: HorizontalAlignment::Left,
-            valign: VerticalAlignment::Top,
-            fill: false,
-            filler_symbol: String::new(),
-            border: false,
-            border_horizontal_symbol: "━".to_string(),
-            border_vertical_symbol: "│".to_string(),
-            border_top_left_symbol: "┌".to_string(),
-            border_top_right_symbol: "┐".to_string(),
-            border_bottom_left_symbol: "└".to_string(),
-            border_bottom_right_symbol: "┘".to_string(),
-            filler_background_color: Color::Black,
-            filler_foreground_color: Color::White,
-            border_foreground_color: Color::White,
-            border_background_color: Color::Black,
-            content_background_color: Color::Black,
-            content_foreground_color: Color::White,
-            changed: false,
-            force_redraw: false
-        }
-    }
-}
-impl GenericState for LayoutState {
-
-    fn set_changed(&mut self, changed: bool) { self.changed = changed }
-
-    fn get_changed(&self) -> bool { self.changed }
-
-    fn set_size_hint_x(&mut self, size_hint: Option<f64>) {
-        self.size_hint_x = size_hint;
-        self.changed = true;
-    }
-
-    fn get_size_hint_x(&self) -> Option<f64> { self.size_hint_x }
-
-    fn set_size_hint_y(&mut self, size_hint: Option<f64>) {
-        self.size_hint_y = size_hint;
-        self.changed = true;
-    }
-
-    fn get_size_hint_y(&self) -> Option<f64> { self.size_hint_y }
-
-    fn set_auto_scale_width(&mut self, auto_scale: bool) {
-        self.auto_scale_width = auto_scale;
-        self.changed = true;
-    }
-
-    fn get_auto_scale_width(&self) -> bool { self.auto_scale_width }
-
-    fn set_auto_scale_height(&mut self, auto_scale: bool) {
-        self.auto_scale_height = auto_scale;
-        self.changed = true;
-    }
-
-    fn get_auto_scale_height(&self) -> bool { self.auto_scale_height }
-
-    fn set_width(&mut self, width: usize) { self.width = width; self.changed = true; }
-
-    fn get_width(&self) -> usize { self.width }
-
-    fn set_effective_width(&mut self, width: usize) {
-        self.set_width(width +if self.has_border() {2} else {0})
-    }
-
-    fn get_effective_width(&self) -> usize {
-        if self.get_width() == 0 {0}
-        else {self.get_width()
-            -if self.has_border() {2} else {0} - self.padding_left - self.padding_right}
-    }
-
-    fn set_height(&mut self, height: usize) { self.height = height; self.changed = true; }
-
-    fn get_height(&self) -> usize { self.height }
-
-    fn set_effective_height(&mut self, height: usize) {
-        self.set_height(height +if self.has_border() {2} else {0})
-    }
-
-    fn get_effective_height(&self) -> usize {
-        self.get_height()
-            -if self.has_border() {2} else {0} - self.padding_top - self.padding_bottom
-    }
-
-    fn set_position(&mut self, position: Coordinates) {
-        self.x = position.0;
-        self.y = position.1;
-        self.changed = true;
-    }
-
-    fn get_position(&self) -> Coordinates { (self.x, self.y) }
-
-    fn get_effective_position(&self) -> Coordinates {
-        (self.x +if self.has_border() {1} else {0},
-         self.y +if self.has_border() {1} else {0})
-    }
-
-    fn set_horizontal_alignment(&mut self, alignment: HorizontalAlignment) {
-        self.halign = alignment;
-        self.changed = true;
-    }
-
-    fn get_horizontal_alignment(&self) -> HorizontalAlignment { self.halign }
-
-    fn set_vertical_alignment(&mut self, alignment: VerticalAlignment) {
-        self.valign = alignment;
-        self.changed = true;
-    }
-
-    fn get_vertical_alignment(&self) -> VerticalAlignment { self.valign }
-
-    fn set_force_redraw(&mut self, redraw: bool) {
-        self.force_redraw = redraw;
-        self.changed = true;
-    }
-
-    fn get_force_redraw(&self) -> bool { self.force_redraw }
-}
-impl LayoutState {
-
-    pub fn set_padding_top(&mut self, padding: usize) {
-        self.padding_top = padding;
-        self.changed = true;
-    }
-
-    pub fn get_padding_top(&self) -> usize { self.padding_top }
-
-    pub fn set_padding_bottom(&mut self, padding: usize) {
-        self.padding_bottom = padding;
-        self.changed = true;
-    }
-
-    pub fn get_padding_bottom(&self) -> usize { self.padding_bottom }
-
-    pub fn set_padding_left(&mut self, padding: usize) {
-        self.padding_left = padding;
-        self.changed = true;
-    }
-
-    pub fn get_padding_left(&self) -> usize { self.padding_left }
-
-    pub fn set_padding_right(&mut self, padding: usize) {
-        self.padding_right = padding;
-        self.changed = true;
-    }
-
-    pub fn get_padding_right(&self) -> usize { self.padding_right }
-
-    /// Set [filler_symbol]
-    pub fn set_filler_symbol(&mut self, symbol: String) { self.filler_symbol = symbol; }
-
-    /// Get [filler_symbol]
-    pub fn get_filler_symbol(&self) -> String { self.filler_symbol.clone() }
-
-    pub fn set_border_horizontal_symbol(&mut self, symbol: String) {
-        self.border_horizontal_symbol = symbol }
-
-    pub fn get_border_horizontal_symbol(&self) -> String { self.border_horizontal_symbol.clone() }
-
-    pub fn set_border_vertical_symbol(&mut self, symbol: String) {
-        self.border_vertical_symbol = symbol }
-
-    pub fn get_border_vertical_symbol(&self) -> String { self.border_vertical_symbol.clone() }
-
-    pub fn set_border_bottom_left_symbol(&mut self, symbol: String) {
-        self.border_bottom_left_symbol = symbol }
-
-    pub fn get_border_bottom_left_symbol(&self) -> String { self.border_bottom_left_symbol.clone() }
-
-    pub fn set_border_bottom_right_symbol(&mut self, symbol: String) {
-        self.border_bottom_right_symbol = symbol }
-
-    pub fn get_border_bottom_right_symbol(&self) -> String { self.border_bottom_right_symbol.clone() }
-
-    pub fn set_border_top_left_symbol(&mut self, symbol: String) {
-        self.border_top_left_symbol = symbol }
-
-    pub fn get_border_top_left_symbol(&self) -> String { self.border_top_left_symbol.clone() }
-
-    pub fn set_border_top_right_symbol(&mut self, symbol: String) {
-        self.border_top_right_symbol = symbol }
-
-    pub fn get_border_top_right_symbol(&self) -> String { self.border_top_right_symbol.clone() }
-
-    pub fn set_border(&mut self, enabled: bool) { self.border = enabled }
-
-    pub fn has_border(&self) -> bool { self.border }
-
-    pub fn set_border_foreground_color(&mut self, color: Color) {
-        self.border_foreground_color = color;
-        self.changed = true;
-    }
-
-    pub fn get_border_foreground_color(&self) -> Color { self.border_foreground_color }
-
-    pub fn set_border_background_color(&mut self, color: Color) {
-        self.border_background_color = color;
-        self.changed = true;
-    }
-
-    pub fn get_border_background_color(&self) -> Color { self.border_background_color }
-
-    pub fn set_content_foreground_color(&mut self, color: Color) {
-        self.content_foreground_color = color;
-        self.changed = true;
-    }
-
-    pub fn get_content_foreground_color(&self) -> Color { self.content_foreground_color }
-
-    pub fn set_content_background_color(&mut self, color: Color) {
-        self.content_background_color = color;
-        self.changed = true;
-    }
-
-    pub fn get_content_background_color(&self) -> Color { self.content_background_color }
-
-    pub fn set_filler_foreground_color(&mut self, color: Color) {
-        self.filler_foreground_color = color;
-        self.changed = true;
-    }
-
-    pub fn get_filler_foreground_color(&self) -> Color { self.filler_foreground_color }
-
-    pub fn set_filler_background_color(&mut self, color: Color) {
-        self.filler_background_color = color;
-        self.changed = true;
-    }
-
-    pub fn get_filler_background_color(&self) -> Color { self.filler_background_color }
-}
 
 impl EzObject for Layout {
 
@@ -431,9 +85,13 @@ impl EzObject for Layout {
             "x" => self.state.x = parameter_value.trim().parse().unwrap(),
             "y" => self.state.y = parameter_value.trim().parse().unwrap(),
             "size_hint_x" => self.state.size_hint_x =
-                load_size_hint(parameter_value.trim()).unwrap(),
+                load_size_hint_parameter(parameter_value.trim()).unwrap(),
             "size_hint_y" => self.state.size_hint_y =
-                load_size_hint(parameter_value.trim()).unwrap(),
+                load_size_hint_parameter(parameter_value.trim()).unwrap(),
+            "pos_hint_x" => self.state.set_pos_hint_x(
+                load_pos_hint_x_parameter(parameter_value.trim()).unwrap()),
+            "pos_hint_y" => self.state.set_pos_hint_y(
+                load_pos_hint_y_parameter(parameter_value.trim()).unwrap()),
             "width" => self.state.width = parameter_value.trim().parse().unwrap(),
             "height" => self.state.height = parameter_value.trim().parse().unwrap(),
             "auto_scale_width" =>
@@ -503,15 +161,15 @@ impl EzObject for Layout {
 
     fn get_full_path(&self) -> String { self.path.clone() }
 
-    fn update_state(&mut self, new_state: &State) {
+    fn update_state(&mut self, new_state: &EzState) {
         let state = new_state.as_layout();
         self.state = state.clone();
         self.state.changed = false;
         self.state.force_redraw = false;
     }
 
-    fn get_state(&self) -> State {
-        State::Layout(self.state.clone())
+    fn get_state(&self) -> EzState {
+        EzState::Layout(self.state.clone())
     }
 
     fn get_contents(&self, state_tree: &mut StateTree) -> PixelMap {
@@ -551,7 +209,8 @@ impl EzObject for Layout {
         }
         // If user wants to autoscale height we set height to the highest column
         if state.get_auto_scale_height() {
-            let auto_scale_height = merged_content.iter().map(|x| x.len()).max().unwrap();
+            let auto_scale_height = merged_content.iter()
+                .map(|x| x.len()).max().unwrap_or(0);
             if auto_scale_height < state.get_effective_height() {
                 state.set_effective_height(auto_scale_height);
             }
@@ -590,15 +249,6 @@ impl EzObject for Layout {
         }
         merged_content
     }
-
-    fn set_absolute_position(&mut self, pos: Coordinates) { self.absolute_position = pos }
-
-    fn get_absolute_position(&self) -> Coordinates { self.absolute_position }
-
-    fn get_effective_absolute_position(&self) -> Coordinates {
-        let (x, y) = self.get_absolute_position();
-        (x +if self.state.has_border() {1} else {0}, y +if self.state.has_border() {1} else {0})
-    }
 }
 
 impl Layout {
@@ -625,6 +275,11 @@ impl Layout {
         }
 
         for child in self.get_children() {
+            if content.len() > own_state.get_effective_width() {
+                // Widget added more content than was allowed, crop it and return as we're full
+                content = content[0..own_state.get_effective_width()].iter()
+                    .map(|x| x[0..own_state.get_effective_height()].to_vec()).collect()
+            }
             let generic_child= child.as_ez_object();
             let state = state_tree.get_mut(&generic_child.get_full_path())
                 .unwrap().as_generic_mut();
@@ -673,14 +328,21 @@ impl Layout {
         }
         let mut position: Coordinates = (0, 0);
         for child in self.get_children() {
+            if content.is_empty() { return content }  // No space left in widget
+            if content.len() > own_state.get_effective_width() ||
+                content[0].len() > own_state.get_effective_height() {
+                // Widget added more content than was allowed, crop it and return as we're full
+                content = content[0..own_state.get_effective_width()].iter()
+                    .map(|x| x[0..own_state.get_effective_height()].to_vec()).collect()
+            }
+
             let generic_child= child.as_ez_object();
             let state = state_tree.get_mut(&generic_child.get_full_path())
                 .unwrap().as_generic_mut();
 
-            if content.is_empty() { return content }  // No space left in widget
             let height_left = own_state.get_effective_height() - content[0].len();
             if height_left == 0 {
-                continue
+                return content
             }
             // If autoscaling is enabled set child size to max width. It is then expected to scale
             // itself according to its' content
@@ -718,9 +380,13 @@ impl Layout {
         -> PixelMap {
 
         let own_state = state_tree.get_mut(&self.get_full_path()).unwrap().as_layout();
-        for _ in 0..own_state.get_effective_width() {
+        let own_height = own_state.get_effective_height();
+        let own_width = own_state.get_effective_width();
+
+        // Fill self with background first. Then overlay widgets.
+        for _ in 0..own_width {
             content.push(Vec::new());
-            for _ in 0..own_state.get_effective_height() {
+            for _ in 0..own_height {
                 if own_state.fill {
                     content.last_mut().unwrap().push(self.get_filler());
                 } else {
@@ -731,19 +397,41 @@ impl Layout {
             }
         }
         for child in self.get_children() {
-            let generic_child = child.as_ez_widget();
-            let child_state = state_tree.get(
-                &generic_child.get_full_path()).unwrap().as_generic();
+            if content.is_empty() { return content }  // No space left in widget
 
-            let (child_x, child_y) = child_state.get_position();
-            let (child_width, child_height) = (child_state.get_width(),
-                                                                   child_state.get_height());
+            let generic_child = child.as_ez_widget();
+            let state = state_tree.get_mut(
+                &generic_child.get_full_path()).unwrap().as_generic_mut();
+
+            // If autoscaling is enabled set child size to max width. It is then expected to scale
+            // itself according to its' content
+            if state.get_auto_scale_width() {
+                state.set_width(own_width)
+            }
+            if state.get_auto_scale_height() {
+                state.set_height(own_height)
+            }
+            // Scale down child to remaining size in the case that the child is too large, rather
+            // panicking.
+            if state.get_height() > own_height {
+                state.set_height(own_height);
+            }
+            if state.get_width() > own_width {
+                state.set_width(own_width);
+            }
 
             let child_content = generic_child.get_contents(state_tree);
+            let state = state_tree.get_mut(
+                &generic_child.get_full_path()).unwrap().as_generic_mut(); // re-borrow
+            self.set_child_position(own_width, own_height, state);
+            let (child_x, child_y) = state.get_position();
+            let (child_width, child_height) = (state.get_width(), state.get_height());
             for width in 0..child_width {
                 for height in 0..child_height {
-                    content[child_x + width][child_y + height] =
-                        child_content[width][height].clone();
+                    if child_x + width < content.len() && child_y + height < content[0].len() {
+                        content[child_x + width][child_y + height] =
+                            child_content[width][height].clone();
+                    }
                 }
             }
         }
@@ -753,53 +441,18 @@ impl Layout {
     /// Set the sizes of children that use size_hint(s) using own proportions.
     pub fn set_child_sizes(&self, state_tree: &mut StateTree) {
 
-        let own_state =state_tree.get_mut(&self.get_full_path())
+        let own_state = state_tree.get_mut(&self.get_full_path())
             .unwrap().as_layout();
         let own_width = own_state.get_effective_width();
         let own_height = own_state.get_effective_height();
-        // For convenience, check if there are multiple children who ALL have size_hint=1, and in
+
+        // Check if there are multiple children who ALL have size_hint=1, and in
         // that case give them '1 / number_of_children'. That way the user can add
         // multiple children in a Box layout and have them distributed equally automatically. Any
         // kind of asymmetry breaks this behavior.
         if self.children.len() > 1 {
-            let mut all_default_size_hint_x = true;
-            let mut all_default_size_hint_y = true;
-            for child in self.get_children() {
-                let generic_child = child.as_ez_object();
-                let state = state_tree.get(&generic_child.get_full_path())
-                    .unwrap().as_generic();
-                if let LayoutOrientation::Horizontal = self.orientation {
-                    if let Some(size_hint_x) = state.get_size_hint_x()
-                    {
-                        if size_hint_x != 1.0 || state.get_auto_scale_width() ||
-                            state.get_width() > 0 {
-                            all_default_size_hint_x = false;
-                            break
-                        }
-                    } else {
-                        all_default_size_hint_x = false;
-                        break
-                    }
-                } else {
-                    all_default_size_hint_x = false;
-                    break
-                }
-                if let LayoutOrientation::Vertical = self.orientation {
-                    if let Some(size_hint_y) = state.get_size_hint_y() {
-                        if size_hint_y != 1.0 || state.get_auto_scale_height() ||
-                            state.get_height() > 0 {
-                            all_default_size_hint_y = false;
-                            break
-                        }
-                    } else {
-                        all_default_size_hint_y = false;
-                        break
-                    }
-                } else {
-                    all_default_size_hint_y = false;
-                    break
-                }
-            }
+            let (all_default_size_hint_x, all_default_size_hint_y) =
+                self.check_default_size_hints(state_tree);
             if all_default_size_hint_x {
                 for child in self.get_children() {
                     let generic_child = child.as_ez_object();
@@ -817,6 +470,7 @@ impl Layout {
                 }
             }
         }
+        // Now calculate actual sizes.
         for child in self.get_children() {
             let generic_child = child.as_ez_object();
             let state = state_tree.get_mut(&generic_child.get_full_path())
@@ -841,25 +495,99 @@ impl Layout {
         }
     }
 
+    /// Check if all chrildren employ default size_hints (i.e. size_hint=1) for x and y
+    /// separately.
+    fn check_default_size_hints (&self, state_tree: &StateTree) -> (bool, bool){
+
+        let mut all_default_size_hint_x = true;
+        let mut all_default_size_hint_y = true;
+        for child in self.get_children() {
+            if !all_default_size_hint_x && !all_default_size_hint_y {
+                break
+            }
+            let generic_child = child.as_ez_object();
+            let state = state_tree.get(&generic_child.get_full_path())
+                .unwrap().as_generic();
+            if let LayoutOrientation::Horizontal = self.orientation {
+                if let Some(size_hint_x) = state.get_size_hint_x()
+                {
+                    if size_hint_x != 1.0 || state.get_auto_scale_width() ||
+                        state.get_auto_scale_height() || state.get_width() > 0 {
+                        all_default_size_hint_x = false;
+                    }
+                } else {
+                    all_default_size_hint_x = false;
+                }
+            } else {
+                all_default_size_hint_x = false;
+            }
+            if let LayoutOrientation::Vertical = self.orientation {
+                if let Some(size_hint_y) = state.get_size_hint_y() {
+                    if size_hint_y != 1.0 || state.get_auto_scale_height() ||
+                        state.get_auto_scale_width() || state.get_height() > 0 {
+                        all_default_size_hint_y = false;
+                    }
+                } else {
+                    all_default_size_hint_y = false;
+                }
+            } else {
+                all_default_size_hint_y = false;
+            }
+        }
+        (all_default_size_hint_x, all_default_size_hint_y)
+    }
+
+    /// Set the positions of children that use pos_hint(s) using own proportions and position.
+    pub fn set_child_position(&self, parent_width: usize, parent_height: usize,
+                              child_state: &mut dyn GenericState) {
+
+        // Set x by pos_hint if any
+        if let Some((keyword, fraction)) = child_state.get_pos_hint_x() {
+            let initial_pos = match keyword {
+                HorizontalPositionHint::Left => 0,
+                HorizontalPositionHint::Right => parent_width - child_state.get_width(),
+                HorizontalPositionHint::Center =>
+                    (parent_width as f64 / 2.0).round() as usize -
+                        (child_state.get_width() as f64 / 2.0).round() as usize,
+            };
+            let x = (initial_pos as f64 * fraction).round() as usize;
+            child_state.set_position((x, child_state.get_position().1));
+        }
+        // Set y by pos hint if any
+        if let Some((keyword, fraction)) = child_state.get_pos_hint_y() {
+            let initial_pos = match keyword {
+                VerticalPositionHint::Top => 0,
+                VerticalPositionHint::Bottom => parent_height - child_state.get_height(),
+                VerticalPositionHint::Middle =>
+                    (parent_height as f64 / 2.0).round() as usize -
+                        (child_state.get_height() as f64 / 2.0).round() as usize,
+            };
+            let y = (initial_pos as f64 * fraction).round() as usize;
+            child_state.set_position((child_state.get_position().0, y));
+        }
+    }
     /// Takes [absolute_position] of this layout and adds the [x][y] of children to calculate and
     /// set their [absolute_position]. Then calls this method on children, thus recursively setting
     /// [absolute_position] for all children. Use on root layout to propagate all absolute positions.
-    pub fn propagate_absolute_positions(&mut self) {
+    pub fn propagate_absolute_positions(&self, state_tree: &mut StateTree) {
 
-        let absolute_position = self.get_effective_absolute_position();
-        for child in self.get_children_mut() {
+        let absolute_position = state_tree.get(&self.path).unwrap().as_generic()
+            .get_effective_absolute_position();
+        for child in self.get_children() {
             if let EzObjects::Layout(i) = child {
-                let pos = i.state.get_position();
-                let new_absolute_position =
-                    (absolute_position.0 + pos.0,
-                     absolute_position.1 + pos.1);
-                i.set_absolute_position(new_absolute_position);
-                i.propagate_absolute_positions();
+                let child_state =
+                    state_tree.get_mut(&i.get_full_path()).unwrap().as_generic_mut();
+                let pos = child_state.get_position();
+                let new_absolute_position = (absolute_position.0 + pos.0,
+                                                        absolute_position.1 + pos.1);
+                child_state.set_absolute_position(new_absolute_position);
+                i.propagate_absolute_positions(state_tree);
             } else {
-                let generic_child = child.as_ez_object_mut();
-                let pos = generic_child.get_state().as_generic().get_position();
-                generic_child.set_absolute_position((absolute_position.0 + pos.0,
-                                                     absolute_position.1 + pos.1));
+                let child_state = state_tree.get_mut(
+                    &child.as_ez_widget().get_full_path()).unwrap().as_generic_mut();
+                let pos = child_state.get_position();
+                child_state.set_absolute_position((absolute_position.0 + pos.0,
+                                                   absolute_position.1 + pos.1));
             }
         }
     }
@@ -1032,7 +760,7 @@ impl Layout {
                                      valign: VerticalAlignment) -> PixelMap {
 
         if parent_state.get_effective_height() > new[0].len() {
-            let mut offset;
+            let offset;
             (new, offset) = common::align_content_vertically(
                 new, valign, parent_state.get_effective_height(),
                 parent_state.content_foreground_color,
@@ -1076,7 +804,7 @@ impl Layout {
 
         for x in 0..parent_state.get_effective_width() {
             for y in 0..new[0].len() {
-                if x < new.len() {
+                if x < new.len() && y < new[x].len() {
                     merged_content[x].push(new[x][y].clone())
                 } else {
                     merged_content[x].push(Pixel { symbol: " ".to_string(),
