@@ -4,14 +4,12 @@
 //! values for the user to select.
 use std::io::{Error, ErrorKind};
 use crossterm::event::{Event, KeyCode, MouseButton, MouseEventKind};
-use crate::common::{self, KeyboardCallbackFunction, GenericEzFunction, Coordinates, PixelMap,
+use crate::common::{self, KeyboardCallbackFunction, GenericEzFunction, PixelMap,
                     MouseCallbackFunction, EzContext, StateTree, KeyMap};
 use crate::states::dropdown_state::DropdownState;
-use crate::states::state::{EzState, GenericState, SelectableState};
+use crate::states::state::{EzState, GenericState, SelectableState, Coordinates};
 use crate::widgets::widget::{EzWidget, Pixel, EzObject};
-use crate::ez_parser::{load_bool_parameter, load_color_parameter, load_selection_order_parameter,
-                       load_size_hint_parameter, load_halign_parameter, load_valign_parameter,
-                       load_pos_hint_x_parameter, load_pos_hint_y_parameter};
+use crate::ez_parser;
 
 
 #[derive(Default)]
@@ -60,37 +58,60 @@ impl EzObject for Dropdown {
                          -> Result<(), Error> {
 
         match parameter_name.as_str() {
-            "x" => self.state.x = parameter_value.trim().parse().unwrap(),
-            "y" => self.state.y = parameter_value.trim().parse().unwrap(),
+            "x" => self.state.set_x(parameter_value.trim().parse().unwrap()),
+            "y" => self.state.set_y(parameter_value.trim().parse().unwrap()),
+            "pos" => self.state.set_position(
+                ez_parser::load_pos_parameter(parameter_value.trim()).unwrap()),
             "size_hint_x" => self.state.size_hint_x =
-                load_size_hint_parameter(parameter_value.trim()).unwrap(),
+                ez_parser::load_size_hint_parameter(parameter_value.trim()).unwrap(),
             "pos_hint_x" => self.state.set_pos_hint_x(
-                load_pos_hint_x_parameter(parameter_value.trim()).unwrap()),
+                ez_parser::load_pos_hint_x_parameter(parameter_value.trim()).unwrap()),
             "pos_hint_y" => self.state.set_pos_hint_y(
-                load_pos_hint_y_parameter(parameter_value.trim()).unwrap()),
+                ez_parser::load_pos_hint_y_parameter(parameter_value.trim()).unwrap()),
             "width" => self.state.width = parameter_value.trim().parse().unwrap(),
+            "padding_top" => self.state.padding_top = parameter_value.trim().parse().unwrap(),
+            "padding_bottom" => self.state.padding_bottom = parameter_value.trim().parse().unwrap(),
+            "padding_left" => self.state.padding_left = parameter_value.trim().parse().unwrap(),
+            "padding_right" => self.state.padding_right = parameter_value.trim().parse().unwrap(),
             "halign" =>
-                self.state.halign =  load_halign_parameter(parameter_value.trim()).unwrap(),
+                self.state.halign =  ez_parser::load_halign_parameter(parameter_value.trim()).unwrap(),
             "valign" =>
-                self.state.valign =  load_valign_parameter(parameter_value.trim()).unwrap(),
+                self.state.valign =  ez_parser::load_valign_parameter(parameter_value.trim()).unwrap(),
             "selection_order" => {
-                self.selection_order = load_selection_order_parameter(
+                self.selection_order = ez_parser::load_selection_order_parameter(
                     parameter_value.as_str()).unwrap();
             },
+            "border" => self.state.set_border(ez_parser::load_bool_parameter(parameter_value.trim())?),
+            "border_horizontal_symbol" => self.state.border_config.horizontal_symbol =
+                parameter_value.trim().to_string(),
+            "border_vertical_symbol" => self.state.border_config.vertical_symbol =
+                parameter_value.trim().to_string(),
+            "border_top_right_symbol" => self.state.border_config.top_right_symbol =
+                parameter_value.trim().to_string(),
+            "border_top_left_symbol" => self.state.border_config.top_left_symbol =
+                parameter_value.trim().to_string(),
+            "border_bottom_left_symbol" => self.state.border_config.bottom_left_symbol =
+                parameter_value.trim().to_string(),
+            "border_bottom_right_symbol" => self.state.border_config.bottom_right_symbol =
+                parameter_value.trim().to_string(),
+            "border_fg_color" =>
+                self.state.border_config.fg_color = ez_parser::load_color_parameter(parameter_value).unwrap(),
+            "border_bg_color" =>
+                self.state.border_config.bg_color = ez_parser::load_color_parameter(parameter_value).unwrap(),
             "fg_color" =>
-                self.state.content_foreground_color =
-                    load_color_parameter(parameter_value).unwrap(),
+                self.state.colors.foreground =
+                    ez_parser::load_color_parameter(parameter_value).unwrap(),
             "bg_color" =>
-                self.state.content_background_color =
-                    load_color_parameter(parameter_value).unwrap(),
+                self.state.colors.background =
+                    ez_parser::load_color_parameter(parameter_value).unwrap(),
             "selection_fg_color" =>
-                self.state.selection_foreground_color =
-                    load_color_parameter(parameter_value).unwrap(),
+                self.state.colors.selection_foreground =
+                    ez_parser::load_color_parameter(parameter_value).unwrap(),
             "selection_bg_color" =>
-                self.state.selection_background_color =
-                    load_color_parameter(parameter_value).unwrap(),
+                self.state.colors.selection_background =
+                    ez_parser::load_color_parameter(parameter_value).unwrap(),
             "allow_none" =>
-                self.state.allow_none = load_bool_parameter(parameter_value.trim()).unwrap(),
+                self.state.allow_none = ez_parser::load_bool_parameter(parameter_value.trim()).unwrap(),
             "options" => {
                 self.state.options = parameter_value.split(',')
                     .map(|x| x.trim().to_string()).collect();
@@ -140,10 +161,10 @@ impl EzObject for Dropdown {
                 .expect("Dropdown widget must have at least one option").to_string(); // todo move to validation
         }
         // Create a bordered label representing currently active value
-        let fg_color = if state.selected {state.selection_foreground_color}
-        else {state.content_foreground_color};
-        let bg_color = if state.selected {state.selection_background_color}
-        else {state.content_background_color};
+        let fg_color = if state.selected {state.get_colors().selection_foreground }
+        else {state.get_colors().foreground };
+        let bg_color = if state.selected {state.get_colors().selection_background }
+        else {state.get_colors().background };
         let mut text = active.chars().rev().collect::<String>();
         let mut contents = Vec::new();
         for _ in 0..state.get_effective_width() {
@@ -157,15 +178,7 @@ impl EzObject for Dropdown {
             }
             contents.push(new_y);
         }
-        contents = common::add_border(contents,
-                                      state.border_horizontal_symbol.clone(),
-                                      state.border_vertical_symbol.clone(),
-                                      state.border_top_left_symbol.clone(),
-                                      state.border_top_right_symbol.clone(),
-                                      state.border_bottom_left_symbol.clone(),
-                                      state.border_bottom_right_symbol.clone(),
-                                      state.border_background_color,
-                                      state.border_foreground_color);
+        contents = common::add_border(contents, state.get_border_config());
         contents
     }
 }
@@ -211,7 +224,8 @@ impl EzWidget for Dropdown {
                 }
             }
             Event::Mouse(event) => {
-                let mouse_position = (event.column as usize, event.row as usize);
+                let mouse_position = Coordinates::new(event.column as usize, 
+                                                                 event.row as usize);
                 if let MouseEventKind::Down(button) = event.kind {
                     if button == MouseButton::Left {
                         self.handle_left_click(context, mouse_position);
@@ -300,10 +314,9 @@ impl Dropdown {
         let state = context.state_tree.get_mut(
             &self.get_full_path()).unwrap().as_dropdown_mut();
         if state.collides(pos) {
-            let clicked_row = pos.1 - state.absolute_position.1;
+            let clicked_row = pos.y - state.absolute_position.y;
             // Check if not click on border
-            if clicked_row != 0 && clicked_row != self.state.get_effective_height() {
-                state.set_selected(true);
+            if clicked_row != 0 && clicked_row <= self.state.get_height() {
                 let choice = self.get_dropped_down_options(state)[clicked_row - 1]
                     .clone();
                 state.set_choice(choice);
@@ -317,9 +330,9 @@ impl Dropdown {
 
     /// Called when this widget is already dropped down and widget is hovered
     fn handle_hover(&self, state: &mut DropdownState, pos: Coordinates) {
-        let hovered_row = pos.1 - state.absolute_position.1;
+        let hovered_row = pos.y - state.absolute_position.y;
         // Check if not hover on border
-        if hovered_row -1 != state.dropped_down_selected_row &&
+        if hovered_row - 1 != state.dropped_down_selected_row &&
         hovered_row != 0 && hovered_row != self.state.get_height() + 1 {
             state.set_dropped_down_selected_row(hovered_row - 1);
         }
@@ -376,9 +389,11 @@ impl Dropdown {
             let mut new_y = Vec::new();
             for y in 0..options.len() {
                 let fg = if y == state.dropped_down_selected_row
-                {state.selection_foreground_color} else {state.content_foreground_color};
+                {state.get_colors().selection_foreground }
+                else {state.get_colors().foreground };
                 let bg = if y == state.dropped_down_selected_row
-                {state.selection_background_color} else {state.content_background_color};
+                {state.get_colors().selection_background }
+                else {state.get_colors().background };
                 if !options[y].is_empty(){
                     new_y.push(Pixel{symbol: options[y].pop().unwrap().to_string(),
                         foreground_color: fg, background_color: bg, underline: false})
@@ -390,15 +405,12 @@ impl Dropdown {
             contents.push(new_y.clone());
 
         }
-        contents = common::add_border(contents,
-                                      state.border_horizontal_symbol.clone(),
-                                      state.border_vertical_symbol.clone(),
-                                      state.border_top_left_symbol.clone(),
-                                      state.border_top_right_symbol.clone(),
-                                      state.border_bottom_left_symbol.clone(),
-                                      state.border_bottom_right_symbol.clone(),
-                                      state.border_background_color,
-                                      state.border_foreground_color);
+        contents = common::add_border(contents, state.get_border_config());
+        contents = common::add_padding(contents, state.padding_top,
+                                       state.padding_bottom,
+                                       state.padding_left, state.padding_right,
+                                       state.get_colors().background,
+                                       state.get_colors().foreground);
         contents
     }
 }

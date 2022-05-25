@@ -1,7 +1,6 @@
-use crossterm::style::{Color};
 use crate::states::state::{GenericState, SelectableState, HorizontalAlignment, VerticalAlignment,
-                           HorizontalPositionHint, VerticalPositionHint};
-use crate::common::{Coordinates};
+                           HorizontalPositionHint, VerticalPositionHint, BorderConfig,
+                           ColorConfig, Coordinates};
 
 
 /// [State] implementation.
@@ -11,11 +10,8 @@ pub struct TextInputState {
     /// Text currently being displayed by the text input
     pub text: String,
 
-    /// Horizontal position of this widget relative to its' parent [Layout]
-    pub x: usize,
-
-    /// Vertical position of this widget relative to its' parent [Layout]
-    pub y: usize,
+    /// Position of this widget relative to its' parent [Layout]
+    pub position: Coordinates,
 
     /// Absolute position of this widget on screen. Automatically propagated, do not set manually
     pub absolute_position: Coordinates,
@@ -26,11 +22,32 @@ pub struct TextInputState {
     /// Pos hint for x position of this widget
     pub pos_hint_x: Option<(HorizontalPositionHint, f64)>,
 
+    /// Automatically adjust width of widget to content
+    pub auto_scale_width: bool,
+
+    /// Automatically adjust width of widget to content
+    pub auto_scale_height: bool,
+
     /// Pos hint for y position of this widget
     pub pos_hint_y: Option<(VerticalPositionHint, f64)>,
-    
+
+    /// Amount of space to leave between top edge and content
+    pub padding_top: usize,
+
+    /// Amount of space to leave between bottom edge and content
+    pub padding_bottom: usize,
+
+    /// Amount of space to leave between left edge and content
+    pub padding_left: usize,
+
+    /// Amount of space to leave between right edge and content
+    pub padding_right: usize,
+
     /// Width of this widget
     pub width: usize,
+
+    /// Height of this widget
+    pub height: usize,
 
     /// Horizontal alignment of this widget
     pub halign: HorizontalAlignment,
@@ -56,22 +73,15 @@ pub struct TextInputState {
 
     /// How many characters [text] may hold
     pub max_length: usize,
-    
-    /// The [Pixel.foreground_color] to use for this widgets' content
-    pub content_foreground_color: Color,
 
-    /// The [Pixel.background_color] to use for this widgets' content
-    pub content_background_color: Color,
+    /// Bool representing whether this layout should have a surrounding border
+    pub border: bool,
 
-    /// The [Pixel.foreground_color] to use for this widgets' content when selected
-    pub selection_foreground_color: Color,
+    /// [BorderConfig] object that will be used to draw the border if enabled
+    pub border_config: BorderConfig,
 
-    /// The [Pixel.background_color] to use for this widgets' content when selected
-    pub selection_background_color: Color,
-
-    /// The [Pixel.background_color] to use for this widgets' content when a position has been
-    /// highlighted by the blinking cursor
-    pub cursor_color: Color,
+    /// Object containing colors to be used by this widget in different situations
+    pub colors: ColorConfig,
 
     /// Bool representing if state has changed. Triggers widget redraw.
     pub changed: bool,
@@ -85,27 +95,31 @@ impl Default for TextInputState {
 
     fn default() -> Self {
        TextInputState {
-           x: 0,
-           y: 0,
-           absolute_position: (0, 0),
+           position: Coordinates::default(),
+           absolute_position: Coordinates::default(),
            size_hint_x: Some(1.0),
+           auto_scale_width: false,
+           auto_scale_height: true,
            pos_hint_x: None,
            pos_hint_y: None,
+           padding_top: 0,
+           padding_bottom: 0,
+           padding_left: 0,
+           padding_right: 0,
            halign: HorizontalAlignment::Left,
            valign: VerticalAlignment::Top,
            width: 0,
-           cursor_pos: (0, 0),
+           height: 1,
+           cursor_pos: Coordinates::default(),
            active_blink_task: false,
            blink_switch: false,
            view_start: 0,
            selected: false,
            text: String::new(),
            max_length: 10000,
-           content_background_color: Color::Black,
-           content_foreground_color: Color::White,
-           selection_background_color: Color::Blue,
-           selection_foreground_color: Color::Yellow,
-           cursor_color: Color::DarkYellow,
+           border: false,
+           border_config: BorderConfig::default(),
+           colors: ColorConfig::default(),
            changed: false,
            force_redraw: false
        }
@@ -141,24 +155,29 @@ impl GenericState for TextInputState {
     }
 
     fn get_pos_hint_y(&self) -> &Option<(VerticalPositionHint, f64)> { &self.pos_hint_y }
+
+    fn set_auto_scale_width(&mut self, auto_scale: bool) { self.auto_scale_width = auto_scale }
+
+    fn get_auto_scale_width(&self) -> bool { self.auto_scale_width }
+
+    fn set_auto_scale_height(&mut self, auto_scale: bool) { self.auto_scale_height = auto_scale }
+
+    fn get_auto_scale_height(&self) -> bool { self.auto_scale_height }
     
     fn set_width(&mut self, width: usize) { self.width = width; self.changed = true; }
 
     fn get_width(&self) -> usize { self.width }
 
-    fn set_height(&mut self, _height: usize) {
-        panic!("Cannot set height directly for text input state")
-    }
+    fn set_height(&mut self, height: usize) { self.height = height; self.changed = true }
 
-    fn get_height(&self) -> usize { 1 }
+    fn get_height(&self) -> usize { self.height }
 
     fn set_position(&mut self, position: Coordinates) {
-        self.x = position.0;
-        self.y = position.1;
+        self.position = position;
         self.changed = true;
     }
 
-    fn get_position(&self) -> Coordinates { (self.x, self.y) }
+    fn get_position(&self) -> Coordinates { self.position }
 
     fn set_absolute_position(&mut self, pos: Coordinates) { self.absolute_position = pos }
 
@@ -177,6 +196,46 @@ impl GenericState for TextInputState {
     }
 
     fn get_vertical_alignment(&self) -> VerticalAlignment { self.valign }
+
+    fn set_padding_top(&mut self, padding: usize) {
+        self.padding_top = padding;
+        self.changed = true;
+    }
+
+    fn get_padding_top(&self) -> usize { self.padding_top }
+
+    fn set_padding_bottom(&mut self, padding: usize) {
+        self.padding_bottom = padding;
+        self.changed = true;
+    }
+
+    fn get_padding_bottom(&self) -> usize { self.padding_bottom }
+
+    fn set_padding_left(&mut self, padding: usize) {
+        self.padding_left = padding;
+        self.changed = true;
+    }
+
+    fn get_padding_left(&self) -> usize { self.padding_left }
+
+    fn set_padding_right(&mut self, padding: usize) {
+        self.padding_right = padding;
+        self.changed = true;
+    }
+
+    fn get_padding_right(&self) -> usize { self.padding_right }
+
+    fn has_border(&self) -> bool { self.border }
+
+    fn set_border(&mut self, enabled: bool) { self.border = enabled }
+
+    fn set_border_config(&mut self, config: BorderConfig) { self.border_config = config }
+
+    fn get_border_config(&self) -> &BorderConfig { &self.border_config  }
+
+    fn set_colors(&mut self, config: ColorConfig) { self.colors = config }
+
+    fn get_colors(&self) -> &ColorConfig { &self.colors }
 
     fn set_force_redraw(&mut self, redraw: bool) {
         self.force_redraw = redraw;
@@ -209,6 +268,16 @@ impl TextInputState {
         self.changed = true;
     }
 
+    pub fn set_cursor_x(&mut self, pos: usize) {
+        self.cursor_pos.x = pos;
+        self.changed = true;
+    }
+
+    pub fn set_cursor_y(&mut self, pos: usize) {
+        self.cursor_pos.y = pos;
+        self.changed = true;
+    }
+
     pub fn get_cursor_pos(&self) -> Coordinates { self.cursor_pos }
 
     pub fn set_active_blink_task(&mut self, active: bool) {
@@ -238,39 +307,4 @@ impl TextInputState {
     }
 
     pub fn get_max_length(&self) -> usize { self.max_length }
-
-    pub fn set_content_foreground_color(&mut self, color: Color) {
-        self.content_foreground_color = color;
-        self.changed = true;
-    }
-
-    pub fn get_cursor_color(&self) -> Color { self.cursor_color }
-
-    pub fn set_cursor_color(&mut self, color: Color) {
-        self.cursor_color = color;
-        self.changed = true;
-    }
-
-    pub fn get_content_foreground_color(&self) -> Color { self.content_foreground_color }
-
-    pub fn set_content_background_color(&mut self, color: Color) {
-        self.content_background_color = color;
-        self.changed = true;
-    }
-
-    pub fn get_content_background_color(&self) -> Color { self.content_background_color }
-
-    pub fn set_selection_foreground_color(&mut self, color: Color) {
-        self.selection_foreground_color = color;
-        self.changed = true;
-    }
-
-    pub fn get_selection_foreground_color(&self) -> Color { self.selection_foreground_color }
-
-    pub fn set_selection_background_color(&mut self, color: Color) {
-        self.selection_background_color = color;
-        self.changed = true;
-    }
-
-    pub fn get_selection_background_color(&self) -> Color { self.selection_background_color }
 }

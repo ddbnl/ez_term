@@ -7,9 +7,7 @@ use crate::common::{PixelMap, StateTree};
 use crate::widgets::widget::{Pixel, EzObject, EzWidget};
 use crate::states::label_state::LabelState;
 use crate::states::state::{EzState, GenericState};
-use crate::ez_parser::{load_color_parameter, load_bool_parameter, load_size_hint_parameter,
-                       load_halign_parameter, load_valign_parameter, load_pos_hint_x_parameter,
-                       load_pos_hint_y_parameter};
+use crate::ez_parser;
 
 pub struct Label {
 
@@ -44,30 +42,53 @@ impl EzObject for Label {
                          -> Result<(), Error> {
         
         match parameter_name.as_str() {
-            "x" => self.state.x = parameter_value.trim().parse().unwrap(),
-            "y" => self.state.y = parameter_value.trim().parse().unwrap(),
+            "x" => self.state.set_x(parameter_value.trim().parse().unwrap()),
+            "y" => self.state.set_y(parameter_value.trim().parse().unwrap()),
+            "pos" => self.state.set_position(
+                ez_parser::load_pos_parameter(parameter_value.trim()).unwrap()),
             "size_hint_x" => self.state.size_hint_x =
-                load_size_hint_parameter(parameter_value.trim()).unwrap(),
+                ez_parser::load_size_hint_parameter(parameter_value.trim()).unwrap(),
             "size_hint_y" => self.state.size_hint_y =
-                load_size_hint_parameter(parameter_value.trim()).unwrap(),
+                ez_parser::load_size_hint_parameter(parameter_value.trim()).unwrap(),
             "pos_hint_x" => self.state.set_pos_hint_x(
-                load_pos_hint_x_parameter(parameter_value.trim()).unwrap()),
+                ez_parser::load_pos_hint_x_parameter(parameter_value.trim()).unwrap()),
             "pos_hint_y" => self.state.set_pos_hint_y(
-                load_pos_hint_y_parameter(parameter_value.trim()).unwrap()),
+                ez_parser::load_pos_hint_y_parameter(parameter_value.trim()).unwrap()),
             "width" => self.state.width = parameter_value.trim().parse().unwrap(),
             "height" => self.state.height = parameter_value.trim().parse().unwrap(),
             "auto_scale_width" =>
-                self.state.set_auto_scale_width(load_bool_parameter(parameter_value.trim())?),
+                self.state.set_auto_scale_width(ez_parser::load_bool_parameter(parameter_value.trim())?),
             "auto_scale_height" =>
-                self.state.set_auto_scale_height(load_bool_parameter(parameter_value.trim())?),
+                self.state.set_auto_scale_height(ez_parser::load_bool_parameter(parameter_value.trim())?),
+            "padding_top" => self.state.padding_top = parameter_value.trim().parse().unwrap(),
+            "padding_bottom" => self.state.padding_bottom = parameter_value.trim().parse().unwrap(),
+            "padding_left" => self.state.padding_left = parameter_value.trim().parse().unwrap(),
+            "padding_right" => self.state.padding_right = parameter_value.trim().parse().unwrap(),
             "halign" =>
-                self.state.halign =  load_halign_parameter(parameter_value.trim()).unwrap(),
+                self.state.halign =  ez_parser::load_halign_parameter(parameter_value.trim()).unwrap(),
             "valign" =>
-                self.state.valign =  load_valign_parameter(parameter_value.trim()).unwrap(),
+                self.state.valign =  ez_parser::load_valign_parameter(parameter_value.trim()).unwrap(),
+            "border" => self.state.set_border(ez_parser::load_bool_parameter(parameter_value.trim())?),
+            "border_horizontal_symbol" => self.state.border_config.horizontal_symbol =
+                parameter_value.trim().to_string(),
+            "border_vertical_symbol" => self.state.border_config.vertical_symbol =
+                parameter_value.trim().to_string(),
+            "border_top_right_symbol" => self.state.border_config.top_right_symbol =
+                parameter_value.trim().to_string(),
+            "border_top_left_symbol" => self.state.border_config.top_left_symbol =
+                parameter_value.trim().to_string(),
+            "border_bottom_left_symbol" => self.state.border_config.bottom_left_symbol =
+                parameter_value.trim().to_string(),
+            "border_bottom_right_symbol" => self.state.border_config.bottom_right_symbol =
+                parameter_value.trim().to_string(),
+            "border_fg_color" =>
+                self.state.border_config.fg_color = ez_parser::load_color_parameter(parameter_value).unwrap(),
+            "border_bg_color" =>
+                self.state.border_config.bg_color = ez_parser::load_color_parameter(parameter_value).unwrap(),
             "fg_color" =>
-                self.state.content_foreground_color = load_color_parameter(parameter_value).unwrap(),
+                self.state.colors.foreground = ez_parser::load_color_parameter(parameter_value).unwrap(),
             "bg_color" =>
-                self.state.content_background_color = load_color_parameter(parameter_value).unwrap(),
+                self.state.colors.background = ez_parser::load_color_parameter(parameter_value).unwrap(),
             "text" => {
                 if parameter_value.starts_with(' ') {
                     parameter_value = parameter_value.strip_prefix(' ').unwrap().to_string();
@@ -75,25 +96,8 @@ impl EzObject for Label {
                 self.state.text = parameter_value
             },
             "from_file" => self.from_file = Some(parameter_value.trim().to_string()),
-            "border" => self.state.set_border(load_bool_parameter(parameter_value.trim())?),
-            "border_horizontal_symbol" => self.state.border_horizontal_symbol =
-                parameter_value.trim().to_string(),
-            "border_vertical_symbol" => self.state.border_vertical_symbol =
-                parameter_value.trim().to_string(),
-            "border_top_right_symbol" => self.state.border_top_right_symbol =
-                parameter_value.trim().to_string(),
-            "border_top_left_symbol" => self.state.border_top_left_symbol =
-                parameter_value.trim().to_string(),
-            "border_bottom_left_symbol" => self.state.border_bottom_left_symbol =
-                parameter_value.trim().to_string(),
-            "border_bottom_right_symbol" => self.state.border_bottom_right_symbol =
-                parameter_value.trim().to_string(),
-            "border_fg_color" =>
-                self.state.border_foreground_color = load_color_parameter(parameter_value).unwrap(),
-            "border_bg_color" =>
-                self.state.border_background_color = load_color_parameter(parameter_value).unwrap(),
             _ => return Err(Error::new(ErrorKind::InvalidData,
-                                       format!("Invalid parameter name for text box {}",
+                                       format!("Invalid parameter name for label {}",
                                                parameter_name)))
         }
         Ok(())
@@ -122,7 +126,8 @@ impl EzObject for Label {
 
     fn get_contents(&self, state_tree: &mut StateTree) -> PixelMap {
 
-        let state = state_tree.get_mut(&self.get_full_path()).unwrap().as_label_mut();
+        let state = state_tree
+            .get_mut(&self.get_full_path()).unwrap().as_label_mut();
         let mut text;
         // Load text from file
         if let Some(path) = self.from_file.clone() {
@@ -161,15 +166,15 @@ impl EzObject for Label {
                 if y < content_lines.len() && x < content_lines[y].len() {
                     new_y.push(Pixel {
                         symbol: content_lines[y][x..x+1].to_string(),
-                        foreground_color: state.content_foreground_color,
-                        background_color: state.content_background_color,
+                        foreground_color: state.get_colors().foreground,
+                        background_color: state.get_colors().background,
                         underline: false
                     })
                 } else {
                     new_y.push(Pixel {
                         symbol: " ".to_string(),
-                        foreground_color: state.content_foreground_color,
-                        background_color: state.content_background_color,
+                        foreground_color: state.get_colors().foreground,
+                        background_color: state.get_colors().background,
                         underline: false
                     })
                 }
@@ -177,16 +182,15 @@ impl EzObject for Label {
             contents.push(new_y);
         }
         if state.has_border() {
-            contents = common::add_border(
-                contents, state.border_horizontal_symbol.clone(),
-                state.border_vertical_symbol.clone(),
-                state.border_top_left_symbol.clone(),
-                state.border_top_right_symbol.clone(),
-                state.border_bottom_left_symbol.clone(),
-                state.border_bottom_right_symbol.clone(),
-                state.border_background_color,
-                state.border_foreground_color)
+            contents = common::add_border(contents, state.get_border_config());
         }
+        let state = state_tree.get(&self.get_full_path()).unwrap().as_label();
+        let parent_colors = state_tree.get(self.get_full_path()
+            .rsplit_once('/').unwrap().0).unwrap().as_generic().get_colors();
+        contents = common::add_padding(
+            contents, state.get_padding_top(), state.get_padding_bottom(),
+            state.get_padding_left(), state.get_padding_right(),
+            parent_colors.background,  parent_colors.foreground);
         contents
     }
 }

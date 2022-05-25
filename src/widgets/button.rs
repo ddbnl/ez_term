@@ -2,12 +2,12 @@
 use std::io::{Error, ErrorKind};
 use std::time::Duration;
 use crossterm::event::KeyCode;
-use crate::states::state::{EzState, HorizontalAlignment, VerticalAlignment, GenericState};
+use crate::states::state::{EzState, HorizontalAlignment, VerticalAlignment, GenericState, Coordinates};
 use crate::states::button_state::ButtonState;
-use crate::common::{self, Coordinates, PixelMap, MouseCallbackFunction, GenericEzFunction,
+use crate::common::{self, PixelMap, MouseCallbackFunction, GenericEzFunction,
                     EzContext, StateTree, KeyMap, KeyboardCallbackFunction};
 use crate::widgets::widget::{EzWidget, Pixel, EzObject};
-use crate::ez_parser::{load_color_parameter, load_text_parameter, load_selection_order_parameter, load_size_hint_parameter, load_halign_parameter, load_valign_parameter, load_bool_parameter, load_pos_hint_x_parameter, load_pos_hint_y_parameter};
+use crate::ez_parser;
 
 pub struct Button {
 
@@ -69,62 +69,67 @@ impl EzObject for Button {
     fn load_ez_parameter(&mut self, parameter_name: String, parameter_value: String)
                          -> Result<(), Error> {
         match parameter_name.as_str() {
-            "x" => self.state.set_position((parameter_value.trim().parse().unwrap(),
-                                            self.state.get_position().1)),
-            "y" => self.state.set_position((self.state.get_position().0,
-                                            parameter_value.trim().parse().unwrap())),
+            "x" => self.state.set_x(parameter_value.trim().parse().unwrap()),
+            "y" => self.state.set_y(parameter_value.trim().parse().unwrap()),
+            "pos" => self.state.set_position(
+                ez_parser::load_pos_parameter(parameter_value.trim()).unwrap()),
             "size_hint_x" => self.state.set_size_hint_x(
-                load_size_hint_parameter(parameter_value.trim()).unwrap()),
+                ez_parser::load_size_hint_parameter(parameter_value.trim()).unwrap()),
             "size_hint_y" => self.state.set_size_hint_y(
-                load_size_hint_parameter(parameter_value.trim()).unwrap()),
+                ez_parser::load_size_hint_parameter(parameter_value.trim()).unwrap()),
             "width" => self.state.set_width(parameter_value.trim().parse().unwrap()),
             "height" => self.state.set_height(parameter_value.trim().parse().unwrap()),
             "pos_hint_x" => self.state.set_pos_hint_x(
-                load_pos_hint_x_parameter(parameter_value.trim()).unwrap()),
+                ez_parser::load_pos_hint_x_parameter(parameter_value.trim()).unwrap()),
             "pos_hint_y" => self.state.set_pos_hint_y(
-                load_pos_hint_y_parameter(parameter_value.trim()).unwrap()),
+                ez_parser::load_pos_hint_y_parameter(parameter_value.trim()).unwrap()),
             "auto_scale_width" =>
-                self.state.set_auto_scale_width(load_bool_parameter(parameter_value.trim())?),
+                self.state.set_auto_scale_width(ez_parser::load_bool_parameter(parameter_value.trim())?),
             "auto_scale_height" =>
-                self.state.set_auto_scale_height(load_bool_parameter(parameter_value.trim())?),
+                self.state.set_auto_scale_height(ez_parser::load_bool_parameter(parameter_value.trim())?),
+            "padding_top" => self.state.padding_top = parameter_value.trim().parse().unwrap(),
+            "padding_bottom" => self.state.padding_bottom = parameter_value.trim().parse().unwrap(),
+            "padding_left" => self.state.padding_left = parameter_value.trim().parse().unwrap(),
+            "padding_right" => self.state.padding_right = parameter_value.trim().parse().unwrap(),
             "halign" =>
                 self.state.set_horizontal_alignment(
-                    load_halign_parameter(parameter_value.trim()).unwrap()),
+                    ez_parser::load_halign_parameter(parameter_value.trim()).unwrap()),
             "valign" =>
                 self.state.set_vertical_alignment(
-                    load_valign_parameter(parameter_value.trim()).unwrap()),
-            "fg_color" => self.state.set_content_foreground_color(
-                load_color_parameter(parameter_value).unwrap()),
-            "bg_color" => self.state.set_content_background_color(
-                load_color_parameter(parameter_value).unwrap()),
-            "selection_fg_color" => self.state.set_selection_foreground_color(
-                load_color_parameter(parameter_value).unwrap()),
-            "selection_bg_color" => self.state.set_selection_background_color(
-                load_color_parameter(parameter_value).unwrap()),
-            "flash_fg_color" => self.state.set_flash_foreground_color(
-                load_color_parameter(parameter_value).unwrap()),
-            "flash_bg_color" => self.state.set_flash_background_color(
-                    load_color_parameter(parameter_value).unwrap()),
-            "selection_order" => { self.selection_order = load_selection_order_parameter(
+                    ez_parser::load_valign_parameter(parameter_value.trim()).unwrap()),
+            "fg_color" => self.state.colors.foreground =
+                ez_parser::load_color_parameter(parameter_value).unwrap(),
+            "bg_color" => self.state.colors.background =
+                ez_parser::load_color_parameter(parameter_value).unwrap(),
+            "selection_fg_color" => self.state.colors.selection_foreground =
+                ez_parser::load_color_parameter(parameter_value).unwrap(),
+            "selection_bg_color" => self.state.colors.selection_background =
+                ez_parser::load_color_parameter(parameter_value).unwrap(),
+            "flash_fg_color" => self.state.colors.flash_foreground =
+                ez_parser::load_color_parameter(parameter_value).unwrap(),
+            "flash_bg_color" => self.state.colors.flash_background =
+                    ez_parser::load_color_parameter(parameter_value).unwrap(),
+            "selection_order" => { self.selection_order = ez_parser::load_selection_order_parameter(
                 parameter_value.as_str()).unwrap(); },
             "text" => self.state.set_text(
-                load_text_parameter(parameter_value.as_str()).unwrap()),
-            "border_horizontal_symbol" => self.state.set_border_horizontal_symbol(
-                parameter_value.trim().to_string()),
-            "border_vertical_symbol" => self.state.set_border_vertical_symbol(
-                parameter_value.trim().to_string()),
-            "border_top_right_symbol" => self.state.set_border_top_right_symbol(
-                parameter_value.trim().to_string()),
-            "border_top_left_symbol" => self.state.set_border_top_left_symbol(
-                parameter_value.trim().to_string()),
-            "border_bottom_left_symbol" => self.state.set_border_bottom_left_symbol(
-                parameter_value.trim().to_string()),
-            "border_bottom_right_symbol" => self.state.set_border_bottom_right_symbol(
-                parameter_value.trim().to_string()),
-            "border_fg_color" => self.state.set_border_foreground_color(
-                load_color_parameter(parameter_value).unwrap()),
-            "border_bg_color" => self.state.set_border_background_color(
-                load_color_parameter(parameter_value).unwrap()),
+                ez_parser::load_text_parameter(parameter_value.as_str()).unwrap()),
+            "border" => self.state.set_border(ez_parser::load_bool_parameter(parameter_value.trim())?),
+            "border_horizontal_symbol" => self.state.border_config.horizontal_symbol =
+                parameter_value.trim().to_string(),
+            "border_vertical_symbol" => self.state.border_config.vertical_symbol =
+                parameter_value.trim().to_string(),
+            "border_top_right_symbol" => self.state.border_config.top_right_symbol =
+                parameter_value.trim().to_string(),
+            "border_top_left_symbol" => self.state.border_config.top_left_symbol =
+                parameter_value.trim().to_string(),
+            "border_bottom_left_symbol" => self.state.border_config.bottom_left_symbol =
+                parameter_value.trim().to_string(),
+            "border_bottom_right_symbol" => self.state.border_config.bottom_right_symbol =
+                parameter_value.trim().to_string(),
+            "border_fg_color" =>
+                self.state.border_config.fg_color = ez_parser::load_color_parameter(parameter_value).unwrap(),
+            "border_bg_color" =>
+                self.state.border_config.bg_color = ez_parser::load_color_parameter(parameter_value).unwrap(),
             _ => return Err(Error::new(ErrorKind::InvalidData,
                                        format!("Invalid parameter name for button {}",
                                                parameter_name)))
@@ -152,16 +157,17 @@ impl EzObject for Button {
 
     fn get_contents(&self, state_tree: &mut StateTree) -> PixelMap {
 
-        let state = state_tree.get(&self.get_full_path()).unwrap().as_button();
+        let state = state_tree.get_mut(&self.get_full_path()).unwrap()
+            .as_button_mut();
         let text = state.text.clone();
         let content_lines = common::wrap_text(text, state.get_effective_width());
 
-        let fg_color = if state.flashing {state.flash_foreground_color}
-            else if state.selected {state.selection_foreground_color}
-            else {state.content_foreground_color};
-        let bg_color = if state.flashing {state.flash_background_color}
-            else if state.selected {state.selection_background_color}
-            else {state.content_background_color};
+        let fg_color = if state.flashing {state.get_colors().flash_foreground }
+            else if state.selected {state.get_colors().selection_foreground }
+            else {state.get_colors().foreground };
+        let bg_color = if state.flashing {state.get_colors().flash_background }
+            else if state.selected {state.get_colors().selection_background }
+            else {state.get_colors().background };
 
         let longest_line = content_lines.iter().map(|x| x.len()).max();
         let longest_line = if let Some(i) = longest_line { i } else { 0 };
@@ -176,24 +182,28 @@ impl EzObject for Button {
             }
             contents.push(new_y);
         }
+        if state.get_auto_scale_width() {
+            state.set_effective_width(contents.len());
+        }
+        if state.get_auto_scale_height() {
+            state.set_effective_height(contents[0].len());
+        }
         (contents, _) = common::align_content_horizontally(
             contents,HorizontalAlignment::Center, state.get_effective_width(),
                     fg_color, bg_color);
         (contents, _) = common::align_content_vertically(
             contents,VerticalAlignment::Middle, state.get_effective_height(),
             fg_color, bg_color);
-        contents = common::add_border(contents,
-                                      state.border_horizontal_symbol.clone(),
-                                      state.border_vertical_symbol.clone(),
-                                      state.border_top_left_symbol.clone(),
-                                      state.border_top_right_symbol.clone(),
-                                      state.border_bottom_left_symbol.clone(),
-                                      state.border_bottom_right_symbol.clone(),
-                                      state.border_background_color,
-                                      state.border_foreground_color);
+        contents = common::add_border(contents, state.get_border_config());
+        let state = state_tree.get(&self.get_full_path()).unwrap().as_button();
+        let parent_colors = state_tree.get(self.get_full_path()
+            .rsplit_once('/').unwrap().0).unwrap().as_generic().get_colors();
+        contents = common::add_padding(
+            contents, state.get_padding_top(), state.get_padding_bottom(),
+            state.get_padding_left(), state.get_padding_right(),
+            parent_colors.background,  parent_colors.foreground);
         contents
     }
-
 }
 
 

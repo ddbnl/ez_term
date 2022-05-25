@@ -1,18 +1,14 @@
 use crate::states::state::{GenericState, HorizontalAlignment, VerticalAlignment,
-                           HorizontalPositionHint, VerticalPositionHint};
-use crate::common::{Coordinates};
-use crossterm::style::{Color};
+                           HorizontalPositionHint, VerticalPositionHint, BorderConfig,
+                           ColorConfig, Coordinates};
 
 
 /// [State] implementation.
 #[derive(Clone)]
 pub struct CanvasState {
 
-    /// Horizontal position of this widget relative to its' parent [Layout]
-    pub x: usize,
-
-    /// Vertical position of this widget relative to its' parent [Layout]
-    pub y: usize,
+    /// Position of this widget relative to its' parent [Layout]
+    pub position: Coordinates,
 
     /// Absolute position of this widget on screen. Automatically propagated, do not set manually
     pub absolute_position: Coordinates,
@@ -40,18 +36,33 @@ pub struct CanvasState {
 
     /// Automatically adjust width of widget to content
     pub auto_scale_height: bool,
+    
+    /// Amount of space to leave between top edge and content
+    pub padding_top: usize,
 
+    /// Amount of space to leave between bottom edge and content
+    pub padding_bottom: usize,
+
+    /// Amount of space to leave between left edge and content
+    pub padding_left: usize,
+
+    /// Amount of space to leave between right edge and content
+    pub padding_right: usize,
+    
     /// Horizontal alignment of this widget
     pub halign: HorizontalAlignment,
 
     /// Vertical alignment of this widget
     pub valign: VerticalAlignment,
+    
+    /// Bool representing whether this layout should have a surrounding border
+    pub border: bool,
 
-    /// The [Pixel.foreground_color] to use for this widgets' content
-    pub content_foreground_color: Color,
+    /// [BorderConfig] object that will be used to draw the border if enabled
+    pub border_config: BorderConfig,
 
-    /// The [Pixel.background_color] to use for this widgets' content
-    pub content_background_color: Color,
+    /// Object containing colors to be used by this widget in different situations
+    pub colors: ColorConfig,
 
     /// Bool representing if state has changed. Triggers widget redraw.
     pub changed: bool,
@@ -64,21 +75,25 @@ pub struct CanvasState {
 impl Default for CanvasState {
     fn default() -> Self {
         CanvasState{
-            x: 0,
-            y: 0,
-            absolute_position: (0, 0),
-            size_hint_x: Some(1.0),
-            size_hint_y: Some(1.0),
+            position: Coordinates::default(),
+            absolute_position: Coordinates::default(),
             pos_hint_x: None,
             pos_hint_y: None,
-            auto_scale_width: false,
-            auto_scale_height: false,
             width: 0,
             height: 0,
+            size_hint_x: Some(1.0),
+            size_hint_y: Some(1.0),
+            auto_scale_width: false,
+            auto_scale_height: false,
+            padding_top: 0,
+            padding_bottom: 0,
+            padding_left: 0,
+            padding_right: 0,
+            border: false,
+            border_config: BorderConfig::default(),
+            colors: ColorConfig::default(),
             halign: HorizontalAlignment::Left,
             valign: VerticalAlignment::Top,
-            content_foreground_color: Color::White,
-            content_background_color: Color::Black,
             changed: false,
             force_redraw: false,
         }
@@ -134,19 +149,18 @@ impl GenericState for CanvasState {
 
     fn set_width(&mut self, width: usize) { self.width = width; self.changed = true; }
 
-    fn get_width(&self) -> usize { self.width }
+    fn get_width(&self) -> usize { self.width + self.padding_left + self.padding_top }
 
     fn set_height(&mut self, height: usize) { self.height = height; self.changed = true; }
 
-    fn get_height(&self) -> usize { self.height }
+    fn get_height(&self) -> usize { self.height + self.padding_top + self.padding_bottom }
 
     fn set_position(&mut self, position: Coordinates) {
-        self.x = position.0;
-        self.y = position.1;
+        self.position = position;
         self.changed = true;
     }
 
-    fn get_position(&self) -> Coordinates { (self.x, self.y) }
+    fn get_position(&self) -> Coordinates { self.position }
 
     fn set_absolute_position(&mut self, pos: Coordinates) { self.absolute_position = pos }
 
@@ -166,27 +180,50 @@ impl GenericState for CanvasState {
 
     fn get_vertical_alignment(&self) -> VerticalAlignment { self.valign }
 
+    fn set_padding_top(&mut self, padding: usize) {
+        self.padding_top = padding;
+        self.changed = true;
+    }
+
+    fn get_padding_top(&self) -> usize { self.padding_top }
+
+    fn set_padding_bottom(&mut self, padding: usize) {
+        self.padding_bottom = padding;
+        self.changed = true;
+    }
+
+    fn get_padding_bottom(&self) -> usize { self.padding_bottom }
+
+    fn set_padding_left(&mut self, padding: usize) {
+        self.padding_left = padding;
+        self.changed = true;
+    }
+
+    fn get_padding_left(&self) -> usize { self.padding_left }
+
+    fn set_padding_right(&mut self, padding: usize) {
+        self.padding_right = padding;
+        self.changed = true;
+    }
+
+    fn get_padding_right(&self) -> usize { self.padding_right }
+
+    fn has_border(&self) -> bool { self.border }
+
+    fn set_border(&mut self, enabled: bool) { self.border = enabled }
+
+    fn set_border_config(&mut self, config: BorderConfig) { self.border_config = config }
+
+    fn get_border_config(&self) -> &BorderConfig { &self.border_config  }
+
+    fn set_colors(&mut self, config: ColorConfig) { self.colors = config }
+
+    fn get_colors(&self) -> &ColorConfig { &self.colors }
+
     fn set_force_redraw(&mut self, redraw: bool) {
         self.force_redraw = redraw;
         self.changed = true;
     }
 
     fn get_force_redraw(&self) -> bool { self.force_redraw }
-}
-impl CanvasState {
-
-    pub fn set_content_foreground_color(&mut self, color: Color) {
-        self.content_foreground_color = color;
-        self.changed = true;
-    }
-
-    pub fn get_content_foreground_color(&self) -> Color { self.content_foreground_color }
-
-    pub fn set_content_background_color(&mut self, color: Color) {
-        self.content_background_color = color;
-        self.changed = true;
-    }
-
-    pub fn get_content_background_color(&self) -> Color { self.content_background_color }
-
 }

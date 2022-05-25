@@ -1,23 +1,20 @@
-use crossterm::style::{Color};
-use crate::common::{Coordinates};
 use crate::states::state::{GenericState, SelectableState, VerticalAlignment, HorizontalAlignment,
-                           HorizontalPositionHint, VerticalPositionHint};
+                           HorizontalPositionHint, VerticalPositionHint, BorderConfig,
+                           ColorConfig, Coordinates};
 
 
 /// [State] implementation.
 #[derive(Clone)]
 pub struct CheckboxState {
+
     /// Bool representing whether this widget is currently active (i.e. checkbox is checked)
     pub active: bool,
 
     /// Bool representing whether this widget is currently selected.
     pub selected: bool,
 
-    /// Horizontal position of this widget relative to its' parent [Layout]
-    pub x: usize,
-
-    /// Vertical position of this widget relative to its' parent [Layout]
-    pub y: usize,
+    /// Position of this widget relative to its' parent [Layout]
+    pub position: Coordinates,
 
     /// Absolute position of this widget on screen. Automatically propagated, do not set manually
     pub absolute_position: Coordinates,
@@ -27,24 +24,33 @@ pub struct CheckboxState {
 
     /// Pos hint for y position of this widget
     pub pos_hint_y: Option<(VerticalPositionHint, f64)>,
-    
+
+    /// Amount of space to leave between top edge and content
+    pub padding_top: usize,
+
+    /// Amount of space to leave between bottom edge and content
+    pub padding_bottom: usize,
+
+    /// Amount of space to leave between left edge and content
+    pub padding_left: usize,
+
+    /// Amount of space to leave between right edge and content
+    pub padding_right: usize,
+
     /// Horizontal alignment of this widget
     pub halign: HorizontalAlignment,
 
     /// Vertical alignment of this widget
     pub valign: VerticalAlignment,
 
-    /// The [Pixel.foreground_color] to use for this widgets' content
-    pub content_foreground_color: Color,
+    /// Bool representing whether this layout should have a surrounding border
+    pub border: bool,
 
-    /// The [Pixel.background_color] to use for this widgets' content
-    pub content_background_color: Color,
+    /// [BorderConfig] object that will be used to draw the border if enabled
+    pub border_config: BorderConfig,
 
-    /// The [Pixel.foreground_color] to use for this widgets' content when selected
-    pub selection_foreground_color: Color,
-
-    /// The [Pixel.background_color] to use for this widgets' content when selected
-    pub selection_background_color: Color,
+    /// Object containing colors to be used by this widget in different situations
+    pub colors: ColorConfig,
 
     /// Bool representing if state has changed. Triggers widget redraw.
     pub changed: bool,
@@ -57,19 +63,21 @@ pub struct CheckboxState {
 impl Default for CheckboxState {
     fn default() -> Self {
        CheckboxState {
-           x: 0,
-           y: 0,
-           absolute_position: (0, 0),
+           position: Coordinates::default(),
+           absolute_position: Coordinates::default(),
            pos_hint_x: None,
            pos_hint_y: None,
+           padding_top: 0,
+           padding_bottom: 0,
+           padding_left: 0,
+           padding_right: 0,
            halign: HorizontalAlignment::Left,
            valign: VerticalAlignment::Top,
            active: false,
            selected: false,
-           content_background_color: Color::Black,
-           content_foreground_color: Color::White,
-           selection_background_color: Color::Blue,
-           selection_foreground_color: Color::Yellow,
+           border: false,
+           border_config: BorderConfig::default(),
+           colors: ColorConfig::default(),
            changed: false,
            force_redraw: false
        }
@@ -101,19 +109,18 @@ impl GenericState for CheckboxState {
     
     fn set_width(&mut self, _width: usize) { }
 
-    fn get_width(&self) -> usize { 5 }
+    fn get_width(&self) -> usize { 5 + self.padding_left + self.padding_top }
 
     fn set_height(&mut self, _height: usize) { }
 
-    fn get_height(&self) -> usize { 1 }
+    fn get_height(&self) -> usize { 1 + self.padding_top + self.padding_bottom }
 
     fn set_position(&mut self, position: Coordinates) {
-        self.x = position.0;
-        self.y = position.1;
+        self.position = position;
         self.changed = true;
     }
 
-    fn get_position(&self) -> Coordinates { (self.x, self.y) }
+    fn get_position(&self) -> Coordinates { self.position }
 
     fn set_absolute_position(&mut self, pos: Coordinates) { self.absolute_position = pos }
 
@@ -132,6 +139,46 @@ impl GenericState for CheckboxState {
     }
 
     fn get_vertical_alignment(&self) -> VerticalAlignment { self.valign }
+
+    fn set_padding_top(&mut self, padding: usize) {
+        self.padding_top = padding;
+        self.changed = true;
+    }
+
+    fn get_padding_top(&self) -> usize { self.padding_top }
+
+    fn set_padding_bottom(&mut self, padding: usize) {
+        self.padding_bottom = padding;
+        self.changed = true;
+    }
+
+    fn get_padding_bottom(&self) -> usize { self.padding_bottom }
+
+    fn set_padding_left(&mut self, padding: usize) {
+        self.padding_left = padding;
+        self.changed = true;
+    }
+
+    fn get_padding_left(&self) -> usize { self.padding_left }
+
+    fn set_padding_right(&mut self, padding: usize) {
+        self.padding_right = padding;
+        self.changed = true;
+    }
+
+    fn get_padding_right(&self) -> usize { self.padding_right }
+
+    fn has_border(&self) -> bool { self.border }
+
+    fn set_border(&mut self, enabled: bool) { self.border = enabled }
+
+    fn set_border_config(&mut self, config: BorderConfig) { self.border_config = config }
+
+    fn get_border_config(&self) -> &BorderConfig { &self.border_config  }
+
+    fn set_colors(&mut self, config: ColorConfig) { self.colors = config }
+
+    fn get_colors(&self) -> &ColorConfig { &self.colors }
 
     fn set_force_redraw(&mut self, redraw: bool) {
         self.force_redraw = redraw;
@@ -156,43 +203,5 @@ impl CheckboxState {
         self.changed = true;
     }
 
-    pub fn get_active(&self) -> bool {
-        self.active
-    }
-
-    pub fn set_content_foreground_color(&mut self, color: Color) {
-        self.content_foreground_color = color;
-        self.changed = true;
-    }
-
-    pub fn get_content_foreground_color(&self) -> Color {
-        self.content_foreground_color
-    }
-
-    pub fn set_content_background_color(&mut self, color: Color) {
-        self.content_background_color = color;
-        self.changed = true;
-    }
-
-    pub fn get_content_background_color(&self) -> Color {
-        self.content_background_color
-    }
-
-    pub fn set_selection_foreground_color(&mut self, color: Color) {
-        self.selection_foreground_color = color;
-        self.changed = true;
-    }
-
-    pub fn get_selection_foreground_color(&self) -> Color {
-        self.selection_foreground_color
-    }
-
-    pub fn set_selection_background_color(&mut self, color: Color) {
-        self.selection_background_color = color;
-        self.changed = true;
-    }
-
-    pub fn get_selection_background_color(&self) -> Color {
-        self.selection_background_color
-    }
+    pub fn get_active(&self) -> bool { self.active }
 }

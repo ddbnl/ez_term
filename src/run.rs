@@ -9,10 +9,12 @@ use crossterm::{ExecutableCommand, execute, Result, cursor::{Hide, Show},
                 event::{MouseEvent, MouseEventKind, MouseButton, poll, read, DisableMouseCapture,
                         EnableMouseCapture, Event, KeyCode, KeyEvent},
                 terminal::{disable_raw_mode, enable_raw_mode, self}, QueueableCommand};
+use crossterm::cursor::MoveTo;
 use crate::common::{self, EzContext, initialize_view_tree, StateTree, ViewTree, WidgetTree};
 use crate::widgets::layout::Layout;
-use crate::widgets::widget::{EzObject, Pixel};
+use crate::widgets::widget::{EzObject};
 use crate::scheduler::{Scheduler};
+use crate::states::state::Coordinates;
 
 
 /// Set initial state of the terminal
@@ -71,7 +73,7 @@ fn initialize_widgets(root_widget: &mut Layout) -> ViewTree {
     // Create an initial view tree so we can diff all future changes against it.
     let mut view_tree = common::initialize_view_tree(all_content.len(),
                                                           all_content[0].len());
-    common::write_to_screen((0, 0), all_content, &mut view_tree);
+    common::write_to_screen(Coordinates::new(0, 0), all_content, &mut view_tree);
     view_tree
 
 }
@@ -140,12 +142,26 @@ fn run_loop(mut root_widget: Layout, mut scheduler: Scheduler) -> Result<()>{
                         } else {
                             state.set_width(width as usize);
                             state.set_height(height as usize);
-                            root_widget.set_child_sizes(&mut state_tree);
-                            root_widget.propagate_absolute_positions(&mut state_tree);
                             view_tree = initialize_view_tree(width as usize,
-                                                             height as usize);
-                            stdout().execute(terminal::Clear(terminal::ClearType::Purge))?;
-                            stdout().execute(Hide)?;
+                                                             height as usize );
+                            root_widget.set_child_sizes(&mut state_tree);
+                            let contents = root_widget.get_contents(&mut state_tree);
+                            root_widget.propagate_absolute_positions(&mut state_tree);
+                            for widget in root_widget.get_state_tree().keys() {
+                                if widget == &root_widget.get_full_path() {
+                                    root_widget.update_state(state_tree.get(widget)
+                                        .unwrap());
+                                    continue
+                                }
+                                root_widget.get_child_by_path_mut(widget).unwrap()
+                                    .as_ez_object_mut().update_state(
+                                    state_tree.get(widget).unwrap())
+                            }
+                            // Cleartype purge is tempting but causes issues on at least Windows
+                            stdout().queue(terminal::Clear(terminal::ClearType::All))?;
+                            common::write_to_screen(Coordinates::new(0, 0),
+                                                    contents, &mut view_tree);
+                            continue
                         }
 
                     }
@@ -167,7 +183,8 @@ fn run_loop(mut root_widget: Layout, mut scheduler: Scheduler) -> Result<()>{
             &mut view_tree, &mut state_tree, &mut root_widget);
         if forced_redraw {
             let contents = root_widget.get_contents(&mut state_tree);
-            common::write_to_screen((0, 0), contents, &mut view_tree);
+            common::write_to_screen(Coordinates::new(0, 0),
+                                    contents, &mut view_tree);
         }
     }
 }
@@ -220,13 +237,13 @@ fn handle_mouse_event(event: MouseEvent, view_tree: &mut ViewTree, state_tree: &
                       widget_tree: &WidgetTree, scheduler: &mut Scheduler) -> bool {
 
     if let MouseEventKind::Down(button) = event.kind {
-        let mouse_position = (event.column as usize, event.row as usize);
+        let mouse_position = Coordinates::new(event.column as usize, event.row as usize);
         return match common::get_widget_by_position(mouse_position, widget_tree, state_tree) {
             Some(widget) => {
                 let abs = state_tree.get(&widget.get_full_path()).unwrap().as_generic()
                     .get_absolute_position();
-                let relative_position = (mouse_position.0 - abs.0,
-                                         mouse_position.1 - abs.1);
+                let relative_position = Coordinates::new(mouse_position.x - abs.x,
+                                                                    mouse_position.y - abs.y);
                 match button {
                     MouseButton::Left =>
                         {

@@ -2,18 +2,15 @@
 //! A widget implementing a field in which the user can input characters. Supports on_value_change
 //! and on_keyboard_enter callbacks.
 use std::collections::HashMap;
-use std::io::{Error, ErrorKind, stdout, Write};
+use std::io::{Error, ErrorKind};
 use std::time::Duration;
-use crossterm::{cursor, QueueableCommand};
 use crossterm::event::{Event, KeyCode};
-use crossterm::style::{PrintStyledContent, Stylize};
+use crate::ez_parser;
 use crate::states::text_input_state::TextInputState;
-use crate::states::state::{EzState, GenericState, SelectableState};
+use crate::states::state::{EzState, GenericState, SelectableState, Coordinates};
 use crate::widgets::widget::{EzWidget, Pixel, EzObject};
-use crate::common::{KeyboardCallbackFunction, Coordinates, StateTree, WidgetTree,
+use crate::common::{self, KeyboardCallbackFunction, StateTree, WidgetTree,
                     PixelMap, GenericEzFunction, MouseCallbackFunction, EzContext, KeyMap};
-use crate::ez_parser::{load_color_parameter, load_size_hint_parameter, load_halign_parameter,
-                       load_valign_parameter, load_pos_hint_x_parameter, load_pos_hint_y_parameter};
 use crate::scheduler::Scheduler;
 
 pub struct TextInput {
@@ -89,19 +86,25 @@ impl EzObject for TextInput {
                          -> Result<(), Error> {
         
         match parameter_name.as_str() {
-            "x" => self.state.x = parameter_value.trim().parse().unwrap(),
-            "y" => self.state.y = parameter_value.trim().parse().unwrap(),
+            "x" => self.state.set_x(parameter_value.trim().parse().unwrap()),
+            "y" => self.state.set_y(parameter_value.trim().parse().unwrap()),
+            "pos" => self.state.set_position(
+                ez_parser::load_pos_parameter(parameter_value.trim()).unwrap()),
             "size_hint_x" => self.state.size_hint_x =
-                load_size_hint_parameter(parameter_value.trim()).unwrap(),
+                ez_parser::load_size_hint_parameter(parameter_value.trim()).unwrap(),
             "pos_hint_x" => self.state.set_pos_hint_x(
-                load_pos_hint_x_parameter(parameter_value.trim()).unwrap()),
+                ez_parser::load_pos_hint_x_parameter(parameter_value.trim()).unwrap()),
             "pos_hint_y" => self.state.set_pos_hint_y(
-                load_pos_hint_y_parameter(parameter_value.trim()).unwrap()),
+                ez_parser::load_pos_hint_y_parameter(parameter_value.trim()).unwrap()),
             "width" => self.state.width = parameter_value.trim().parse().unwrap(),
+            "padding_top" => self.state.padding_top = parameter_value.trim().parse().unwrap(),
+            "padding_bottom" => self.state.padding_bottom = parameter_value.trim().parse().unwrap(),
+            "padding_left" => self.state.padding_left = parameter_value.trim().parse().unwrap(),
+            "padding_right" => self.state.padding_right = parameter_value.trim().parse().unwrap(),
             "halign" =>
-                self.state.halign =  load_halign_parameter(parameter_value.trim()).unwrap(),
+                self.state.halign =  ez_parser::load_halign_parameter(parameter_value.trim()).unwrap(),
             "valign" =>
-                self.state.valign =  load_valign_parameter(parameter_value.trim()).unwrap(),
+                self.state.valign =  ez_parser::load_valign_parameter(parameter_value.trim()).unwrap(),
             "max_length" => self.state.max_length = parameter_value.trim().parse().unwrap(),
             "selection_order" => {
                 let order = parameter_value.trim().parse().unwrap();
@@ -111,16 +114,35 @@ impl EzObject for TextInput {
                 }
                 self.selection_order = order;
             },
+            "border" => self.state.set_border(ez_parser::load_bool_parameter(parameter_value.trim())?),
+            "border_horizontal_symbol" => self.state.border_config.horizontal_symbol =
+                parameter_value.trim().to_string(),
+            "border_vertical_symbol" => self.state.border_config.vertical_symbol =
+                parameter_value.trim().to_string(),
+            "border_top_right_symbol" => self.state.border_config.top_right_symbol =
+                parameter_value.trim().to_string(),
+            "border_top_left_symbol" => self.state.border_config.top_left_symbol =
+                parameter_value.trim().to_string(),
+            "border_bottom_left_symbol" => self.state.border_config.bottom_left_symbol =
+                parameter_value.trim().to_string(),
+            "border_bottom_right_symbol" => self.state.border_config.bottom_right_symbol =
+                parameter_value.trim().to_string(),
+            "border_fg_color" =>
+                self.state.border_config.fg_color = ez_parser::load_color_parameter(parameter_value).unwrap(),
+            "border_bg_color" =>
+                self.state.border_config.bg_color = ez_parser::load_color_parameter(parameter_value).unwrap(),
             "fg_color" =>
-                self.state.content_foreground_color = load_color_parameter(parameter_value).unwrap(),
+                self.state.colors.foreground = ez_parser::load_color_parameter(parameter_value).unwrap(),
             "bg_color" =>
-                self.state.content_background_color = load_color_parameter(parameter_value).unwrap(),
+                self.state.colors.background = ez_parser::load_color_parameter(parameter_value).unwrap(),
             "selection_fg_color" =>
-                self.state.selection_foreground_color = load_color_parameter(parameter_value).unwrap(),
+                self.state.colors.selection_foreground =
+                    ez_parser::load_color_parameter(parameter_value).unwrap(),
             "selection_bg_color" =>
-                self.state.selection_background_color = load_color_parameter(parameter_value).unwrap(),
+                self.state.colors.selection_background =
+                    ez_parser::load_color_parameter(parameter_value).unwrap(),
             "cursor_color" =>
-                self.state.cursor_color = load_color_parameter(parameter_value).unwrap(),
+                self.state.colors.cursor = ez_parser::load_color_parameter(parameter_value).unwrap(),
             "text" => {
                 if parameter_value.starts_with(' ') {
                     parameter_value = parameter_value.strip_prefix(' ').unwrap().to_string();
@@ -152,33 +174,34 @@ impl EzObject for TextInput {
 
     fn get_contents(&self, state_tree: &mut StateTree) -> PixelMap {
 
-        let state = state_tree.get_mut(&self.get_full_path()).unwrap().as_text_input();
-        let fg_color = if state.selected {state.selection_foreground_color}
-                           else {state.content_foreground_color};
-        let bg_color = if state.selected {state.selection_background_color}
-                             else {state.content_background_color};
-        let mut text = state.text.clone();
-        if text.len() > state.width - 1 {
-            let remains = text.len() - state.view_start;
+        let state = state_tree
+            .get_mut(&self.get_full_path()).unwrap().as_text_input_mut();
+        let fg_color = if state.get_selected() {state.get_colors().selection_foreground }
+                           else {state.get_colors().foreground };
+        let bg_color = if state.get_selected() {state.get_colors().selection_background }
+                             else {state.get_colors().background };
+        let mut text = state.get_text();
+        if text.len() > state.get_width() - 1 {
+            let remains = text.len() - state.get_view_start();
             let view_end =
-                if remains > (state.width - 1) {
-                    state.view_start + (state.width - 1)
+                if remains > (state.get_width() - 1) {
+                    state.get_view_start() + (state.get_width() - 1)
                 } else {
                     text.len()
                 };
-            text = text[state.view_start..view_end].to_string();
+            text = text[state.get_view_start()..view_end].to_string();
         }
         let mut contents = Vec::new();
         text = text.chars().rev().collect::<String>();
         for x in 0..state.get_effective_width() {
             let mut new_y = Vec::new();
-            for _ in 0..state.get_effective_height() {
+            for _ in 0..if state.get_effective_height() >= 1 {1} else {0} {
                 if !text.is_empty() {
                     new_y.push(Pixel{
                         symbol: text.pop().unwrap().to_string(),
                         foreground_color: fg_color,
                         background_color: if state.get_blink_switch() &&
-                            x == state.get_cursor_pos().0 {state.get_cursor_color()}
+                            x == state.get_cursor_pos().x {state.get_colors().cursor }
                         else {bg_color},
                         underline: true})
                 } else {
@@ -186,13 +209,29 @@ impl EzObject for TextInput {
                         symbol: " ".to_string(),
                         foreground_color: fg_color,
                         background_color: if state.get_blink_switch() &&
-                            x == state.get_cursor_pos().0 {state.get_cursor_color()}
+                            x == state.get_cursor_pos().x {state.get_colors().cursor }
                             else {bg_color},
                         underline: true})
                 }
             }
             contents.push(new_y);
         }
+        if state.get_auto_scale_width() {
+            state.set_effective_width(contents.len());
+        }
+        if state.get_auto_scale_height() {
+            state.set_effective_height(1);
+        }
+        if state.has_border() {
+            contents = common::add_border(contents, state.get_border_config());
+        }
+        let state = state_tree.get(&self.get_full_path()).unwrap().as_text_input();
+        let parent_colors = state_tree.get(self.get_full_path()
+            .rsplit_once('/').unwrap().0).unwrap().as_generic().get_colors();
+        contents = common::add_padding(
+            contents, state.get_padding_top(), state.get_padding_bottom(),
+            state.get_padding_left(), state.get_padding_right(),
+            parent_colors.background,  parent_colors.foreground);
         contents
     }
 }
@@ -262,12 +301,11 @@ impl EzWidget for TextInput {
         state.set_selected(true);
 
         // Handle blinking of cursor
-        let target_pos;
+        let mut target_pos;
         // Handle this widget being selected from mouse, follow user click position
         if let Some(pos) = mouse_pos {
-            let (mut x, y) = (pos.0, pos.1);
-            if pos.0 > state.text.len() {x = state.text.len()};
-            target_pos = (x, y);
+            target_pos = Coordinates::new(pos.x, pos.y);
+            if pos.x > state.text.len() {target_pos.x = state.text.len()};
             if !state.active_blink_task {
                 start_cursor_blink(target_pos, state, context.scheduler, self.get_full_path());
             } else {
@@ -277,9 +315,9 @@ impl EzWidget for TextInput {
             // Handle this widget being selected from keyboard. We choose the position.
         } else {
             // If text fills the widget move to end of widget. If not, move to end of text.
-            let target_pos_in_widget = if state.text.len() > (state.get_effective_width() - 1)
-            {state.get_effective_width() - 1} else {state.text.len()};
-            target_pos = (target_pos_in_widget, 0);
+            let target_x = if state.text.len() > (state.get_effective_width() - 1)
+                                 {state.get_effective_width() - 1} else {state.text.len()};
+            target_pos = Coordinates::new(target_x, state.get_position().y);
             start_cursor_blink(target_pos, state, context.scheduler, self.get_full_path());
         }
 
@@ -329,10 +367,10 @@ fn start_cursor_blink(target_pos: Coordinates, state: &mut TextInputState,
 
 
 /// Get the widget object, absolute position, cursor position, and position of the cursor
-/// relative to the widget. These are commonly used data for keyboard callbcks for text input
+/// relative to the widget. These are commonly used data for keyboard callbacks for text input
 /// widgets.
 fn prepare_handle_function<'a>(widget_name: String, widget_tree: &'a WidgetTree,
-                               state: &TextInputState)
+                               state: &mut TextInputState)
     -> (&'a dyn EzWidget, Coordinates, Coordinates) {
 
     let widget_obj = widget_tree.get(&widget_name).unwrap();
@@ -363,25 +401,25 @@ pub fn handle_right(context: EzContext, _key: KeyCode) {
 
     let state = context.state_tree.get_mut(&context.widget_path).unwrap()
         .as_text_input_mut();
-    let (_widget_obj, widget_pos, cursor_pos) =
+    let (_widget_obj, _widget_pos, cursor_pos) =
         prepare_handle_function(context.widget_path.clone(), context.widget_tree, state);
 
     // Text does not fit in widget, advance view
-    if state.get_text().len() > state.get_width() - 1 && cursor_pos.0 >= state.get_width() - 2 &&
+    if state.get_text().len() > state.get_width() - 1 && cursor_pos.x >= state.get_width() - 2 &&
              state.get_text().len() - state.get_view_start() > (state.get_width() - 1) {
         if state.get_text().len() - state.get_view_start() - state.get_width() >= 4 {
             state.set_view_start(state.get_view_start() + 4);
-            state.set_cursor_pos((state.get_cursor_pos().0 - 3, state.get_cursor_pos().1));
+            state.set_cursor_x(state.get_cursor_pos().x - 3);
         } else {
             state.set_view_start(state.get_text().len() - state.get_width() + 1);
-            state.set_cursor_pos((state.get_width() - 1, state.get_cursor_pos().1));
+            state.set_cursor_x(state.get_cursor_pos().x - 1);
         }
     // Text does not fit in widget but can't move further
     } else if state.get_text().len() > state.get_width() - 1 &&
-        cursor_pos.0 == state.get_width() - 1 {} // Max view, nothing to do
+        cursor_pos.x == state.get_width() - 1 {} // Max view, nothing to do
     // Text fits in widget, handle normally
-    else if cursor_pos.0 < state.get_text().len() {
-        state.set_cursor_pos((state.get_cursor_pos().0 + 1, state.get_cursor_pos().1));
+    else if cursor_pos.x < state.get_text().len() {
+        state.set_cursor_x(state.get_cursor_pos().x + 1);
     }
 }
 
@@ -396,17 +434,17 @@ pub fn handle_left(context: EzContext, _key: KeyCode) {
 
     // Text does not fit in widget and cursor at 0, move view to left if not at 0 already
     if state.get_text().len() > state.get_width() - 1 &&
-            cursor_pos.0 <= 1 && state.get_view_start() > 0 {
+            cursor_pos.x <= 1 && state.get_view_start() > 0 {
         if state.get_view_start() >= 4 {
             state.set_view_start(state.get_view_start() - 4 );
-            state.set_cursor_pos((cursor_pos.0 + 4, cursor_pos.1));
+            state.set_cursor_x(state.get_cursor_pos().x + 4);
         } else {
             state.set_view_start(0);
-            state.set_cursor_pos((4, cursor_pos.1));
+            state.set_cursor_x(4);
         }
     // Text fits in widget or cursor pos is not at 0, move cursor normally
-    } else if cursor_pos.0 > 0 {
-        state.set_cursor_pos((state.get_cursor_pos().0 - 1, state.get_cursor_pos().1));
+    } else if cursor_pos.x > 0 {
+        state.set_cursor_x(state.get_cursor_pos().x - 1);
     }
 }
 
@@ -425,11 +463,11 @@ pub fn handle_delete(context: EzContext, _key: KeyCode) {
             get_view_parts(state.get_text(), state.get_view_start(),
                            state.get_width());
 
-        if cursor_pos.0 == state.get_width() - 1 && post_view_text.is_empty() {
+        if cursor_pos.x == state.get_width() - 1 && post_view_text.is_empty() {
             return
         }
         // Check if deleting in the last position, i.e. deleting out of view
-        if cursor_pos.0 > view_text.len() - 1 {
+        if cursor_pos.x > view_text.len() - 1 {
             // Deleting out of view, delete from post_view_text instead of view_text
             if !post_view_text.is_empty() {
                 post_view_text = post_view_text[1..post_view_text.len()].to_string();
@@ -440,8 +478,8 @@ pub fn handle_delete(context: EzContext, _key: KeyCode) {
             // Not deleting at end of view, delete as normal
         } else {
             // Perform delete on the text view
-            view_text = format!("{}{}", view_text[0..cursor_pos.0 as usize].to_string(),
-                                view_text[(cursor_pos.0 + 1) as usize..view_text.len()].to_string());
+            view_text = format!("{}{}", view_text[0..cursor_pos.x as usize].to_string(),
+                                view_text[(cursor_pos.x + 1) as usize..view_text.len()].to_string());
         }
 
         // Reconstruct text with backspace view
@@ -452,12 +490,12 @@ pub fn handle_delete(context: EzContext, _key: KeyCode) {
     // Check if text fits in widget, then delete text as normal
     else {
         // Check if cursor is ahead of text, i.e. nothing to delete
-        if cursor_pos.0 == state.get_text().len() {
+        if cursor_pos.x == state.get_text().len() {
             return
         }
         let mut text = state.get_text();
-        text = format!("{}{}", text[0..cursor_pos.0 as usize].to_string(),
-                       text[(cursor_pos.0 + 1) as usize..text.len()].to_string());
+        text = format!("{}{}", text[0..cursor_pos.x as usize].to_string(),
+                       text[(cursor_pos.x + 1) as usize..text.len()].to_string());
         state.set_text(text);
     }
     // Write changes to screen
@@ -478,21 +516,21 @@ pub fn handle_backspace(context: EzContext, _key: KeyCode) {
     // Check if text does not fit in widget, then we have to backspace on a view
     if state.get_text().len() > state.get_width() - 1 {
         // Check if cursor is at start of text, i.e. nothing to backspace
-        if cursor_pos.0 == 0 && state.get_view_start() == 0 {
+        if cursor_pos.x == 0 && state.get_view_start() == 0 {
             return
         }
         let (mut pre_view_text, mut view_text, post_view_text) =
             get_view_parts(state.get_text(), state.get_view_start(),
                            state.get_width());
         // Perform backspace on the text view
-        if cursor_pos.0 == 0 {
+        if cursor_pos.x == 0 {
             // Backspace out of view
             pre_view_text = pre_view_text[0..pre_view_text.len() - 1].to_string();
         } else {
             // Backspace in view
             view_text = format!("{}{}",
-                                view_text[0..(cursor_pos.0 - 1) as usize].to_string(),
-                                view_text[cursor_pos.0 as usize..view_text.len()].to_string());
+                                view_text[0..(cursor_pos.x - 1) as usize].to_string(),
+                                view_text[cursor_pos.x as usize..view_text.len()].to_string());
         }
         // Reconstruct text with backspace view
         state.set_text(format!("{}{}{}", pre_view_text, view_text, post_view_text));
@@ -502,26 +540,26 @@ pub fn handle_backspace(context: EzContext, _key: KeyCode) {
             state.set_view_start(state.get_view_start() - 1);
         }
         // If backspacing out of view move back view 2 times if possible
-        if state.view_start > 1 && cursor_pos.0 == 0 && !pre_view_text.is_empty() {
+        if state.view_start > 1 && cursor_pos.x == 0 && !pre_view_text.is_empty() {
             state.set_view_start(state.get_view_start() - 1);
         }
 
-        if (cursor_pos.0 > 0 && pre_view_text.is_empty()) ||
-            (cursor_pos.0 == state.get_width() - 1 && !post_view_text.is_empty()) {
-            state.set_cursor_pos((state.get_cursor_pos().0 - 1, state.get_cursor_pos().1));
+        if (cursor_pos.x > 0 && pre_view_text.is_empty()) ||
+            (cursor_pos.x == state.get_width() - 1 && !post_view_text.is_empty()) {
+            state.set_cursor_x(state.get_cursor_pos().x - 1);
         }
     }
     // Check if text fits in widget, then backspace text as normal
     else {
         // Check if cursor is at start of text, i.e. nothing to backspace
-        if cursor_pos.0 == 0 {
+        if cursor_pos.x == 0 {
             return
         }
         // Perform backspace on text
-        text = format!("{}{}", text[0..(cursor_pos.0 - 1) as usize].to_string(),
-                       text[cursor_pos.0 as usize..text.len()].to_string());
+        text = format!("{}{}", text[0..(cursor_pos.x - 1) as usize].to_string(),
+                       text[cursor_pos.x as usize..text.len()].to_string());
         state.set_text(text);
-        state.set_cursor_pos((state.get_cursor_pos().0 - 1, state.get_cursor_pos().1));
+        state.set_cursor_x(state.get_cursor_pos().x - 1);
     }
     // Write changes to screen
     widget_obj.on_value_change(context);
@@ -538,15 +576,15 @@ pub fn handle_char(context: EzContext, char: char) {
     }
     let (widget_obj, _widget_pos, cursor_pos) =
         prepare_handle_function(context.widget_path.clone(),
-                                context.widget_tree, &state);
+                                context.widget_tree, state);
     let mut text;
 
     // Text still fits in widget, add char as normal
     if state.get_text().len() < (state.get_width() - 3) {
         // Get position of cursor in text for validation and deleting
         text = state.get_text();
-        text = format!("{}{}{}", text[0..cursor_pos.0 as usize].to_string(), char,
-                       text[(cursor_pos.0) as usize..text.len()].to_string());
+        text = format!("{}{}{}", text[0..cursor_pos.x as usize].to_string(), char,
+                       text[(cursor_pos.x) as usize..text.len()].to_string());
         state.set_text(text);
     }
     // Text does not fit in widget, add char to view
@@ -555,15 +593,15 @@ pub fn handle_char(context: EzContext, char: char) {
             get_view_parts(state.get_text(), state.get_view_start(),
                            state.get_width());
         view_text = format!("{}{}{}",
-                            view_text[0..cursor_pos.0 as usize].to_string(), char,
-                            view_text[(cursor_pos.0) as usize..view_text.len()].to_string());
+                            view_text[0..cursor_pos.x as usize].to_string(), char,
+                            view_text[(cursor_pos.x) as usize..view_text.len()].to_string());
         let new_text = format!("{}{}{}", pre_view_text, view_text, post_view_text);
         state.set_text(new_text);
     }
 
     if state.get_text().len() < (state.get_width() - 1){
-        state.set_cursor_pos((state.get_cursor_pos().0 + 1, state.get_cursor_pos().1));
-    } else if cursor_pos.0 >= state.get_width() - 2 {
+        state.set_cursor_x(state.get_cursor_pos().x + 1);
+    } else if cursor_pos.x >= state.get_width() - 2 {
         state.set_view_start(state.get_view_start() + 1);
     }
     widget_obj.on_value_change(context);

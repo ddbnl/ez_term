@@ -3,14 +3,12 @@
 use std::collections::HashMap;
 use std::io::{Error, ErrorKind};
 use crossterm::style::Color;
-use crate::ez_parser::{load_bool_parameter, load_color_parameter, load_size_hint_parameter,
-                       load_halign_parameter, load_valign_parameter, load_pos_hint_x_parameter,
-                       load_pos_hint_y_parameter};
+use crate::ez_parser;
 use crate::widgets::widget::{Pixel, EzObject, EzObjects};
 use crate::states::layout_state::LayoutState;
 use crate::states::state::{EzState, GenericState, HorizontalAlignment, VerticalAlignment,
-                           HorizontalPositionHint, VerticalPositionHint};
-use crate::common::{self, PixelMap, StateTree, WidgetTree, Coordinates};
+                           HorizontalPositionHint, VerticalPositionHint, Coordinates};
+use crate::common::{self, PixelMap, StateTree, WidgetTree};
 
 
 /// Used with Box mode, determines whether widgets are placed below or above each other.
@@ -82,26 +80,28 @@ impl EzObject for Layout {
         -> Result<(), Error> {
 
         match parameter_name.as_str() {
-            "x" => self.state.x = parameter_value.trim().parse().unwrap(),
-            "y" => self.state.y = parameter_value.trim().parse().unwrap(),
+            "x" => self.state.set_x(parameter_value.trim().parse().unwrap()),
+            "y" => self.state.set_y(parameter_value.trim().parse().unwrap()),
+            "pos" => self.state.set_position(
+                ez_parser::load_pos_parameter(parameter_value.trim()).unwrap()),
             "size_hint_x" => self.state.size_hint_x =
-                load_size_hint_parameter(parameter_value.trim()).unwrap(),
+                ez_parser::load_size_hint_parameter(parameter_value.trim()).unwrap(),
             "size_hint_y" => self.state.size_hint_y =
-                load_size_hint_parameter(parameter_value.trim()).unwrap(),
+                ez_parser::load_size_hint_parameter(parameter_value.trim()).unwrap(),
             "pos_hint_x" => self.state.set_pos_hint_x(
-                load_pos_hint_x_parameter(parameter_value.trim()).unwrap()),
+                ez_parser::load_pos_hint_x_parameter(parameter_value.trim()).unwrap()),
             "pos_hint_y" => self.state.set_pos_hint_y(
-                load_pos_hint_y_parameter(parameter_value.trim()).unwrap()),
+                ez_parser::load_pos_hint_y_parameter(parameter_value.trim()).unwrap()),
             "width" => self.state.width = parameter_value.trim().parse().unwrap(),
             "height" => self.state.height = parameter_value.trim().parse().unwrap(),
             "auto_scale_width" =>
-                self.state.set_auto_scale_width(load_bool_parameter(parameter_value.trim())?),
+                self.state.set_auto_scale_width(ez_parser::load_bool_parameter(parameter_value.trim())?),
             "auto_scale_height" =>
-                self.state.set_auto_scale_height(load_bool_parameter(parameter_value.trim())?),
+                self.state.set_auto_scale_height(ez_parser::load_bool_parameter(parameter_value.trim())?),
             "halign" =>
-                self.state.halign =  load_halign_parameter(parameter_value.trim()).unwrap(),
+                self.state.halign =  ez_parser::load_halign_parameter(parameter_value.trim()).unwrap(),
             "valign" =>
-                self.state.valign =  load_valign_parameter(parameter_value.trim()).unwrap(),
+                self.state.valign =  ez_parser::load_valign_parameter(parameter_value.trim()).unwrap(),
             "padding_top" => self.state.padding_top = parameter_value.trim().parse().unwrap(),
             "padding_bottom" => self.state.padding_bottom = parameter_value.trim().parse().unwrap(),
             "padding_left" => self.state.padding_left = parameter_value.trim().parse().unwrap(),
@@ -124,28 +124,28 @@ impl EzObject for Layout {
                                                 parameter_value)))
                 }
             },
-            "border" => self.state.set_border(load_bool_parameter(parameter_value.trim())?),
-            "border_horizontal_symbol" => self.state.border_horizontal_symbol =
+            "border" => self.state.set_border(ez_parser::load_bool_parameter(parameter_value.trim())?),
+            "border_horizontal_symbol" => self.state.border_config.horizontal_symbol =
                 parameter_value.trim().to_string(),
-            "border_vertical_symbol" => self.state.border_vertical_symbol =
+            "border_vertical_symbol" => self.state.border_config.vertical_symbol =
                 parameter_value.trim().to_string(),
-            "border_top_right_symbol" => self.state.border_top_right_symbol =
+            "border_top_right_symbol" => self.state.border_config.top_right_symbol =
                 parameter_value.trim().to_string(),
-            "border_top_left_symbol" => self.state.border_top_left_symbol =
+            "border_top_left_symbol" => self.state.border_config.top_left_symbol =
                 parameter_value.trim().to_string(),
-            "border_bottom_left_symbol" => self.state.border_bottom_left_symbol =
+            "border_bottom_left_symbol" => self.state.border_config.bottom_left_symbol =
                 parameter_value.trim().to_string(),
-            "border_bottom_right_symbol" => self.state.border_bottom_right_symbol =
+            "border_bottom_right_symbol" => self.state.border_config.bottom_right_symbol =
                 parameter_value.trim().to_string(),
             "border_fg_color" =>
-                self.state.border_foreground_color = load_color_parameter(parameter_value).unwrap(),
+                self.state.border_config.fg_color = ez_parser::load_color_parameter(parameter_value).unwrap(),
             "border_bg_color" =>
-                self.state.border_background_color = load_color_parameter(parameter_value).unwrap(),
+                self.state.border_config.bg_color = ez_parser::load_color_parameter(parameter_value).unwrap(),
             "filler_fg_color" =>
-                self.state.filler_foreground_color = load_color_parameter(parameter_value).unwrap(),
+                self.state.colors.filler_foreground = ez_parser::load_color_parameter(parameter_value).unwrap(),
             "filler_bg_color" =>
-                self.state.filler_background_color = load_color_parameter(parameter_value).unwrap(),
-            "fill" => self.state.fill = load_bool_parameter(parameter_value.trim())?,
+                self.state.colors.filler_background = ez_parser::load_color_parameter(parameter_value).unwrap(),
+            "fill" => self.state.fill = ez_parser::load_bool_parameter(parameter_value.trim())?,
             "filler_symbol" => self.state.set_filler_symbol(parameter_value.trim().to_string()),
             _ => return Err(Error::new(ErrorKind::InvalidData,
                                 format!("Invalid parameter name for layout {}",
@@ -168,9 +168,7 @@ impl EzObject for Layout {
         self.state.force_redraw = false;
     }
 
-    fn get_state(&self) -> EzState {
-        EzState::Layout(self.state.clone())
-    }
+    fn get_state(&self) -> EzState { EzState::Layout(self.state.clone()) }
 
     fn get_contents(&self, state_tree: &mut StateTree) -> PixelMap {
 
@@ -223,8 +221,8 @@ impl EzObject for Layout {
         for x in merged_content.iter_mut() {
             while x.len() < state.get_effective_height() {
                 x.push(Pixel { symbol: " ".to_string(),
-                    foreground_color: state.content_foreground_color,
-                    background_color: state.content_background_color,
+                    foreground_color: state.get_colors().foreground,
+                    background_color: state.get_colors().background,
                     underline: false});
             }
         }
@@ -233,19 +231,11 @@ impl EzObject for Layout {
         merged_content = common::add_padding(merged_content, state.padding_top,
                                              state.padding_bottom,
                                              state.padding_left, state.padding_right,
-                                      state.content_background_color,
-                                      state.content_foreground_color);
+                                             state.get_colors().background,
+                                             state.get_colors().foreground);
         // Put border around content if border if set
         if state.border {
-            merged_content = common::add_border(merged_content,
-                                          state.border_horizontal_symbol.clone(),
-                                          state.border_vertical_symbol.clone(),
-                                          state.border_top_left_symbol.clone(),
-                                          state.border_top_right_symbol.clone(),
-                                          state.border_bottom_left_symbol.clone(),
-                                          state.border_bottom_right_symbol.clone(),
-                                          state.border_background_color,
-                                          state.border_foreground_color);
+            merged_content = common::add_border(merged_content, state.get_border_config());
         }
         merged_content
     }
@@ -269,10 +259,8 @@ impl Layout {
 
         let own_state = state_tree.get_mut(&self.get_full_path())
             .unwrap().as_layout().clone();
-        let mut position: Coordinates = (0, 0);
-        if own_state.has_border() {
-            position = (1, 1);
-        }
+
+        let mut position = Coordinates::new(0, 0);
 
         for child in self.get_children() {
             if content.len() > own_state.get_effective_width() {
@@ -304,14 +292,14 @@ impl Layout {
 
             let valign = state.get_vertical_alignment();
             state.set_position(position);
-            let child_content = generic_child.get_contents(state_tree);
+            let mut child_content = generic_child.get_contents(state_tree);
             if child_content.is_empty() { continue }  // handle empty widget
             content = self.merge_horizontal_contents(
                 content, child_content,
                 &own_state,
                 state_tree.get_mut(&generic_child.get_full_path()).unwrap().as_generic_mut(),
                 valign);
-            position = (content.len(), 0);
+            position.x = content.len();
         }
         content
     }
@@ -326,7 +314,7 @@ impl Layout {
         for _ in 0..own_state.get_effective_width() {
             content.push(Vec::new())
         }
-        let mut position: Coordinates = (0, 0);
+        let mut position = Coordinates::new(0, 0);
         for child in self.get_children() {
             if content.is_empty() { return content }  // No space left in widget
             if content.len() > own_state.get_effective_width() ||
@@ -341,9 +329,6 @@ impl Layout {
                 .unwrap().as_generic_mut();
 
             let height_left = own_state.get_effective_height() - content[0].len();
-            if height_left == 0 {
-                return content
-            }
             // If autoscaling is enabled set child size to max width. It is then expected to scale
             // itself according to its' content
             if state.get_auto_scale_width() {
@@ -363,12 +348,15 @@ impl Layout {
 
             state.set_position(position);
             let halign = state.get_horizontal_alignment();
-            let child_content = generic_child.get_contents(state_tree);
+            let mut child_content = generic_child.get_contents(state_tree);
+            let state = state_tree.get_mut(&generic_child.get_full_path())
+                .unwrap().as_generic_mut();
+
             content = self.merge_vertical_contents(
                 content, child_content,&own_state,
                 state_tree.get_mut(&generic_child.get_full_path()).unwrap().as_generic_mut(),
                 halign);
-            position = (0, content[0].len());
+            position.y = content[0].len();
         }
         content
     }
@@ -379,9 +367,11 @@ impl Layout {
     fn get_float_mode_contents(&self, mut content: PixelMap, state_tree: &mut StateTree)
         -> PixelMap {
 
-        let own_state = state_tree.get_mut(&self.get_full_path()).unwrap().as_layout();
+        let own_state = state_tree.get(&self.get_full_path()).unwrap().as_layout();
         let own_height = own_state.get_effective_height();
         let own_width = own_state.get_effective_width();
+        let fg_color = own_state.get_colors().foreground;
+        let bg_color = own_state.get_colors().background;
 
         // Fill self with background first. Then overlay widgets.
         for _ in 0..own_width {
@@ -420,16 +410,16 @@ impl Layout {
                 state.set_width(own_width);
             }
 
-            let child_content = generic_child.get_contents(state_tree);
+            let mut child_content = generic_child.get_contents(state_tree);
             let state = state_tree.get_mut(
                 &generic_child.get_full_path()).unwrap().as_generic_mut(); // re-borrow
             self.set_child_position(own_width, own_height, state);
-            let (child_x, child_y) = state.get_position();
+            let child_pos = state.get_position();
             let (child_width, child_height) = (state.get_width(), state.get_height());
             for width in 0..child_width {
                 for height in 0..child_height {
-                    if child_x + width < content.len() && child_y + height < content[0].len() {
-                        content[child_x + width][child_y + height] =
+                    if child_pos.x + width < content.len() && child_pos.y + height < content[0].len() {
+                        content[child_pos.x + width][child_pos.y + height] =
                             child_content[width][height].clone();
                     }
                 }
@@ -487,6 +477,7 @@ impl Layout {
                 let child_size = raw_child_size.round() as usize;
                 state.set_height(child_size);
             }
+
         }
         for child in self.get_children() {
             if let EzObjects::Layout(i) = child {
@@ -551,7 +542,7 @@ impl Layout {
                         (child_state.get_width() as f64 / 2.0).round() as usize,
             };
             let x = (initial_pos as f64 * fraction).round() as usize;
-            child_state.set_position((x, child_state.get_position().1));
+            child_state.set_x(x);
         }
         // Set y by pos hint if any
         if let Some((keyword, fraction)) = child_state.get_pos_hint_y() {
@@ -563,7 +554,7 @@ impl Layout {
                         (child_state.get_height() as f64 / 2.0).round() as usize,
             };
             let y = (initial_pos as f64 * fraction).round() as usize;
-            child_state.set_position((child_state.get_position().0, y));
+            child_state.set_y(y);
         }
     }
     /// Takes [absolute_position] of this layout and adds the [x][y] of children to calculate and
@@ -578,16 +569,17 @@ impl Layout {
                 let child_state =
                     state_tree.get_mut(&i.get_full_path()).unwrap().as_generic_mut();
                 let pos = child_state.get_position();
-                let new_absolute_position = (absolute_position.0 + pos.0,
-                                                        absolute_position.1 + pos.1);
+                let new_absolute_position = Coordinates::new(
+                    absolute_position.x + pos.x, absolute_position.y + pos.y);
                 child_state.set_absolute_position(new_absolute_position);
                 i.propagate_absolute_positions(state_tree);
             } else {
                 let child_state = state_tree.get_mut(
                     &child.as_ez_widget().get_full_path()).unwrap().as_generic_mut();
                 let pos = child_state.get_position();
-                child_state.set_absolute_position((absolute_position.0 + pos.0,
-                                                   absolute_position.1 + pos.1));
+                let new_absolute_position = Coordinates::new(
+                    absolute_position.x + pos.x, absolute_position.y + pos.y);
+                child_state.set_absolute_position(new_absolute_position);
             }
         }
     }
@@ -612,8 +604,8 @@ impl Layout {
     /// Get a filler pixel using symbol and color settings set for this layout.
     pub fn get_filler(&self) -> Pixel {
         Pixel{symbol: self.state.get_filler_symbol(),
-            foreground_color: self.state.get_filler_foreground_color(),
-            background_color: self.state.get_filler_background_color(),
+            foreground_color: self.state.get_colors().filler_foreground,
+            background_color: self.state.get_colors().filler_background,
             underline: false}
     }
 
@@ -763,10 +755,9 @@ impl Layout {
             let offset;
             (new, offset) = common::align_content_vertically(
                 new, valign, parent_state.get_effective_height(),
-                parent_state.content_foreground_color,
-                parent_state.content_background_color);
-            let old_pos = state.get_position();
-            state.set_position((old_pos.0, old_pos.1 + offset));
+                parent_state.get_colors().foreground,
+                parent_state.get_colors().background);
+            state.set_y(state.get_position().y + offset);
         }
 
         for x in 0..new.len() {
@@ -774,8 +765,8 @@ impl Layout {
             let last = merged_content.last_mut().unwrap();
             while last.len() < parent_state.get_effective_height() {
                 last.push(Pixel { symbol: " ".to_string(),
-                    foreground_color: parent_state.content_foreground_color,
-                    background_color: parent_state.content_background_color,
+                    foreground_color: parent_state.get_colors().foreground,
+                    background_color: parent_state.get_colors().background,
                     underline: false});
             }
         }
@@ -795,11 +786,9 @@ impl Layout {
         if parent_state.get_effective_width() > new.len() {
             (new, offset) = common::align_content_horizontally(
                 new, halign, parent_state.get_effective_width(),
-            parent_state.content_foreground_color,
-                parent_state.content_background_color);
-
-            let old_pos = state.get_position();
-            state.set_position((old_pos.0 + offset, old_pos.1));
+                parent_state.get_colors().foreground,
+                parent_state.get_colors().background);
+            state.set_x(state.get_position().x + offset);
         }
 
         for x in 0..parent_state.get_effective_width() {
@@ -808,8 +797,8 @@ impl Layout {
                     merged_content[x].push(new[x][y].clone())
                 } else {
                     merged_content[x].push(Pixel { symbol: " ".to_string(),
-                        foreground_color: parent_state.content_foreground_color,
-                        background_color: parent_state.content_background_color,
+                        foreground_color: parent_state.get_colors().foreground,
+                        background_color: parent_state.get_colors().background,
                         underline: false});
                 }
             }

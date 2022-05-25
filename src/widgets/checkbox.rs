@@ -3,13 +3,12 @@
 use std::collections::HashMap;
 use std::io::{Error, ErrorKind};
 use crossterm::event::{KeyCode};
-use crate::common::{KeyboardCallbackFunction, Coordinates, StateTree, PixelMap, GenericEzFunction,
-                    MouseCallbackFunction, EzContext, KeyMap};
+use crate::common::{self, KeyboardCallbackFunction, StateTree, PixelMap,
+                    GenericEzFunction, MouseCallbackFunction, EzContext, KeyMap};
 use crate::widgets::widget::{EzWidget, Pixel, EzObject};
 use crate::states::checkbox_state::CheckboxState;
-use crate::states::state::{EzState, SelectableState, GenericState};
-use crate::ez_parser::{load_bool_parameter, load_color_parameter, load_halign_parameter,
-                       load_valign_parameter, load_pos_hint_x_parameter, load_pos_hint_y_parameter};
+use crate::states::state::{EzState, SelectableState, GenericState, Coordinates};
+use crate::ez_parser;
 
 pub struct Checkbox {
 
@@ -80,16 +79,22 @@ impl EzObject for Checkbox {
                          -> Result<(), Error> {
 
         match parameter_name.as_str() {
-            "x" => self.state.x = parameter_value.trim().parse().unwrap(),
-            "y" => self.state.y = parameter_value.trim().parse().unwrap(),
+            "x" => self.state.set_x(parameter_value.trim().parse().unwrap()),
+            "y" => self.state.set_y(parameter_value.trim().parse().unwrap()),
+            "pos" => self.state.set_position(
+                ez_parser::load_pos_parameter(parameter_value.trim()).unwrap()),
             "pos_hint_x" => self.state.set_pos_hint_x(
-                load_pos_hint_x_parameter(parameter_value.trim()).unwrap()),
+                ez_parser::load_pos_hint_x_parameter(parameter_value.trim()).unwrap()),
             "pos_hint_y" => self.state.set_pos_hint_y(
-                load_pos_hint_y_parameter(parameter_value.trim()).unwrap()),
+                ez_parser::load_pos_hint_y_parameter(parameter_value.trim()).unwrap()),
+            "padding_top" => self.state.padding_top = parameter_value.trim().parse().unwrap(),
+            "padding_bottom" => self.state.padding_bottom = parameter_value.trim().parse().unwrap(),
+            "padding_left" => self.state.padding_left = parameter_value.trim().parse().unwrap(),
+            "padding_right" => self.state.padding_right = parameter_value.trim().parse().unwrap(),
             "halign" =>
-                self.state.halign =  load_halign_parameter(parameter_value.trim()).unwrap(),
+                self.state.halign =  ez_parser::load_halign_parameter(parameter_value.trim()).unwrap(),
             "valign" =>
-                self.state.valign =  load_valign_parameter(parameter_value.trim()).unwrap(),
+                self.state.valign =  ez_parser::load_valign_parameter(parameter_value.trim()).unwrap(),
             "selection_order" => {
                 let order = parameter_value.trim().parse().unwrap();
                 if order == 0 {
@@ -99,21 +104,38 @@ impl EzObject for Checkbox {
                 self.selection_order = order;
             },
             "active" =>
-                self.state.active = load_bool_parameter(parameter_value.trim()).unwrap(),
+                self.state.active = ez_parser::load_bool_parameter(parameter_value.trim()).unwrap(),
             "active_symbol" => self.active_symbol = parameter_value.chars().last().unwrap(),
             "inactive_symbol" => self.inactive_symbol = parameter_value.chars().last().unwrap(),
+            "border" => self.state.set_border(ez_parser::load_bool_parameter(parameter_value.trim())?),
+            "border_horizontal_symbol" => self.state.border_config.horizontal_symbol =
+                parameter_value.trim().to_string(),
+            "border_vertical_symbol" => self.state.border_config.vertical_symbol =
+                parameter_value.trim().to_string(),
+            "border_top_right_symbol" => self.state.border_config.top_right_symbol =
+                parameter_value.trim().to_string(),
+            "border_top_left_symbol" => self.state.border_config.top_left_symbol =
+                parameter_value.trim().to_string(),
+            "border_bottom_left_symbol" => self.state.border_config.bottom_left_symbol =
+                parameter_value.trim().to_string(),
+            "border_bottom_right_symbol" => self.state.border_config.bottom_right_symbol =
+                parameter_value.trim().to_string(),
+            "border_fg_color" =>
+                self.state.border_config.fg_color = ez_parser::load_color_parameter(parameter_value).unwrap(),
+            "border_bg_color" =>
+                self.state.border_config.bg_color = ez_parser::load_color_parameter(parameter_value).unwrap(),
             "fg_color" =>
-                self.state.content_foreground_color =
-                    load_color_parameter(parameter_value).unwrap(),
+                self.state.colors.foreground =
+                    ez_parser::load_color_parameter(parameter_value).unwrap(),
             "bg_color" =>
-                self.state.content_background_color =
-                    load_color_parameter(parameter_value).unwrap(),
+                self.state.colors.background =
+                    ez_parser::load_color_parameter(parameter_value).unwrap(),
             "selection_fg_color" =>
-                self.state.selection_foreground_color =
-                    load_color_parameter(parameter_value).unwrap(),
+                self.state.colors.selection_foreground =
+                    ez_parser::load_color_parameter(parameter_value).unwrap(),
             "selection_bg_color" =>
-                self.state.selection_background_color =
-                    load_color_parameter(parameter_value).unwrap(),
+                self.state.colors.selection_background =
+                    ez_parser::load_color_parameter(parameter_value).unwrap(),
             _ => return Err(Error::new(ErrorKind::InvalidData,
                                 format!("Invalid parameter name for check box {}",
                                         parameter_name)))
@@ -147,11 +169,11 @@ impl EzObject for Checkbox {
         let state = state_tree.get(&self.get_full_path()).unwrap().as_checkbox();
         let active_symbol = { if state.active {self.active_symbol}
                               else {self.inactive_symbol} };
-        let fg_color = if state.selected {state.selection_foreground_color}
-        else {state.content_foreground_color};
-        let bg_color = if state.selected {state.selection_background_color}
-        else {state.content_background_color};
-        vec!(
+        let fg_color = if state.selected {state.get_colors().selection_foreground }
+        else {state.get_colors().foreground };
+        let bg_color = if state.selected {state.get_colors().selection_background }
+        else {state.get_colors().background };
+        let mut contents = vec!(
             vec!(Pixel {symbol: "[".to_string(), foreground_color: fg_color,
                 background_color: bg_color, underline: false}),
             vec!(Pixel {symbol: " ".to_string(), foreground_color: fg_color,
@@ -162,7 +184,17 @@ impl EzObject for Checkbox {
                 background_color: bg_color, underline: false}),
             vec!(Pixel { symbol: "]".to_string(), foreground_color: fg_color,
                 background_color: bg_color, underline: false}),
-        )
+        );
+        if state.has_border() {
+            contents = common::add_border(contents, state.get_border_config());
+        }
+        let parent_colors = state_tree.get(self.get_full_path()
+            .rsplit_once('/').unwrap().0).unwrap().as_generic().get_colors();
+        contents = common::add_padding(
+            contents, state.get_padding_top(), state.get_padding_bottom(),
+            state.get_padding_left(), state.get_padding_right(),
+            parent_colors.background,  parent_colors.foreground);
+        contents
     }
 
 }

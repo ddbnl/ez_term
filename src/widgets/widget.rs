@@ -4,9 +4,9 @@
 use crossterm::style::{Color, StyledContent, Stylize};
 use crossterm::event::{Event, KeyCode};
 use std::io::{Error};
-use crate::common::{self, ViewTree, Coordinates, KeyboardCallbackFunction, PixelMap,
+use crate::common::{self, ViewTree, KeyboardCallbackFunction, PixelMap,
                     GenericEzFunction, MouseCallbackFunction, EzContext, StateTree, KeyMap};
-use crate::states::state::{EzState};
+use crate::states::state::{EzState, Coordinates};
 use crate::widgets::layout::{Layout};
 use crate::widgets::label::{Label};
 use crate::widgets::button::{Button};
@@ -236,8 +236,8 @@ pub trait EzObject {
     /// Redraw the widget on the screen. Using the view tree, only changed content is written to
     /// improve performance.
     fn redraw(&self, view_tree: &mut ViewTree, state_tree: &mut StateTree) {
-        let pos = state_tree.get(&self.get_full_path()).unwrap().as_generic()
-            .get_absolute_position();
+        let state = state_tree.get(&self.get_full_path()).unwrap().as_generic();
+        let mut pos = state.get_absolute_position();
         let content = self.get_contents(state_tree);
         common::write_to_screen(pos, content, view_tree);
     }

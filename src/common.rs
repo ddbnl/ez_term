@@ -7,7 +7,8 @@ use std::collections::HashMap;
 use crossterm::event::KeyCode;
 use crate::scheduler::Scheduler;
 use crate::widgets::layout::Layout;
-use crate::states::state::{HorizontalAlignment, EzState, VerticalAlignment};
+use crate::states::state::{HorizontalAlignment, EzState, VerticalAlignment, BorderConfig,
+                           Coordinates};
 use crate::widgets::widget::{EzWidget, EzObjects, Pixel, EzObject};
 
 
@@ -20,10 +21,6 @@ pub type PixelMap = Vec<Vec<Pixel>>;
 /// ## Key map
 /// A crossterm KeyCode > Callback function lookup. Used for custom user keybinds
 pub type KeyMap = HashMap<KeyCode, KeyboardCallbackFunction>;
-
-/// ## Coordinates:
-/// Convenience wrapper around an XY tuple.
-pub type Coordinates = (usize, usize);
 
 /// ## View tree:
 /// Grid of StyledContent representing the entire screen currently being displayed. After each frame
@@ -112,7 +109,7 @@ pub fn write_to_screen(base_position: Coordinates, content: PixelMap, view_tree:
     stdout().execute(cursor::SavePosition).unwrap();
     for x in 0..content.len() {
         for y in 0..content[x].len() {
-            let write_pos = (base_position.0 + x, base_position.1 + y);
+            let write_pos = (base_position.x + x, base_position.y + y);
             let write_content = content[x][y].get_pixel().clone();
             if write_pos.0 < view_tree.len() && write_pos.1 < view_tree[write_pos.0].len() &&
                 view_tree[write_pos.0][write_pos.1] != write_content {
@@ -163,7 +160,8 @@ pub fn update_state_tree(view_tree: &mut ViewTree, state_tree: &mut StateTree,
                 let widget =
                     root_widget.get_child_by_path_mut(widget_path).unwrap().as_ez_object_mut();
                 widget.update_state(state);
-                widgets_to_redraw.push(widget_path.clone());
+                widgets_to_redraw.push(widget_path.rsplit_once('/')
+                    .unwrap().0.to_string());
             };
         }
     }
@@ -314,23 +312,21 @@ pub fn find_previous_selection(current_selection: usize, widget_tree: &WidgetTre
 
 
 /// Add a border around a PixelMap.
-pub fn add_border(mut content: PixelMap, horizontal_symbol: String, vertical_symbol: String,
-              top_left_symbol: String, top_right_symbol: String, bottom_left_symbol: String,
-              bottom_right_symbol: String, bg_color: Color, fg_color: Color) -> PixelMap {
+pub fn add_border(mut content: PixelMap, config: &BorderConfig) -> PixelMap {
     if content.is_empty() { return content }
     // Create border elements
-    let horizontal_border = Pixel{ symbol: horizontal_symbol, background_color: bg_color,
-        foreground_color: fg_color, underline: false};
-    let vertical_border = Pixel{ symbol: vertical_symbol, background_color: bg_color,
-        foreground_color: fg_color, underline: false};
-    let top_left_border = Pixel{ symbol:top_left_symbol, background_color: bg_color,
-        foreground_color: fg_color, underline: false};
-    let top_right_border = Pixel{ symbol: top_right_symbol, background_color: bg_color,
-        foreground_color: fg_color, underline: false};
-    let bottom_left_border = Pixel{ symbol: bottom_left_symbol, background_color: bg_color,
-        foreground_color: fg_color, underline: false};
-    let bottom_right_border = Pixel{ symbol: bottom_right_symbol, background_color: bg_color,
-        foreground_color: fg_color, underline: false};
+    let horizontal_border = Pixel{ symbol: config.horizontal_symbol.clone(),
+        background_color: config.bg_color, foreground_color: config.fg_color, underline: false};
+    let vertical_border = Pixel{ symbol: config.vertical_symbol.clone(),
+        background_color: config.bg_color, foreground_color: config.fg_color, underline: false};
+    let top_left_border = Pixel{ symbol:config.top_left_symbol.clone(),
+        background_color: config.bg_color, foreground_color: config.fg_color, underline: false};
+    let top_right_border = Pixel{ symbol: config.top_right_symbol.clone(),
+        background_color: config.bg_color, foreground_color: config.fg_color, underline: false};
+    let bottom_left_border = Pixel{ symbol: config.bottom_left_symbol.clone(),
+        background_color: config.bg_color, foreground_color: config.fg_color, underline: false};
+    let bottom_right_border = Pixel{ symbol: config.bottom_right_symbol.clone(),
+        background_color: config.bg_color, foreground_color: config.fg_color, underline: false};
     // Create horizontal borders
     for x in 0..content.len() {
         let mut new_x = vec!(horizontal_border.clone());

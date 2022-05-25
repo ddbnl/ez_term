@@ -42,15 +42,13 @@
                         text: This is a small text input. It's content is bigger than its' size. It allows us to test views. Try selecting it and pressing left and right button to move through the text.
                         auto_scale_width: true
                         auto_scale_height: true
-                    - Label: spacer
-                        size_hint_y: none
-                        height: 1
                     - TextInput: layout1_input
                         size_hint_x: None
                         width: 20
                         bg_color: blue
                         text: small input to test views
                         selection_order: 2
+                        padding_top: 1
                 - Layout: layout1_input_box_2
                     mode: box
                     orientation: vertical
@@ -62,9 +60,6 @@
                         text: This is a larger input but it has a maximum length, so we can't fill it all!
                         auto_scale_width: true
                         auto_scale_height: true
-                    - Label: spacer
-                        size_hint_y: none
-                        height: 1
                     - TextInput: layout2_large_input
                         text: sample larger input
                         bg_color: blue
@@ -85,7 +80,6 @@
                     auto_scale_width: true
                     halign: center
                     height: 1
-
                 - Label: layout2_checkbox_title_label
                     text: Disabled
                     halign: center
@@ -95,6 +89,7 @@
                     auto_scale_height: true
                 - CheckBox: layout2_checkbox
                     selection_order: 4
+                    selection_fg_color: red
                     halign: center
                     active: False
                     active_symbol: X
@@ -132,6 +127,7 @@
                     text: option1
                     size_hint_y: None
                     height: 1
+                    padding_top: 1
             - Layout: small_box_3
                 mode: box
                 orientation: vertical
@@ -148,11 +144,14 @@
                     height: 1
                     halign: center
                 - Button: layout3_button
+                    padding_top: 1
                     selection_order: 12
                     text: Click me!
                     bg_color: red
+                    size_hint_x: 1
                     size_hint_y: None
-                    height: 6
+                    auto_scale_height: true
+                    auto_scale_width: true
     - Layout: right_box
         mode: box
         orientation: vertical

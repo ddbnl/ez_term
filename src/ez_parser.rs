@@ -15,8 +15,10 @@ use crate::widgets::dropdown::Dropdown;
 use crate::widgets::widget::{EzObjects, EzObject};
 use std::str::FromStr;
 use crossterm::terminal::size;
+use unicode_segmentation::UnicodeSegmentation;
 use crate::scheduler::Scheduler;
-use crate::states::state::{GenericState, HorizontalAlignment, HorizontalPositionHint, VerticalAlignment, VerticalPositionHint};
+use crate::states::state::{Coordinates, GenericState, HorizontalAlignment, HorizontalPositionHint,
+                           VerticalAlignment, VerticalPositionHint};
 
 
 /// Load a file path into a root Layout. Return the root widget and a new scheduler. Both will
@@ -39,7 +41,7 @@ fn parse_ez(file_string: String) -> Result<Layout, Error> {
 
     let config_lines:Vec<&str> = file_string.lines().collect();
     let (_, mut widgets) =
-        parse_level(config_lines).unwrap();
+        parse_level(config_lines, 0, 0).unwrap();
     let mut root_widget = widgets.pop().unwrap();
     if root_widget.type_name != "Layout" {
         panic!("Root widget of an Ez file must be a Layout")
@@ -57,19 +59,31 @@ fn parse_ez(file_string: String) -> Result<Layout, Error> {
 /// parts: the config of the widget itself (its' size, color, etc.) and its' sub widgets.
 /// As the definition for a widget might contain sub widgets, it is parsed recursively.
 struct EzWidgetDefinition<'a> {
+
     /// Name of widget class, e.g. layout, or textBox
     pub type_name: &'a str,
+
     /// Id of the widget, used to create widget paths
     pub id: &'a str,
+
     /// All raw text content belonging to this definition
     pub content: Vec<&'a str>,
+
+    /// Offset in lines where the content of the widget definition begins in the config file.
+    /// Zero-indexed. Indicates the first line AFTER the initial definition starting with '- .
+    pub line_offset: usize,
+
+    /// Indentation offset of this widget in the config
+    pub indentation_offset: usize,
 }
 impl<'a> EzWidgetDefinition<'a> {
-    fn new(type_name: &'a str, id: &'a str) -> Self {
+    fn new(type_name: &'a str, id: &'a str, indentation_offset: usize, line_offset: usize) -> Self {
         EzWidgetDefinition {
             type_name,
             id,
             content: Vec::new(),
+            indentation_offset,
+            line_offset,
         }
     }
 
@@ -78,7 +92,8 @@ impl<'a> EzWidgetDefinition<'a> {
     fn parse_as_root(&mut self) -> Layout {
 
         let (config, mut sub_widgets) =
-            parse_level(self.content.clone()).unwrap();
+            parse_level(self.content.clone(), self.indentation_offset, self.line_offset)
+                .unwrap();
         let mut initialized = Layout::default();
         for line in config {
             let (parameter_name, parameter_value) = line.split_once(':')
@@ -92,10 +107,10 @@ impl<'a> EzWidgetDefinition<'a> {
         }
         let terminal_size = size().unwrap();
         if initialized.state.width == 0  {
-            initialized.state.set_width(terminal_size.0 as usize - 1);
+            initialized.state.set_width(terminal_size.0 as usize);
         }
         if initialized.state.height == 0 {
-            initialized.state.set_height(terminal_size.1 as usize - 5);
+            initialized.state.set_height(terminal_size.1 as usize);
         }
         initialized.set_id(self.id.to_string());
         initialized.set_full_path(format!("/{}", self.id));
@@ -107,7 +122,8 @@ impl<'a> EzWidgetDefinition<'a> {
     fn parse(&mut self) -> EzObjects {
 
         let (config, mut sub_widgets) =
-            parse_level(self.content.clone()).unwrap();
+            parse_level(self.content.clone(), self.indentation_offset, self.line_offset)
+                .unwrap();
         let initialized = self.initialize(config).unwrap();
         if let EzObjects::Layout(mut i) = initialized {
             for sub_widget in sub_widgets.iter_mut() {
@@ -145,7 +161,7 @@ impl<'a> EzWidgetDefinition<'a> {
 
 /// Parse a single indentation level of a config file. Returns a Vec of config lines and a Vec
 /// of [EzWidgetDefinition] of widgets found on that level
-fn parse_level<'a>(config_lines: Vec<&'a str>)
+fn parse_level<'a>(config_lines: Vec<&'a str>, indentation_offset: usize, line_offset: usize)
                        -> Result<(Vec<&str>, Vec<EzWidgetDefinition<'a>>), Error> {
 
     // All lines before the first widget definition are considered config lines for the widget
@@ -158,29 +174,41 @@ fn parse_level<'a>(config_lines: Vec<&'a str>)
     for (i, line) in config_lines.into_iter().enumerate() {
         // Skip empty lines and comments
         // find all widget definitions, they start with -
-        if line.starts_with("//") || line.trim().is_empty() {
+        if line.trim().starts_with("//") || line.trim().is_empty() {
             continue
+        } else {
+            for (j, char) in line.graphemes(true).enumerate() {
+                if char != " " {
+                    if parsing_config && j != 0 {
+                        panic!("Error at Line {0}: \"{1}\". Invalid indentation between lines \
+                        {2} and {0}. Indentation level of line {0} should be {3} but it is {4}.",
+                               i + line_offset + 1, line, i + line_offset, indentation_offset,
+                               indentation_offset + j);
+                    }
+                    if j % 4 != 0 {
+                        panic!("Error at Line {}: \"{}\". Invalid indentation. indentation must be \
+                            in multiples of four.", i + 1 + line_offset, line);
+                    }
+                    break
+                }
+
+            }
         }
-        // Find widget definitions which arts with -
+        // Find widget definitions which starts with -
         if line.starts_with('-') {
             // We encountered a widget, so config section of this level is over.
             parsing_config = false;
             // A new widget definition. Get it's type and ID
             let (type_name, id) = line.split_once(':').unwrap();
             // Add to level, all next lines that are not widget definitions append to this widget
-            level.push(EzWidgetDefinition::new(type_name.strip_prefix("- ").unwrap().trim(), id.trim()));
-
+            level.push(EzWidgetDefinition::new(
+                type_name.strip_prefix("- ").unwrap().trim(), id.trim(),
+                        indentation_offset + 4, i + 1 + line_offset));
         }
         else if parsing_config {
             config.push(line);
         } else {
             // Line was not a new widget definition, so it must be config/content of the current one
-            if !line.starts_with("    ") {
-                return Err(Error::new(
-                    ErrorKind::InvalidData,
-                    format!("Error at Line {}: '{}'. Invalid indentation. \
-                    4 whitespaces per level required.", i, line)))
-            }
             let new_line = line.strip_prefix("    ").unwrap();
             level.last_mut().unwrap().content.push(new_line);
         }
@@ -267,6 +295,17 @@ pub fn load_size_hint_parameter(value: &str) -> Result<Option<f64>, Error> {
     }
 }
 
+/// Convenience function used by widgets to load a pos parameter defined in an .ez file
+pub fn load_pos_parameter(value: &str) -> Result<Coordinates, Error> {
+
+    let (x_str, y_str) = value.split_once(',').unwrap();
+    let x = x_str.to_string().parse().unwrap_or_else(
+        |_| panic!("Could not parse x coordinate of this position: {}", value));
+    let y = y_str.to_string().parse().unwrap_or_else(
+        |_| panic!("Could not parse y coordinate of this position: {}", value));
+    Ok(Coordinates{x, y})
+
+}
 /// Convenience function use by widgets to load a pos_hint parameter defined in a .ez file
 pub fn load_pos_hint_x_parameter(value: &str)
     -> Result<Option<(HorizontalPositionHint, f64)>, Error> {
