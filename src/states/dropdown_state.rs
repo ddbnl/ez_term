@@ -1,4 +1,4 @@
-use crate::states::state::{self};
+use crate::states::state::{self, GenericState};
 
 
 /// [State] implementation.
@@ -80,7 +80,7 @@ impl Default for DropdownState {
            size_hint: state::SizeHint::default(),
            auto_scale: state::AutoScale::default(),
            pos_hint: state::PosHint::default(),
-           size: state::Size::default(),
+           size: state::Size::new(0, 1),
            padding: state::Padding::default(),
            halign: state::HorizontalAlignment::Left,
            valign: state::VerticalAlignment::Top,
@@ -105,21 +105,35 @@ impl state::GenericState for DropdownState {
 
     fn get_changed(&self) -> bool { self.changed }
 
-    fn set_size_hint(&mut self, size_hint: state::SizeHint) { self.size_hint = size_hint }
+    fn set_size_hint(&mut self, size_hint: state::SizeHint) {
+        self.size_hint = size_hint;
+        self.changed = true;
+    }
 
     fn get_size_hint(&self) -> &state::SizeHint { &self.size_hint }
 
-    fn set_auto_scale(&mut self, auto_scale: state::AutoScale) { self.auto_scale = auto_scale }
-
-    fn get_auto_scale(&self) -> &state::AutoScale { &self.auto_scale }
-
-    fn set_pos_hint(&mut self, pos_hint: state::PosHint) { self.pos_hint = pos_hint }
+    fn set_pos_hint(&mut self, pos_hint: state::PosHint) {
+        self.pos_hint = pos_hint;
+        self.changed = true;
+    }
 
     fn get_pos_hint(&self) -> &state::PosHint { &self.pos_hint }
 
-    fn set_size(&mut self, size: state::Size) { self.size = size }
+    fn set_auto_scale(&mut self, auto_scale: state::AutoScale) {
+        self.auto_scale = auto_scale;
+        self.changed = true;
+    }
 
-    fn get_size(&self) -> &state::Size { &self.size  }
+    fn get_auto_scale(&self) -> &state::AutoScale { &self.auto_scale }
+
+    fn set_size(&mut self, size: state::Size) {
+        self.size = size;
+        self.changed = true;
+    }
+
+    fn get_size(&self) -> &state::Size {
+        &self.size
+    }
 
     fn set_position(&mut self, position: state::Coordinates) {
         self.position = position;
@@ -146,19 +160,31 @@ impl state::GenericState for DropdownState {
 
     fn get_vertical_alignment(&self) -> state::VerticalAlignment { self.valign }
 
-    fn set_padding(&mut self, padding: state::Padding) { self.padding = padding }
+    fn set_padding(&mut self, padding: state::Padding) {
+        self.padding = padding;
+        self.changed = true;
+    }
 
     fn get_padding(&self) -> &state::Padding { &self.padding }
 
     fn has_border(&self) -> bool { self.border }
 
-    fn set_border(&mut self, enabled: bool) { self.border = enabled }
+    fn set_border(&mut self, enabled: bool) {
+        self.border = enabled;
+        self.changed = true;
+    }
 
-    fn set_border_config(&mut self, config: state::BorderConfig) { self.border_config = config }
+    fn set_border_config(&mut self, config: state::BorderConfig) {
+        self.border_config = config;
+        self.changed = true;
+    }
 
     fn get_border_config(&self) -> &state::BorderConfig { &self.border_config  }
 
-    fn set_colors(&mut self, config: state::ColorConfig) { self.colors = config }
+    fn set_colors(&mut self, config: state::ColorConfig) {
+        self.colors = config;
+        self.changed = true;
+    }
 
     fn get_colors(&self) -> &state::ColorConfig { &self.colors }
 
@@ -185,7 +211,9 @@ impl DropdownState {
 
     pub fn get_choice(&self) -> String { self.choice.clone() }
 
-    pub fn set_options(&mut self, options: Vec<String>) { self.options = options }
+    pub fn set_options(&mut self, options: Vec<String>) {
+        self.options = options
+    }
 
     pub fn get_options(&self) -> Vec<String> { self.options.clone() }
 
@@ -205,6 +233,11 @@ impl DropdownState {
 
     pub fn set_dropped_down(&mut self, dropped_down: bool) {
         self.dropped_down = dropped_down;
+        if dropped_down {
+            self.set_effective_height(self.total_options());
+        } else {
+            self.set_effective_height(1);
+        }
         self.changed = true;
     }
 

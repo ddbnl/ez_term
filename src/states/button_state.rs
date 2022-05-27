@@ -88,21 +88,33 @@ impl state::GenericState for ButtonState {
 
     fn get_changed(&self) -> bool { self.changed }
 
-    fn set_size_hint(&mut self, size_hint: state::SizeHint) { self.size_hint = size_hint }
+    fn set_size_hint(&mut self, size_hint: state::SizeHint) {
+        self.size_hint = size_hint;
+        self.changed = true;
+    }
 
     fn get_size_hint(&self) -> &state::SizeHint { &self.size_hint }
 
-    fn set_pos_hint(&mut self, pos_hint: state::PosHint) { self.pos_hint = pos_hint }
+    fn set_pos_hint(&mut self, pos_hint: state::PosHint) {
+        self.pos_hint = pos_hint;
+        self.changed = true;
+    }
 
     fn get_pos_hint(&self) -> &state::PosHint { &self.pos_hint }
 
-    fn set_auto_scale(&mut self, auto_scale: state::AutoScale) { self.auto_scale = auto_scale }
+    fn set_auto_scale(&mut self, auto_scale: state::AutoScale) {
+        self.auto_scale = auto_scale;
+        self.changed = true;
+    }
 
     fn get_auto_scale(&self) -> &state::AutoScale { &self.auto_scale }
 
-    fn set_size(&mut self, size: state::Size) { self.size = size }
+    fn set_size(&mut self, size: state::Size) {
+        self.size = size;
+        self.changed = true;
+    }
 
-    fn get_size(&self) -> &state::Size { &self.size  }
+    fn get_size(&self) -> &state::Size { &self.size }
 
     fn set_position(&mut self, position: state::Coordinates) {
         self.position = position;
@@ -129,19 +141,31 @@ impl state::GenericState for ButtonState {
 
     fn get_vertical_alignment(&self) -> state::VerticalAlignment { self.valign }
 
-    fn set_padding(&mut self, padding: state::Padding) { self.padding = padding }
+    fn set_padding(&mut self, padding: state::Padding) {
+        self.padding = padding;
+        self.changed = true;
+    }
 
     fn get_padding(&self) -> &state::Padding { &self.padding }
 
     fn has_border(&self) -> bool { true }
 
-    fn set_border(&mut self, enabled: bool) { self.border = enabled }
+    fn set_border(&mut self, enabled: bool) {
+        self.border = enabled;
+        self.changed = true;
+    }
 
-    fn set_border_config(&mut self, config: state::BorderConfig) { self.border_config = config }
+    fn set_border_config(&mut self, config: state::BorderConfig) {
+        self.border_config = config;
+        self.changed = true;
+    }
 
     fn get_border_config(&self) -> &state::BorderConfig { &self.border_config  }
 
-    fn set_colors(&mut self, config: state::ColorConfig) { self.colors = config }
+    fn set_colors(&mut self, config: state::ColorConfig) {
+        self.colors = config;
+        self.changed = true;
+    }
 
     fn get_colors(&self) -> &state::ColorConfig { &self.colors }
 

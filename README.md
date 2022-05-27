@@ -100,15 +100,17 @@ Currently supports the following:
   - Radio buttons (mutually exclusive groups of switches)
   - Dropdowns (list of values from which one can be chosen)
   - Canvases (load content from text file or can be painted manually)
-  - Colors and borders for widgets.
-- Widget placement:
+- Widget features:
   - Size hints
   - Position hints
   - Padding
   - Vertical/horizontal alignment
   - Auto scaling for most widgets (adjust widget size to actual content minimizing size)
+  - Colors and borders.
+  - Resize if terminal resizes
 - Callbacks:
   - On keyboard enter
   - On left/right click
   - On value change
+  - On press (both keyboard enter and left mouse click)
   

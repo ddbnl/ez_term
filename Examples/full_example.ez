@@ -26,7 +26,6 @@
                     fg_color: Magenta
                     bg_color: Black
                     auto_scale: true, true
-                    size_hint: None, None
                     halign: center
                 - Layout: layout1_input_box_1
                     mode: box
@@ -35,7 +34,7 @@
                     auto_scale: true, true
                     border_fg_color: dark_cyan
                     - Label: layout1_input_description
-                        text: This is a small text input. It's content is bigger than its' size. It allows us to test views. Try selecting it and pressing left and right button to move through the text.
+                        text: This is a small text input. It's content is bigger than its' size. It allows us to test views. Try selecting it and pressing left and right button to move through the text:
                         auto_scale: true, true
                     - TextInput: layout1_input
                         size_hint_x: None
@@ -51,13 +50,16 @@
                     auto_scale: true, true
                     border_fg_color: dark_cyan
                     - Label: layout1_input_description
-                        text: This is a larger input but it has a maximum length, so we can't fill it all!
+                        text: This is a larger input but it has a maximum length, so we can't fill it all:
                         auto_scale: true, true
+                        padding: 1, 1, 1, 1
                     - TextInput: layout2_large_input
+                        size_hint: 0.9, 1
                         text: sample larger input
                         bg_color: blue
                         max_length: 25
                         selection_order: 3
+                        padding_left: 1
             - Layout: small_box_2
                 mode: box
                 orientation: vertical
@@ -73,53 +75,94 @@
                     auto_scale_width: true
                     halign: center
                     height: 1
-                - Label: layout2_checkbox_title_label
-                    text: Disabled
-                    halign: center
-                    size_hint: None, None
-                - CheckBox: layout2_checkbox
-                    selection_order: 4
-                    selection_fg_color: red
-                    halign: center
-                    active: False
-                    active_symbol: X
-                    inactive_symbol: -
-                - Layout: layout2_radio_button_box
-                    size_hint_y: None
-                    height: 3
+                - Layout: layout2_checkbox_section_box
                     mode: box
-                    orientation: horizontal
-                    - Label: layout2_radio_title_label
-                        text: option1:
-                        size_hint_x: 0.25
-                        size_hint_y: None
-                        height: 1
-                        valign: middle
-                    - RadioButton: option1
-                        group: test_radios
-                        selection_order: 5
-                        active: True
-                        valign: middle
-                    - RadioButton: option2
-                        group: test_radios
-                        selection_order: 6
-                        valign: middle
-                    - RadioButton: option3
-                        group: test_radios
-                        selection_order: 7
-                        valign: middle
-                - Dropdown: layout2_dropdown
-                    selection_order: 8
-                    allow_none: True
-                    active: option1
-                    options: option1, option2, option3, option4, option5
-                - Label: layout2_dropdown_title_label
-                    text: option1
-                    size_hint_y: None
-                    height: 1
-                    padding_y: 1, 1
+                    orientation: vertical
+                    border: true
+                    auto_scale: true, true
+                    border_fg_color: dark_cyan
+                    - Label: layout2_checkbox_description
+                        text: This is a checkbox: a simple on and off switch. Clicking this one triggers a callback that changes the label to the right of it:
+                        auto_scale: true, true
+                    - Layout: layout2_checkbox_box
+                        mode: box
+                        orientation: horizontal
+                        size_hint: 1, None
+                        auto_scale_height: true
+                        padding_y: 1, 1
+                        - CheckBox: layout2_checkbox
+                            selection_order: 4
+                            active: False
+                            active_symbol: X
+                            fg_color: yellow
+                            inactive_symbol: -
+                            padding_x: 1, 1
+                        - Label: layout2_checkbox_box_label
+                            text: Disabled
+                            auto_scale: true, true
+                            fg_color: red
+                - Layout: layout2_radio_section_box
+                    mode: box
+                    orientation: vertical
+                    border: true
+                    auto_scale: true, true
+                    border_fg_color: dark_cyan
+                    - Label: layout2_radio_description
+                        text: These are radio buttons: a group of mutually exclusive off/on switches, matched to each other by group name. Clicking one of these triggers a callback that changes the label to the right of it:
+                        auto_scale: true, true
+                    - Layout: layout2_radio_button_box
+                        mode: box
+                        orientation: horizontal
+                        size_hint: 1, None
+                        auto_scale_height: true
+                        padding: 1, 1, 1, 1
+                        - RadioButton: option1
+                            group: test_radios
+                            selection_order: 5
+                            active: True
+                            padding_right: 1
+                            fg_color: red
+                        - RadioButton: option2
+                            group: test_radios
+                            selection_order: 6
+                            padding_right: 1
+                            fg_color: green
+                        - RadioButton: option3
+                            group: test_radios
+                            selection_order: 7
+                            fg_color: blue
+                        - Label: layout2_radio_label
+                            text: option1:
+                            auto_scale: true, true
+                            padding_x: 1, 1
+                - Layout: layout2_button_section_box
+                    mode: box
+                    orientation: vertical
+                    border: true
+                    auto_scale: true, true
+                    border_fg_color: dark_cyan
+                    - Label: layout2_button_description
+                        text: This is a button. We've bound a callback to it that increments a number on the label next to it:
+                        auto_scale: true, true
+                    - Layout: layout2_button_box
+                        mode: box
+                        orientation: horizontal
+                        size_hint: 1, None
+                        auto_scale_height: true
+                        padding: 1, 1, 1, 1
+                        - Button: layout2_button
+                            selection_order: 12
+                            text: Click me!
+                            bg_color: red
+                            auto_scale: true, true
+                        - Label: layout2_button_label
+                            text: Clicked: 1 time
+                            auto_scale: true, true
+                            padding_top: 1
+                            padding_left: 1
             - Layout: small_box_3
-                mode: float
+                mode: box
+                orientation: vertical
                 size_hint_x: 1/3
                 border: True
                 border_fg_color: dark_cyan
@@ -132,13 +175,35 @@
                     size_hint: None, None
                     size: 8, 1
                     halign: center
-                - Button: layout3_button
-                    pos_hint: center, middle
-                    selection_order: 12
-                    text: Click me!
-                    bg_color: red
-                    size_hint: 1, None
+                - Layout: layout3_dropdown_section_box
+                    mode: box
+                    orientation: vertical
+                    border: true
                     auto_scale: true, true
+                    border_fg_color: dark_cyan
+                    - Label: layout3_dropdown_description
+                        text: This is a dropdown menu. We can select from a from a list of options. Click to open it and select a value, the label next to it should change through a callback:
+                        auto_scale: true, true
+                    - Layout: layout3_dropdown_box
+                        mode: box
+                        orientation: horizontal
+                        padding_top: 1
+                        auto_scale_height: true
+                        - Dropdown: layout3_dropdown
+                            selection_order: 13
+                            allow_none: True
+                            size_hint_x: none
+                            width: 20
+                            active: option1
+                            options: option1, option2, option3, option4, option5
+                            fg_color: yellow
+                            bg_color: blue
+                        - Label: layout3_dropdown_label
+                            auto_scale: true, true
+                            text: option1
+                            padding_top: 1
+                            padding_left: 1
+
     - Layout: right_box
         mode: box
         orientation: vertical

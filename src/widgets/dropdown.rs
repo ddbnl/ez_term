@@ -326,7 +326,7 @@ impl Dropdown {
         if state.collides(pos) {
             let clicked_row = pos.y - state.absolute_position.y;
             // Check if not click on border
-            if clicked_row != 0 && clicked_row <= self.state.get_size().height {
+            if clicked_row != 0 && clicked_row <= self.state.get_effective_size().height {
                 let choice = self.get_dropped_down_options(state)[clicked_row - 1]
                     .clone();
                 state.set_choice(choice);
@@ -343,7 +343,7 @@ impl Dropdown {
         let hovered_row = pos.y - state.absolute_position.y;
         // Check if not hover on border
         if hovered_row - 1 != state.dropped_down_selected_row &&
-        hovered_row != 0 && hovered_row != self.state.get_size().height + 1 {
+        hovered_row != 0 && hovered_row <= self.get_dropped_down_options(state).len() {
             state.set_dropped_down_selected_row(hovered_row - 1);
         }
     }

@@ -138,8 +138,8 @@ pub fn initialize_view_tree(width: usize, height: usize) -> ViewTree {
 
 /// Check each widget in a state tree for two things:
 /// 1. If the state of the widget in the passed StateTree differs from the current widget state.
-/// In this case the widget state should be updated with the new one, and the widget should be
-/// redrawn.
+/// In this case the widget state should be updated with the new one, and the widget parent
+/// should be redrawn.
 /// 2. If its' state contains a forced redraw. In this case the entire screen will be rewritten,
 /// and as such widgets will not be redrawn individually. Their state will still be updated.
 pub fn update_state_tree(view_tree: &mut ViewTree, state_tree: &mut StateTree,
@@ -159,8 +159,20 @@ pub fn update_state_tree(view_tree: &mut ViewTree, state_tree: &mut StateTree,
                 let widget =
                     root_widget.get_child_by_path_mut(widget_path).unwrap().as_ez_object_mut();
                 widget.update_state(state);
-                widgets_to_redraw.push(widget_path.rsplit_once('/')
-                    .unwrap().0.to_string());
+                if let state::EzState::Dropdown(i) = state {
+                    // Dropdowns are a special case, we don't redraw their parent when they are
+                    // dropped down because they overlap the parent. We don't redraw the parent
+                    // afterwards either because a dropdown forces a global redraw when it retracts.
+                    if state.as_dropdown().dropped_down {
+                        widgets_to_redraw.push(widget.get_full_path());
+                    } else {
+                        widgets_to_redraw.push(widget_path.rsplit_once('/')
+                            .unwrap().0.to_string()); // Redraw parent of changed widget
+                    }
+                } else {
+                    widgets_to_redraw.push(widget_path.rsplit_once('/')
+                        .unwrap().0.to_string()); // Redraw parent of changed widget
+                }
             };
         }
     }
@@ -416,12 +428,9 @@ pub fn align_content_horizontally(mut content: PixelMap, halign: state::Horizont
     let mut offset = 0;
     for i in 0..total_width - content.len() {
         match halign {
-            // We align left by filling out empty space to the right
+            // Widgets are aligned left by default
             state::HorizontalAlignment::Left => {
-                content.push(Vec::new());
-                for _ in 0..content[0].len() {
-                    content.last_mut().unwrap().push(empty_pixel.clone());
-                }
+
             },
             // We align right by filling out empty space from the left
             state::HorizontalAlignment::Right => {
@@ -475,9 +484,8 @@ pub fn align_content_vertically(mut content: PixelMap, valign: state::VerticalAl
     for (i, x) in content.iter_mut().enumerate() {
         for j in 0..total_height - x.len() {
             match valign {
-                // We align top by filling out empty space to the bottom
+                // Widgets are aligned to top by default.
                 state::VerticalAlignment::Top => {
-                    x.push(empty_pixel.clone());
                 },
                 // We align bottom by filling out empty space to the top
                 state::VerticalAlignment::Bottom => {

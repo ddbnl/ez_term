@@ -239,14 +239,14 @@ impl EzObject for Layout {
             }
         }
         if merged_content.is_empty() { return merged_content } // Empty widget
-        // Put padding around content if set
-        merged_content = common::add_padding(
-            merged_content, state.get_padding(),state.get_colors().background,
-            state.get_colors().foreground);
         // Put border around content if border if set
         if state.border {
             merged_content = common::add_border(merged_content, state.get_border_config());
-        }
+}        // Put padding around content if set
+        merged_content = common::add_padding(
+            merged_content, state.get_padding(),state.get_colors().background,
+            state.get_colors().foreground);
+
         merged_content
     }
 }
@@ -769,13 +769,6 @@ impl Layout {
 
         for x in 0..new.len() {
             merged_content.push(new[x].clone());
-            let last = merged_content.last_mut().unwrap();
-            while last.len() < parent_state.get_effective_size().height {
-                last.push(Pixel { symbol: " ".to_string(),
-                    foreground_color: parent_state.get_colors().foreground,
-                    background_color: parent_state.get_colors().background,
-                    underline: false});
-            }
         }
         merged_content
     }

@@ -352,8 +352,8 @@ pub fn load_padding_y_parameter(value: &str) -> Result<state::Padding, Error> {
 pub fn load_full_size_hint_parameter(value: &str) -> Result<state::SizeHint, Error> {
 
     let (x_str, y_str) = value.split_once(',').unwrap();
-    let x = load_size_hint_parameter(x_str).unwrap();
-    let y = load_size_hint_parameter(y_str).unwrap();
+    let x = load_size_hint_parameter(x_str.trim()).unwrap();
+    let y = load_size_hint_parameter(y_str.trim()).unwrap();
     Ok(state::SizeHint::new(x, y))
 }
 
