@@ -3,10 +3,9 @@ use std::fs::File;
 use std::io::prelude::*;
 use std::io::{Error, ErrorKind};
 use crate::common;
-use crate::common::{PixelMap, StateTree};
 use crate::widgets::widget::{Pixel, EzObject, EzWidget};
 use crate::states::label_state::LabelState;
-use crate::states::state::{EzState, GenericState};
+use crate::states::state::{self, GenericState};
 use crate::ez_parser;
 
 pub struct Label {
@@ -46,24 +45,38 @@ impl EzObject for Label {
             "y" => self.state.set_y(parameter_value.trim().parse().unwrap()),
             "pos" => self.state.set_position(
                 ez_parser::load_pos_parameter(parameter_value.trim()).unwrap()),
-            "size_hint_x" => self.state.size_hint_x =
-                ez_parser::load_size_hint_parameter(parameter_value.trim()).unwrap(),
-            "size_hint_y" => self.state.size_hint_y =
-                ez_parser::load_size_hint_parameter(parameter_value.trim()).unwrap(),
+            "size_hint" => self.state.set_size_hint(
+                ez_parser::load_full_size_hint_parameter(parameter_value.trim()).unwrap()),
+            "size_hint_x" => self.state.set_size_hint_x(
+                ez_parser::load_size_hint_parameter(parameter_value.trim()).unwrap()),
+            "size_hint_y" => self.state.set_size_hint_y(
+                ez_parser::load_size_hint_parameter(parameter_value.trim()).unwrap()),
+            "pos_hint" => self.state.set_pos_hint(
+                ez_parser::load_full_pos_hint_parameter(parameter_value.trim()).unwrap()),
             "pos_hint_x" => self.state.set_pos_hint_x(
                 ez_parser::load_pos_hint_x_parameter(parameter_value.trim()).unwrap()),
             "pos_hint_y" => self.state.set_pos_hint_y(
                 ez_parser::load_pos_hint_y_parameter(parameter_value.trim()).unwrap()),
-            "width" => self.state.width = parameter_value.trim().parse().unwrap(),
-            "height" => self.state.height = parameter_value.trim().parse().unwrap(),
+            "size" => self.state.set_size(
+                ez_parser::load_size_parameter(parameter_value.trim()).unwrap()),
+            "width" => self.state.set_width(parameter_value.trim().parse().unwrap()),
+            "height" => self.state.set_height(parameter_value.trim().parse().unwrap()),
+            "auto_scale" => self.state.set_auto_scale(ez_parser::load_full_auto_scale_parameter(
+                parameter_value.trim())?),
             "auto_scale_width" =>
                 self.state.set_auto_scale_width(ez_parser::load_bool_parameter(parameter_value.trim())?),
             "auto_scale_height" =>
                 self.state.set_auto_scale_height(ez_parser::load_bool_parameter(parameter_value.trim())?),
-            "padding_top" => self.state.padding_top = parameter_value.trim().parse().unwrap(),
-            "padding_bottom" => self.state.padding_bottom = parameter_value.trim().parse().unwrap(),
-            "padding_left" => self.state.padding_left = parameter_value.trim().parse().unwrap(),
-            "padding_right" => self.state.padding_right = parameter_value.trim().parse().unwrap(),
+            "padding" => self.state.set_padding(ez_parser::load_full_padding_parameter(
+                parameter_value.trim())?),
+            "padding_x" => self.state.set_padding(ez_parser::load_padding_x_parameter(
+                parameter_value.trim())?),
+            "padding_y" => self.state.set_padding(ez_parser::load_padding_y_parameter(
+                parameter_value.trim())?),
+            "padding_top" => self.state.set_padding_top(parameter_value.trim().parse().unwrap()),
+            "padding_bottom" => self.state.set_padding_bottom(parameter_value.trim().parse().unwrap()),
+            "padding_left" => self.state.set_padding_left(parameter_value.trim().parse().unwrap()),
+            "padding_right" => self.state.set_padding_right(parameter_value.trim().parse().unwrap()),
             "halign" =>
                 self.state.halign =  ez_parser::load_halign_parameter(parameter_value.trim()).unwrap(),
             "valign" =>
@@ -115,16 +128,16 @@ impl EzObject for Label {
         self.path.clone()
     }
 
-    fn update_state(&mut self, new_state: &EzState) {
+    fn update_state(&mut self, new_state: &state::EzState) {
         let state = new_state.as_label();
         self.state = state.clone();
         self.state.changed = false;
         self.state.force_redraw = false;
     }
 
-    fn get_state(&self) -> EzState { EzState::Label(self.state.clone()) }
+    fn get_state(&self) -> state::EzState { state::EzState::Label(self.state.clone()) }
 
-    fn get_contents(&self, state_tree: &mut StateTree) -> PixelMap {
+    fn get_contents(&self, state_tree: &mut common::StateTree) -> common::PixelMap {
 
         let state = state_tree
             .get_mut(&self.get_full_path()).unwrap().as_label_mut();
@@ -140,29 +153,29 @@ impl EzObject for Label {
         }
 
 
-        let content_lines = common::wrap_text(text, state.get_effective_width());
+        let content_lines = common::wrap_text(text, state.get_effective_size().width);
         // If user wants to autoscale width we set width to the longest line
-        if state.get_auto_scale_width() {
+        if state.get_auto_scale().width {
             let longest_line = content_lines.iter().map(|x| x.len()).max();
             let auto_scale_width =
                 if let Some(i) = longest_line { i } else { 0 };
-            if auto_scale_width < state.get_effective_width() {
+            if auto_scale_width < state.get_effective_size().width {
                 state.set_effective_width(auto_scale_width);
             }
         }
         // If user wants to autoscale height we set height to the amount of lines we generated
-        if state.get_auto_scale_height() {
+        if state.get_auto_scale().height {
             let auto_scale_height = content_lines.len();
-            if auto_scale_height < state.get_effective_height() {
+            if auto_scale_height < state.get_effective_size().height {
                 state.set_effective_height(auto_scale_height);
             }
         }
 
         // Now we'll create the actual PixelMap using the lines we've created by wrapping the text
         let mut contents = Vec::new();
-        for x in 0..state.get_effective_width() {
+        for x in 0..state.get_effective_size().width {
             let mut new_y = Vec::new();
-            for y in 0..state.get_effective_height() {
+            for y in 0..state.get_effective_size().height {
                 if y < content_lines.len() && x < content_lines[y].len() {
                     new_y.push(Pixel {
                         symbol: content_lines[y][x..x+1].to_string(),
@@ -188,9 +201,8 @@ impl EzObject for Label {
         let parent_colors = state_tree.get(self.get_full_path()
             .rsplit_once('/').unwrap().0).unwrap().as_generic().get_colors();
         contents = common::add_padding(
-            contents, state.get_padding_top(), state.get_padding_bottom(),
-            state.get_padding_left(), state.get_padding_right(),
-            parent_colors.background,  parent_colors.foreground);
+            contents, state.get_padding(), parent_colors.background,
+            parent_colors.foreground);
         contents
     }
 }

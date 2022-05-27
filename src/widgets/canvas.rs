@@ -5,8 +5,8 @@ use std::fs::File;
 use std::io::prelude::*;
 use crate::widgets::widget::{EzWidget, EzObject, Pixel};
 use crate::states::canvas_state::CanvasState;
-use crate::states::state::{EzState, GenericState};
-use crate::common::{self, PixelMap, StateTree};
+use crate::states::state::{self, GenericState};
+use crate::common;
 use std::io::{Error, ErrorKind};
 use unicode_segmentation::UnicodeSegmentation;
 use crate::ez_parser;
@@ -22,7 +22,7 @@ pub struct CanvasWidget {
     pub from_file: Option<String>,
 
     /// Grid of pixels that will be written to screen for this widget
-    pub contents: PixelMap,
+    pub contents: common::PixelMap,
 
     /// Runtime state of this widget, see [CanvasState] and [State]
     pub state: CanvasState,
@@ -53,24 +53,38 @@ impl EzObject for CanvasWidget {
             "y" => self.state.set_y(parameter_value.trim().parse().unwrap()),
             "pos" => self.state.set_position(
                 ez_parser::load_pos_parameter(parameter_value.trim()).unwrap()),
-            "size_hint_x" => self.state.size_hint_x =
-                ez_parser::load_size_hint_parameter(parameter_value.trim()).unwrap(),
-            "size_hint_y" => self.state.size_hint_y =
-                ez_parser::load_size_hint_parameter(parameter_value.trim()).unwrap(),
+            "size_hint" => self.state.set_size_hint(
+                ez_parser::load_full_size_hint_parameter(parameter_value.trim()).unwrap()),
+            "size_hint_x" => self.state.set_size_hint_x(
+                ez_parser::load_size_hint_parameter(parameter_value.trim()).unwrap()),
+            "size_hint_y" => self.state.set_size_hint_y(
+                ez_parser::load_size_hint_parameter(parameter_value.trim()).unwrap()),
+            "pos_hint" => self.state.set_pos_hint(
+                ez_parser::load_full_pos_hint_parameter(parameter_value.trim()).unwrap()),
             "pos_hint_x" => self.state.set_pos_hint_x(
                 ez_parser::load_pos_hint_x_parameter(parameter_value.trim()).unwrap()),
             "pos_hint_y" => self.state.set_pos_hint_y(
                 ez_parser::load_pos_hint_y_parameter(parameter_value.trim()).unwrap()),
-            "width" => self.state.width = parameter_value.trim().parse().unwrap(),
-            "height" => self.state.height = parameter_value.trim().parse().unwrap(),
+            "size" => self.state.set_size(
+                ez_parser::load_size_parameter(parameter_value.trim()).unwrap()),
+            "width" => self.state.set_width(parameter_value.trim().parse().unwrap()),
+            "height" => self.state.set_height(parameter_value.trim().parse().unwrap()),
+            "auto_scale" => self.state.set_auto_scale(ez_parser::load_full_auto_scale_parameter(
+                parameter_value.trim())?),
             "auto_scale_width" =>
                 self.state.set_auto_scale_width(ez_parser::load_bool_parameter(parameter_value.trim())?),
             "auto_scale_height" =>
                 self.state.set_auto_scale_height(ez_parser::load_bool_parameter(parameter_value.trim())?),
-            "padding_top" => self.state.padding_top = parameter_value.trim().parse().unwrap(),
-            "padding_bottom" => self.state.padding_bottom = parameter_value.trim().parse().unwrap(),
-            "padding_left" => self.state.padding_left = parameter_value.trim().parse().unwrap(),
-            "padding_right" => self.state.padding_right = parameter_value.trim().parse().unwrap(),
+            "padding" => self.state.set_padding(ez_parser::load_full_padding_parameter(
+                parameter_value.trim())?),
+            "padding_x" => self.state.set_padding(ez_parser::load_padding_x_parameter(
+                parameter_value.trim())?),
+            "padding_y" => self.state.set_padding(ez_parser::load_padding_y_parameter(
+                parameter_value.trim())?),
+            "padding_top" => self.state.set_padding_top(parameter_value.trim().parse().unwrap()),
+            "padding_bottom" => self.state.set_padding_bottom(parameter_value.trim().parse().unwrap()),
+            "padding_left" => self.state.set_padding_left(parameter_value.trim().parse().unwrap()),
+            "padding_right" => self.state.set_padding_right(parameter_value.trim().parse().unwrap()),
             "halign" =>
                 self.state.halign =  ez_parser::load_halign_parameter(parameter_value.trim()).unwrap(),
             "valign" =>
@@ -112,7 +126,7 @@ impl EzObject for CanvasWidget {
 
     fn get_full_path(&self) -> String { self.path.clone() }
 
-    fn update_state(&mut self, new_state: &EzState) {
+    fn update_state(&mut self, new_state: &state::EzState) {
 
         let state = new_state.as_canvas();
         self.state = state.clone();
@@ -120,22 +134,22 @@ impl EzObject for CanvasWidget {
         self.state.force_redraw = false;
     }
 
-    fn get_state(&self) -> EzState { EzState::CanvasWidget(self.state.clone()) }
+    fn get_state(&self) -> state::EzState { state::EzState::CanvasWidget(self.state.clone()) }
 
     /// Set the content of this Widget. You must manually fill a [PixelMap] of the same
     /// [height] and [width] as this widget and pass it here.
-    fn set_contents(&mut self, contents: PixelMap) {
+    fn set_contents(&mut self, contents: common::PixelMap) {
        let mut valid_contents = Vec::new();
-       for x in 0..self.state.width as usize {
+       for x in 0..self.state.get_size().width as usize {
            valid_contents.push(Vec::new());
-           for y in 0..self.state.height as usize {
+           for y in 0..self.state.get_size().height as usize {
                valid_contents[x].push(contents[x][y].clone())
            }
        }
        self.contents = valid_contents
     }
 
-    fn get_contents(&self, state_tree: &mut StateTree) -> PixelMap {
+    fn get_contents(&self, state_tree: &mut common::StateTree) -> common::PixelMap {
 
         let state = state_tree
             .get_mut(&self.get_full_path()).unwrap().as_canvas_mut();
@@ -148,25 +162,25 @@ impl EzObject for CanvasWidget {
                 .map(|x| x.graphemes(true).rev().collect())
                 .collect();
 
-            if state.get_auto_scale_width() {
+            if state.get_auto_scale().width {
                 let longest_line = lines.iter().map(|x| x.chars().count()).max();
                 let auto_scale_width =
                     if let Some(i) = longest_line { i } else { 0 };
-                if auto_scale_width < state.get_effective_width() {
+                if auto_scale_width < state.get_effective_size().width {
                     state.set_effective_width(auto_scale_width);
                 }
             }
-            if state.get_auto_scale_height() {
+            if state.get_auto_scale().height {
                 let auto_scale_height = lines.len();
-                if auto_scale_height < state.get_effective_height() {
+                if auto_scale_height < state.get_effective_size().height {
                     state.set_effective_height(auto_scale_height);
                 }
             }
 
-            let mut widget_content = PixelMap::new();
-            for x in 0..state.get_effective_width() {
+            let mut widget_content = common::PixelMap::new();
+            for x in 0..state.get_effective_size().width {
                 widget_content.push(Vec::new());
-                for y in 0..state.get_effective_height() {
+                for y in 0..state.get_effective_size().height {
                     if y < lines.len() && !lines[y].is_empty() {
                         widget_content[x].push(Pixel {
                             symbol: lines[y].pop().unwrap().to_string(),
@@ -193,9 +207,8 @@ impl EzObject for CanvasWidget {
         let parent_colors = state_tree.get(self.get_full_path()
             .rsplit_once('/').unwrap().0).unwrap().as_generic().get_colors();
         contents = common::add_padding(
-            contents, state.get_padding_top(), state.get_padding_bottom(),
-            state.get_padding_left(), state.get_padding_right(),
-            parent_colors.background,  parent_colors.foreground);
+            contents, state.get_padding(),parent_colors.background,
+            parent_colors.foreground);
         contents
     }
 }

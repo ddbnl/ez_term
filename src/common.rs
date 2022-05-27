@@ -7,8 +7,7 @@ use std::collections::HashMap;
 use crossterm::event::KeyCode;
 use crate::scheduler::Scheduler;
 use crate::widgets::layout::Layout;
-use crate::states::state::{HorizontalAlignment, EzState, VerticalAlignment, BorderConfig,
-                           Coordinates};
+use crate::states::state::{self, Padding};
 use crate::widgets::widget::{EzWidget, EzObjects, Pixel, EzObject};
 
 
@@ -32,7 +31,7 @@ pub type ViewTree = Vec<Vec<StyledContent<String>>>;
 /// widget, such as the text of a label, or whether a checkbox is currently checked. Callbacks
 /// receive a mutable reference to the widget state and can change what they need. Then after each
 /// frame the updated StateTree is diffed with the old one, and only changed widgets are redrawn.
-pub type StateTree = HashMap<String, EzState>;
+pub type StateTree = HashMap<String, state::EzState>;
 
 /// ## Widget tree:
 /// A read-only list of all widgets, passed to callbacks. Can be used to access static information
@@ -49,7 +48,7 @@ pub type KeyboardCallbackFunction = fn(EzContext, key: KeyCode);
 /// ## Mouse callback function:
 /// This is used for binding mouse event callbacks to widgets, meaning that any callback functions
 /// user makes should use this signature.
-pub type MouseCallbackFunction = fn(EzContext, mouse_pos: Coordinates);
+pub type MouseCallbackFunction = fn(EzContext, mouse_pos: state::Coordinates);
 
 /// ## Generic Ez function:
 /// Used for callbacks and scheduled tasks that don't require special parameter such as KeyCodes
@@ -90,11 +89,11 @@ impl<'a, 'b , 'c, 'd> EzContext<'a, 'b , 'c, 'd> {
 }
 
 /// Find a widget by a screen position coordinate. Used e.g. by mouse event handlers.
-pub fn get_widget_by_position<'a>(pos: Coordinates, widget_tree: &'a WidgetTree,
+pub fn get_widget_by_position<'a>(pos: state::Coordinates, widget_tree: &'a WidgetTree,
                                   state_tree: &StateTree) -> Option<&'a dyn EzWidget> {
 
     for (widget_path, state) in state_tree {
-        if let EzState::Layout(_) = state { continue }
+        if let state::EzState::Layout(_) = state { continue }
         if state.as_generic().collides(pos) {
             return Some(widget_tree.get(widget_path).unwrap().as_ez_widget())
         }
@@ -105,7 +104,7 @@ pub fn get_widget_by_position<'a>(pos: Coordinates, widget_tree: &'a WidgetTree,
 
 /// Write content to screen. Only writes differences between the passed view tree (current content)
 /// and passed content (new content). The view tree is updated when changes are made.
-pub fn write_to_screen(base_position: Coordinates, content: PixelMap, view_tree: &mut ViewTree) {
+pub fn write_to_screen(base_position: state::Coordinates, content: PixelMap, view_tree: &mut ViewTree) {
     stdout().execute(cursor::SavePosition).unwrap();
     for x in 0..content.len() {
         for y in 0..content[x].len() {
@@ -130,7 +129,7 @@ pub fn initialize_view_tree(width: usize, height: usize) -> ViewTree {
     for x in 0..width {
         view_tree.push(Vec::new());
         for _ in 0..height {
-            view_tree[x].push(Pixel::from_symbol("".to_string()).get_pixel())
+            view_tree[x].push(Pixel::default().get_pixel())
         }
     }
     view_tree
@@ -312,21 +311,21 @@ pub fn find_previous_selection(current_selection: usize, widget_tree: &WidgetTre
 
 
 /// Add a border around a PixelMap.
-pub fn add_border(mut content: PixelMap, config: &BorderConfig) -> PixelMap {
+pub fn add_border(mut content: PixelMap, config: &state::BorderConfig) -> PixelMap {
     if content.is_empty() { return content }
     // Create border elements
-    let horizontal_border = Pixel{ symbol: config.horizontal_symbol.clone(),
-        background_color: config.bg_color, foreground_color: config.fg_color, underline: false};
-    let vertical_border = Pixel{ symbol: config.vertical_symbol.clone(),
-        background_color: config.bg_color, foreground_color: config.fg_color, underline: false};
-    let top_left_border = Pixel{ symbol:config.top_left_symbol.clone(),
-        background_color: config.bg_color, foreground_color: config.fg_color, underline: false};
-    let top_right_border = Pixel{ symbol: config.top_right_symbol.clone(),
-        background_color: config.bg_color, foreground_color: config.fg_color, underline: false};
-    let bottom_left_border = Pixel{ symbol: config.bottom_left_symbol.clone(),
-        background_color: config.bg_color, foreground_color: config.fg_color, underline: false};
-    let bottom_right_border = Pixel{ symbol: config.bottom_right_symbol.clone(),
-        background_color: config.bg_color, foreground_color: config.fg_color, underline: false};
+    let horizontal_border = Pixel::new(config.horizontal_symbol.clone(),
+                                      config.fg_color, config.bg_color);
+    let vertical_border = Pixel::new(config.vertical_symbol.clone(),
+                                    config.fg_color, config.bg_color);
+    let top_left_border = Pixel::new(config.top_left_symbol.clone(),
+                                    config.fg_color, config.bg_color);
+    let top_right_border = Pixel::new(config.top_right_symbol.clone(),
+                                     config.fg_color, config.bg_color);
+    let bottom_left_border = Pixel::new(config.bottom_left_symbol.clone(),
+                                       config.fg_color, config.bg_color);
+    let bottom_right_border = Pixel::new(config.bottom_right_symbol.clone(),
+                                        config.fg_color, config.bg_color);
     // Create horizontal borders
     for x in 0..content.len() {
         let mut new_x = vec!(horizontal_border.clone());
@@ -360,33 +359,36 @@ pub fn add_border(mut content: PixelMap, config: &BorderConfig) -> PixelMap {
 
 
 /// Add padding around a PixelMap.
-pub fn add_padding(mut content: PixelMap, top: usize, bottom: usize, left: usize, right: usize,
-                  bg_color: Color, fg_color: Color) -> PixelMap {
+pub fn add_padding(mut content: PixelMap, padding: &Padding, bg_color: Color, fg_color: Color)
+    -> PixelMap {
 
-    let padding_pixel = Pixel{ symbol: " ".to_string(), background_color: bg_color,
-        foreground_color: fg_color, underline: false};
+    if content.is_empty() {
+        return content
+    }
+    let padding_pixel = Pixel::new(" ".to_string(), fg_color,
+                                   bg_color);
 
     // Create vertical padding
     let mut vertical_padding = Vec::new();
     for _ in 0..content[0].len() {
         vertical_padding.push(padding_pixel.clone());
     }
-    for _ in 0..left {
+    for _ in 0..padding.left {
         content.insert(0, vertical_padding.clone());
     }
-    for _ in 0..right {
+    for _ in 0..padding.right {
         content.push(vertical_padding.clone());
     }
-    if top != 0 {
+    if padding.top != 0 {
         for x in content.iter_mut() {
-            for _ in 0..top {
+            for _ in 0..padding.top {
                 x.insert(0, padding_pixel.clone());
             }
         }
     }
-    if bottom != 0 {
+    if padding.bottom != 0 {
         for x in content.iter_mut() {
-            for _ in 0..bottom {
+            for _ in 0..padding.bottom {
                 x.push(padding_pixel.clone());
             }
         }
@@ -400,12 +402,12 @@ pub fn add_padding(mut content: PixelMap, top: usize, bottom: usize, left: usize
 ///
 /// XXX...
 ///
-/// With halign [HorizontalAlignment::Middle] and total width 5 would return:
+/// With halign [state::HorizontalAlignment::Middle] and total width 5 would return:
 ///
 /// .XXX.
 ///
 /// With offset 1.
-pub fn align_content_horizontally(mut content: PixelMap, halign: HorizontalAlignment,
+pub fn align_content_horizontally(mut content: PixelMap, halign: state::HorizontalAlignment,
                                   total_width: usize, fg_color: Color, bg_color: Color)
                                   -> (PixelMap, usize) {
 
@@ -415,14 +417,14 @@ pub fn align_content_horizontally(mut content: PixelMap, halign: HorizontalAlign
     for i in 0..total_width - content.len() {
         match halign {
             // We align left by filling out empty space to the right
-            HorizontalAlignment::Left => {
+            state::HorizontalAlignment::Left => {
                 content.push(Vec::new());
                 for _ in 0..content[0].len() {
                     content.last_mut().unwrap().push(empty_pixel.clone());
                 }
             },
             // We align right by filling out empty space from the left
-            HorizontalAlignment::Right => {
+            state::HorizontalAlignment::Right => {
                 content.insert(0, Vec::new());
                 offset += 1;
                 for _ in 0..content.last().unwrap().len() {
@@ -430,7 +432,7 @@ pub fn align_content_horizontally(mut content: PixelMap, halign: HorizontalAlign
                 }
             },
             // We align in the center by filling out empty space alternating left and right
-            HorizontalAlignment::Center => {
+            state::HorizontalAlignment::Center => {
                 if i % 2 == 0 {
                     content.push(Vec::new());
                     for _ in 0..content[0].len() {
@@ -455,14 +457,14 @@ pub fn align_content_horizontally(mut content: PixelMap, halign: HorizontalAlign
     /// ```
     /// XXX
     /// ```
-    /// With valign [VerticalAlignment::Middle] and total height 3 would return:
+    /// With valign [state::VerticalAlignment::Middle] and total height 3 would return:
     /// ```
     ///
     /// XXX
     ///
     /// ````
     /// With offset 1.
-pub fn align_content_vertically(mut content: PixelMap, valign: VerticalAlignment,
+pub fn align_content_vertically(mut content: PixelMap, valign: state::VerticalAlignment,
                                 total_height: usize, fg_color: Color, bg_color: Color)
                                 -> (PixelMap, usize){
 
@@ -474,18 +476,18 @@ pub fn align_content_vertically(mut content: PixelMap, valign: VerticalAlignment
         for j in 0..total_height - x.len() {
             match valign {
                 // We align top by filling out empty space to the bottom
-                VerticalAlignment::Top => {
+                state::VerticalAlignment::Top => {
                     x.push(empty_pixel.clone());
                 },
                 // We align bottom by filling out empty space to the top
-                VerticalAlignment::Bottom => {
+                state::VerticalAlignment::Bottom => {
                     x.insert(0, empty_pixel.clone());
                     if i == 0 {
                         offset += 1;
                     }
                 },
                 // We align in the middle by filling out empty space alternating top and bottom
-                VerticalAlignment::Middle => {
+                state::VerticalAlignment::Middle => {
                     if j % 2 == 0 {
                         x.push(empty_pixel.clone());
                     } else {

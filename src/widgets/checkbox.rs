@@ -3,11 +3,10 @@
 use std::collections::HashMap;
 use std::io::{Error, ErrorKind};
 use crossterm::event::{KeyCode};
-use crate::common::{self, KeyboardCallbackFunction, StateTree, PixelMap,
-                    GenericEzFunction, MouseCallbackFunction, EzContext, KeyMap};
+use crate::common;
 use crate::widgets::widget::{EzWidget, Pixel, EzObject};
 use crate::states::checkbox_state::CheckboxState;
-use crate::states::state::{EzState, SelectableState, GenericState, Coordinates};
+use crate::states::state::{self, GenericState, SelectableState};
 use crate::ez_parser;
 
 pub struct Checkbox {
@@ -30,25 +29,25 @@ pub struct Checkbox {
     /// Optional function to call when the value of this widget changes, see
     /// [ValueChangeCallbackFunction] for the callback fn type, or [set_bind_on_value_change] for
     /// examples.
-    pub bound_on_value_change: Option<GenericEzFunction>,
+    pub bound_on_value_change: Option<common::GenericEzFunction>,
     
     /// Optional function to call when this widget is selected via keyboard up/down or mouse hover,
     /// see [set_bind_on_select] for examples.
-    pub bound_on_select: Option<fn(context: EzContext, mouse_position: Option<Coordinates>)>,
+    pub bound_on_select: Option<fn(context: common::EzContext, mouse_position: Option<state::Coordinates>)>,
 
     /// Optional function to call when this widget is right clicked, see
     /// [MouseCallbackFunction] for the callback fn type, or [set_right_left_click] for
     /// examples.
-    pub bound_on_deselect: Option<GenericEzFunction>,
+    pub bound_on_deselect: Option<common::GenericEzFunction>,
     
     /// Optional function to call when this widget is right clicked, see
     /// [MouseCallbackFunction] for the callback fn type, or [set_bind_right_click] for
     /// examples.
-    pub bound_right_mouse_click: Option<MouseCallbackFunction>,
+    pub bound_right_mouse_click: Option<common::MouseCallbackFunction>,
 
     /// A Key to callback function lookup used to store keybinds for this widget. See
     /// [KeyboardCallbackFunction] type for callback function signature.
-    pub keymap: KeyMap,
+    pub keymap: common::KeyMap,
 
     /// Runtime state of this widget, see [CheckboxState] and [State]
     pub state: CheckboxState,
@@ -83,14 +82,22 @@ impl EzObject for Checkbox {
             "y" => self.state.set_y(parameter_value.trim().parse().unwrap()),
             "pos" => self.state.set_position(
                 ez_parser::load_pos_parameter(parameter_value.trim()).unwrap()),
+            "pos_hint" => self.state.set_pos_hint(
+                ez_parser::load_full_pos_hint_parameter(parameter_value.trim()).unwrap()),
             "pos_hint_x" => self.state.set_pos_hint_x(
                 ez_parser::load_pos_hint_x_parameter(parameter_value.trim()).unwrap()),
             "pos_hint_y" => self.state.set_pos_hint_y(
                 ez_parser::load_pos_hint_y_parameter(parameter_value.trim()).unwrap()),
-            "padding_top" => self.state.padding_top = parameter_value.trim().parse().unwrap(),
-            "padding_bottom" => self.state.padding_bottom = parameter_value.trim().parse().unwrap(),
-            "padding_left" => self.state.padding_left = parameter_value.trim().parse().unwrap(),
-            "padding_right" => self.state.padding_right = parameter_value.trim().parse().unwrap(),
+            "padding" => self.state.set_padding(ez_parser::load_full_padding_parameter(
+                parameter_value.trim())?),
+            "padding_x" => self.state.set_padding(ez_parser::load_padding_x_parameter(
+                parameter_value.trim())?),
+            "padding_y" => self.state.set_padding(ez_parser::load_padding_y_parameter(
+                parameter_value.trim())?),
+            "padding_top" => self.state.set_padding_top(parameter_value.trim().parse().unwrap()),
+            "padding_bottom" => self.state.set_padding_bottom(parameter_value.trim().parse().unwrap()),
+            "padding_left" => self.state.set_padding_left(parameter_value.trim().parse().unwrap()),
+            "padding_right" => self.state.set_padding_right(parameter_value.trim().parse().unwrap()),
             "halign" =>
                 self.state.halign =  ez_parser::load_halign_parameter(parameter_value.trim()).unwrap(),
             "valign" =>
@@ -155,16 +162,16 @@ impl EzObject for Checkbox {
         self.path.clone()
     }
 
-    fn update_state(&mut self, new_state: &EzState) {
+    fn update_state(&mut self, new_state: &state::EzState) {
         let state = new_state.as_checkbox();
         self.state = state.clone();
         self.state.changed = false;
         self.state.force_redraw = false;
     }
 
-    fn get_state(&self) -> EzState { EzState::Checkbox(self.state.clone()) }
+    fn get_state(&self) -> state::EzState { state::EzState::Checkbox(self.state.clone()) }
 
-    fn get_contents(&self, state_tree: &mut StateTree) -> PixelMap {
+    fn get_contents(&self, state_tree: &mut common::StateTree) -> common::PixelMap {
 
         let state = state_tree.get(&self.get_full_path()).unwrap().as_checkbox();
         let active_symbol = { if state.active {self.active_symbol}
@@ -191,9 +198,8 @@ impl EzObject for Checkbox {
         let parent_colors = state_tree.get(self.get_full_path()
             .rsplit_once('/').unwrap().0).unwrap().as_generic().get_colors();
         contents = common::add_padding(
-            contents, state.get_padding_top(), state.get_padding_bottom(),
-            state.get_padding_left(), state.get_padding_right(),
-            parent_colors.background,  parent_colors.foreground);
+            contents, state.get_padding(),parent_colors.background,
+            parent_colors.foreground);
         contents
     }
 
@@ -207,19 +213,19 @@ impl EzWidget for Checkbox {
 
     fn get_selection_order(&self) -> usize { self.selection_order }
 
-    fn get_key_map(&self) -> &KeyMap { &self.keymap }
+    fn get_key_map(&self) -> &common::KeyMap { &self.keymap }
 
-    fn bind_key(&mut self, key: KeyCode, func: KeyboardCallbackFunction) {
+    fn bind_key(&mut self, key: KeyCode, func: common::KeyboardCallbackFunction) {
         self.keymap.insert(key, func);
     }
 
-    fn set_bind_on_value_change(&mut self, func: GenericEzFunction) {
+    fn set_bind_on_value_change(&mut self, func: common::GenericEzFunction) {
         self.bound_on_value_change = Some(func)
     }
 
-    fn get_bind_on_value_change(&self) -> Option<GenericEzFunction> { self.bound_on_value_change }
+    fn get_bind_on_value_change(&self) -> Option<common::GenericEzFunction> { self.bound_on_value_change }
 
-    fn on_left_click(&self, context: EzContext, _position: Coordinates) {
+    fn on_left_click(&self, context: common::EzContext, _position: state::Coordinates) {
         let state = context.state_tree.get_mut(&self.get_full_path()).unwrap()
             .as_checkbox_mut();
         self.toggle(state);
@@ -227,7 +233,7 @@ impl EzWidget for Checkbox {
         self.on_value_change(context);
     }
 
-    fn on_keyboard_enter(&self, context: EzContext) {
+    fn on_keyboard_enter(&self, context: common::EzContext) {
 
         let state = context.state_tree.get_mut(&self.get_full_path()).unwrap()
             .as_checkbox_mut();
@@ -235,17 +241,17 @@ impl EzWidget for Checkbox {
         state.set_selected(true);
         self.on_value_change(context);
     }
-    fn set_bind_right_click(&mut self, func: MouseCallbackFunction) {
+    fn set_bind_right_click(&mut self, func: common::MouseCallbackFunction) {
         self.bound_right_mouse_click = Some(func)
     }
 
-    fn get_bind_right_click(&self) -> Option<MouseCallbackFunction> { self.bound_right_mouse_click }
+    fn get_bind_right_click(&self) -> Option<common::MouseCallbackFunction> { self.bound_right_mouse_click }
 
-    fn set_bind_on_select(&mut self, func: fn(EzContext, Option<Coordinates>)) {
+    fn set_bind_on_select(&mut self, func: fn(common::EzContext, Option<state::Coordinates>)) {
         self.bound_on_select = Some(func);
     }
 
-    fn get_bind_on_select(&self) -> Option<fn(EzContext, Option<Coordinates>)> {
+    fn get_bind_on_select(&self) -> Option<fn(common::EzContext, Option<state::Coordinates>)> {
         self.bound_on_select
     }
 

@@ -1,6 +1,4 @@
-use crate::states::state::{GenericState, SelectableState, VerticalAlignment, HorizontalAlignment,
-                           HorizontalPositionHint, VerticalPositionHint, BorderConfig,
-                           ColorConfig, Coordinates};
+use crate::states::state::{self, SizeHint};
 
 
 /// [State] implementation.
@@ -14,43 +12,40 @@ pub struct CheckboxState {
     pub selected: bool,
 
     /// Position of this widget relative to its' parent [Layout]
-    pub position: Coordinates,
+    pub position: state::Coordinates,
 
     /// Absolute position of this widget on screen. Automatically propagated, do not set manually
-    pub absolute_position: Coordinates,
+    pub absolute_position: state::Coordinates,
 
-    /// Pos hint for x position of this widget
-    pub pos_hint_x: Option<(HorizontalPositionHint, f64)>,
+    /// size of this widget
+    pub size: state::Size,
 
-    /// Pos hint for y position of this widget
-    pub pos_hint_y: Option<(VerticalPositionHint, f64)>,
+    /// Cannot be set, checkbox is always 5,1
+    pub size_hint: SizeHint,
 
-    /// Amount of space to leave between top edge and content
-    pub padding_top: usize,
+    /// Automatically adjust size of widget to content
+    pub auto_scale: state::AutoScale,
 
-    /// Amount of space to leave between bottom edge and content
-    pub padding_bottom: usize,
+    /// Pos hint of this widget
+    pub pos_hint: state::PosHint,
 
-    /// Amount of space to leave between left edge and content
-    pub padding_left: usize,
-
-    /// Amount of space to leave between right edge and content
-    pub padding_right: usize,
+    /// Amount of space to leave between sides of the widget and other widgets
+    pub padding: state::Padding,
 
     /// Horizontal alignment of this widget
-    pub halign: HorizontalAlignment,
+    pub halign: state::HorizontalAlignment,
 
     /// Vertical alignment of this widget
-    pub valign: VerticalAlignment,
+    pub valign: state::VerticalAlignment,
 
     /// Bool representing whether this layout should have a surrounding border
     pub border: bool,
 
     /// [BorderConfig] object that will be used to draw the border if enabled
-    pub border_config: BorderConfig,
+    pub border_config: state::BorderConfig,
 
     /// Object containing colors to be used by this widget in different situations
-    pub colors: ColorConfig,
+    pub colors: state::ColorConfig,
 
     /// Bool representing if state has changed. Triggers widget redraw.
     pub changed: bool,
@@ -63,122 +58,87 @@ pub struct CheckboxState {
 impl Default for CheckboxState {
     fn default() -> Self {
        CheckboxState {
-           position: Coordinates::default(),
-           absolute_position: Coordinates::default(),
-           pos_hint_x: None,
-           pos_hint_y: None,
-           padding_top: 0,
-           padding_bottom: 0,
-           padding_left: 0,
-           padding_right: 0,
-           halign: HorizontalAlignment::Left,
-           valign: VerticalAlignment::Top,
+           position: state::Coordinates::default(),
+           absolute_position: state::Coordinates::default(),
+           size: state::Size::new(5, 1),
+           auto_scale: state::AutoScale::default(),
+           size_hint: SizeHint::new(None, None),
+           pos_hint: state::PosHint::default(),
+           padding: state::Padding::default(),
+           halign: state::HorizontalAlignment::Left,
+           valign: state::VerticalAlignment::Top,
            active: false,
            selected: false,
            border: false,
-           border_config: BorderConfig::default(),
-           colors: ColorConfig::default(),
+           border_config: state::BorderConfig::default(),
+           colors: state::ColorConfig::default(),
            changed: false,
            force_redraw: false
        }
     }
 }
-impl GenericState for CheckboxState {
+impl state::GenericState for CheckboxState {
 
     fn set_changed(&mut self, changed: bool) { self.changed = changed }
 
     fn get_changed(&self) -> bool { self.changed }
 
-    fn get_size_hint_x(&self) -> Option<f64> { None }
+    fn set_size_hint(&mut self, _size_hint: state::SizeHint) { }
 
-    fn get_size_hint_y(&self) -> Option<f64> { None }
-    
-    fn set_pos_hint_x(&mut self, pos_hint: Option<(HorizontalPositionHint, f64)>) {
-        self.pos_hint_x = pos_hint;
-        self.changed = true;
-    }
+    fn get_size_hint(&self) -> &state::SizeHint { &self.size_hint }
 
-    fn get_pos_hint_x(&self) -> &Option<(HorizontalPositionHint, f64)> { &self.pos_hint_x }
+    fn set_pos_hint(&mut self, pos_hint: state::PosHint) { self.pos_hint = pos_hint }
 
-    fn set_pos_hint_y(&mut self, pos_hint: Option<(VerticalPositionHint, f64)>) {
-        self.pos_hint_y = pos_hint;
-        self.changed = true;
-    }
+    fn get_pos_hint(&self) -> &state::PosHint { &self.pos_hint }
 
-    fn get_pos_hint_y(&self) -> &Option<(VerticalPositionHint, f64)> { &self.pos_hint_y }
-    
-    fn set_width(&mut self, _width: usize) { }
+    fn set_auto_scale(&mut self, auto_scale: state::AutoScale) { self.auto_scale = auto_scale }
 
-    fn get_width(&self) -> usize { 5 + self.padding_left + self.padding_top }
+    fn get_auto_scale(&self) -> &state::AutoScale { &self.auto_scale }
 
-    fn set_height(&mut self, _height: usize) { }
+    fn set_size(&mut self, size: state::Size) { self.size = size }
 
-    fn get_height(&self) -> usize { 1 + self.padding_top + self.padding_bottom }
+    fn get_size(&self) -> &state::Size { &self.size  }
 
-    fn set_position(&mut self, position: Coordinates) {
+    fn set_position(&mut self, position: state::Coordinates) {
         self.position = position;
         self.changed = true;
     }
 
-    fn get_position(&self) -> Coordinates { self.position }
+    fn get_position(&self) -> state::Coordinates { self.position }
 
-    fn set_absolute_position(&mut self, pos: Coordinates) { self.absolute_position = pos }
+    fn set_absolute_position(&mut self, pos: state::Coordinates) { self.absolute_position = pos }
 
-    fn get_absolute_position(&self) -> Coordinates { self.absolute_position }
+    fn get_absolute_position(&self) -> state::Coordinates { self.absolute_position }
 
-    fn set_horizontal_alignment(&mut self, alignment: HorizontalAlignment) {
+    fn set_horizontal_alignment(&mut self, alignment: state::HorizontalAlignment) {
         self.halign = alignment;
         self.changed = true;
     }
 
-    fn get_horizontal_alignment(&self) -> HorizontalAlignment { self.halign }
+    fn get_horizontal_alignment(&self) -> state::HorizontalAlignment { self.halign }
 
-    fn set_vertical_alignment(&mut self, alignment: VerticalAlignment) {
+    fn set_vertical_alignment(&mut self, alignment: state::VerticalAlignment) {
         self.valign = alignment;
         self.changed = true;
     }
 
-    fn get_vertical_alignment(&self) -> VerticalAlignment { self.valign }
+    fn get_vertical_alignment(&self) -> state::VerticalAlignment { self.valign }
 
-    fn set_padding_top(&mut self, padding: usize) {
-        self.padding_top = padding;
-        self.changed = true;
-    }
+    fn set_padding(&mut self, padding: state::Padding) { self.padding = padding }
 
-    fn get_padding_top(&self) -> usize { self.padding_top }
-
-    fn set_padding_bottom(&mut self, padding: usize) {
-        self.padding_bottom = padding;
-        self.changed = true;
-    }
-
-    fn get_padding_bottom(&self) -> usize { self.padding_bottom }
-
-    fn set_padding_left(&mut self, padding: usize) {
-        self.padding_left = padding;
-        self.changed = true;
-    }
-
-    fn get_padding_left(&self) -> usize { self.padding_left }
-
-    fn set_padding_right(&mut self, padding: usize) {
-        self.padding_right = padding;
-        self.changed = true;
-    }
-
-    fn get_padding_right(&self) -> usize { self.padding_right }
+    fn get_padding(&self) -> &state::Padding { &self.padding }
 
     fn has_border(&self) -> bool { self.border }
 
     fn set_border(&mut self, enabled: bool) { self.border = enabled }
 
-    fn set_border_config(&mut self, config: BorderConfig) { self.border_config = config }
+    fn set_border_config(&mut self, config: state::BorderConfig) { self.border_config = config }
 
-    fn get_border_config(&self) -> &BorderConfig { &self.border_config  }
+    fn get_border_config(&self) -> &state::BorderConfig { &self.border_config  }
 
-    fn set_colors(&mut self, config: ColorConfig) { self.colors = config }
+    fn set_colors(&mut self, config: state::ColorConfig) { self.colors = config }
 
-    fn get_colors(&self) -> &ColorConfig { &self.colors }
+    fn get_colors(&self) -> &state::ColorConfig { &self.colors }
 
     fn set_force_redraw(&mut self, redraw: bool) {
         self.force_redraw = redraw;
@@ -187,7 +147,7 @@ impl GenericState for CheckboxState {
 
     fn get_force_redraw(&self) -> bool { self.force_redraw }
 }
-impl SelectableState for CheckboxState {
+impl state::SelectableState for CheckboxState {
 
     fn set_selected(&mut self, state: bool) {
         self.selected = state;

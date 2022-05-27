@@ -8,8 +8,7 @@
         size_hint_x: 4/5
         orientation: vertical
         - Canvas: canvas
-            auto_scale_width: true
-            auto_scale_height: true
+            auto_scale: true, true
             from_file: ./Examples/example_art.txt
             halign: center
         - Layout: bottom_box
@@ -26,40 +25,34 @@
                     text: Layout 1:
                     fg_color: Magenta
                     bg_color: Black
-                    auto_scale_height: true
-                    auto_scale_width: true
-                    size_hint_x: None
-                    size_hint_y: None
+                    auto_scale: true, true
+                    size_hint: None, None
                     halign: center
                 - Layout: layout1_input_box_1
                     mode: box
                     orientation: vertical
                     border: true
-                    auto_scale_width: true
-                    auto_scale_height: true
+                    auto_scale: true, true
                     border_fg_color: dark_cyan
                     - Label: layout1_input_description
                         text: This is a small text input. It's content is bigger than its' size. It allows us to test views. Try selecting it and pressing left and right button to move through the text.
-                        auto_scale_width: true
-                        auto_scale_height: true
+                        auto_scale: true, true
                     - TextInput: layout1_input
                         size_hint_x: None
                         width: 20
                         bg_color: blue
                         text: small input to test views
                         selection_order: 2
-                        padding_top: 1
+                        padding: 1, 1, 1, 1
                 - Layout: layout1_input_box_2
                     mode: box
                     orientation: vertical
                     border: true
-                    auto_scale_width: true
-                    auto_scale_height: true
+                    auto_scale: true, true
                     border_fg_color: dark_cyan
                     - Label: layout1_input_description
                         text: This is a larger input but it has a maximum length, so we can't fill it all!
-                        auto_scale_width: true
-                        auto_scale_height: true
+                        auto_scale: true, true
                     - TextInput: layout2_large_input
                         text: sample larger input
                         bg_color: blue
@@ -83,10 +76,7 @@
                 - Label: layout2_checkbox_title_label
                     text: Disabled
                     halign: center
-                    size_hint_x: None
-                    size_hint_y: None
-                    auto_scale_width: true
-                    auto_scale_height: true
+                    size_hint: None, None
                 - CheckBox: layout2_checkbox
                     selection_order: 4
                     selection_fg_color: red
@@ -127,10 +117,9 @@
                     text: option1
                     size_hint_y: None
                     height: 1
-                    padding_top: 1
+                    padding_y: 1, 1
             - Layout: small_box_3
-                mode: box
-                orientation: vertical
+                mode: float
                 size_hint_x: 1/3
                 border: True
                 border_fg_color: dark_cyan
@@ -139,19 +128,17 @@
                     text: Layout 3
                     fg_color: Magenta
                     bg_color: Black
-                    size_hint_y: None
-                    auto_scale_width: true
-                    height: 1
+                    pos_hint: center, top
+                    size_hint: None, None
+                    size: 8, 1
                     halign: center
                 - Button: layout3_button
-                    padding_top: 1
+                    pos_hint: center, middle
                     selection_order: 12
                     text: Click me!
                     bg_color: red
-                    size_hint_x: 1
-                    size_hint_y: None
-                    auto_scale_height: true
-                    auto_scale_width: true
+                    size_hint: 1, None
+                    auto_scale: true, true
     - Layout: right_box
         mode: box
         orientation: vertical

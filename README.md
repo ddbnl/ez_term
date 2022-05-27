@@ -54,38 +54,28 @@ a bit more:
     - Label: my_upper_left_label
         text: hello
         border: True
-        auto_scale_width: true
-        auto_scale_height: true
-        pos_hint_x: left
-        pos_hint_y: top
+        auto_scale: true, true
+        pos_hint: left, top
     - Label: my_middle_label
         text: hello
         border: True
-        auto_scale_width: true
-        auto_scale_height: true
-        pos_hint_x: center
-        pos_hint_y: middle
+        auto_scale: true, true
+        pos_hint: center, middle
     - Label: my_lower_left_label
         text: hello
         border: True
-        auto_scale_width: true
-        auto_scale_height: true
-        pos_hint_x: left
-        pos_hint_y: bottom
+        auto_scale: true, true
+        pos_hint: left, bottom
     - Label: my_upper_right_label
         text: hello
         border: True
-        auto_scale_width: true
-        auto_scale_height: true
-        pos_hint_x: right
-        pos_hint_y: top
+        auto_scale: true, true
+        pos_hint: right, top
     - Label: my_lower_right_label
         text: hello
         border: True
-        auto_scale_width: true
-        auto_scale_height: true
-        pos_hint_x: right
-        pos_hint_y: bottom
+        auto_scale: true, true
+        pos_hint: right, bottom
 ```
 ![img_2.png](img_2.png)
 

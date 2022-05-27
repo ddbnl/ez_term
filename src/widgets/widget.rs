@@ -4,9 +4,8 @@
 use crossterm::style::{Color, StyledContent, Stylize};
 use crossterm::event::{Event, KeyCode};
 use std::io::{Error};
-use crate::common::{self, ViewTree, KeyboardCallbackFunction, PixelMap,
-                    GenericEzFunction, MouseCallbackFunction, EzContext, StateTree, KeyMap};
-use crate::states::state::{EzState, Coordinates};
+use crate::common;
+use crate::states::state::{self};
 use crate::widgets::layout::{Layout};
 use crate::widgets::label::{Label};
 use crate::widgets::button::{Button};
@@ -228,28 +227,28 @@ pub trait EzObject {
     fn get_full_path(&self) -> String;
 
     /// Set a passed state as the current state.
-    fn update_state(&mut self, new_state: &EzState);
+    fn update_state(&mut self, new_state: &state::EzState);
 
     /// Get the State object belonging to this widget.
-    fn get_state(&self) -> EzState;
+    fn get_state(&self) -> state::EzState;
 
     /// Redraw the widget on the screen. Using the view tree, only changed content is written to
     /// improve performance.
-    fn redraw(&self, view_tree: &mut ViewTree, state_tree: &mut StateTree) {
+    fn redraw(&self, view_tree: &mut common::ViewTree, state_tree: &mut common::StateTree) {
         let state = state_tree.get(&self.get_full_path()).unwrap().as_generic();
-        let mut pos = state.get_absolute_position();
+        let pos = state.get_absolute_position();
         let content = self.get_contents(state_tree);
         common::write_to_screen(pos, content, view_tree);
     }
 
     /// Set the content for a widget manually. This is not implemented for most widgets, as they
     /// get their content from their state. E.g. a label gets content from its' current text.
-    fn set_contents(&mut self, _contents: PixelMap) {
+    fn set_contents(&mut self, _contents: common::PixelMap) {
         panic!("Cannot manually set content color for this widget {}", self.get_id()); }
 
     /// Gets the visual content for this widget. Overloaded by each widget module. E.g. a label
     /// gets its' content from its' text, a checkbox from whether it has been checked, etc.
-    fn get_contents(&self, state_tree: &mut StateTree) -> PixelMap;
+    fn get_contents(&self, state_tree: &mut common::StateTree) -> common::PixelMap;
 }
 
 
@@ -285,19 +284,19 @@ pub trait EzWidget: EzObject {
 
     /// Get the key map belonging to a widget. Any keys bound to the widget are in here along with
     /// their callbacks. Key map should be used inside the "handle_event" method of a widget.
-    fn get_key_map(&self) -> &KeyMap {
+    fn get_key_map(&self) -> &common::KeyMap {
         panic!("Widget does not support keymap: {}", self.get_id())
     }
 
     /// Bind a new key to the widget and the callback it should activate. Focussed widgets have
     /// priority consuming events, next are global key binds, and then the selected widget.
-    fn bind_key(&mut self, _key: KeyCode, _func: KeyboardCallbackFunction) {
+    fn bind_key(&mut self, _key: KeyCode, _func: common::KeyboardCallbackFunction) {
     }
 
     /// Optionally consume an event that was passed to this widget. Return true if the event should
     /// be considered consumed. Simply consults the keymap by default, but can be overloaded for
     /// more complex circumstances.
-    fn handle_event(&self, event: Event, context: EzContext) -> bool {
+    fn handle_event(&self, event: Event, context: common::EzContext) -> bool {
         if let Event::Key(key) = event {
             if self.get_key_map().contains_key(&key.code) {
                 let func =
@@ -310,33 +309,33 @@ pub trait EzWidget: EzObject {
     }
 
     /// Set the callback for when the value of a widget changes.
-    fn set_bind_on_value_change(&mut self, _func: GenericEzFunction) {
+    fn set_bind_on_value_change(&mut self, _func: common::GenericEzFunction) {
         panic!("Cannot set on value change bind for: {}", self.get_id())
     }
 
     /// Get the callback for when the value of a widget changes.
-    fn get_bind_on_value_change(&self) -> Option<GenericEzFunction> {None}
+    fn get_bind_on_value_change(&self) -> Option<common::GenericEzFunction> {None}
 
 
     /// Call this function whenever the value of a widget is considered changed. E.g. when a
     /// checkbox is checked. This will active any bound on_value callbacks.
-    fn on_value_change(&self, context: EzContext) {
+    fn on_value_change(&self, context: common::EzContext) {
         if let Some(i) = self.get_bind_on_value_change() {
             i(context);
         }
     }
 
     /// Set the callback for when enter is pressed when this widget is selected or on left click
-    fn set_bind_on_press(&mut self, _func: GenericEzFunction) {
+    fn set_bind_on_press(&mut self, _func: common::GenericEzFunction) {
         panic!("Cannot set on press bind for: {}", self.get_id())
     }
 
     /// Get the callback for when enter is pressed when this widget is selected or on left click
-    fn get_bind_on_press(&self) -> Option<GenericEzFunction> {None}
+    fn get_bind_on_press(&self) -> Option<common::GenericEzFunction> {None}
 
     /// This is called automatically by a global key/mouse bind on enter or left click.
     /// Will activate the 'on_keyboard_enter' callback.
-    fn on_press(&self, context: EzContext) {
+    fn on_press(&self, context: common::EzContext) {
         match self.get_bind_on_press() {
             Some(i) => i(context),
             None => (),
@@ -344,16 +343,16 @@ pub trait EzWidget: EzObject {
     }
 
     /// Set the callback for when this widget is left clicked.
-    fn set_bind_left_click(&mut self, _func: MouseCallbackFunction) {
+    fn set_bind_left_click(&mut self, _func: common::MouseCallbackFunction) {
         panic!("Cannot set on left click bind for: {}", self.get_id())
     }
 
     /// Get the callback for when this widget is left clicked.
-    fn get_bind_left_click(&self) -> Option<MouseCallbackFunction> {None}
+    fn get_bind_left_click(&self) -> Option<common::MouseCallbackFunction> {None}
 
     /// This is called automatically by a global mouse bind on the currently selected widget.
     /// Will activate the 'on_left_click' callback.
-    fn on_left_click(&self, context: EzContext, position: Coordinates) {
+    fn on_left_click(&self, context: common::EzContext, position: state::Coordinates) {
         match self.get_bind_left_click() {
             Some(i) => {
                 i(context, position);
@@ -363,16 +362,16 @@ pub trait EzWidget: EzObject {
     }
 
     /// Set the callback for when enter is pressed when this widget is selected.
-    fn set_bind_keyboard_enter(&mut self, _func: GenericEzFunction) {
+    fn set_bind_keyboard_enter(&mut self, _func: common::GenericEzFunction) {
         panic!("Cannot set on keyboard enter bind for: {}", self.get_id())
     }
 
     /// Get the callback for when enter is pressed when this widget is selected.
-    fn get_bind_keyboard_enter(&self) -> Option<GenericEzFunction> {None}
+    fn get_bind_keyboard_enter(&self) -> Option<common::GenericEzFunction> {None}
 
     /// This is called automatically by a global keybind on the currently selected widget.
     /// Will active the 'on_keyboard_enter' callback.
-    fn on_keyboard_enter(&self, context: EzContext){
+    fn on_keyboard_enter(&self, context: common::EzContext){
         match self.get_bind_keyboard_enter() {
             Some(i) => i(context),
             None => (),
@@ -380,16 +379,16 @@ pub trait EzWidget: EzObject {
     }
 
     /// Set the callback for when this widget is right clicked.
-    fn set_bind_right_click(&mut self, _func: MouseCallbackFunction) {
+    fn set_bind_right_click(&mut self, _func: common::MouseCallbackFunction) {
         panic!("Cannot set on right click bind for: {}", self.get_id())
     }
 
     /// Get the callback for when this widget is right clicked.
-    fn get_bind_right_click(&self) -> Option<MouseCallbackFunction> {None}
+    fn get_bind_right_click(&self) -> Option<common::MouseCallbackFunction> {None}
 
     /// This is called automatically by a global mouse bind on the currently selected widget.
     /// Will active the 'on_right_click' callback.
-    fn on_right_click(&self, context: EzContext, position: Coordinates) {
+    fn on_right_click(&self, context: common::EzContext, position: state::Coordinates) {
         match self.get_bind_right_click() {
             Some(i) => i(context, position),
             None => (),
@@ -397,17 +396,17 @@ pub trait EzWidget: EzObject {
     }
 
     /// Set the callback for when this widget is selected.
-    fn set_bind_on_select(&mut self, _func: fn(context: EzContext, mouse_pos: Option<Coordinates>)) {
+    fn set_bind_on_select(&mut self, _func: fn(context: common::EzContext, mouse_pos: Option<state::Coordinates>)) {
         panic!("Cannot set on deselect bind for: {}", self.get_id())
     }
 
     /// Get the callback for when this widget is selected.
-    fn get_bind_on_select(&self) -> Option<fn(context: EzContext, mouse_pos: Option<Coordinates>)> {
+    fn get_bind_on_select(&self) -> Option<fn(context: common::EzContext, mouse_pos: Option<state::Coordinates>)> {
         None
     }
 
     /// This is called when the widget is selected.
-    fn on_select(&self, context: EzContext, mouse_pos: Option<Coordinates>) {
+    fn on_select(&self, context: common::EzContext, mouse_pos: Option<state::Coordinates>) {
         context.state_tree.get_mut(&context.widget_path).unwrap().as_selectable_mut()
             .set_selected(true);
         match self.get_bind_on_select() {
@@ -417,15 +416,15 @@ pub trait EzWidget: EzObject {
     }
 
     /// Set the callback for when this widget is deselected.
-    fn set_bind_on_deselect(&mut self, _func: GenericEzFunction) {
+    fn set_bind_on_deselect(&mut self, _func: common::GenericEzFunction) {
         panic!("Cannot set on deselect bind for: {}", self.get_id())
     }
 
     /// Get the callback for when this widget is deselected.
-    fn get_bind_on_deselect(&self) -> Option<GenericEzFunction> {None}
+    fn get_bind_on_deselect(&self) -> Option<common::GenericEzFunction> {None}
 
     /// This is called when the widget is deselected.
-    fn on_deselect(&self, context: EzContext) {
+    fn on_deselect(&self, context: common::EzContext) {
 
         context.state_tree.get_mut(&context.widget_path).unwrap().as_selectable_mut()
             .set_selected(false);
@@ -464,12 +463,10 @@ impl Pixel {
         }
         pixel
     }
-
-    /// Create a pixel from a symbol with default values.
-    pub fn from_symbol(symbol: String) -> Self {
-        let mut pixel = Pixel::default();
-        pixel.symbol = symbol;
-        pixel
+}
+impl Pixel {
+    pub fn new(symbol: String, foreground_color: Color, background_color: Color) -> Self {
+        Pixel { symbol, foreground_color, background_color, underline: false }
     }
 }
 impl Default for Pixel {

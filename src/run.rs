@@ -3,18 +3,16 @@
 //! functions allows starting the app based on a root layout.
 use std::io::{stdout, Write};
 use std::process::exit;
-use std::thread::sleep;
 use std::time::{Duration};
 use crossterm::{ExecutableCommand, execute, Result, cursor::{Hide, Show},
                 event::{MouseEvent, MouseEventKind, MouseButton, poll, read, DisableMouseCapture,
                         EnableMouseCapture, Event, KeyCode, KeyEvent},
                 terminal::{disable_raw_mode, enable_raw_mode, self}, QueueableCommand};
-use crossterm::cursor::MoveTo;
 use crate::common::{self, EzContext, initialize_view_tree, StateTree, ViewTree, WidgetTree};
 use crate::widgets::layout::Layout;
 use crate::widgets::widget::{EzObject};
 use crate::scheduler::{Scheduler};
-use crate::states::state::Coordinates;
+use crate::states::state::{self};
 
 
 /// Set initial state of the terminal
@@ -73,7 +71,7 @@ fn initialize_widgets(root_widget: &mut Layout) -> ViewTree {
     // Create an initial view tree so we can diff all future changes against it.
     let mut view_tree = common::initialize_view_tree(all_content.len(),
                                                           all_content[0].len());
-    common::write_to_screen(Coordinates::new(0, 0), all_content, &mut view_tree);
+    common::write_to_screen(state::Coordinates::new(0, 0), all_content, &mut view_tree);
     view_tree
 
 }
@@ -136,8 +134,8 @@ fn run_loop(mut root_widget: Layout, mut scheduler: Scheduler) -> Result<()>{
                     Event::Resize(width, height) => {
                         let state = state_tree.get_mut(
                             &root_widget.path).unwrap().as_generic_mut();
-                        if state.get_height() == height as usize &&
-                            state.get_width() == width as usize {
+                        if state.get_size().height == height as usize &&
+                            state.get_size().width == width as usize {
                             consumed = true;
                         } else {
                             state.set_width(width as usize);
@@ -159,7 +157,7 @@ fn run_loop(mut root_widget: Layout, mut scheduler: Scheduler) -> Result<()>{
                             }
                             // Cleartype purge is tempting but causes issues on at least Windows
                             stdout().queue(terminal::Clear(terminal::ClearType::All))?;
-                            common::write_to_screen(Coordinates::new(0, 0),
+                            common::write_to_screen(state::Coordinates::new(0, 0),
                                                     contents, &mut view_tree);
                             continue
                         }
@@ -183,7 +181,7 @@ fn run_loop(mut root_widget: Layout, mut scheduler: Scheduler) -> Result<()>{
             &mut view_tree, &mut state_tree, &mut root_widget);
         if forced_redraw {
             let contents = root_widget.get_contents(&mut state_tree);
-            common::write_to_screen(Coordinates::new(0, 0),
+            common::write_to_screen(state::Coordinates::new(0, 0),
                                     contents, &mut view_tree);
         }
     }
@@ -237,12 +235,12 @@ fn handle_mouse_event(event: MouseEvent, view_tree: &mut ViewTree, state_tree: &
                       widget_tree: &WidgetTree, scheduler: &mut Scheduler) -> bool {
 
     if let MouseEventKind::Down(button) = event.kind {
-        let mouse_position = Coordinates::new(event.column as usize, event.row as usize);
+        let mouse_position = state::Coordinates::new(event.column as usize, event.row as usize);
         return match common::get_widget_by_position(mouse_position, widget_tree, state_tree) {
             Some(widget) => {
                 let abs = state_tree.get(&widget.get_full_path()).unwrap().as_generic()
                     .get_absolute_position();
-                let relative_position = Coordinates::new(mouse_position.x - abs.x,
+                let relative_position = state::Coordinates::new(mouse_position.x - abs.x,
                                                                     mouse_position.y - abs.y);
                 match button {
                     MouseButton::Left =>

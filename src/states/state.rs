@@ -195,6 +195,7 @@ impl EzState {
 
 /// State trait which contains methods for managing fields common to all widget states.
 pub trait GenericState {
+
     /// Set to true whenever state changes to redraw widget next frame
     fn set_changed(&mut self, changed: bool);
 
@@ -203,102 +204,115 @@ pub trait GenericState {
 
     /// Set to None for passing an absolute width, or to a value between 0 and 1 to
     /// automatically scale width based on parent width
-    fn set_size_hint_x(&mut self, _size_hint: Option<f64>) {}
+    fn set_size_hint(&mut self, _size_hint: SizeHint) {}
 
-    /// If not None automatically scaled width based on parent width
-    fn get_size_hint_x(&self) -> Option<f64>;
+    /// Set to None for passing an absolute width, or to a value between 0 and 1 to
+    /// automatically scale width based on parent width
+    fn set_size_hint_x(&mut self, size_hint: Option<f64>) {
+        self.set_size_hint(SizeHint::new(size_hint, self.get_size_hint().y))
+    }
 
     /// Set to None for passing an absolute height, or to a value between 0 and 1 to
     /// automatically scale width based on parent height
-    fn set_size_hint_y(&mut self, _size_hint: Option<f64>) {}
+    fn set_size_hint_y(&mut self, size_hint: Option<f64>) {
+        self.set_size_hint(SizeHint::new(self.get_size_hint().x, size_hint))
+    }
 
-    /// If not None automatically scaled height based on parent height
-    fn get_size_hint_y(&self) -> Option<f64>;
+    /// If not None automatically scaled width based on parent width
+    fn get_size_hint(&self) -> &SizeHint;
 
     /// Set to None to allow hardcoded or default positions. Set a pos hint to position relative
     /// to parent. A pos hint is a string and a float e.g:
     /// ("center_x", 0.9)
     /// When positioning the widget, "center_x" will be replaced with the middle x coordinate of
     /// parent Layout, and multiplied with the float.
-    fn set_pos_hint_x(&mut self, _pos_hint: Option<(HorizontalPositionHint, f64)>) {}
+    fn set_pos_hint(&mut self, _pos_hint: PosHint) {}
 
-    /// If none widget uses hardcoded or default positions. If a pos hint the widget will be
-    /// positioned relative to its' parent.
-    fn get_pos_hint_x(&self) -> &Option<(HorizontalPositionHint, f64)>;
+    /// Set to None to allow hardcoded or default positions. Set a pos hint to position relative
+    /// to parent. A pos hint is a string and a float e.g:
+    /// ("center_x", 0.9)
+    /// When positioning the widget, "center_x" will be replaced with the middle x coordinate of
+    /// parent Layout, and multiplied with the float.
+    fn set_pos_hint_x(&mut self, pos_hint: Option<(HorizontalPositionHint, f64)>) {
+        self.set_pos_hint(PosHint::new(pos_hint, self.get_pos_hint().y))
+    }
 
     /// Set to None to allow hardcoded or default positions. Set a pos hint to position relative
     /// to parent. A pos hint is a string and a float e.g:
     /// ("top", 0.9)
     /// When positioning the widget, "top" will be replaced with the y coordinate of the top of the
     /// parent Layout, and multiplied by the float.
-    fn set_pos_hint_y(&mut self, _pos_hint: Option<(VerticalPositionHint, f64)>) {}
+    fn set_pos_hint_y(&mut self, pos_hint: Option<(VerticalPositionHint, f64)>) {
+        self.set_pos_hint(PosHint::new(self.get_pos_hint().x, pos_hint))
+    }
 
     /// If none widget uses hardcoded or default positions. If a pos hint the widget will be
     /// positioned relative to its' parent.
-    fn get_pos_hint_y(&self) -> &Option<(VerticalPositionHint, f64)>;
+    fn get_pos_hint(&self) -> &PosHint;
 
     /// Set width autoscaling bool. If the widget supports it and turned on,
     /// automatically adjusts width to the actual width of its' content
-    fn set_auto_scale_width(&mut self, _auto_scale: bool) {
-        panic!("Auto scaling not supported for this widget")
-    }
+    fn set_auto_scale(&mut self, _auto_scale: AutoScale);
 
-    /// Get width autoscaling bool. If the widget supports it and turned on,
+    /// Get autoscaling config. If the widget supports it and turned on,
+    /// automatically adjusts size to the actual size of its' content
+    fn get_auto_scale(&self) -> &AutoScale;
+
+    /// Set width autoscaling bool. If the widget supports it and turned on,
     /// automatically adjusts width to the actual width of its' content
-    fn get_auto_scale_width(&self) -> bool { false }
+    fn set_auto_scale_width(&mut self, auto_scale: bool) {
+        self.set_auto_scale(AutoScale::new(auto_scale, self.get_auto_scale().height));
+    }
 
     /// Set height autoscaling bool. If the widget supports it and turned on,
     /// automatically adjusts height to the actual height of its' content
-    fn set_auto_scale_height(&mut self, _auto_scale: bool) {
-        panic!("Auto scaling not supported for this widget")
+    fn set_auto_scale_height(&mut self, auto_scale: bool) {
+        self.set_auto_scale(AutoScale::new(self.get_auto_scale().width, auto_scale));
     }
 
-    /// Get height autoscaling bool. If the widget supports it and turned on,
-    /// automatically adjusts height to the actual height of its' content
-    fn get_auto_scale_height(&self) -> bool { false }
+    /// Hard code size, only does something when size_hint is off
+    fn set_size(&mut self, size: Size);
+
+    /// Get current [Size] of this object
+    fn get_size(&self) -> &Size;
+
+    /// Get the effective amount of width and height within this object, taking off e.g. borders,
+    /// padding, etc.
+    fn get_effective_size(&self) -> Size {
+
+        let width_result: isize = self.get_size().width as isize
+            -if self.has_border() {2} else {0}
+            - self.get_padding().left as isize - self.get_padding().right as isize;
+        let width = if width_result < 0 {0} else { width_result as usize};
+        let height_result: isize = self.get_size().height as isize
+            - if self.has_border() {2} else {0}
+            - self.get_padding().top as isize - self.get_padding().bottom as isize;
+        let height = if height_result < 0 {0} else { height_result as usize};
+        Size::new(width, height)
+    }
 
     /// Hard code width, only does something when size_hint_x is off
-    fn set_width(&mut self, width: usize);
-
-    /// Get width, only does something when size_hint_x is off
-    fn get_width(&self) -> usize;
+    fn set_width(&mut self, width: usize) {
+        self.set_size(Size::new(width, self.get_size().height))
+    }
 
     /// Set the how much width you want the actual content inside this widget to have. Width for
     /// e.g. border and padding will be added to this automatically.
     fn set_effective_width(&mut self, width: usize) {
         self.set_width(width +if self.has_border() {2} else {0}
-            + self.get_padding_left() + self.get_padding_right())
-    }
-
-    /// Get the effective amount of width within the widgets, taking off e.g. borders,
-    /// padding, etc.
-    fn get_effective_width(&self) -> usize {
-        let result: isize = self.get_width() as isize
-            -if self.has_border() {2} else {0}
-            - self.get_padding_left() as isize - self.get_padding_right() as isize;
-        if result < 0 {0} else {result as usize}
+            + self.get_padding().left + self.get_padding().right)
     }
 
     /// Hard code height, only does something when size_hint_y is off
-    fn set_height(&mut self, height: usize);
-
-    /// Get height, only does something when size_hint_y is off
-    fn get_height(&self) -> usize;
+    fn set_height(&mut self, height: usize) {
+        self.set_size(Size::new(self.get_size().width, height))
+    }
 
     /// Set the how much height you want the actual content inside this widget to have. Height for
     /// e.g. border and padding will be added to this automatically.
     fn set_effective_height(&mut self, height: usize) {
         self.set_height(height +if self.has_border() {2} else {0}
-        + self.get_padding_top() + self.get_padding_bottom())
-    }
-
-    /// Get the effective amount of height within the widgets, taking off e.g. borders,
-    /// padding, etc.
-    fn get_effective_height(&self) -> usize {
-        let result: isize = self.get_height() as isize
-            - if self.has_border() {2} else {0}
-            - self.get_padding_top() as isize - self.get_padding_bottom() as isize;
-        if result < 0 {0} else {result as usize}
+        + self.get_padding().top + self.get_padding().bottom)
     }
 
     /// Hard code position relative to parent, only works in float layout mode
@@ -317,14 +331,14 @@ pub trait GenericState {
     /// e.g. borders, padding, etc.
     fn get_effective_position(&self) -> Coordinates {
         Coordinates::new(
-            self.get_position().x +if self.has_border() {1} else {0} + self.get_padding_left(),
-            self.get_position().y +if self.has_border() {1} else {0} + self.get_padding_top())
+            self.get_position().x +if self.has_border() {1} else {0} + self.get_padding().left,
+            self.get_position().y +if self.has_border() {1} else {0} + self.get_padding().top)
     }
 
     /// Set the absolute position of a widget, i.e. the position on screen rather than within its'
     /// parent widget. Should be set automatically through the "propagate_absolute_positions"
     /// function.
-    fn set_absolute_position(&mut self, pos:Coordinates);
+    fn set_absolute_position(&mut self, pos: Coordinates);
 
     /// Get the absolute position of a widget, i.e. the position on screen rather than within its'
     /// parent widget.
@@ -335,9 +349,9 @@ pub trait GenericState {
     fn get_effective_absolute_position(&self) -> Coordinates {
         Coordinates::new(
          self.get_absolute_position().x +if self.has_border() {1} else {0}
-             + self.get_padding_left(),
+             + self.get_padding().left,
          self.get_absolute_position().y +if self.has_border() {1} else {0}
-             + self.get_padding_top())
+             + self.get_padding().top)
     }
 
     /// Set [HorizontalAlignment] of this widget.
@@ -352,29 +366,35 @@ pub trait GenericState {
     /// Get [VerticalAlignment] of this widget
     fn get_vertical_alignment(&self) -> VerticalAlignment;
 
-    /// Set height of top padding
-    fn set_padding_top(&mut self, padding: usize);
+    /// Set [padding]
+    fn set_padding(&mut self, padding: Padding);
 
-    /// Get height of top padding
-    fn get_padding_top(&self) -> usize;
+    /// Get [padding]
+    fn get_padding(&self) -> &Padding;
+
+    /// Set height of top padding
+    fn set_padding_top(&mut self, padding: usize) {
+        let current = self.get_padding().clone();
+        self.set_padding(Padding::new(padding, current.bottom, current.left, current.right))
+    }
 
     /// Set height of bottom padding
-    fn set_padding_bottom(&mut self, padding: usize);
-
-    /// Get height of bottom padding
-    fn get_padding_bottom(&self) -> usize;
+    fn set_padding_bottom(&mut self, padding: usize) {
+        let current = self.get_padding().clone();
+        self.set_padding(Padding::new(current.top, padding, current.left, current.right))
+    }
 
     /// Set width of left padding
-    fn set_padding_left(&mut self, padding: usize);
-
-    /// Get width of left padding
-    fn get_padding_left(&self) -> usize;
+    fn set_padding_left(&mut self, padding: usize) {
+        let current = self.get_padding().clone();
+        self.set_padding(Padding::new(current.top, current.bottom, padding, current.right))
+    }
 
     /// Set width of right padding
-    fn set_padding_right(&mut self, padding: usize);
-
-    /// Get width of left padding
-    fn get_padding_right(&self) -> usize;
+    fn set_padding_right(&mut self, padding: usize) {
+        let current = self.get_padding().clone();
+        self.set_padding(Padding::new(current.top, current.bottom, current.left, padding))
+    }
 
     /// Get a bool representing whether this object should have a surrounding border
     fn has_border(&self) -> bool;
@@ -385,7 +405,7 @@ pub trait GenericState {
     /// Pas a [BorderConfig] abject that will be used to draw the border if enabled
     fn set_border_config(&mut self, config: BorderConfig);
 
-    /// Get the [BorderConfig] abject that will be used to draw the border if enabled
+    /// Get the [state::BorderConfig] abject that will be used to draw the border if enabled
     fn get_border_config(&self) -> &BorderConfig;
 
     /// Set the [ColorConfig] abject that will be used to draw this widget
@@ -398,7 +418,7 @@ pub trait GenericState {
     fn get_box(&self) -> (Coordinates, Coordinates) {
         let top_left = self.get_absolute_position();
         let top_right = Coordinates::new(
-            top_left.x + self.get_width(), top_left.y + self.get_height());
+            top_left.x + self.get_size().width, top_left.y + self.get_size().height);
         (top_left, top_right)
     }
 
@@ -417,8 +437,8 @@ pub trait GenericState {
     fn collides(&self, pos: Coordinates) -> bool {
         let starting_pos = self.get_effective_absolute_position();
         let end_pos = Coordinates::new(
-            starting_pos.x + self.get_width() - 1,
-             starting_pos.y + self.get_height() - 1);
+            starting_pos.x + self.get_size().width - 1,
+             starting_pos.y + self.get_size().height - 1);
         pos.x >= starting_pos.x && pos.x <= end_pos.x &&
             pos.y >= starting_pos.y && pos.y <= end_pos.y
     }
@@ -440,33 +460,49 @@ pub trait SelectableState {
 }
 
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub enum HorizontalAlignment {
     Left,
     Right,
     Center
 }
 
-#[derive(Clone, Copy)]
+
+#[derive(Clone, Copy, Debug)]
 pub enum VerticalAlignment {
     Top,
     Bottom,
     Middle
 }
 
-#[derive(Clone, Copy)]
+
+#[derive(Clone, Copy, Debug)]
 pub enum HorizontalPositionHint {
     Left,
     Right,
     Center
 }
 
-#[derive(Clone, Copy)]
+
+#[derive(Clone, Copy, Debug)]
 pub enum VerticalPositionHint {
     Top,
     Bottom,
     Middle
 }
+
+
+/// Convenience wrapper around a size tuple.
+#[derive(Copy, Clone, Default, Debug)]
+pub struct Size {
+    pub width: usize,
+    pub height: usize,
+}
+impl Size {
+    pub fn new(width: usize, height: usize) -> Self { Size{width, height} }
+}
+
+
 
 /// Convenience wrapper around an XY tuple.
 #[derive(Copy, Clone, Default, Debug)]
@@ -480,8 +516,55 @@ impl Coordinates {
     }
 }
 
+
+/// Convenience wrapper around an size_hint tuple.
+#[derive(Copy, Clone, Debug)]
+pub struct AutoScale {
+    pub width: bool,
+    pub height: bool,
+}
+impl AutoScale {
+    pub fn new(width: bool, height: bool) -> Self { AutoScale{width, height} }
+}
+impl Default for AutoScale {
+    fn default() -> Self { AutoScale{width: false, height: false }}
+}
+
+
+/// Convenience wrapper around an size_hint tuple.
+#[derive(Copy, Clone, Debug)]
+pub struct SizeHint {
+    pub x: Option<f64>,
+    pub y: Option<f64>,
+}
+impl SizeHint {
+    pub fn new(x: Option<f64>, y: Option<f64>) -> Self { SizeHint{x, y} }
+}
+impl Default for SizeHint {
+    fn default() -> Self { SizeHint{x: Some(1.0), y: Some(1.0) }}
+}
+
+
+/// Convenience wrapper around an pos_hint tuple.
+#[derive(Copy, Clone, Debug)]
+pub struct PosHint {
+    pub x: Option<(HorizontalPositionHint, f64)>,
+    pub y: Option<(VerticalPositionHint, f64)>,
+}
+impl PosHint {
+    pub fn new(x: Option<(HorizontalPositionHint, f64)>,
+               y: Option<(VerticalPositionHint, f64)>) -> Self {
+        PosHint{x, y}
+    }
+}
+impl Default for PosHint {
+    fn default() -> Self { PosHint{x: Some((HorizontalPositionHint::Left, 1.0)),
+                                    y: Some((VerticalPositionHint::Top, 1.0)) }}
+}
+
+
 /// Convenience wrapper around a border configuration
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct BorderConfig {
     
     /// The [Pixel.symbol] to use for the horizontal border if [border] is true
@@ -524,7 +607,7 @@ impl Default for BorderConfig {
 }
 
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct ColorConfig {
 
     /// The [Pixel.foreground_color] to use for this widgets' content
@@ -569,5 +652,19 @@ impl Default for ColorConfig {
             filler_foreground: Color::White,
             cursor: Color::DarkYellow,
         }
+    }
+}
+
+
+#[derive(Clone, Copy, Default, Debug)]
+pub struct Padding {
+    pub top: usize,
+    pub bottom: usize,
+    pub left: usize,
+    pub right: usize,
+}
+impl Padding {
+    pub fn new(top: usize, bottom: usize, left: usize, right: usize) -> Padding{
+        Padding { top, bottom, left, right }
     }
 }
