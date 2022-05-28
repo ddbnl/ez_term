@@ -1,3 +1,33 @@
+// Templates
+//  Small box layout
+- <OneThirdBox@Layout>:
+    mode: box
+    orientation: vertical
+    size_hint_x: 1/3
+    border: True
+    border_fg_color: dark_cyan
+    border_bg_color: black
+
+- <LayoutHeader@Label>:
+    fg_color: Magenta
+    bg_color: Black
+    auto_scale: true, true
+    halign: center
+
+- <CyanScalingBox@Layout>:
+    mode: box
+    orientation: vertical
+    border: true
+    auto_scale: true, true
+    border_fg_color: dark_cyan
+
+- <FullHorizontalBox@Layout>:
+    mode: box
+    orientation: horizontal
+    size_hint: 1, None
+    auto_scale_height: true
+    padding: 1, 1, 1, 1
+
 // Ez files must always start with a Layout as root widget
 // Root widget may have a custom ID, but defaults to "root"
 - Layout:
@@ -17,27 +47,12 @@
             id: bottom_box
             mode: box
             orientation: horizontal
-            - Layout:
+            - OneThirdBox:
                 id: small_box_1
-                mode: box
-                orientation: vertical
-                size_hint_x: 1/3
-                border: True
-                border_fg_color: dark_cyan
-                border_bg_color: Black
-                - Label:
+                - LayoutHeader:
                     text: Layout 1:
-                    fg_color: Magenta
-                    bg_color: Black
-                    auto_scale: true, true
-                    halign: center
-                - Layout:
+                - CyanScalingBox:
                     id: input_1_box
-                    mode: box
-                    orientation: vertical
-                    border: true
-                    auto_scale: true, true
-                    border_fg_color: dark_cyan
                     - Label:
                         text: This is a small text input. Its' content is bigger than its' size. It allows us to test views. Try selecting it and pressing left and right button to move through the text:
                         auto_scale: true, true
@@ -49,13 +64,8 @@
                         text: small input to test views
                         selection_order: 2
                         padding: 1, 1, 1, 1
-                - Layout:
+                - CyanScalingBox:
                     id: input_2_box
-                    mode: box
-                    orientation: vertical
-                    border: true
-                    auto_scale: true, true
-                    border_fg_color: dark_cyan
                     - Label:
                         text: This is a larger input but it has a maximum length, so we can't fill it all:
                         auto_scale: true, true
@@ -68,12 +78,8 @@
                         max_length: 25
                         selection_order: 3
                         padding_left: 1
-                - Layout:
+                - CyanScalingBox:
                     id: input_3_box
-                    mode: box
-                    orientation: vertical
-                    border: true
-                    border_fg_color: dark_cyan
                     - Label:
                         text: This is an input with an on_value and on_keyboard_enter callback. It mirrors what you type in the label, and prints CONFIRMED when enter is pressed.
                         auto_scale: true, true
@@ -88,39 +94,17 @@
                         text: Mirror text
                         padding_left: 1
                         auto_scale_height: true
-            - Layout:
+            - OneThirdBox:
                 id: small_box_2
-                mode: box
-                orientation: vertical
-                size_hint_x: 1/3
-                border: True
-                border_fg_color: dark_cyan
-                border_bg_color: Black
-                - Label:
+                - LayoutHeader:
                     text: Layout 2:
-                    fg_color: Magenta
-                    bg_color: Black
-                    size_hint_y: None
-                    height: 1
-                    auto_scale_width: true
-                    halign: center
-                - Layout:
+                - CyanScalingBox:
                     id: checkbox_section_box
-                    mode: box
-                    orientation: vertical
-                    border: true
-                    auto_scale: true, true
-                    border_fg_color: dark_cyan
                     - Label:
                         text: This is a checkbox: a simple on and off switch. Clicking this one triggers a callback that changes the label:
                         auto_scale: true, true
-                    - Layout:
+                    - FullHorizontalBox:
                         id: checkbox_box
-                        mode: box
-                        orientation: horizontal
-                        size_hint: 1, None
-                        auto_scale_height: true
-                        padding_y: 1, 1
                         - CheckBox:
                             id: checkbox
                             selection_order: 5
@@ -134,23 +118,13 @@
                             text: Disabled
                             auto_scale: true, true
                             fg_color: red
-                - Layout:
+                - CyanScalingBox:
                     id: radio_section_box
-                    mode: box
-                    orientation: vertical
-                    border: true
-                    auto_scale: true, true
-                    border_fg_color: dark_cyan
                     - Label:
                         text: These are radio buttons: a group of mutually exclusive off/on switches, matched to each other by group name. Clicking one of these triggers a callback that changes the label:
                         auto_scale: true, true
-                    - Layout:
+                    - FullHorizontalBox:
                         id: radio_box
-                        mode: box
-                        orientation: horizontal
-                        size_hint: 1, None
-                        auto_scale_height: true
-                        padding: 1, 1, 1, 1
                         - RadioButton:
                             id: radio1
                             group: test_radios
@@ -175,24 +149,14 @@
                             fg_color: red
                             auto_scale: true, true
                             padding_x: 1, 1
-                - Layout: 
+                - CyanScalingBox:
                     id: button_section_box
-                    mode: box
-                    orientation: vertical
-                    border: true
-                    auto_scale: true, true
-                    border_fg_color: dark_cyan
-                    - Label:    
+                    - Label:
                         text: This is a button. We've bound a callback to it that increments a number on the label:
                         auto_scale: true, true
-                    - Layout: 
+                    - FullHorizontalBox:
                         id: button_box
-                        mode: box
-                        orientation: horizontal
-                        size_hint: 1, None
-                        auto_scale_height: true
-                        padding: 1, 1, 1, 1
-                        - Button: 
+                        - Button:
                             id: button
                             selection_order: 12
                             text: Click me!
@@ -205,39 +169,18 @@
                             auto_scale: true, true
                             padding_top: 1
                             padding_left: 1
-            - Layout: 
+            - OneThirdBox:
                 id: small_box_3
-                mode: box
-                orientation: vertical
-                size_hint_x: 1/3
-                border: True
-                border_fg_color: dark_cyan
-                border_bg_color: Black
-                - Label: 
+                - LayoutHeader:
                     text: Layout 3
-                    fg_color: Magenta
-                    bg_color: Black
-                    pos_hint: center, top
-                    size_hint: None, None
-                    size: 8, 1
-                    halign: center
-                - Layout: 
+                - CyanScalingBox:
                     id: dropdown_section_box
-                    mode: box
-                    orientation: vertical
-                    border: true
-                    auto_scale: true, true
-                    border_fg_color: dark_cyan
-                    - Label: 
+                    - Label:
                         text: This is a dropdown menu. We can select from a list of options. Click to open it and select a value; the label should change through a callback:
                         auto_scale: true, true
-                    - Layout: 
+                    - FullHorizontalBox:
                         id: dropdown_box
-                        mode: box
-                        orientation: horizontal
-                        padding_top: 1
-                        auto_scale_height: true
-                        - Dropdown: 
+                        - Dropdown:
                             id: dropdown
                             selection_order: 13
                             allow_none: True
@@ -253,7 +196,6 @@
                             text: option1
                             padding_top: 1
                             padding_left: 1
-
     - Layout: 
         mode: box
         orientation: vertical

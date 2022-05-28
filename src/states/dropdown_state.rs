@@ -238,6 +238,11 @@ impl DropdownState {
 
     pub fn set_dropped_down(&mut self, dropped_down: bool) {
         self.dropped_down = dropped_down;
+        if dropped_down {
+            self.set_effective_height(self.total_options());
+        } else {
+            self.set_effective_height(1);
+        }
         self.changed = true;
     }
 

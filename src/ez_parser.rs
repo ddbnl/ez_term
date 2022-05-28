@@ -1,5 +1,6 @@
 //! # Ez Parser
 //! Module containing structs and functions for paring a .ez file into a root layout.
+use std::collections::HashMap;
 use std::fs::File;
 use std::io::prelude::*;
 use std::io::{Error, ErrorKind};
@@ -39,13 +40,13 @@ pub fn load_ez_ui(file_path: &str) -> (Layout, Scheduler) {
 fn parse_ez(file_string: String) -> Result<Layout, Error> {
 
     let config_lines:Vec<&str> = file_string.lines().collect();
-    let (_, mut widgets) =
+    let (_, mut widgets, templates) =
         parse_level(config_lines, 0, 0).unwrap();
     let mut root_widget = widgets.pop().unwrap();
     if root_widget.type_name != "Layout" {
         panic!("Root widget of an Ez file must be a Layout")
     }
-    let mut initialized_root_widget = root_widget.parse_as_root();
+    let mut initialized_root_widget = root_widget.parse_as_root(templates);
     // Set full paths for all widgets now that they have all been initialized.
     initialized_root_widget.propagate_paths();
 
@@ -57,6 +58,7 @@ fn parse_ez(file_string: String) -> Result<Layout, Error> {
 /// definition into an initialized widget. The definition of a widget consists of two optional
 /// parts: the config of the widget itself (its' size, color, etc.) and its' sub widgets.
 /// As the definition for a widget might contain sub widgets, it is parsed recursively.
+#[derive(Clone)]
 struct EzWidgetDefinition<'a> {
 
     /// Name of widget class, e.g. layout, or textBox
@@ -84,9 +86,9 @@ impl<'a> EzWidgetDefinition<'a> {
 
     /// Parse a definition as the root layout. The normal parsed method results in a generic
     /// EzObjects enum, whereas the root widget should be a Layout specifically.
-    fn parse_as_root(&mut self) -> Layout {
+    fn parse_as_root(&mut self, mut templates: HashMap<String, EzWidgetDefinition>) -> Layout {
 
-        let (config, mut sub_widgets) =
+        let (config, mut sub_widgets, _) =
             parse_level(self.content.clone(), self.indentation_offset, self.line_offset)
                 .unwrap();
         let mut initialized = Layout::default();
@@ -97,7 +99,7 @@ impl<'a> EzWidgetDefinition<'a> {
                                           parameter_value.to_string()).unwrap();
         }
         for sub_widget in sub_widgets.iter_mut() {
-            let initialized_sub_widget = sub_widget.parse();
+            let initialized_sub_widget = sub_widget.parse(&mut templates);
             initialized.add_child(initialized_sub_widget);
         }
         let terminal_size = size().unwrap();
@@ -116,15 +118,15 @@ impl<'a> EzWidgetDefinition<'a> {
 
     /// Parse a definition by separating the config lines from the sub widget definitions. Then
     /// apply the config to the initialized widget, then initialize and add sub widgets.
-    fn parse(&mut self) -> EzObjects {
+    fn parse(&mut self, templates: &mut HashMap<String, EzWidgetDefinition>) -> EzObjects {
 
-        let (config, mut sub_widgets) =
+        let (config, mut sub_widgets, _) =
             parse_level(self.content.clone(), self.indentation_offset, self.line_offset)
                 .unwrap();
-        let initialized = self.initialize(config).unwrap();
+        let initialized = self.initialize(config, templates).unwrap();
         if let EzObjects::Layout(mut i) = initialized {
             for sub_widget in sub_widgets.iter_mut() {
-                let initialized_sub_widget = sub_widget.parse();
+                let initialized_sub_widget = sub_widget.parse(templates);
                 i.add_child(initialized_sub_widget);
             }
             return EzObjects::Layout(i)
@@ -133,7 +135,16 @@ impl<'a> EzWidgetDefinition<'a> {
     }
 
     /// Initialize a widget object based on the type specified by the definition.
-    fn initialize(&mut self, config: Vec<&str>) -> Result<EzObjects, Error> {
+    fn initialize(&mut self, config: Vec<&str>, templates: &mut HashMap<String, EzWidgetDefinition>)
+        -> Result<EzObjects, Error> {
+        if templates.contains_key(self.type_name) {
+            let template = templates.get_mut(self.type_name).unwrap();
+            println!("HA");
+            let mut object = template.clone().parse(templates);
+            object.as_ez_object_mut().load_ez_config(config).unwrap();
+            return Ok(object);
+
+        }
         match self.type_name {
             "Layout" => Ok(EzObjects::Layout(Layout::from_config(config))),
             "Canvas" => Ok(EzObjects::CanvasWidget(CanvasWidget::from_config(config))),
@@ -149,17 +160,21 @@ impl<'a> EzWidgetDefinition<'a> {
     }
 }
 
-/// Parse a single indentation level of a config file. Returns a Vec of config lines and a Vec
-/// of [EzWidgetDefinition] of widgets found on that level
+/// Parse a single indentation level of a config file. Returns a Vec of config lines, a Vec
+/// of [EzWidgetDefinition] of widgets found on that level, and a Vec of [EzWidgetDefinition] of
+/// templates found on that level
 fn parse_level<'a>(config_lines: Vec<&'a str>, indentation_offset: usize, line_offset: usize)
-                       -> Result<(Vec<&str>, Vec<EzWidgetDefinition<'a>>), Error> {
+         -> Result<(Vec<&str>, Vec<EzWidgetDefinition<'a>>,
+                    HashMap<String, EzWidgetDefinition<'a>>), Error> {
 
     // All lines before the first widget definition are considered config lines for the widget
     // on this indentation level
     let mut config = Vec::new();
     let mut parsing_config = true;
+    let mut parsing_template: Option<&str> = None;
     // All top level widgets on this indentation level
     let mut level = Vec::new();
+    let mut templates = HashMap::new();
 
     for (i, line) in config_lines.clone().into_iter().enumerate() {
         // Skip empty lines and comments
@@ -199,9 +214,20 @@ fn parse_level<'a>(config_lines: Vec<&'a str>, indentation_offset: usize, line_o
             let type_name = line.strip_prefix('-').unwrap().trim().strip_suffix(':')
                 .unwrap_or_else(|| panic!("Error at line {}: {}. Widget definition should be \
                 followed by a \":\"", i + line_offset + 1, line));
-            // Add to level, all next lines that are not widget definitions append to this widget
-            level.push(EzWidgetDefinition::new(type_name,indentation_offset + 4,
-                                               i + 1 + line_offset));
+
+            if type_name.starts_with('<') {  // This is a template
+                let (type_name, proto_type) = type_name.strip_prefix('<').unwrap()
+                    .strip_suffix('>').unwrap().split_once('@').unwrap();
+                let def = EzWidgetDefinition::new(
+                    proto_type,indentation_offset + 4, i + 1 + line_offset);
+                templates.insert(type_name.to_string(), def);
+                parsing_template = Some(type_name);
+            } else {  // This is a regular widget definition
+                // Add to level, all next lines that are not widget definitions append to this widget
+                level.push(EzWidgetDefinition::new(
+                    type_name,indentation_offset + 4, i + 1 + line_offset));
+                parsing_template = None;
+            }
         }
         else if parsing_config {
             config.push(line);
@@ -210,10 +236,14 @@ fn parse_level<'a>(config_lines: Vec<&'a str>, indentation_offset: usize, line_o
             let new_line = line.strip_prefix("    ").unwrap_or_else(
                 || panic!("Error at line {}: {}. Could not strip indentation.",
                            i + line_offset + 1, line));
-            level.last_mut().unwrap().content.push(new_line);
+            if let Some(name) = parsing_template {
+                templates.get_mut(name).unwrap().content.push(new_line);
+            } else {
+                level.last_mut().unwrap().content.push(new_line);
+            }
         }
     }
-    Ok((config, level))
+    Ok((config, level, templates))
 }
 
 
