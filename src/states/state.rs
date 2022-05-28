@@ -411,8 +411,11 @@ pub trait GenericState {
     /// Set the [ColorConfig] abject that will be used to draw this widget
     fn set_colors(&mut self, config: ColorConfig);
 
-    /// Get the [ColorConfig] abject that will be used to draw this widget
+    /// Get a ref to the [ColorConfig] abject that will be used to draw this widget
     fn get_colors(&self) -> &ColorConfig;
+
+    /// Get a mut ref to the [ColorConfig] abject that will be used to draw this widget
+    fn get_colors_mut(&mut self) -> &mut ColorConfig;
 
     /// Get the top left and bottom right corners of a widget in (X, Y) coordinate tuples.
     fn get_box(&self) -> (Coordinates, Coordinates) {

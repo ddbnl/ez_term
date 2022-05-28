@@ -169,6 +169,8 @@ impl state::GenericState for RadioButtonState {
 
     fn get_colors(&self) -> &state::ColorConfig { &self.colors }
 
+    fn get_colors_mut(&mut self) -> &mut state::ColorConfig { &mut self.colors }
+
     fn set_force_redraw(&mut self, redraw: bool) {
         self.force_redraw = redraw;
         self.changed = true;

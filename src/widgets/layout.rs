@@ -78,6 +78,7 @@ impl EzObject for Layout {
         -> Result<(), Error> {
 
         match parameter_name.as_str() {
+            "id" => self.set_id(parameter_value.trim().to_string()),
             "x" => self.state.set_x(parameter_value.trim().parse().unwrap()),
             "y" => self.state.set_y(parameter_value.trim().parse().unwrap()),
             "pos" => self.state.set_position(
@@ -254,9 +255,8 @@ impl EzObject for Layout {
 impl Layout {
 
     /// Initialize an instance of a Layout with the passed config parsed by [ez_parser]
-    pub fn from_config(config: Vec<&str>, id: String) -> Self {
+    pub fn from_config(config: Vec<&str>) -> Self {
         let mut obj = Layout::default();
-        obj.set_id(id);
         obj.load_ez_config(config).unwrap();
         obj
     }
@@ -617,9 +617,16 @@ impl Layout {
     }
 
     /// Add a child ([Layout] or [EzWidget]) to this Layout.
-    pub fn add_child(&mut self, child: EzObjects) {
-        let generic_child = child.as_ez_object();
-        self.child_lookup.insert(generic_child.get_id(), self.children.len());
+    pub fn add_child(&mut self, mut child: EzObjects) {
+        let generic_child = child.as_ez_object_mut();
+        let id;
+        if generic_child.get_id().is_empty() {
+            id = self.children.len().to_string();
+            generic_child.set_id(id.clone());
+        } else {
+            id= generic_child.get_id();
+        }
+        self.child_lookup.insert(id, self.children.len());
         self.children.push(child);
     }
 

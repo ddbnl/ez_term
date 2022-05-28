@@ -49,6 +49,7 @@ impl EzObject for CanvasWidget {
                          -> Result<(), Error> {
 
         match parameter_name.as_str() {
+            "id" => self.set_id(parameter_value.trim().to_string()),
             "x" => self.state.set_x(parameter_value.trim().parse().unwrap()),
             "y" => self.state.set_y(parameter_value.trim().parse().unwrap()),
             "pos" => self.state.set_position(
@@ -218,9 +219,8 @@ impl EzWidget for CanvasWidget {}
 impl CanvasWidget {
 
     /// Load this widget from a config vector coming from [ez_parser]
-    pub fn from_config(config: Vec<&str>, id: String) -> Self {
+    pub fn from_config(config: Vec<&str>) -> Self {
         let mut obj = CanvasWidget::default();
-        obj.set_id(id);
         obj.load_ez_config(config).unwrap();
         obj
     }

@@ -65,6 +65,7 @@ fn initialize_widgets(root_widget: &mut Layout) -> ViewTree {
             root_widget.update_state(state_tree.get(widget).unwrap());
             continue
         }
+        println!("widget {}", widget);
         root_widget.get_child_by_path_mut(widget).unwrap().as_ez_object_mut().update_state(
             state_tree.get(widget).unwrap())
     }
@@ -107,7 +108,7 @@ fn run_loop(mut root_widget: Layout, mut scheduler: Scheduler) -> Result<()>{
         let widget_tree = root_widget.get_widget_tree();
         scheduler.run_tasks(&mut view_tree, &mut state_tree, &widget_tree);
         let selected_widget = common::get_selected_widget(&widget_tree);
-        if poll(Duration::from_millis(200))? {
+        if poll(Duration::from_millis(10))? {
 
             // Get the event; it can only be consumed once, then the loop continues to next iter
             let event = read().unwrap();

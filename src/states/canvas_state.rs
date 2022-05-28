@@ -159,6 +159,11 @@ impl state::GenericState for CanvasState {
 
     fn get_colors(&self) -> &state::ColorConfig { &self.colors }
 
+    fn get_colors_mut(&mut self) -> &mut state::ColorConfig {
+        self.changed = true;
+        &mut self.colors
+    }
+
     fn set_force_redraw(&mut self, redraw: bool) {
         self.force_redraw = redraw;
         self.changed = true;

@@ -62,9 +62,6 @@ struct EzWidgetDefinition<'a> {
     /// Name of widget class, e.g. layout, or textBox
     pub type_name: &'a str,
 
-    /// Id of the widget, used to create widget paths
-    pub id: &'a str,
-
     /// All raw text content belonging to this definition
     pub content: Vec<&'a str>,
 
@@ -76,10 +73,9 @@ struct EzWidgetDefinition<'a> {
     pub indentation_offset: usize,
 }
 impl<'a> EzWidgetDefinition<'a> {
-    fn new(type_name: &'a str, id: &'a str, indentation_offset: usize, line_offset: usize) -> Self {
+    fn new(type_name: &'a str, indentation_offset: usize, line_offset: usize) -> Self {
         EzWidgetDefinition {
             type_name,
-            id,
             content: Vec::new(),
             indentation_offset,
             line_offset,
@@ -111,8 +107,10 @@ impl<'a> EzWidgetDefinition<'a> {
         if initialized.state.get_size().height == 0 {
             initialized.state.set_height(terminal_size.1 as usize);
         }
-        initialized.set_id(self.id.to_string());
-        initialized.set_full_path(format!("/{}", self.id));
+        if initialized.get_id().is_empty() {  // Default root widget ID if user didn't define one
+            initialized.set_id("root".to_string());
+        }
+        initialized.set_full_path(format!("/{}", initialized.get_id()));
         initialized
     }
 
@@ -137,21 +135,14 @@ impl<'a> EzWidgetDefinition<'a> {
     /// Initialize a widget object based on the type specified by the definition.
     fn initialize(&mut self, config: Vec<&str>) -> Result<EzObjects, Error> {
         match self.type_name {
-            "Layout" => Ok(EzObjects::Layout(Layout::from_config(config, self.id.to_string()))),
-            "Canvas" => Ok(EzObjects::CanvasWidget(
-                CanvasWidget::from_config(config, self.id.to_string()))),
-            "Label" => Ok(EzObjects::Label(
-                Label::from_config(config, self.id.to_string()))),
-            "Button" => Ok(EzObjects::Button(
-                Button::from_config(config, self.id.to_string()))),
-            "CheckBox" => Ok(EzObjects::Checkbox(
-                Checkbox::from_config(config, self.id.to_string()))),
-            "RadioButton" => Ok(EzObjects::RadioButton(
-                RadioButton::from_config(config, self.id.to_string()))),
-            "TextInput" => Ok(EzObjects::TextInput(
-                TextInput::from_config(config, self.id.to_string()))),
-            "Dropdown" => Ok(EzObjects::Dropdown(
-                Dropdown::from_config(config, self.id.to_string()))),
+            "Layout" => Ok(EzObjects::Layout(Layout::from_config(config))),
+            "Canvas" => Ok(EzObjects::CanvasWidget(CanvasWidget::from_config(config))),
+            "Label" => Ok(EzObjects::Label(Label::from_config(config))),
+            "Button" => Ok(EzObjects::Button(Button::from_config(config))),
+            "CheckBox" => Ok(EzObjects::Checkbox(Checkbox::from_config(config))),
+            "RadioButton" => Ok(EzObjects::RadioButton(RadioButton::from_config(config))),
+            "TextInput" => Ok(EzObjects::TextInput(TextInput::from_config(config))),
+            "Dropdown" => Ok(EzObjects::Dropdown(Dropdown::from_config(config))),
             _ => Err(Error::new(ErrorKind::InvalidData,
                                 format!("Invalid widget type {}", self.type_name)))
         }
@@ -205,11 +196,12 @@ fn parse_level<'a>(config_lines: Vec<&'a str>, indentation_offset: usize, line_o
             // We encountered a widget, so config section of this level is over.
             parsing_config = false;
             // A new widget definition. Get it's type and ID
-            let (type_name, id) = line.split_once(':').unwrap();
+            let type_name = line.strip_prefix('-').unwrap().trim().strip_suffix(':')
+                .unwrap_or_else(|| panic!("Error at line {}: {}. Widget definition should be \
+                followed by a \":\"", i + line_offset + 1, line));
             // Add to level, all next lines that are not widget definitions append to this widget
-            level.push(EzWidgetDefinition::new(
-                type_name.strip_prefix("- ").unwrap().trim(), id.trim(),
-                        indentation_offset + 4, i + 1 + line_offset));
+            level.push(EzWidgetDefinition::new(type_name,indentation_offset + 4,
+                                               i + 1 + line_offset));
         }
         else if parsing_config {
             config.push(line);

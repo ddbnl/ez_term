@@ -2,7 +2,7 @@
 use std::io::{Error, ErrorKind};
 use std::time::Duration;
 use crossterm::event::KeyCode;
-use crate::states::state::{self, GenericState};
+use crate::states::state::{self, GenericState, SelectableState};
 use crate::states::button_state::ButtonState;
 use crate::common;
 use crate::widgets::widget::{EzWidget, Pixel, EzObject};
@@ -68,6 +68,7 @@ impl EzObject for Button {
     fn load_ez_parameter(&mut self, parameter_name: String, parameter_value: String)
                          -> Result<(), Error> {
         match parameter_name.as_str() {
+            "id" => self.set_id(parameter_value.trim().to_string()),
             "x" => self.state.set_x(parameter_value.trim().parse().unwrap()),
             "y" => self.state.set_y(parameter_value.trim().parse().unwrap()),
             "pos" => self.state.set_position(
@@ -236,11 +237,17 @@ impl EzWidget for Button {
         self.keymap.insert(key, func);
     }
 
-    fn set_bind_on_press(&mut self, func: common::GenericEzFunction) { self.bound_on_press = Some(func) }
+    fn set_bind_on_press(&mut self, func: common::GenericEzFunction) {
+        self.bound_on_press = Some(func)
+    }
 
     fn get_bind_on_press(&self) -> Option<common::GenericEzFunction> { self.bound_on_press }
 
-    fn on_left_click(&self, context: common::EzContext, _position: state::Coordinates) { self._on_press(context) }
+    fn on_left_click(&self, context: common::EzContext, _position: state::Coordinates) {
+        context.state_tree.get_mut(&self.get_full_path()).unwrap().as_button_mut()
+            .set_selected(false);
+        self._on_press(context);
+    }
 
     fn on_keyboard_enter(&self, context: common::EzContext) { self._on_press(context) }
 
@@ -256,9 +263,8 @@ impl EzWidget for Button {
 impl Button {
 
     /// Initialize an instance of this object using the passed config coming from [ez_parser]
-    pub fn from_config(config: Vec<&str>, id: String) -> Self {
+    pub fn from_config(config: Vec<&str>) -> Self {
         let mut obj = Button::default();
-        obj.set_id(id);
         obj.load_ez_config(config).unwrap();
         obj
     }

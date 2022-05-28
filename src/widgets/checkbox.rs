@@ -78,6 +78,7 @@ impl EzObject for Checkbox {
                          -> Result<(), Error> {
 
         match parameter_name.as_str() {
+            "id" => self.set_id(parameter_value.trim().to_string()),
             "x" => self.state.set_x(parameter_value.trim().parse().unwrap()),
             "y" => self.state.set_y(parameter_value.trim().parse().unwrap()),
             "pos" => self.state.set_position(
@@ -260,9 +261,8 @@ impl EzWidget for Checkbox {
 impl Checkbox {
 
     /// Initialize an instance of this object using the passed config coming from [ez_parser]
-    pub fn from_config(config: Vec<&str>, id: String) -> Self {
+    pub fn from_config(config: Vec<&str>) -> Self {
         let mut obj = Checkbox::default();
-        obj.set_id(id);
         obj.load_ez_config(config).unwrap();
         obj
     }

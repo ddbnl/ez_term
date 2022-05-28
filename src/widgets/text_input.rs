@@ -85,6 +85,7 @@ impl EzObject for TextInput {
                          -> Result<(), Error> {
         
         match parameter_name.as_str() {
+            "id" => self.set_id(parameter_value.trim().to_string()),
             "x" => self.state.set_x(parameter_value.trim().parse().unwrap()),
             "y" => self.state.set_y(parameter_value.trim().parse().unwrap()),
             "pos" => self.state.set_position(
@@ -343,9 +344,8 @@ impl EzWidget for TextInput {
 impl TextInput {
 
     /// Initialize an instance of this object using the passed config coming from [ez_parser]
-    pub fn from_config(config: Vec<&str>, id: String) -> Self {
+    pub fn from_config(config: Vec<&str>) -> Self {
         let mut obj = TextInput::default();
-        obj.set_id(id);
         obj.load_ez_config(config).unwrap();
         obj
     }
@@ -360,6 +360,7 @@ fn start_cursor_blink(target_pos: state::Coordinates, state: &mut TextInputState
 
     state.set_cursor_pos(target_pos);
     state.set_active_blink_task(true);
+    let mut counter = 3;
     let blink_func = move | context: common::EzContext | {
         let state = context.state_tree.get_mut(&context.widget_path).unwrap()
             .as_text_input_mut();
@@ -368,11 +369,16 @@ fn start_cursor_blink(target_pos: state::Coordinates, state: &mut TextInputState
             state.set_active_blink_task(false);
             return false
         };
-        state.set_blink_switch(!state.get_blink_switch());
+        if counter >= 3 {
+            counter = 0;
+            state.set_blink_switch(!state.get_blink_switch());
+        } else {
+            counter += 1;
+        }
         true
     };
     scheduler.schedule_interval(name, Box::new(blink_func),
-                                Duration::from_millis(500));
+                                Duration::from_millis(100));
 }
 
 
@@ -415,18 +421,19 @@ pub fn handle_right(context: common::EzContext, _key: KeyCode) {
         prepare_handle_function(context.widget_path.clone(), context.widget_tree, state);
 
     // Text does not fit in widget, advance view
-    if state.get_text().len() > state.get_size().width - 1 && cursor_pos.x >= state.get_size().width - 2 &&
-             state.get_text().len() - state.get_view_start() > (state.get_size().width - 1) {
-        if state.get_text().len() - state.get_view_start() - state.get_size().width >= 4 {
+    if state.get_text().len() > state.get_effective_size().width - 1 &&
+        cursor_pos.x >= state.get_effective_size().width - 2 &&
+             state.get_text().len() - state.get_view_start() > (state.get_effective_size().width - 1) {
+        if state.get_text().len() - state.get_view_start() - state.get_effective_size().width >= 4 {
             state.set_view_start(state.get_view_start() + 4);
             state.set_cursor_x(state.get_cursor_pos().x - 3);
         } else {
-            state.set_view_start(state.get_text().len() - state.get_size().width + 1);
+            state.set_view_start(state.get_text().len() - state.get_effective_size().width + 1);
             state.set_cursor_x(state.get_cursor_pos().x - 1);
         }
     // Text does not fit in widget but can't move further
-    } else if state.get_text().len() > state.get_size().width - 1 &&
-        cursor_pos.x == state.get_size().width - 1 {} // Max view, nothing to do
+    } else if state.get_text().len() > state.get_effective_size().width - 1 &&
+        cursor_pos.x == state.get_effective_size().width - 1 {} // Max view, nothing to do
     // Text fits in widget, handle normally
     else if cursor_pos.x < state.get_text().len() {
         state.set_cursor_x(state.get_cursor_pos().x + 1);
@@ -443,7 +450,7 @@ pub fn handle_left(context: common::EzContext, _key: KeyCode) {
         prepare_handle_function(context.widget_path.clone(), context.widget_tree, state);
 
     // Text does not fit in widget and cursor at 0, move view to left if not at 0 already
-    if state.get_text().len() > state.get_size().width - 1 &&
+    if state.get_text().len() > state.get_effective_size().width - 1 &&
             cursor_pos.x <= 1 && state.get_view_start() > 0 {
         if state.get_view_start() >= 4 {
             state.set_view_start(state.get_view_start() - 4 );
@@ -467,13 +474,13 @@ pub fn handle_delete(context: common::EzContext, _key: KeyCode) {
     let (widget_obj, _widget_pos, cursor_pos) =
         prepare_handle_function(context.widget_path.clone(), context.widget_tree, state);
     // Check if text does not fit in widget, then we have to delete on a view
-    if state.get_text().len() > state.get_size().width - 1 {
+    if state.get_text().len() > state.get_effective_size().width - 1 {
         // Get the view on the string, as well pre- and post to reconstruct it later
         let (pre_view_text, mut view_text, mut post_view_text) =
             get_view_parts(state.get_text(), state.get_view_start(),
-                           state.get_size().width);
+                           state.get_effective_size().width);
 
-        if cursor_pos.x == state.get_size().width - 1 && post_view_text.is_empty() {
+        if cursor_pos.x == state.get_effective_size().width - 1 && post_view_text.is_empty() {
             return
         }
         // Check if deleting in the last position, i.e. deleting out of view
@@ -524,14 +531,14 @@ pub fn handle_backspace(context: common::EzContext, _key: KeyCode) {
     let mut text = state.get_text();
 
     // Check if text does not fit in widget, then we have to backspace on a view
-    if state.get_text().len() > state.get_size().width - 1 {
+    if state.get_text().len() > state.get_effective_size().width - 1 {
         // Check if cursor is at start of text, i.e. nothing to backspace
         if cursor_pos.x == 0 && state.get_view_start() == 0 {
             return
         }
         let (mut pre_view_text, mut view_text, post_view_text) =
             get_view_parts(state.get_text(), state.get_view_start(),
-                           state.get_size().width);
+                           state.get_effective_size().width);
         // Perform backspace on the text view
         if cursor_pos.x == 0 {
             // Backspace out of view
@@ -555,7 +562,7 @@ pub fn handle_backspace(context: common::EzContext, _key: KeyCode) {
         }
 
         if (cursor_pos.x > 0 && pre_view_text.is_empty()) ||
-            (cursor_pos.x == state.get_size().width - 1 && !post_view_text.is_empty()) {
+            (cursor_pos.x == state.get_effective_size().width - 1 && !post_view_text.is_empty()) {
             state.set_cursor_x(state.get_cursor_pos().x - 1);
         }
     }
@@ -590,8 +597,7 @@ pub fn handle_char(context: common::EzContext, char: char) {
     let mut text;
 
     // Text still fits in widget, add char as normal
-    if state.get_text().len() < (state.get_size().width - 3) {
-        // Get position of cursor in text for validation and deleting
+    if state.get_text().len() < (state.get_effective_size().width) {
         text = state.get_text();
         text = format!("{}{}{}", text[0..cursor_pos.x as usize].to_string(), char,
                        text[(cursor_pos.x) as usize..text.len()].to_string());
@@ -601,7 +607,7 @@ pub fn handle_char(context: common::EzContext, char: char) {
     else {
         let (pre_view_text, mut view_text, post_view_text) =
             get_view_parts(state.get_text(), state.get_view_start(),
-                           state.get_size().width);
+                           state.get_effective_size().width);
         view_text = format!("{}{}{}",
                             view_text[0..cursor_pos.x as usize].to_string(), char,
                             view_text[(cursor_pos.x) as usize..view_text.len()].to_string());
@@ -609,9 +615,9 @@ pub fn handle_char(context: common::EzContext, char: char) {
         state.set_text(new_text);
     }
 
-    if state.get_text().len() < (state.get_size().width - 1){
+    if state.get_text().len() < (state.get_effective_size().width){
         state.set_cursor_x(state.get_cursor_pos().x + 1);
-    } else if cursor_pos.x >= state.get_size().width - 2 {
+    } else {
         state.set_view_start(state.get_view_start() + 1);
     }
     widget_obj.on_value_change(context);
