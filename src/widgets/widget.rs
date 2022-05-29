@@ -252,11 +252,13 @@ pub trait EzObject {
 
     /// Redraw the widget on the screen. Using the view tree, only changed content is written to
     /// improve performance.
-    fn redraw(&self, view_tree: &mut common::ViewTree, state_tree: &mut common::StateTree) {
+    fn redraw(&self, view_tree: &mut common::ViewTree, state_tree: &mut common::StateTree,
+              protect_modal: bool ) {
+
         let state = state_tree.get(&self.get_full_path()).unwrap().as_generic();
         let pos = state.get_absolute_position();
         let content = self.get_contents(state_tree);
-        common::write_to_screen(pos, content, view_tree);
+        common::write_to_screen(pos, content, view_tree, state_tree, protect_modal);
     }
 
     /// Set the content for a widget manually. This is not implemented for most widgets, as they

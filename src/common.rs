@@ -8,7 +8,7 @@ use crossterm::event::KeyCode;
 use crate::ez_parser::EzWidgetDefinition;
 use crate::scheduler::Scheduler;
 use crate::widgets::layout::Layout;
-use crate::states::state::{self, Padding};
+use crate::states::state::{self, Coordinates, Padding};
 use crate::widgets::widget::{EzWidget, EzObjects, Pixel, EzObject};
 
 
@@ -110,17 +110,29 @@ pub fn get_widget_by_position<'a>(pos: state::Coordinates, widget_tree: &'a Widg
 
 /// Write content to screen. Only writes differences between the passed view tree (current content)
 /// and passed content (new content). The view tree is updated when changes are made.
-pub fn write_to_screen(base_position: state::Coordinates, content: PixelMap, view_tree: &mut ViewTree) {
+pub fn write_to_screen(base_position: state::Coordinates, content: PixelMap,
+                       view_tree: &mut ViewTree, state_tree: &StateTree, protect_modal: bool) {
     stdout().execute(cursor::SavePosition).unwrap();
+
+    let root_state = state_tree.get("/root").unwrap().as_layout();
+    // Get list of coordinates for the open modal if any so we can exclude those for redraw
+    let modal_coords = if !root_state.open_modals.is_empty() {
+        let modal_path = root_state.open_modals.first().unwrap()
+            .as_ez_object().get_full_path();
+        state_tree.get(&modal_path).unwrap().as_generic().get_box_coords()
+    } else {
+        Vec::new()
+    };
     for x in 0..content.len() {
         for y in 0..content[x].len() {
-            let write_pos = (base_position.x + x, base_position.y + y);
+            let write_pos = Coordinates::new(base_position.x + x, base_position.y + y);
             let write_content = content[x][y].get_pixel().clone();
-            if write_pos.0 < view_tree.len() && write_pos.1 < view_tree[write_pos.0].len() &&
-                view_tree[write_pos.0][write_pos.1] != write_content {
-                view_tree[write_pos.0][write_pos.1] = write_content.clone();
+            if protect_modal && modal_coords.contains(&write_pos) { continue }
+            if write_pos.x < view_tree.len() && write_pos.y < view_tree[write_pos.x].len() &&
+                view_tree[write_pos.x][write_pos.y] != write_content {
+                view_tree[write_pos.x][write_pos.y] = write_content.clone();
                 stdout().queue(cursor::MoveTo(
-                    write_pos.0 as u16, write_pos.1 as u16)).unwrap()
+                    write_pos.x as u16, write_pos.y as u16)).unwrap()
                     .queue(PrintStyledContent(write_content)).unwrap();
             }
         }
@@ -142,32 +154,42 @@ pub fn initialize_view_tree(width: usize, height: usize) -> ViewTree {
 }
 
 
-/// Check each widget in a state tree for two things:
+/// Update the state of all widgets from a state tree
+pub fn update_state_tree(state_tree: &StateTree, root_widget: &mut Layout) {
+
+    for widget in state_tree.keys() {
+        if widget == &root_widget.get_full_path() {
+            root_widget.update_state(state_tree.get(widget)
+                .unwrap());
+            continue
+        }
+        root_widget.get_child_by_path_mut(widget).unwrap()
+            .as_ez_object_mut().update_state(
+            state_tree.get(widget).unwrap())
+    }
+}
+
+
+/// Check each widget state tree for two things:
 /// 1. If the state of the widget in the passed StateTree differs from the current widget state.
-/// In this case the widget state should be updated with the new one, and the widget parent
-/// should be redrawn.
-/// 2. If its' state contains a forced redraw. In this case the entire screen will be rewritten,
-/// and as such widgets will not be redrawn individually. Their state will still be updated.
-pub fn update_state_tree(view_tree: &mut ViewTree, state_tree: &mut StateTree,
-                         root_widget: &mut Layout) -> bool {
+/// In this case the widget state should be updated with the new one, and the widget should be
+/// redrawn.
+/// 2. If the state of the widget contains a forced redraw. In this case the entire screen will
+/// be redrawn, and widgets will not be redrawn individually. Their state will still be updated.
+pub fn redraw_changed_widgets(view_tree: &mut ViewTree, state_tree: &mut StateTree,
+                              root_widget: &mut Layout) -> bool {
     let mut force_redraw = false;
-    // We separate widgets and modals to withdraw because modals need to go last
+    // We separate widgets and modals to redraw because modals need to be drawn last
     let mut widgets_to_redraw = Vec::new();
     let mut modals_to_redraw = Vec::new();
+
+    // We update the root state first, as it might contain new modals we need to reference below
     let root_state = state_tree.get(&root_widget.path).unwrap();
-    // If there is a current modal, get its' box coordinates. If any other widget that requires
-    // a redraw overlaps that box, we will redraw the modal also. That way it stays on top.
-    let mut current_modal_box =
-        if !root_state.as_layout().open_modals.is_empty() {
-            let modal_path = root_state.as_layout().open_modals.first().unwrap()
-                .as_ez_object().get_full_path();
-            Some((state_tree.get(&modal_path).unwrap().as_generic().get_box(), modal_path))
-        } else { None };
-    // We update the root state first, as it might contain new modals we need to reference
     if root_state.as_generic().get_changed() || root_state.as_generic().get_force_redraw() {
         force_redraw = true;
     }
     root_widget.update_state(root_state);
+
     for widget_path in state_tree.keys() {
         if widget_path == &root_widget.get_full_path() {
             continue  // We updated root first so skip it now
@@ -175,37 +197,30 @@ pub fn update_state_tree(view_tree: &mut ViewTree, state_tree: &mut StateTree,
         let state = state_tree.get(widget_path).unwrap();
         if state.as_generic().get_force_redraw() {
             force_redraw = true;
-        }
-        if state.as_generic().get_changed() {
             let widget =
                 root_widget.get_child_by_path_mut(widget_path).unwrap().as_ez_object_mut();
             widget.update_state(state);
-            widgets_to_redraw.push(widget_path.to_string());
-            // Chech overlap between widget and modal. Redraw modal if there's any.
+        } else if state.as_generic().get_changed() {
+            let widget =
+                root_widget.get_child_by_path_mut(widget_path).unwrap().as_ez_object_mut();
+            widget.update_state(state);
+            // Check overlap between widget and modal. Redraw modal if there's any.
             if !widget_path.starts_with("/modal") {
-                if let Some((box_coords, ref modal_path)) = current_modal_box {
-                    if state_tree.get(widget_path.as_str()).unwrap().as_generic()
-                        .overlaps(box_coords) {
-                        modals_to_redraw.push(modal_path.to_string());
-                        current_modal_box = None;
-                    }
-
-                }
+                let parent_path = widget_path.rsplit_once('/').unwrap().0;
+                widgets_to_redraw.push(parent_path.to_string());
             } else{
                 modals_to_redraw.push(widget_path.to_string());
             }
         }
     }
     if !force_redraw {
-        // We only redraw widgets if a forced screen redraw is not necessary. Otherwise we're doing
-        // double work.
         for widget_path in widgets_to_redraw.iter() {
             root_widget.get_child_by_path_mut(widget_path).unwrap().as_ez_object_mut()
-                .redraw(view_tree, state_tree);
+                .redraw(view_tree, state_tree, true);
         }
         for widget_path in modals_to_redraw.iter() {
             root_widget.get_child_by_path_mut(widget_path).unwrap().as_ez_object_mut()
-                .redraw(view_tree, state_tree);
+                .redraw(view_tree, state_tree, false);
         }
     }
     force_redraw

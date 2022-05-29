@@ -421,9 +421,21 @@ pub trait GenericState {
     /// Get the top left and bottom right corners of a widget in (X, Y) coordinate tuples.
     fn get_box(&self) -> (Coordinates, Coordinates) {
         let top_left = self.get_absolute_position();
-        let top_right = Coordinates::new(
+        let bottom_right = Coordinates::new(
             top_left.x + self.get_size().width, top_left.y + self.get_size().height);
-        (top_left, top_right)
+        (top_left, bottom_right)
+    }
+
+    /// Get all the coordinates of a box in list.
+    fn get_box_coords(&self) -> Vec<Coordinates> {
+        let mut coords = Vec::new();
+        let (top_left, bottom_right) = self.get_box();
+        for x in top_left.x..bottom_right.x + 1 {
+            for y in top_left.y..bottom_right.y + 1 {
+                coords.push(Coordinates::new(x, y));
+            }
+        }
+        coords
     }
 
     /// Returns a bool representing whether two widgets overlap at any point.
@@ -433,7 +445,7 @@ pub trait GenericState {
         // If one rectangle is on the left of the other there's no overlap
         if l1.x >= r2.x || l2.x >= r1.x { return false }
         // If one rectangle is above the other there's no overlap
-        if r1.y >= l2.y || r2.y >= l1.y { return false }
+        if l2.y >= r1.y || l1.y >= r2.y { return false }
         true
     }
 
@@ -509,7 +521,7 @@ impl Size {
 
 
 /// Convenience wrapper around an XY tuple.
-#[derive(Copy, Clone, Default, Debug)]
+#[derive(PartialEq, Copy, Clone, Default, Debug)]
 pub struct Coordinates {
     pub x: usize,
     pub y: usize,

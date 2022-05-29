@@ -6,7 +6,7 @@ use std::io::{Error, ErrorKind};
 use crossterm::event::{Event, KeyCode, MouseButton, MouseEventKind};
 use crate::common;
 use crate::states::dropdown_state::DropdownState;
-use crate::states::state::{self, EzState, GenericState, SelectableState};
+use crate::states::state::{self, EzState, GenericState};
 use crate::widgets::widget::{self, EzObject, EzWidget};
 use crate::ez_parser;
 
@@ -249,23 +249,19 @@ impl Dropdown {
 
     /// Called when the widgets is not dropped down and enter/left mouse click occurs on it.
     fn on_press(&self, context: common::EzContext) {
-        let mut own_state = context.state_tree.get_mut(&self.get_full_path()).unwrap().as_dropdown_mut();
-        own_state.selected = false;
-        own_state.focussed = false;
-        own_state.changed = false;
         let mut modal_state =
             context.state_tree.get_mut(&self.get_full_path()).unwrap().as_dropdown_mut().clone();
-        let root =
-            format!("/{}", self.get_full_path().split('/').nth(1).unwrap());
-        let root_state = context.state_tree.get_mut(&root).unwrap();
+        let root_state = context.state_tree.get_mut("/root").unwrap();
 
         let modal_id = format!("{}_modal", self.get_id());
         let modal_path = format!("/modal/{}", modal_id);
         modal_state.set_dropped_down_selected_row(1);
         modal_state.set_width(modal_state.size.width);
         modal_state.set_height(modal_state.total_options() + 2);
+        modal_state.set_size_hint(state::SizeHint::new(None, None));
         modal_state.set_position(modal_state.absolute_position);
         modal_state.set_absolute_position(modal_state.absolute_position);
+        modal_state.set_pos_hint(state::PosHint::new(None, None));
         let new_modal = DroppedDownMenu {
             id: modal_id,
             path: modal_path.clone(),
@@ -465,17 +461,13 @@ impl DroppedDownMenu {
                     .clone();
                 context.state_tree.get_mut(&self.parent_path).unwrap()
                     .as_dropdown_mut().set_choice(choice);
-                context.state_tree
-                    .get_mut(format!("/{}",self.parent_path.split('/').nth(1).unwrap()).as_str())
-                    .unwrap().as_layout_mut().dismiss_modal();
+                context.state_tree.get_mut("/root").unwrap().as_layout_mut().dismiss_modal();
                 context.widget_path = self.parent_path.clone();  // Change widget to parent for on_value_change callback
                 context.widget_tree.get(&self.parent_path).unwrap().as_ez_widget()
                     .on_value_change(context);
             }
         } else {
-            context.state_tree
-                .get_mut(format!("/{}",self.parent_path.split('/').nth(1).unwrap()).as_str())
-                .unwrap().as_layout_mut().dismiss_modal();
+            context.state_tree.get_mut("/root").unwrap().as_layout_mut().dismiss_modal();
         }
     }
 

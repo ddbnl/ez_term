@@ -2,8 +2,7 @@
 
 // This is the definition of the actual UI that will be displayed. All the non-standard widgets you see in here are
 // templates we define below. Using templates can give us a really clean, flat and short UI definition.
-// A UI must always start with a Layout as the root widget. The root widget may have a custom ID, but it defaults
-// to "root"
+// A UI must always start with a Layout as the root widget. The root widget ID is always "root"
 - Layout:
     mode: box
     orientation: horizontal
@@ -12,11 +11,16 @@
         mode: box
         size_hint_x: 4/5
         orientation: vertical
-        - Canvas:
-            id: canvas
+        - Layout:
+            id: canvas_box
+            mode: box
+            orientation: vertical
             auto_scale: true, true
-            from_file: ./Examples/example_art.txt
-            halign: center
+            - Canvas:
+                id: canvas
+                auto_scale: true, true
+                from_file: ./Examples/example_art.txt
+                halign: center
         - Layout:
             id: bottom_box
             mode: box

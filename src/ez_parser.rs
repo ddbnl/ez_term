@@ -110,10 +110,8 @@ impl EzWidgetDefinition {
         if initialized.state.get_size().height == 0 {
             initialized.state.set_height(terminal_size.1 as usize);
         }
-        if initialized.get_id().is_empty() {  // Default root widget ID if user didn't define one
-            initialized.set_id("root".to_string());
-        }
-        initialized.set_full_path(format!("/{}", initialized.get_id()));
+        initialized.set_id("root".to_string());
+        initialized.set_full_path(format!("/root"));
         initialized.set_templates(templates);
         initialized
     }

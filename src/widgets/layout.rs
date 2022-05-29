@@ -1,6 +1,5 @@
 //! # Layout
 //! Module implementing the Layout struct.
-use std::borrow::BorrowMut;
 use std::collections::HashMap;
 use std::io::{Error, ErrorKind};
 use crate::ez_parser;

@@ -78,7 +78,7 @@ fn main() {
             .get_colors_mut().foreground = color;
         true
     };
-    scheduler.schedule_interval("/root/left_box/canvas".to_string(),
+    scheduler.schedule_interval("/root/left_box/canvas_box/canvas".to_string(),
                                 Box::new(neon_banner), Duration::from_millis(200));
 
     // Step 3: Run app
