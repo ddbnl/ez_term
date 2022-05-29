@@ -65,7 +65,6 @@ fn initialize_widgets(root_widget: &mut Layout) -> ViewTree {
             root_widget.update_state(state_tree.get(widget).unwrap());
             continue
         }
-        println!("widget {}", widget);
         root_widget.get_child_by_path_mut(widget).unwrap().as_ez_object_mut().update_state(
             state_tree.get(widget).unwrap())
     }

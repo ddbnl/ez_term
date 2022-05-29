@@ -139,7 +139,6 @@ impl<'a> EzWidgetDefinition<'a> {
         -> Result<EzObjects, Error> {
         if templates.contains_key(self.type_name) {
             let template = templates.get_mut(self.type_name).unwrap();
-            println!("HA");
             let mut object = template.clone().parse(templates);
             object.as_ez_object_mut().load_ez_config(config).unwrap();
             return Ok(object);

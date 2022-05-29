@@ -46,36 +46,34 @@ Positioning those labels to be on the outer edges of the screen increases comple
 but if the framework is doing its job not by much. We could use a float layout to have more control over position,
 auto size the labels to be as large as their text content (so they don't fill the entire layout) and then use 
 position hints to place them. We'll also create a new label in the middle of the screen, to show off position hints
-a bit more:
+a bit more. To top it off, we'll introduce a template to define our label style, so we don't have to copy paste it
+over and over.
 
 ```
-- Layout: my_float_layout
+- <MyLabelTemplate@Label>:
+    text: hello
+    border: True
+    auto_scale: true, true
+
+- Layout:
+    id: my_float_layout
     mode: float
-    - Label: my_upper_left_label
-        text: hello
-        border: True
-        auto_scale: true, true
+    - MyLabelTemplate:
+        id: my_upper_left_label
         pos_hint: left, top
-    - Label: my_middle_label
-        text: hello
-        border: True
-        auto_scale: true, true
+    - MyLabelTemplate:
+        id: my_middle_label
         pos_hint: center, middle
-    - Label: my_lower_left_label
-        text: hello
-        border: True
-        auto_scale: true, true
+    - MyLabelTemplate:
+        id: my_lower_left_label
         pos_hint: left, bottom
-    - Label: my_upper_right_label
-        text: hello
-        border: True
-        auto_scale: true, true
+    - MyLabelTemplate:
+        id: my_upper_right_label
         pos_hint: right, top
-    - Label: my_lower_right_label
-        text: hello
-        border: True
-        auto_scale: true, true
+    - MyLabelTemplate:
+        id: my_lower_right_label
         pos_hint: right, bottom
+
 ```
 ![img_2.png](img_2.png)
 
@@ -90,10 +88,13 @@ Very much a work in progress and still not available on Cargo. See the projects 
 
 Currently supports the following:
 
+- Ez language:
+  - Define entire UI in an Ez file using simple english
+  - Supports templates and template inheritance
 - Widgets:
   - Box layouts (automatically place widgets next to each other or below each
     other)
-  - Float layouts (hard coded widget positions)
+  - Float layouts (use size hints and position hints, or hard code positions/sizes)
   - Label (text displaying widget)
   - Text input (input and display text)
   - Checkbox (simple on/off switch)

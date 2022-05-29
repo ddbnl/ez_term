@@ -1,35 +1,9 @@
-// Templates
-//  Small box layout
-- <OneThirdBox@Layout>:
-    mode: box
-    orientation: vertical
-    size_hint_x: 1/3
-    border: True
-    border_fg_color: dark_cyan
-    border_bg_color: black
+// This is a full example displaying all possible widgets currently implemented. We'll go through this step by step.
 
-- <LayoutHeader@Label>:
-    fg_color: Magenta
-    bg_color: Black
-    auto_scale: true, true
-    halign: center
-
-- <CyanScalingBox@Layout>:
-    mode: box
-    orientation: vertical
-    border: true
-    auto_scale: true, true
-    border_fg_color: dark_cyan
-
-- <FullHorizontalBox@Layout>:
-    mode: box
-    orientation: horizontal
-    size_hint: 1, None
-    auto_scale_height: true
-    padding: 1, 1, 1, 1
-
-// Ez files must always start with a Layout as root widget
-// Root widget may have a custom ID, but defaults to "root"
+// This is the definition of the actual UI that will be displayed. All the non-standard widgets you see in here are
+// templates we define below. Using templates can give us a really clean, flat and short UI definition.
+// A UI must always start with a Layout as the root widget. The root widget may have a custom ID, but it defaults
+// to "root"
 - Layout:
     mode: box
     orientation: horizontal
@@ -47,159 +21,229 @@
             id: bottom_box
             mode: box
             orientation: horizontal
-            - OneThirdBox:
+            - InputShowcaseBox:
                 id: small_box_1
-                - LayoutHeader:
-                    text: Layout 1:
-                - CyanScalingBox:
-                    id: input_1_box
-                    - Label:
-                        text: This is a small text input. Its' content is bigger than its' size. It allows us to test views. Try selecting it and pressing left and right button to move through the text:
-                        auto_scale: true, true
-                    - TextInput:
-                        id: input_1
-                        size_hint_x: None
-                        width: 20
-                        bg_color: blue
-                        text: small input to test views
-                        selection_order: 2
-                        padding: 1, 1, 1, 1
-                - CyanScalingBox:
-                    id: input_2_box
-                    - Label:
-                        text: This is a larger input but it has a maximum length, so we can't fill it all:
-                        auto_scale: true, true
-                        padding: 1, 1, 1, 1
-                    - TextInput:
-                        id: input_2
-                        size_hint: 0.9, 1
-                        text: sample larger input
-                        bg_color: blue
-                        max_length: 25
-                        selection_order: 3
-                        padding_left: 1
-                - CyanScalingBox:
-                    id: input_3_box
-                    - Label:
-                        text: This is an input with an on_value and on_keyboard_enter callback. It mirrors what you type in the label, and prints CONFIRMED when enter is pressed.
-                        auto_scale: true, true
-                    - TextInput:
-                        id: input_3
-                        bg_color: blue
-                        text: Mirror text
-                        selection_order: 4
-                        padding: 1, 1, 1, 1
-                    - Label:
-                        id: input_3_label
-                        text: Mirror text
-                        padding_left: 1
-                        auto_scale_height: true
-            - OneThirdBox:
+            - ButtonsShowcaseBox:
                 id: small_box_2
-                - LayoutHeader:
-                    text: Layout 2:
-                - CyanScalingBox:
-                    id: checkbox_section_box
-                    - Label:
-                        text: This is a checkbox: a simple on and off switch. Clicking this one triggers a callback that changes the label:
-                        auto_scale: true, true
-                    - FullHorizontalBox:
-                        id: checkbox_box
-                        - CheckBox:
-                            id: checkbox
-                            selection_order: 5
-                            active: False
-                            active_symbol: X
-                            fg_color: yellow
-                            inactive_symbol: -
-                            padding_x: 1, 1
-                        - Label:
-                            id: checkbox_label
-                            text: Disabled
-                            auto_scale: true, true
-                            fg_color: red
-                - CyanScalingBox:
-                    id: radio_section_box
-                    - Label:
-                        text: These are radio buttons: a group of mutually exclusive off/on switches, matched to each other by group name. Clicking one of these triggers a callback that changes the label:
-                        auto_scale: true, true
-                    - FullHorizontalBox:
-                        id: radio_box
-                        - RadioButton:
-                            id: radio1
-                            group: test_radios
-                            selection_order: 6
-                            active: True
-                            padding_right: 1
-                            fg_color: red
-                        - RadioButton:
-                            id: radio2
-                            group: test_radios
-                            selection_order: 7
-                            padding_right: 1
-                            fg_color: green
-                        - RadioButton:
-                            id: radio3
-                            group: test_radios
-                            selection_order: 8
-                            fg_color: blue
-                        - Label: 
-                            id: radio_label
-                            text: radio1
-                            fg_color: red
-                            auto_scale: true, true
-                            padding_x: 1, 1
-                - CyanScalingBox:
-                    id: button_section_box
-                    - Label:
-                        text: This is a button. We've bound a callback to it that increments a number on the label:
-                        auto_scale: true, true
-                    - FullHorizontalBox:
-                        id: button_box
-                        - Button:
-                            id: button
-                            selection_order: 12
-                            text: Click me!
-                            bg_color: red
-                            fg_color: yellow
-                            auto_scale: true, true
-                        - Label: 
-                            id: button_label
-                            text: Clicked: 0 times
-                            auto_scale: true, true
-                            padding_top: 1
-                            padding_left: 1
-            - OneThirdBox:
+            - DropdownShowcaseBox:
                 id: small_box_3
-                - LayoutHeader:
-                    text: Layout 3
-                - CyanScalingBox:
-                    id: dropdown_section_box
-                    - Label:
-                        text: This is a dropdown menu. We can select from a list of options. Click to open it and select a value; the label should change through a callback:
-                        auto_scale: true, true
-                    - FullHorizontalBox:
-                        id: dropdown_box
-                        - Dropdown:
-                            id: dropdown
-                            selection_order: 13
-                            allow_none: True
-                            size_hint_x: none
-                            width: 20
-                            active: option1
-                            options: option1, option2, option3, option4, option5
-                            fg_color: yellow
-                            bg_color: red
-                        - Label: 
-                            id: dropdown_label
-                            auto_scale: true, true
-                            text: option1
-                            padding_top: 1
-                            padding_left: 1
-    - Layout: 
+    - Layout:
         mode: box
         orientation: vertical
         size_hint_x: 1/5
         border: True
-        - Label: 
+        - Label:
             from_file: ./Examples/dummy.txt
+
+
+// The first templates we define are basic layouts and widgets that we use multiple times. They're basically
+// styled versions of the original widgets/templates.
+
+- <OneThirdBox@Layout>:
+    mode: box
+    orientation: vertical
+    size_hint_x: 1/3
+    border: True
+    border_fg_color: dark_cyan
+    border_bg_color: black
+
+
+- <LayoutHeader@Label>:
+    fg_color: Magenta
+    bg_color: Black
+    auto_scale: true, true
+    halign: center
+
+
+- <CyanScalingBox@Layout>:
+    mode: box
+    orientation: vertical
+    border: true
+    auto_scale: true, true
+    border_fg_color: dark_cyan
+
+
+- <FullHorizontalBox@Layout>:
+    mode: box
+    orientation: horizontal
+    size_hint: 1, None
+    auto_scale_height: true
+    padding: 1, 1, 1, 1
+
+
+// Now we will create templates for larger sections of our UI. By splitting the UI into templates it will flatten
+// out the config file and make it more readable by splitting it into logical sections. In other words, creating a
+// template can be useful even if it is used only once. We are also creating templates based on other templates;
+// this is possible and often a good idea.
+
+- <InputShowcaseBox@OneThirdBox>:
+    - LayoutHeader:
+        text: Layout 1:
+    - InputBox1:
+        id: input_1_box
+    - InputBox2:
+        id: input_2_box
+    - InputBox3:
+        id: input_3_box
+
+
+- <InputBox1@CyanScalingBox>:
+    - Label:
+        text: This is a small text input. Its' content is bigger than its' size. It allows us to test views. Try selecting it and pressing left and right button to move through the text:
+        auto_scale: true, true
+    - TextInput:
+        id: input_1
+        size_hint_x: None
+        width: 20
+        bg_color: blue
+        text: small input to test views
+        selection_order: 2
+        padding: 1, 1, 1, 1
+
+
+- <InputBox2@CyanScalingBox>:
+    - Label:
+        text: This is a larger input but it has a maximum length, so we can't fill it all:
+        auto_scale: true, true
+        padding: 1, 1, 1, 1
+    - TextInput:
+        id: input_2
+        size_hint: 0.9, 1
+        text: sample larger input
+        bg_color: blue
+        max_length: 25
+        selection_order: 3
+        padding_left: 1
+
+
+- <InputBox3@CyanScalingBox>:
+    auto_scale_height: false
+    - Label:
+        text: This is an input with an on_value and on_keyboard_enter callback. It mirrors what you type in the label, and prints CONFIRMED when enter is pressed.
+        auto_scale: true, true
+    - TextInput:
+        id: input_3
+        bg_color: blue
+        text: Mirror text
+        selection_order: 4
+        padding: 1, 1, 1, 1
+    - Label:
+        id: input_3_label
+        text: Mirror text
+        padding_left: 1
+        auto_scale_height: true
+
+
+- <ButtonsShowcaseBox@OneThirdBox>:
+    - LayoutHeader:
+        text: Layout 2:
+    - CheckboxShowcase:
+        id: checkbox_section_box
+    - RadioButtonShowcase:
+        id: radio_section_box
+    - ButtonShowcase:
+        id: button_section_box
+
+
+- <CheckboxShowcase@CyanScalingBox>:
+    - Label:
+        text: This is a checkbox: a simple on and off switch. Clicking this one triggers a callback that changes the label:
+        auto_scale: true, true
+    - FullHorizontalBox:
+        id: checkbox_box
+        - CheckBox:
+            id: checkbox
+            selection_order: 5
+            active: False
+            active_symbol: X
+            fg_color: yellow
+            inactive_symbol: -
+            padding_x: 1, 1
+        - Label:
+            id: checkbox_label
+            text: Disabled
+            auto_scale: true, true
+            fg_color: red
+
+
+- <RadioButtonShowcase@CyanScalingBox>:
+    - Label:
+        text: These are radio buttons: a group of mutually exclusive off/on switches, matched to each other by group name. Clicking one of these triggers a callback that changes the label:
+        auto_scale: true, true
+    - FullHorizontalBox:
+        id: radio_box
+        - RadioButton:
+            id: radio1
+            group: test_radios
+            selection_order: 6
+            active: True
+            padding_right: 1
+            fg_color: red
+        - RadioButton:
+            id: radio2
+            group: test_radios
+            selection_order: 7
+            padding_right: 1
+            fg_color: green
+        - RadioButton:
+            id: radio3
+            group: test_radios
+            selection_order: 8
+            fg_color: blue
+        - Label:
+            id: radio_label
+            text: radio1
+            fg_color: red
+            auto_scale: true, true
+            padding_x: 1, 1
+
+
+- <ButtonShowcase@CyanScalingBox>:
+    auto_scale_height: false
+    - Label:
+        text: This is a button. We've bound a callback to it that increments a number on the label:
+        auto_scale: true, true
+    - FullHorizontalBox:
+        id: button_box
+        - Button:
+            id: button
+            selection_order: 12
+            text: Click me!
+            bg_color: red
+            fg_color: yellow
+            auto_scale: true, true
+        - Label:
+            id: button_label
+            text: Clicked: 0 times
+            auto_scale: true, true
+            padding_top: 1
+            padding_left: 1
+
+
+- <DropdownShowcaseBox@OneThirdBox>:
+    - LayoutHeader:
+        text: Layout 3
+    - CyanScalingBox:
+        id: dropdown_section_box
+        auto_scale_height: false
+        - Label:
+            text: This is a dropdown menu. We can select from a list of options. Click to open it and select a value; the label should change through a callback:
+            auto_scale: true, true
+        - FullHorizontalBox:
+            id: dropdown_box
+            - Dropdown:
+                id: dropdown
+                selection_order: 13
+                allow_none: True
+                size_hint_x: none
+                width: 20
+                active: option1
+                options: option1, option2, option3, option4, option5
+                fg_color: yellow
+                bg_color: red
+            - Label:
+                id: dropdown_label
+                auto_scale: true, true
+                text: option1
+                padding_top: 1
+                padding_left: 1
