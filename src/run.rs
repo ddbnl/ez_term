@@ -13,6 +13,7 @@ use crate::widgets::layout::Layout;
 use crate::widgets::widget::{EzObject};
 use crate::scheduler::{Scheduler};
 use crate::states::state::{self};
+use crate::widgets::widget;
 
 
 /// Set initial state of the terminal
@@ -106,19 +107,34 @@ fn run_loop(mut root_widget: Layout, mut scheduler: Scheduler) -> Result<()>{
         let mut state_tree = root_widget.get_state_tree();
         let widget_tree = root_widget.get_widget_tree();
         scheduler.run_tasks(&mut view_tree, &mut state_tree, &widget_tree);
-        let selected_widget = common::get_selected_widget(&widget_tree);
-        if poll(Duration::from_millis(10))? {
+        if poll(Duration::from_millis(100))? {
 
             // Get the event; it can only be consumed once, then the loop continues to next iter
             let event = read().unwrap();
             let mut consumed = false;
+            let selected_widget =
+                common::get_selected_widget(&widget_tree, &mut state_tree);
+            let open_modals =
+                &state_tree.get(&root_widget.path).unwrap().as_layout().open_modals.clone();
+            // Modals get top priority in consuming events
+            if !open_modals.is_empty() {
+                let open_modal = open_modals.first().unwrap();
+                if let widget::EzObjects::Layout(i) = open_modal {
 
-
+                } else {
+                    let context = EzContext::new(
+                        open_modal.as_ez_widget().get_full_path(), &mut view_tree,
+                        &mut state_tree, &widget_tree, &mut scheduler);
+                    consumed = open_modal.as_ez_widget().handle_event(event, context);
+                }
+            }
             // Focussed widgets get priority consuming an event
-            if let Some(i) = selected_widget {
-                let context = EzContext::new(i.get_full_path(), &mut view_tree,
-                                             &mut state_tree, &widget_tree, &mut scheduler);
-                consumed = i.get_focus() && i.handle_event(event, context);
+            if !consumed {
+                if let Some(i) = selected_widget {
+                    let context = EzContext::new(i.get_full_path(), &mut view_tree,
+                    &mut state_tree, &widget_tree, &mut scheduler);
+                    consumed = i.get_focus() && i.handle_event(event, context);
+                }
             }
             // Try to handle event as global bound event next
             if !consumed {
@@ -198,18 +214,16 @@ fn handle_key_event(key: KeyEvent, view_tree: &mut ViewTree, state_tree: &mut St
 
     match key.code {
         KeyCode::Down => {
-            common::deselect_selected_widget(view_tree, state_tree, widget_tree, scheduler);
             common::select_next(view_tree, state_tree, widget_tree, scheduler);
             true
         },
         KeyCode::Up => {
-            common::deselect_selected_widget(view_tree, state_tree, widget_tree,
-                                             scheduler);
             common::select_previous(view_tree, state_tree, widget_tree, scheduler);
             true
         },
         KeyCode::Enter => {
-            let selected_widget = common::get_selected_widget(widget_tree);
+            let selected_widget =
+                common::get_selected_widget(widget_tree, state_tree);
             if let Some(widget) = selected_widget {
                 let context = EzContext::new(widget.get_full_path(),
                 view_tree, state_tree, widget_tree, scheduler);
@@ -243,8 +257,7 @@ fn handle_mouse_event(event: MouseEvent, view_tree: &mut ViewTree, state_tree: &
                 let relative_position = state::Coordinates::new(mouse_position.x - abs.x,
                                                                     mouse_position.y - abs.y);
                 match button {
-                    MouseButton::Left =>
-                        {
+                    MouseButton::Left => {
                         common::deselect_selected_widget(view_tree, state_tree, widget_tree,
                                                          scheduler);
                         let context = EzContext::new(widget.get_full_path(),

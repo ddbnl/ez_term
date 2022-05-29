@@ -12,6 +12,7 @@ use crate::widgets::widget::{EzWidget, Pixel, EzObject};
 use crate::common;
 use crate::scheduler::Scheduler;
 
+#[derive(Clone)]
 pub struct TextInput {
 
     /// ID of the widget, used to construct [path]
@@ -251,8 +252,6 @@ impl EzWidget for TextInput {
 
     fn is_selectable(&self) -> bool { true }
 
-    fn is_selected(&self) -> bool { self.state.selected }
-
     fn get_selection_order(&self) -> usize { self.selection_order }
 
     fn get_key_map(&self) -> &common::KeyMap { &self.keymap }
@@ -344,7 +343,7 @@ impl EzWidget for TextInput {
 impl TextInput {
 
     /// Initialize an instance of this object using the passed config coming from [ez_parser]
-    pub fn from_config(config: Vec<&str>) -> Self {
+    pub fn from_config(config: Vec<String>) -> Self {
         let mut obj = TextInput::default();
         obj.load_ez_config(config).unwrap();
         obj

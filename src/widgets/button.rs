@@ -8,6 +8,7 @@ use crate::common;
 use crate::widgets::widget::{EzWidget, Pixel, EzObject};
 use crate::ez_parser;
 
+#[derive(Clone)]
 pub struct Button {
 
     /// ID of the widget, used to construct [path]
@@ -224,9 +225,6 @@ impl EzWidget for Button {
 
     fn is_selectable(&self) -> bool { true }
 
-    fn is_selected(&self) -> bool { self.state.selected }
-
-
     fn get_selection_order(&self) -> usize { self.selection_order }
 
     fn get_key_map(&self) -> &common::KeyMap {
@@ -263,7 +261,7 @@ impl EzWidget for Button {
 impl Button {
 
     /// Initialize an instance of this object using the passed config coming from [ez_parser]
-    pub fn from_config(config: Vec<&str>) -> Self {
+    pub fn from_config(config: Vec<String>) -> Self {
         let mut obj = Button::default();
         obj.load_ez_config(config).unwrap();
         obj

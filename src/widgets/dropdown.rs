@@ -5,14 +5,13 @@
 use std::io::{Error, ErrorKind};
 use crossterm::event::{Event, KeyCode, MouseButton, MouseEventKind};
 use crate::common;
-use crate::common::StateTree;
 use crate::states::dropdown_state::DropdownState;
-use crate::states::state::{self, GenericState, SelectableState};
-use crate::widgets::widget::{EzWidget, Pixel, EzObject};
+use crate::states::state::{self, EzState, GenericState, SelectableState};
+use crate::widgets::widget::{self, EzObject, EzWidget};
 use crate::ez_parser;
 
 
-#[derive(Default)]
+#[derive(Default, Clone)]
 pub struct Dropdown {
 
     /// ID of the widget, used to construct [path]
@@ -52,7 +51,7 @@ pub struct Dropdown {
 }
 
 
-impl EzObject for Dropdown {
+impl widget::EzObject for Dropdown {
 
     fn load_ez_parameter(&mut self, parameter_name: String, parameter_value: String)
                          -> Result<(), Error> {
@@ -162,9 +161,6 @@ impl EzObject for Dropdown {
         let state =
             state_tree.get_mut(&self.get_full_path()).unwrap().as_dropdown_mut();
         // If dropped down get full content instead
-        if state.dropped_down {
-            return self.get_dropped_down_contents(state_tree)
-        }
         // Set a default value if user didn't give one
         let mut active = state.choice.clone();
         if active.is_empty() && !state.allow_none {
@@ -181,37 +177,189 @@ impl EzObject for Dropdown {
         for _ in 0..state.get_effective_size().width {
             let mut new_y = Vec::new();
             if !text.is_empty() {
-                new_y.push(Pixel::new(text.pop().unwrap().to_string(),
+                new_y.push(widget::Pixel::new(text.pop().unwrap().to_string(),
                     fg_color, bg_color));
             } else {
-                new_y.push(Pixel::new(" ".to_string(),fg_color,
+                new_y.push(widget::Pixel::new(" ".to_string(),fg_color,
                                       bg_color));
             }
             contents.push(new_y);
         }
         contents = common::add_border(contents, state.get_border_config());
+        state.set_effective_height(1);
         contents
     }
 }
 
-impl EzWidget for Dropdown {
+impl widget::EzWidget for Dropdown {
     fn set_focus(&mut self, enabled: bool) { self.state.focussed = enabled }
 
     fn get_focus(&self) -> bool { self.state.focussed }
 
     fn is_selectable(&self) -> bool { true }
 
-    fn is_selected(&self) -> bool { self.state.selected }
-
     fn get_selection_order(&self) -> usize { self.selection_order }
 
-    fn get_key_map(&self) -> &common::KeyMap {
-       &self.keymap
-    }
+    fn get_key_map(&self) -> &common::KeyMap { &self.keymap }
 
     fn bind_key(&mut self, key: KeyCode, func: common::KeyboardCallbackFunction) {
        self.keymap.insert(key, func);
     }
+
+    fn set_bind_on_value_change(&mut self, func: common::GenericEzFunction) {
+        self.bound_on_value_change = Some(func)
+    }
+
+    fn get_bind_on_value_change(&self) -> Option<common::GenericEzFunction> {
+        self.bound_on_value_change
+    }
+
+    fn on_left_click(&self, context: common::EzContext, _position: state::Coordinates) {
+        self.on_press(context);
+    }
+
+    fn on_keyboard_enter(&self, context: common::EzContext) { self.on_press(context); }
+
+    fn set_bind_right_click(&mut self, func: common::MouseCallbackFunction) {
+        self.bound_right_mouse_click = Some(func)
+    }
+
+    fn get_bind_right_click(&self) -> Option<common::MouseCallbackFunction> {
+        self.bound_right_mouse_click
+    }
+
+    fn set_bind_on_select(&mut self, func: fn(common::EzContext, Option<state::Coordinates>)) {
+        self.bound_on_select = Some(func);
+    }
+
+    fn get_bind_on_select(&self) -> Option<fn(common::EzContext, Option<state::Coordinates>)> {
+        self.bound_on_select
+    }
+
+}
+
+impl Dropdown {
+
+    /// Initialize an instance of this object using the passed config coming from [ez_parser]
+    pub fn from_config(config: Vec<String>) -> Self {
+        let mut obj = Dropdown::default();
+        obj.load_ez_config(config).unwrap();
+        obj
+    }
+
+    /// Called when the widgets is not dropped down and enter/left mouse click occurs on it.
+    fn on_press(&self, context: common::EzContext) {
+        let mut own_state = context.state_tree.get_mut(&self.get_full_path()).unwrap().as_dropdown_mut();
+        own_state.selected = false;
+        own_state.focussed = false;
+        own_state.changed = false;
+        let mut modal_state =
+            context.state_tree.get_mut(&self.get_full_path()).unwrap().as_dropdown_mut().clone();
+        let root =
+            format!("/{}", self.get_full_path().split('/').nth(1).unwrap());
+        let root_state = context.state_tree.get_mut(&root).unwrap();
+
+        let modal_id = format!("{}_modal", self.get_id());
+        let modal_path = format!("/modal/{}", modal_id);
+        modal_state.set_dropped_down_selected_row(1);
+        modal_state.set_width(modal_state.size.width);
+        modal_state.set_height(modal_state.total_options() + 2);
+        modal_state.set_position(modal_state.absolute_position);
+        modal_state.set_absolute_position(modal_state.absolute_position);
+        let new_modal = DroppedDownMenu {
+            id: modal_id,
+            path: modal_path.clone(),
+            parent_path: self.path.clone(),
+            state: modal_state.clone(),
+        };
+        root_state.as_layout_mut().open_modal(widget::EzObjects::DroppedDownMenu(new_modal));
+        root_state.as_generic_mut().set_changed(false);
+        context.state_tree.insert(modal_path, EzState::Dropdown(modal_state));
+    }
+}
+
+
+
+#[derive(Default, Clone)]
+/// This is the menu displayed when the dropdown is actually dropped down. It is implemented as a
+/// separate modal.
+pub struct DroppedDownMenu {
+
+    /// ID of the widget, used to construct [path]
+    pub id: String,
+
+    /// Full path to this widget, e.g. "/root_layout/layout_2/THIS_ID"
+    pub path: String,
+
+    /// Widget path of the [Dropdown] that spawned this menu.
+    pub parent_path: String,
+
+    /// Runtime state of this widget, see [DropdownState] and [State]
+    pub state: DropdownState,
+}
+
+impl EzObject for DroppedDownMenu {
+
+    fn load_ez_parameter(&mut self, _parameter_name: String, _parameter_value: String)
+        -> Result<(), Error> { Ok(()) }
+
+    fn set_id(&mut self, id: String) { self.id = id }
+
+    fn get_id(&self) -> String { self.id.clone() }
+
+    fn set_full_path(&mut self, path: String) { self.path = path }
+
+    fn get_full_path(&self) -> String { self.path.clone() }
+
+    fn update_state(&mut self, new_state: &state::EzState) {
+        let state = new_state.as_dropdown();
+        self.state = state.clone();
+        self.state.changed = false;
+        self.state.force_redraw = false;
+    }
+
+    fn get_state(&self) -> state::EzState { state::EzState::Dropdown(self.state.clone()) }
+    /// Return a PixelMap of this widgets' content in dropped down mode. I.e. a menu of options
+    /// for the user to choose from.
+
+    fn get_contents(&self, state_tree: &mut common::StateTree) -> common::PixelMap {
+
+        let state = state_tree
+            .get_mut(&self.get_full_path()).unwrap().as_dropdown_mut();
+        let mut options:Vec<String> = self.get_dropped_down_options(state).iter()
+            .map(|x| x.chars().rev().collect::<String>()).collect();
+
+        let mut contents = Vec::new();
+        for _ in 0..state.get_size().width - 2{
+            let mut new_y = Vec::new();
+            for y in 0..options.len() {
+                let fg = if y == state.dropped_down_selected_row
+                {state.get_colors().selection_foreground }
+                else {state.get_colors().foreground };
+                let bg = if y == state.dropped_down_selected_row
+                {state.get_colors().selection_background }
+                else {state.get_colors().background };
+                if !options[y].is_empty(){
+                    new_y.push(widget::Pixel{symbol: options[y].pop().unwrap().to_string(),
+                        foreground_color: fg, background_color: bg, underline: false})
+                } else {
+                    new_y.push(widget::Pixel::new(" ".to_string(), fg,
+                                          bg))
+                }
+            }
+            contents.push(new_y.clone());
+
+        }
+        let state = state_tree
+            .get(&self.get_full_path()).unwrap().as_dropdown();
+        contents = common::add_padding(
+            contents, state.get_padding(), state.colors.background,
+            state.colors.foreground);
+        contents = common::add_border(contents, state.get_border_config());
+        contents
+    }
+}
+impl EzWidget for DroppedDownMenu {
 
     fn handle_event(&self, event: Event, context: common::EzContext) -> bool {
         let state = context.state_tree.get_mut(&self.get_full_path()).unwrap()
@@ -236,67 +384,53 @@ impl EzWidget for Dropdown {
             }
             Event::Mouse(event) => {
                 let mouse_position = state::Coordinates::new(event.column as usize,
-                                                                 event.row as usize);
+                                                             event.row as usize);
                 if let MouseEventKind::Down(button) = event.kind {
                     if button == MouseButton::Left {
                         self.handle_left_click(context, mouse_position);
                         return true
                     }
                 } else if event.kind == MouseEventKind::Moved &&
-                        state.collides(mouse_position) {
-                    self.handle_hover(state, mouse_position);
-                    return true
+                    state.collides(mouse_position) {
+                    return self.handle_hover(state, mouse_position)
                 }
             },
             _ => ()
         }
         false
     }
-
-    fn set_bind_on_value_change(&mut self, func: common::GenericEzFunction) {
-        self.bound_on_value_change = Some(func)
-    }
-
-    fn get_bind_on_value_change(&self) -> Option<common::GenericEzFunction> { self.bound_on_value_change }
-
-    fn on_left_click(&self, context: common::EzContext, _position: state::Coordinates) { self.on_press(context); }
-
-    fn on_keyboard_enter(&self, context: common::EzContext) { self.on_press(context); }
-
-    fn set_bind_right_click(&mut self, func: common::MouseCallbackFunction) {
-        self.bound_right_mouse_click = Some(func)
-    }
-
-    fn get_bind_right_click(&self) -> Option<common::MouseCallbackFunction> { self.bound_right_mouse_click }
-
-    fn set_bind_on_select(&mut self, func: fn(common::EzContext, Option<state::Coordinates>)) {
-        self.bound_on_select = Some(func);
-    }
-
-    fn get_bind_on_select(&self) -> Option<fn(common::EzContext, Option<state::Coordinates>)> {
-        self.bound_on_select
-    }
-
 }
-
-impl Dropdown {
-
-    /// Initialize an instance of this object using the passed config coming from [ez_parser]
-    pub fn from_config(config: Vec<&str>) -> Self {
-        let mut obj = Dropdown::default();
-        obj.load_ez_config(config).unwrap();
-        obj
+impl DroppedDownMenu {
+    /// Get an ordered list of options, including the empty option if it was allowed. Order is:
+    /// - Active choice
+    /// - Empty (if allowed)
+    /// - Rest of the options in user defined order
+    fn get_dropped_down_options(&self, state: &mut DropdownState) -> Vec<String> {
+        let mut options = vec!(state.choice.clone());
+        if state.allow_none && !state.choice.is_empty() {
+            options.push("".to_string())
+        }
+        for option in state.options.iter()
+            .filter(|x| x.to_string() != state.choice) {
+            options.push(option.to_string());
+        }
+        options
     }
 
     /// Called when this widget is already dropped down and enter is pressed
-    fn handle_enter(&self, context: common::EzContext) {
+    fn handle_enter(&self, mut context: common::EzContext) {
         let state = context.state_tree.get_mut(
             &self.get_full_path()).unwrap().as_dropdown_mut();
-        state.set_selected(true);
         let choice = self.get_dropped_down_options(state)
             [state.dropped_down_selected_row].clone();
-        state.set_choice(choice);
-        self.exit_focus(context);
+        context.state_tree.get_mut(&self.parent_path).unwrap()
+            .as_dropdown_mut().set_choice(choice);
+        context.state_tree
+            .get_mut(format!("/{}", self.parent_path.split('/').nth(1).unwrap()).as_str())
+            .unwrap().as_layout_mut().dismiss_modal();
+        context.widget_path = self.parent_path.clone();  // Change widget to parent for on_value_change callback
+        context.widget_tree.get(&self.parent_path).unwrap().as_ez_widget()
+            .on_value_change(context);
     }
 
     /// Called when this widget is already dropped down and up is pressed
@@ -319,7 +453,7 @@ impl Dropdown {
     }
 
     /// Called when this widget is already dropped down and widget is left clicked
-    fn handle_left_click(&self, context: common::EzContext, pos: state::Coordinates) {
+    fn handle_left_click(&self, mut context: common::EzContext, pos: state::Coordinates) {
 
         let state = context.state_tree.get_mut(
             &self.get_full_path()).unwrap().as_dropdown_mut();
@@ -329,101 +463,31 @@ impl Dropdown {
             if clicked_row != 0 && clicked_row <= self.state.get_effective_size().height {
                 let choice = self.get_dropped_down_options(state)[clicked_row - 1]
                     .clone();
-                state.set_choice(choice);
+                context.state_tree.get_mut(&self.parent_path).unwrap()
+                    .as_dropdown_mut().set_choice(choice);
+                context.state_tree
+                    .get_mut(format!("/{}",self.parent_path.split('/').nth(1).unwrap()).as_str())
+                    .unwrap().as_layout_mut().dismiss_modal();
+                context.widget_path = self.parent_path.clone();  // Change widget to parent for on_value_change callback
+                context.widget_tree.get(&self.parent_path).unwrap().as_ez_widget()
+                    .on_value_change(context);
             }
         } else {
-            // Click outside widget
-            state.set_selected(false);
+            context.state_tree
+                .get_mut(format!("/{}",self.parent_path.split('/').nth(1).unwrap()).as_str())
+                .unwrap().as_layout_mut().dismiss_modal();
         }
-        self.exit_focus(context);
     }
 
     /// Called when this widget is already dropped down and widget is hovered
-    fn handle_hover(&self, state: &mut DropdownState, pos: state::Coordinates) {
+    fn handle_hover(&self, state: &mut DropdownState, pos: state::Coordinates) -> bool {
         let hovered_row = pos.y - state.absolute_position.y;
         // Check if not hover on border
         if hovered_row - 1 != state.dropped_down_selected_row &&
-        hovered_row != 0 && hovered_row <= self.get_dropped_down_options(state).len() {
+            hovered_row != 0 && hovered_row <= self.get_dropped_down_options(state).len() {
             state.set_dropped_down_selected_row(hovered_row - 1);
+            return true
         }
-    }
-
-    /// Called when widget leaves dropdown mode. Forces a screen redraw because dropping down may
-    /// have overwritten other widgets.
-    fn exit_focus(&self, context: common::EzContext) {
-        let state = context.state_tree.get_mut(
-            &self.get_full_path()).unwrap().as_dropdown_mut();
-        state.set_focussed(false);
-        state.set_dropped_down(false);
-        state.set_force_redraw(true);
-        if state.choice != self.state.choice {
-            self.on_value_change(context);
-        }
-    }
-
-    /// Called when the widgets is not dropped down and enter/left mouse click occurs on it.
-    fn on_press(&self, context: common::EzContext) {
-        let state = context.state_tree.get_mut(&self.get_full_path()).unwrap()
-            .as_dropdown_mut();
-        state.set_dropped_down_selected_row(1);
-        state.set_dropped_down(true);
-        state.set_focussed(true);
-        state.set_selected(true);
-    }
-
-    /// Get an ordered list of options, including the empty option if it was allowed. Order is:
-    /// - Active choice
-    /// - Empty (if allowed)
-    /// - Rest of the options in user defined order
-    fn get_dropped_down_options(&self, state: &mut DropdownState) -> Vec<String> {
-        let mut options = vec!(state.choice.clone());
-        if state.allow_none && !state.choice.is_empty() {
-            options.push("".to_string())
-        }
-        for option in state.options.iter()
-            .filter(|x| x.to_string() != state.choice) {
-            options.push(option.to_string());
-        }
-        options
-    }
-
-    /// Return a PixelMap of this widgets' content in dropped down mode. I.e. a menu of options
-    /// for the user to choose from.
-    fn get_dropped_down_contents(&self, state_tree: &mut StateTree) -> common::PixelMap {
-
-        let state = state_tree
-            .get_mut(&self.get_full_path()).unwrap().as_dropdown_mut();
-        let mut options:Vec<String> = self.get_dropped_down_options(state).iter()
-            .map(|x| x.chars().rev().collect::<String>()).collect();
-
-        let mut contents = Vec::new();
-        for _ in 0..state.get_size().width - 2{
-            let mut new_y = Vec::new();
-            for y in 0..options.len() {
-                let fg = if y == state.dropped_down_selected_row
-                {state.get_colors().selection_foreground }
-                else {state.get_colors().foreground };
-                let bg = if y == state.dropped_down_selected_row
-                {state.get_colors().selection_background }
-                else {state.get_colors().background };
-                if !options[y].is_empty(){
-                    new_y.push(Pixel{symbol: options[y].pop().unwrap().to_string(),
-                        foreground_color: fg, background_color: bg, underline: false})
-                } else {
-                    new_y.push(Pixel::new(" ".to_string(), fg
-                                          ,bg))
-                }
-            }
-            contents.push(new_y.clone());
-
-        }
-        let state = state_tree
-            .get(&self.get_full_path()).unwrap().as_dropdown();
-        let parent_colors = state_tree.get(self.get_full_path()
-            .rsplit_once('/').unwrap().0).unwrap().as_generic().get_colors();
-        contents = common::add_padding(
-            contents, state.get_padding(), parent_colors.background, parent_colors.foreground);
-        contents = common::add_border(contents, state.get_border_config());
-        contents
+        false
     }
 }

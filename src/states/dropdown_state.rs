@@ -48,9 +48,6 @@ pub struct DropdownState {
     /// The currently active choice of the dropdown.
     pub choice: String,
 
-    /// Bool representing whether this widget is currently dropped down or not
-    pub dropped_down: bool,
-
     /// If dropped down, this represents which row of the dropdown is being hovered with the mouse,
     /// or has been selected with the keyboard using up/down.
     pub dropped_down_selected_row: usize,
@@ -80,7 +77,7 @@ impl Default for DropdownState {
            size_hint: state::SizeHint::default(),
            auto_scale: state::AutoScale::default(),
            pos_hint: state::PosHint::default(),
-           size: state::Size::new(0, 1),
+           size: state::Size::new(0, 3),
            padding: state::Padding::default(),
            halign: state::HorizontalAlignment::Left,
            valign: state::VerticalAlignment::Top,
@@ -88,7 +85,6 @@ impl Default for DropdownState {
            selected: false,
            options: Vec::new(),
            allow_none: true,
-           dropped_down: false,
            dropped_down_selected_row:0,
            choice: String::new(),
            border: true,
@@ -131,9 +127,7 @@ impl GenericState for DropdownState {
         self.changed = true;
     }
 
-    fn get_size(&self) -> &state::Size {
-        &self.size
-    }
+    fn get_size(&self) -> &state::Size { &self.size }
 
     fn set_position(&mut self, position: state::Coordinates) {
         self.position = position;
@@ -201,6 +195,7 @@ impl GenericState for DropdownState {
     fn get_force_redraw(&self) -> bool { self.force_redraw }
 }
 impl state::SelectableState for DropdownState {
+
     fn set_selected(&mut self, state: bool) {
         self.selected = state;
         self.changed = true;
@@ -210,15 +205,13 @@ impl state::SelectableState for DropdownState {
 impl DropdownState {
 
     pub fn set_choice(&mut self, choice: String) {
-        self.choice = choice.clone();
+        self.choice = choice;
         self.changed = true;
     }
 
     pub fn get_choice(&self) -> String { self.choice.clone() }
 
-    pub fn set_options(&mut self, options: Vec<String>) {
-        self.options = options
-    }
+    pub fn set_options(&mut self, options: Vec<String>) { self.options = options }
 
     pub fn get_options(&self) -> Vec<String> { self.options.clone() }
 
@@ -235,18 +228,6 @@ impl DropdownState {
     }
 
     pub fn get_allow_none(&self) -> bool { self.allow_none }
-
-    pub fn set_dropped_down(&mut self, dropped_down: bool) {
-        self.dropped_down = dropped_down;
-        if dropped_down {
-            self.set_effective_height(self.total_options());
-        } else {
-            self.set_effective_height(1);
-        }
-        self.changed = true;
-    }
-
-    pub fn get_dropped_down(&self) -> bool { self.dropped_down }
 
     pub fn set_dropped_down_selected_row(&mut self, dropped_down_selected_row: usize) {
         self.dropped_down_selected_row = dropped_down_selected_row;

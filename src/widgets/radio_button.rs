@@ -13,6 +13,7 @@ use crate::widgets::widget::{EzWidget, Pixel, EzObject, EzObjects};
 use crate::ez_parser;
 
 
+#[derive(Clone)]
 pub struct RadioButton {
 
     /// ID of the widget, used to construct [path]
@@ -221,13 +222,9 @@ impl EzObject for RadioButton {
 impl EzWidget for RadioButton {
     fn is_selectable(&self) -> bool { true}
 
-    fn is_selected(&self) -> bool { self.state.selected }
-
     fn get_selection_order(&self) -> usize { self.selection_order }
 
-    fn get_key_map(&self) -> &common::KeyMap {
-       &self.keymap
-    }
+    fn get_key_map(&self) -> &common::KeyMap { &self.keymap }
 
     fn bind_key(&mut self, key: KeyCode, func: common::KeyboardCallbackFunction) {
        self.keymap.insert(key, func);
@@ -264,7 +261,7 @@ impl EzWidget for RadioButton {
 impl RadioButton {
 
     /// Initialize an instance of this object using the passed config coming from [ez_parser]
-    pub fn from_config(config: Vec<&str>) -> Self {
+    pub fn from_config(config: Vec<String>) -> Self {
         let mut obj = RadioButton::default();
         obj.load_ez_config(config).unwrap();
         obj

@@ -7,15 +7,13 @@ functional UI for an app or game. Based on Crossterm and inspired by Kivy.
 
 
 # Introduction
-The vision is an easy-to-use terminal UI framework that can be used by anyone almost immediately. Deciding that you
-want your app to have a UI only to find out that writing the UI will take at least as much study as your original
-idea is what I'm trying to prevent.
+The vision is an easy-to-use terminal UI framework that can be used by anyone almost immediately without much study.
 You should be able to write most of the UI through config files using high-level layouts that do the work for you 
 (e.g. box layouts, table layouts, stacking layouts, etc.). Sizing and positioning should be possible through size hints
 and positions hints, unless you specifically want to hard code size/position.
 
 Code should only be necessary where it makes sense (writing callbacks for example). This way you can focus on coding
-an App, not a UI. Widgets should (at least initially) be elementary: buttons, labels, checkboxes, etc. Combining 
+your app, not a UI. Widgets should (at least initially) be elementary: buttons, labels, checkboxes, etc. Combining 
 simple widgets with smart layouts can still yield impressive UIs, while still maintaining a simple API that doesn't
 require much study.
 
@@ -95,12 +93,13 @@ Currently supports the following:
   - Box layouts (automatically place widgets next to each other or below each
     other)
   - Float layouts (use size hints and position hints, or hard code positions/sizes)
-  - Label (text displaying widget)
-  - Text input (input and display text)
-  - Checkbox (simple on/off switch)
-  - Radio buttons (mutually exclusive groups of switches)
-  - Dropdowns (list of values from which one can be chosen)
-  - Canvases (load content from text file or can be painted manually)
+  - Label 
+  - Text input
+  - Checkbox 
+  - Radio buttons
+  - Dropdowns 
+  - Canvases (load content from text file or fill manually through code)
+  - Popups (widget templates that pop up on callback)
 - Widget features:
   - Size hints
   - Position hints

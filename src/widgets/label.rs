@@ -8,6 +8,7 @@ use crate::states::label_state::LabelState;
 use crate::states::state::{self, GenericState};
 use crate::ez_parser;
 
+#[derive(Clone)]
 pub struct Label {
 
     /// ID of the widget, used to construct [path]
@@ -213,7 +214,7 @@ impl EzWidget for Label {}
 impl Label {
 
     /// Initialize an instance of this object using the passed config coming from [ez_parser]
-    pub fn from_config(config: Vec<&str>) -> Self {
+    pub fn from_config(config: Vec<String>) -> Self {
         let mut obj = Label::default();
         obj.load_ez_config(config).unwrap();
         obj

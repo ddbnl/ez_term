@@ -5,6 +5,7 @@ use crossterm::{QueueableCommand, cursor, ExecutableCommand};
 use std::io::{stdout, Write};
 use std::collections::HashMap;
 use crossterm::event::KeyCode;
+use crate::ez_parser::EzWidgetDefinition;
 use crate::scheduler::Scheduler;
 use crate::widgets::layout::Layout;
 use crate::states::state::{self, Padding};
@@ -20,6 +21,11 @@ pub type PixelMap = Vec<Vec<Pixel>>;
 /// ## Key map
 /// A crossterm KeyCode > Callback function lookup. Used for custom user keybinds
 pub type KeyMap = HashMap<KeyCode, KeyboardCallbackFunction>;
+
+/// ## Templates
+/// A hashmap of 'Template Name > [EzWidgetDefinition]'. Used to instantiate widget templates
+/// at runtime. E.g. when spawning popups.
+pub type Templates = HashMap<String, EzWidgetDefinition>;
 
 /// ## View tree:
 /// Grid of StyledContent representing the entire screen currently being displayed. After each frame
@@ -145,40 +151,60 @@ pub fn initialize_view_tree(width: usize, height: usize) -> ViewTree {
 pub fn update_state_tree(view_tree: &mut ViewTree, state_tree: &mut StateTree,
                          root_widget: &mut Layout) -> bool {
     let mut force_redraw = false;
+    // We separate widgets and modals to withdraw because modals need to go last
     let mut widgets_to_redraw = Vec::new();
+    let mut modals_to_redraw = Vec::new();
+    let root_state = state_tree.get(&root_widget.path).unwrap();
+    // If there is a current modal, get its' box coordinates. If any other widget that requires
+    // a redraw overlaps that box, we will redraw the modal also. That way it stays on top.
+    let mut current_modal_box =
+        if !root_state.as_layout().open_modals.is_empty() {
+            let modal_path = root_state.as_layout().open_modals.first().unwrap()
+                .as_ez_object().get_full_path();
+            Some((state_tree.get(&modal_path).unwrap().as_generic().get_box(), modal_path))
+        } else { None };
+    // We update the root state first, as it might contain new modals we need to reference
+    if root_state.as_generic().get_changed() || root_state.as_generic().get_force_redraw() {
+        force_redraw = true;
+    }
+    root_widget.update_state(root_state);
     for widget_path in state_tree.keys() {
+        if widget_path == &root_widget.get_full_path() {
+            continue  // We updated root first so skip it now
+        }
         let state = state_tree.get(widget_path).unwrap();
         if state.as_generic().get_force_redraw() {
             force_redraw = true;
         }
         if state.as_generic().get_changed() {
-            if widget_path == &root_widget.get_full_path() {
-                root_widget.update_state(state);
-                force_redraw = true;
-            } else {
-                let widget =
-                    root_widget.get_child_by_path_mut(widget_path).unwrap().as_ez_object_mut();
-                widget.update_state(state);
-                if let state::EzState::Dropdown(i) = state {
-                    // Dropdowns are a special case, we don't redraw their parent when they are
-                    // dropped down because they overlap the parent. We don't redraw the parent
-                    // afterwards either because a dropdown forces a global redraw when it retracts.
-                    if state.as_dropdown().dropped_down {
-                        widgets_to_redraw.push(widget.get_full_path());
-                    } else {
-                        widgets_to_redraw.push(widget_path.rsplit_once('/')
-                            .unwrap().0.to_string()); // Redraw parent of changed widget
+            let widget =
+                root_widget.get_child_by_path_mut(widget_path).unwrap().as_ez_object_mut();
+            widget.update_state(state);
+            widgets_to_redraw.push(widget_path.to_string());
+            // Chech overlap between widget and modal. Redraw modal if there's any.
+            if !widget_path.starts_with("/modal") {
+                if let Some((box_coords, ref modal_path)) = current_modal_box {
+                    if state_tree.get(widget_path.as_str()).unwrap().as_generic()
+                        .overlaps(box_coords) {
+                        modals_to_redraw.push(modal_path.to_string());
+                        current_modal_box = None;
                     }
-                } else {
-                    widgets_to_redraw.push(widget_path.rsplit_once('/')
-                        .unwrap().0.to_string()); // Redraw parent of changed widget
+
                 }
-            };
+            } else{
+                modals_to_redraw.push(widget_path.to_string());
+            }
         }
     }
     if !force_redraw {
-        for widget_path in widgets_to_redraw {
-            root_widget.get_child_by_path_mut(&widget_path).unwrap().as_ez_object_mut()
+        // We only redraw widgets if a forced screen redraw is not necessary. Otherwise we're doing
+        // double work.
+        for widget_path in widgets_to_redraw.iter() {
+            root_widget.get_child_by_path_mut(widget_path).unwrap().as_ez_object_mut()
+                .redraw(view_tree, state_tree);
+        }
+        for widget_path in modals_to_redraw.iter() {
+            root_widget.get_child_by_path_mut(widget_path).unwrap().as_ez_object_mut()
                 .redraw(view_tree, state_tree);
         }
     }
@@ -187,11 +213,13 @@ pub fn update_state_tree(view_tree: &mut ViewTree, state_tree: &mut StateTree,
 
 
 /// Return the widget that is currently selected. Can be none.
-pub fn get_selected_widget<'a>(widget_tree: &'a WidgetTree) -> Option<&'a dyn EzWidget> {
+pub fn get_selected_widget<'a>(widget_tree: &'a WidgetTree, state_tree: &mut StateTree)
+    -> Option<&'a dyn EzWidget> {
     for widget in widget_tree.values() {
         if let EzObjects::Layout(_) = widget { continue }  // Layouts cannot be selected
         let generic_widget = widget.as_ez_widget();
-        if generic_widget.is_selectable() && generic_widget.is_selected() {
+        if generic_widget.is_selectable() && state_tree.get(&generic_widget.get_full_path())
+            .unwrap().as_selectable().get_selected() {
             return Some(generic_widget)
         }
     }
@@ -202,7 +230,7 @@ pub fn get_selected_widget<'a>(widget_tree: &'a WidgetTree) -> Option<&'a dyn Ez
 /// If any widget is currently selected, deselect it. Can always be called safely.
 pub fn deselect_selected_widget(view_tree: &mut ViewTree, state_tree: &mut StateTree,
         widget_tree: &WidgetTree, scheduler: &mut Scheduler) {
-    let selected_widget = get_selected_widget(widget_tree);
+    let selected_widget = get_selected_widget(widget_tree, state_tree);
     if let Some(i) = selected_widget {
         let context = EzContext::new(i.get_full_path(), view_tree,
                                       state_tree, widget_tree, scheduler);
@@ -217,16 +245,19 @@ pub fn deselect_selected_widget(view_tree: &mut ViewTree, state_tree: &mut State
 /// called safely.
 pub fn select_next(view_tree: &mut ViewTree, state_tree: &mut StateTree,
                    widget_tree: &WidgetTree, scheduler: &mut Scheduler) {
-    let current_selection = get_selected_widget(widget_tree);
+    let current_selection = get_selected_widget(widget_tree, state_tree);
     let mut current_order = if let Some(i) = current_selection {
-        i.get_selection_order() } else { 0 };
+        state_tree.get_mut(&i.get_full_path()).unwrap().as_selectable_mut().set_selected(false);
+        i.get_selection_order()
+    } else {
+        0
+    };
     let result = find_next_selection(current_order,
                                      widget_tree);
     if let Some( next_widget) = result {
         let context = EzContext::new(next_widget.clone(), view_tree,
                                      state_tree, widget_tree, scheduler);
-        widget_tree.get(&next_widget).unwrap().as_ez_widget().on_select(context,
-                                                                        None);
+        widget_tree.get(&next_widget).unwrap().as_ez_widget().on_select(context,None);
     } else  {
         current_order = 0;
         let result = find_next_selection(current_order, widget_tree);
@@ -271,9 +302,13 @@ pub fn find_next_selection(current_selection: usize, widget_tree: &WidgetTree) -
 pub fn select_previous(view_tree: &mut ViewTree, state_tree: &mut StateTree,
                        widget_tree: &WidgetTree, scheduler: &mut Scheduler) {
 
-    let current_selection = get_selected_widget(widget_tree);
+    let current_selection = get_selected_widget(widget_tree, state_tree);
     let mut current_order = if let Some(i) = current_selection {
-        i.get_selection_order() } else { 0 };
+        state_tree.get_mut(&i.get_full_path()).unwrap().as_selectable_mut().set_selected(false);
+        i.get_selection_order()
+    } else {
+        0
+    };
     let result = find_previous_selection(current_order, widget_tree);
     if let Some( previous_widget) = result {
 

@@ -11,7 +11,7 @@ use crate::widgets::label::{Label};
 use crate::widgets::button::{Button};
 use crate::widgets::canvas::{CanvasWidget};
 use crate::widgets::checkbox::{Checkbox};
-use crate::widgets::dropdown::{Dropdown};
+use crate::widgets::dropdown::{Dropdown, DroppedDownMenu};
 use crate::widgets::radio_button::{RadioButton};
 use crate::widgets::text_input::{TextInput};
 
@@ -20,6 +20,7 @@ use crate::widgets::text_input::{TextInput};
 /// widget, so this enum gathers widgets and layouts in one place, as they do have methods in
 /// common (e.g. both have positions, sizes, etc.). To access common methods, cast this enum
 /// into a EzObject (trait for Layouts+Widgets) or EzWidget (Widgets only).
+#[derive(Clone)]
 pub enum EzObjects {
     Layout(Layout),
     Label(Label),
@@ -27,6 +28,7 @@ pub enum EzObjects {
     CanvasWidget(CanvasWidget),
     Checkbox(Checkbox),
     Dropdown(Dropdown),
+    DroppedDownMenu(DroppedDownMenu),
     RadioButton(RadioButton),
     TextInput(TextInput),
 }
@@ -42,6 +44,7 @@ impl EzObjects {
             EzObjects::CanvasWidget(i) => i,
             EzObjects::Checkbox(i) => i,
             EzObjects::Dropdown(i) => i,
+            EzObjects::DroppedDownMenu(i) => i,
             EzObjects::RadioButton(i) => i,
             EzObjects::TextInput(i) => i,
         }
@@ -57,6 +60,7 @@ impl EzObjects {
             EzObjects::CanvasWidget(i) => i,
             EzObjects::Checkbox(i) => i,
             EzObjects::Dropdown(i) => i,
+            EzObjects::DroppedDownMenu(i) => i,
             EzObjects::RadioButton(i) => i,
             EzObjects::TextInput(i) => i,
         }
@@ -71,6 +75,7 @@ impl EzObjects {
             EzObjects::CanvasWidget(i) => i,
             EzObjects::Checkbox(i) => i,
             EzObjects::Dropdown(i) => i,
+            EzObjects::DroppedDownMenu(i) => i,
             EzObjects::RadioButton(i) => i,
             EzObjects::TextInput(i) => i,
             _ => panic!("Casted non-widget to IsWidget"),
@@ -86,6 +91,7 @@ impl EzObjects {
             EzObjects::CanvasWidget(i) => i,
             EzObjects::Checkbox(i) => i,
             EzObjects::Dropdown(i) => i,
+            EzObjects::DroppedDownMenu(i) => i,
             EzObjects::RadioButton(i) => i,
             EzObjects::TextInput(i) => i,
             _ => panic!("Casted non-widget to IsWidget"),
@@ -163,6 +169,18 @@ impl EzObjects {
         else { panic!("wrong EzObject.") }
     }
 
+    /// Cast this state as a DroppedDownMenu widget ref, you must be sure you have one.
+    pub fn as_dropped_down_menu(&self) -> &DroppedDownMenu {
+        if let EzObjects::DroppedDownMenu(i) = self { i }
+        else { panic!("wrong EzObject.") }
+    }
+
+    /// Cast this state as a mutable DroppedDownMenu widget ref, you must be sure you have one.
+    pub fn as_dropped_down_menu_mut(&mut self) -> &mut DroppedDownMenu {
+        if let EzObjects::DroppedDownMenu(i) = self { i }
+        else { panic!("wrong EzObject.") }
+    }
+
     /// Cast this state as a RadioButton widget ref, you must be sure you have one.
     pub fn as_radio_button(&self) -> &RadioButton {
         if let EzObjects::RadioButton(i) = self { i }
@@ -196,7 +214,7 @@ pub trait EzObject {
 
     /// Accepts config lines from the ez_parser module and prepares them to be loaded by
     /// load_ez_parameter below.
-    fn load_ez_config(&mut self, config: Vec<&str>) -> Result<(), Error> {
+    fn load_ez_config(&mut self, config: Vec<String>) -> Result<(), Error> {
         for line in config {
             let (parameter_name, parameter_value) = line.split_once(':').unwrap();
             self.load_ez_parameter(parameter_name.to_string(),
@@ -266,9 +284,6 @@ pub trait EzWidget: EzObject {
     /// Returns a bool representing whether this widget can be select by keyboard or mouse. E.g.
     /// labels cannot be selected, but checkboxes can.
     fn is_selectable(&self) -> bool { false }
-
-    /// Returns a bool representing whether this widget is currently selected.
-    fn is_selected(&self) -> bool { false }
 
     /// Get the order in which this widget should be selected, represented by a usize number. E.g.
     /// if there is a '1' widget, a '2' widget, and this widget is '3', calling 'select_next_widget'

@@ -1,4 +1,6 @@
 use crate::states::state::{self};
+use crate::widgets::widget;
+use crate::widgets::widget::EzObjects;
 
 
 /// [State] implementation.
@@ -51,6 +53,11 @@ pub struct LayoutState {
     /// Bool representing if state has changed. Triggers widget redraw.
     pub changed: bool,
 
+    /// A list of open modals. Modals are widgets that overlap other content; in other words, they
+    /// open 'in front of' other content. Only one can be shown at a time (the first on in the
+    /// list).
+    pub open_modals: Vec<EzObjects>,
+
     /// If true this forces a global screen redraw on the next frame. Screen redraws are diffed
     /// so this can be called when needed without degrading performance. If only screen positions
     /// that fall within this widget must be redrawn, call [EzObject.redraw] instead.
@@ -74,6 +81,7 @@ impl Default for LayoutState {
             border_config: state::BorderConfig::default(),
             colors: state::ColorConfig::default(),
             changed: false,
+            open_modals: Vec::new(),
             force_redraw: false
         }
     }
@@ -183,12 +191,41 @@ impl state::GenericState for LayoutState {
 impl LayoutState {
 
     /// Set [filler_symbol]
-    pub fn set_filler_symbol(&mut self, symbol: String) { self.filler_symbol = symbol; }
+    pub fn set_filler_symbol(&mut self, symbol: String) {
+        self.filler_symbol = symbol; 
+        self.changed = true;
+    }
 
     /// Get [filler_symbol]
     pub fn get_filler_symbol(&self) -> String { self.filler_symbol.clone() }
+    
+    /// Open a new modal
+    pub fn open_modal(&mut self, modal: EzObjects) {
+        self.open_modals.push(modal);
+    }
+    
+    /// Dismiss the current modal
+    pub fn dismiss_modal(&mut self) {
+        self.open_modals.remove(0);
+        self.changed = true;
+        self.force_redraw = true;
+    }
 
-    pub fn set_border(&mut self, enabled: bool) { self.border = enabled }
-
-    pub fn has_border(&self) -> bool { self.border }
+    /// Dismiss all modals, clearing the entire stack
+    pub fn dismiss_all_modals(&mut self) {
+        self.open_modals.clear();
+        self.changed = true;
+        self.force_redraw = true;
+    }
+    
+    /// Get reference to all open modals
+    pub fn get_modals(&self) -> &Vec<EzObjects> {
+        &self.open_modals
+    }
+    
+    /// Get mutable reference to all open modals
+    pub fn get_modals_mut(&mut self) -> &mut Vec<EzObjects> {
+        self.changed = true;
+        &mut self.open_modals
+    }
 }

@@ -17,6 +17,7 @@ use crate::states::text_input_state::{TextInputState};
 /// mutable ref to the widget itself. Every frame the StateTree is compared to each widget to see
 /// which widget has changed so it can be redrawn. The specific state struct for each widget type
 /// is defined its' own module.
+#[derive(Clone)]
 pub enum EzState {
     Layout(LayoutState),
     Label(LabelState),

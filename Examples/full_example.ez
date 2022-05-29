@@ -247,3 +247,7 @@
                 text: option1
                 padding_top: 1
                 padding_left: 1
+        - Label:
+            text: Test label, overlapped by dropdown when clicked
+            padding_left: 1
+

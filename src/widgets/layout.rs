@@ -1,5 +1,6 @@
 //! # Layout
 //! Module implementing the Layout struct.
+use std::borrow::BorrowMut;
 use std::collections::HashMap;
 use std::io::{Error, ErrorKind};
 use crate::ez_parser;
@@ -10,6 +11,7 @@ use crate::common;
 
 
 /// Used with Box mode, determines whether widgets are placed below or above each other.
+#[derive(Clone)]
 pub enum LayoutOrientation {
     Horizontal,
     Vertical
@@ -17,6 +19,7 @@ pub enum LayoutOrientation {
 
 
 /// Different modes determining how widgets are placed in this layout.
+#[derive(Clone)]
 pub enum LayoutMode {
     /// # Box mode:
     /// Widgets are placed next to each other or under one another depending on orientation.
@@ -32,6 +35,7 @@ pub enum LayoutMode {
 
 /// A layout is where widgets live. They implements methods for hardcoding widget placement or
 /// placing them automatically in various ways.
+#[derive(Clone)]
 pub struct Layout {
 
     /// ID of the layout, used to construct [path]
@@ -52,6 +56,10 @@ pub struct Layout {
     /// Child ID to index in [children] lookup. Used to get widgets by [id] and [path]
     pub child_lookup: HashMap<String, usize>,
 
+    /// A hashmap of 'Template Name > [EzWidgetDefinition]'. Used to instantiate widget templates
+    /// at runtime. E.g. when spawning popups.
+    pub templates: common::Templates,
+
     /// Runtime state of this Layout, see [LayoutState] and [State]
     pub state: LayoutState,
 }
@@ -66,6 +74,7 @@ impl Default for Layout {
             mode: LayoutMode::Box,
             children: Vec::new(),
             child_lookup: HashMap::new(),
+            templates: HashMap::new(),
             state: LayoutState::default(),
         }
     }
@@ -248,6 +257,25 @@ impl EzObject for Layout {
             merged_content, state.get_padding(),state.get_colors().background,
             state.get_colors().foreground);
 
+        if !state.get_modals().is_empty() {
+            let parent_size = state.get_size().clone();
+            let current_modal = state.get_modals().first().unwrap().clone();
+            let modal_state = current_modal.as_ez_widget().get_state().clone();
+            let modal_content = current_modal.as_ez_widget().get_contents(state_tree);
+            let start_pos = modal_state.as_generic().get_position();
+            for x in 0..modal_state.as_generic().get_size().width {
+                for y in 0..modal_state.as_generic().get_size().height {
+                    let write_pos = state::Coordinates::new(
+                        start_pos.x + x, start_pos.y + y);
+                    if write_pos.x < parent_size.width &&
+                        write_pos.y < parent_size.height {
+                       merged_content[write_pos.x][write_pos.y] = modal_content[x][y].clone();
+                    }
+
+                }
+            }
+
+        }
         merged_content
     }
 }
@@ -255,11 +283,19 @@ impl EzObject for Layout {
 impl Layout {
 
     /// Initialize an instance of a Layout with the passed config parsed by [ez_parser]
-    pub fn from_config(config: Vec<&str>) -> Self {
+    pub fn from_config(config: Vec<String>) -> Self {
         let mut obj = Layout::default();
         obj.load_ez_config(config).unwrap();
         obj
     }
+
+    /// Set templates. Used by [ez_parser] on the root layout to keep a hold of all templates
+    /// defined by the user. They can be used to instantiate e.g. popups at runtime.
+    pub fn set_templates(&mut self, templates: common::Templates) { self.templates = templates }
+
+    /// Get templates. Use on the root layout to get all templates defined by the user.
+    /// They can be used to instantiate e.g. popups at runtime.
+    pub fn get_templates(&self) -> &common::Templates { &self.templates }
 
     /// Used by [get_contents] when the [LayoutMode] is set to [Box] and [LayoutOrientation] is
     /// set to [Horizontal]. Merges contents of sub layouts and/or widgets horizontally, using
@@ -637,6 +673,10 @@ impl Layout {
         for (child_path, child) in self.get_widgets_recursive() {
             state_tree.insert(child_path, child.as_ez_object().get_state());
         }
+        for widget in &self.get_state().as_layout().open_modals {
+            state_tree.insert(widget.as_ez_widget().get_full_path(),
+                              widget.as_ez_object().get_state());
+        }
         state_tree.insert(self.get_full_path(), self.get_state());
         state_tree
     }
@@ -647,6 +687,11 @@ impl Layout {
         let mut widget_tree = common::WidgetTree::new();
         for (child_path, child) in self.get_widgets_recursive() {
             widget_tree.insert(child_path, child);
+        }
+        for i in 0..self.get_state().as_layout().open_modals.len() {
+            widget_tree.insert(
+                self.state.open_modals[i].as_ez_widget().get_full_path(),
+                &self.state.open_modals[i]);
         }
         widget_tree
 
@@ -679,6 +724,12 @@ impl Layout {
         // If user passed a path starting with this layout, take it off first.
         if *paths.first().unwrap() == self.get_id() {
             paths.remove(0);
+        } else if *paths.first().unwrap() == "modal" {
+            for i in 0..self.state.open_modals.len() {
+                if self.state.open_modals[i].as_ez_object().get_full_path() == path {
+                    return Some(&self.state.open_modals[i])
+                }
+            }
         }
         paths.reverse();
         let mut root = self.get_child(paths.pop().unwrap());
@@ -696,6 +747,12 @@ impl Layout {
         let mut paths: Vec<&str> = path.split('/').filter(|x| !x.is_empty()).collect();
         if paths.first().unwrap() == &self.get_id() {
             paths.remove(0);
+        } else if *paths.first().unwrap() == "modal" {
+            for i in 0..self.state.open_modals.len() {
+                if self.state.open_modals[i].as_ez_object().get_full_path() == path {
+                    return Some(&mut self.state.open_modals[i])
+                }
+            }
         }
         paths.reverse();
         let mut root = self.get_child_mut(paths.pop().unwrap());

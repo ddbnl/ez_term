@@ -11,6 +11,7 @@ use std::io::{Error, ErrorKind};
 use unicode_segmentation::UnicodeSegmentation;
 use crate::ez_parser;
 
+#[derive(Clone)]
 pub struct CanvasWidget {
     /// ID of the widget, used to construct [path]
     pub id: String,
@@ -219,7 +220,7 @@ impl EzWidget for CanvasWidget {}
 impl CanvasWidget {
 
     /// Load this widget from a config vector coming from [ez_parser]
-    pub fn from_config(config: Vec<&str>) -> Self {
+    pub fn from_config(config: Vec<String>) -> Self {
         let mut obj = CanvasWidget::default();
         obj.load_ez_config(config).unwrap();
         obj
