@@ -4,10 +4,11 @@
 use std::io::{stdout, Write};
 use std::process::exit;
 use std::time::{Duration};
-use crossterm::{ExecutableCommand, execute, Result, cursor::{Hide, Show}, event::{MouseEvent, MouseEventKind, MouseButton, poll, read, DisableMouseCapture,
-                                                                                  EnableMouseCapture, Event, KeyCode, KeyEvent}, terminal::{disable_raw_mode, enable_raw_mode, self}, QueueableCommand, cursor};
-use crossterm::event::KeyCode::PageDown;
-use crate::common::{self, EzContext, initialize_view_tree, StateTree, ViewTree, WidgetTree};
+use crossterm::{ExecutableCommand, execute, Result, cursor::{Hide, Show},
+                event::{MouseEvent, MouseEventKind, MouseButton, poll, read, DisableMouseCapture,
+                        EnableMouseCapture, Event, KeyCode, KeyEvent},
+                terminal::{disable_raw_mode, enable_raw_mode, self}, QueueableCommand};
+use crate::common::{self, EzContext, StateTree, ViewTree, WidgetTree};
 use crate::widgets::layout::Layout;
 use crate::widgets::widget::{EzObject};
 use crate::scheduler::{Scheduler};
@@ -51,29 +52,21 @@ pub fn run(root_widget: Layout, scheduler: Scheduler) {
 
 /// Called just before [run]. Creates initial view- and state trees and writes initial content
 /// to the screen.
-fn initialize_widgets(root_widget: &mut Layout) -> ViewTree {
+fn initialize_widgets(root_widget: &mut Layout) -> (ViewTree, StateTree) {
 
     // Get initial state tree, then convert all size_hints into actual sizes. After that we can
     // set absolute positions for all children as sizes are now known.
-    let mut state_tree = root_widget.get_state_tree();
+    let widget_tree = root_widget.get_widget_tree();
+    let mut state_tree = common::get_state_tree(&root_widget);
     root_widget.set_child_sizes(&mut state_tree);
-    let all_content = root_widget.get_contents(&mut state_tree);
+    let all_content = root_widget.get_contents(&mut state_tree, &widget_tree);
     root_widget.propagate_absolute_positions(&mut state_tree);
-    // Update state tree to cement the new sizes.
-    for widget in root_widget.get_state_tree().keys() {
-        if widget == &root_widget.get_full_path() {
-            root_widget.update_state(state_tree.get(widget).unwrap());
-            continue
-        }
-        root_widget.get_child_by_path_mut(widget).unwrap().as_ez_object_mut().update_state(
-            state_tree.get(widget).unwrap())
-    }
     // Create an initial view tree so we can diff all future changes against it.
     let mut view_tree = common::initialize_view_tree(all_content.len(),
                                                           all_content[0].len());
     common::write_to_screen(state::Coordinates::new(0, 0), all_content,
-                            &mut view_tree, &mut state_tree, false);
-    view_tree
+                            &mut view_tree, &state_tree, false);
+    (view_tree, state_tree)
 
 }
 
@@ -100,9 +93,10 @@ fn initialize_widgets(root_widget: &mut Layout) -> ViewTree {
 /// is.
 fn run_loop(mut root_widget: Layout, mut scheduler: Scheduler) -> Result<()>{
 
-    let mut view_tree = initialize_widgets(&mut root_widget);
+    let (mut view_tree, mut state_tree) = initialize_widgets(&mut root_widget);
     loop {
-        let mut state_tree = root_widget.get_state_tree();
+        // We set the state of the root widget directly as it may contain new modals, and
+        // [get_widget_tree] depends on internal state rather than state_tree due to life times
         let widget_tree = root_widget.get_widget_tree();
         scheduler.run_tasks(&mut view_tree, &mut state_tree, &widget_tree);
         if poll(Duration::from_millis(10))? {
@@ -110,6 +104,7 @@ fn run_loop(mut root_widget: Layout, mut scheduler: Scheduler) -> Result<()>{
             // Get the event; it can only be consumed once
             let mut consumed = false;
             let event = read().unwrap();
+
 
             // Modals get top priority in consuming events
             if !consumed {
@@ -138,27 +133,31 @@ fn run_loop(mut root_widget: Layout, mut scheduler: Scheduler) -> Result<()>{
                     let context = EzContext::new(i.get_full_path(),
                                                  &mut view_tree, &mut state_tree,
                                                  &widget_tree, &mut scheduler);
-                    let _ = i.handle_event(event, context);
+                    consumed = i.handle_event(event, context);
                 };
             }
-            if let Event::Resize(width, height) = event {
-                let current_size = state_tree.get(&root_widget.path).unwrap().as_generic()
-                    .get_size();
-                if current_size.height != height as usize || current_size.width != width as usize {
-                    view_tree = handle_resize(&mut state_tree, &mut root_widget,
-                                              width as usize, height as usize);
-                    continue
+            if !consumed {
+                if let Event::Resize(width, height) = event {
+                    let current_size = state_tree.get(&root_widget.path).unwrap().as_generic()
+                        .get_size();
+                    if current_size.height != height as usize || current_size.width != width as usize {
+                        view_tree = handle_resize(&mut state_tree, &mut root_widget,
+                                                  width as usize, height as usize);
+                        continue
+                    }
                 }
             }
+
         }
         // Update the state tree for each widget, redrawing any that changed. If a global
         // forced redraw was issued by a widget we'll perform one.
         let forced_redraw = common::redraw_changed_widgets(
-            &mut view_tree, &mut state_tree, &mut root_widget);
+            &mut view_tree, &mut state_tree,  &mut root_widget);
         if forced_redraw {
-            let contents = root_widget.get_contents(&mut state_tree);
+            let widget_tree = root_widget.get_widget_tree();
+            let contents = root_widget.get_contents(&mut state_tree, &widget_tree);
             common::write_to_screen(state::Coordinates::new(0, 0),
-                                    contents, &mut view_tree, &mut state_tree,
+                                    contents, &mut view_tree, &state_tree,
                                     false);
         }
     }
@@ -171,29 +170,33 @@ fn handle_modal_event (event: Event, view_tree: &mut ViewTree, state_tree: &mut 
     -> bool {
 
     let mut consumed;
-    let open_modals =
-        &state_tree.get(&root_widget.path).unwrap().as_layout().open_modals.clone();
-    if open_modals.is_empty() {
+    if state_tree.get(&root_widget.path.clone()).unwrap().as_layout().open_modals.is_empty() {
         return false
     }
-    let open_modal = open_modals.first().unwrap();
-    if let widget::EzObjects::Layout(i) = open_modal {
-        for child in i.get_widgets_recursive().values() {
-            let context = EzContext::new(
-                open_modal.as_ez_widget().get_full_path(), view_tree,
-                state_tree, &widget_tree, scheduler);
-            consumed = child.as_ez_widget().handle_event(event, context);
+    let modal_root = state_tree.get(&root_widget.path.clone()).unwrap().as_layout()
+        .open_modals.first().unwrap().as_ez_object().get_full_path().clone();
+    for (path, widget) in widget_tree {
+        if !path.starts_with(&modal_root) { continue }
+        if let widget::EzObjects::Layout(i) = widget {
+            for child in i.get_widgets_recursive().values() {
+                let context = EzContext::new(
+                    child.as_ez_object().get_full_path().clone(), view_tree,
+                    state_tree, widget_tree, scheduler);
+                consumed = child.as_ez_widget().handle_event(event, context);
+                if consumed {
+                    return true
+                }
+            }
+        } else {
+            let context = EzContext::new(path.clone(), view_tree, state_tree,
+                                         widget_tree, scheduler);
+            consumed = widget.as_ez_widget().handle_event(event, context);
             if consumed {
                 return true
             }
         }
-        false
-    } else {
-        let context = EzContext::new(
-            open_modal.as_ez_widget().get_full_path(), view_tree, state_tree,
-            widget_tree, scheduler);
-        open_modal.as_ez_widget().handle_event(event, context)
     }
+    false
 }
 
 /// Try to handle an event as a global keybind. Examples are up/down keys for navigating menu
@@ -247,26 +250,6 @@ fn handle_key_event(key: KeyEvent, view_tree: &mut ViewTree, state_tree: &mut St
     }
 }
 
-/// Handle a resize event by setting the size of the root widget to the new window size, updating
-/// the sizes/positions of all children and generating a new view tree of the right size.
-fn handle_resize(state_tree: &mut StateTree, root_widget: &mut Layout, new_width: usize,
-                 new_height: usize) -> ViewTree{
-    let state = state_tree.get_mut(
-        &root_widget.path).unwrap().as_generic_mut();
-    state.set_width(new_width as usize);
-    state.set_height(new_height as usize);
-    let mut new_view_tree = initialize_view_tree(new_width, new_height);
-    root_widget.set_child_sizes(state_tree);
-    let contents = root_widget.get_contents(state_tree);
-    root_widget.propagate_absolute_positions(state_tree);
-    common::update_state_tree(state_tree, root_widget);
-    // Cleartype purge is tempting but causes issues on at least Windows
-    stdout().queue(terminal::Clear(terminal::ClearType::All)).unwrap();
-    common::write_to_screen(state::Coordinates::new(0, 0),
-                            contents, &mut new_view_tree, state_tree, false);
-    new_view_tree
-}
-
 
 /// Global mouse event handler. If the click pos collides a widget it will be consumed and not
 /// passed on any further. The order for events is:
@@ -304,7 +287,7 @@ fn handle_mouse_event(event: MouseEvent, view_tree: &mut ViewTree, state_tree: &
                                                      view_tree, state_tree, widget_tree, scheduler);
                         widget.on_right_click(context, relative_position);
                     }
-                    _ => return false
+                    _ => { return false }
                 }
                 true
             },
@@ -312,4 +295,24 @@ fn handle_mouse_event(event: MouseEvent, view_tree: &mut ViewTree, state_tree: &
         }
     }
     false
+}
+
+
+/// Handle a resize event by setting the size of the root widget to the new window size, updating
+/// the sizes/positions of all children and generating a new view tree of the right size.
+fn handle_resize(state_tree: &mut StateTree, root_widget: &mut Layout, new_width: usize,
+                 new_height: usize) -> ViewTree{
+    let state = state_tree.get_mut(
+        &root_widget.path).unwrap().as_generic_mut();
+    state.set_width(new_width as usize);
+    state.set_height(new_height as usize);
+    let mut new_view_tree = common::initialize_view_tree(new_width, new_height);
+    root_widget.set_child_sizes(state_tree);
+    let contents = root_widget.get_contents(state_tree, &root_widget.get_widget_tree());
+    root_widget.propagate_absolute_positions(state_tree);
+    // Cleartype purge is tempting but causes issues on at least Windows
+    stdout().queue(terminal::Clear(terminal::ClearType::All)).unwrap();
+    common::write_to_screen(state::Coordinates::new(0, 0),
+                            contents, &mut new_view_tree, state_tree, false);
+    new_view_tree
 }

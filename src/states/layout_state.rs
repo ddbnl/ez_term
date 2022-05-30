@@ -1,9 +1,12 @@
+use std::collections::HashMap;
+use crossterm::event::KeyCode;
+use crate::common;
+use crate::common::StateTree;
 use crate::states::state::{self};
 use crate::widgets::widget::EzObjects;
 
 
 /// [State] implementation.
-#[derive(Clone)]
 pub struct LayoutState {
 
     /// Position of this widget relative to its' parent [Layout]
@@ -57,6 +60,17 @@ pub struct LayoutState {
     /// list).
     pub open_modals: Vec<EzObjects>,
 
+    /// A hashmap of 'Template Name > [EzWidgetDefinition]'. Used to instantiate widget templates
+    /// at runtime. E.g. when spawning popups.
+    pub templates: common::Templates,
+
+    /// [CallbackConfig] containing callbacks to be called in different situations
+    pub callbacks: state::CallbackConfig,
+
+    /// A Key to callback function lookup used to store keybinds for this widget. See
+    /// [KeyboardCallbackFunction] type for callback function signature.
+    pub keymap: common::KeyMap,
+
     /// If true this forces a global screen redraw on the next frame. Screen redraws are diffed
     /// so this can be called when needed without degrading performance. If only screen positions
     /// that fall within this widget must be redrawn, call [EzObject.redraw] instead.
@@ -81,6 +95,9 @@ impl Default for LayoutState {
             colors: state::ColorConfig::default(),
             changed: false,
             open_modals: Vec::new(),
+            templates: HashMap::new(),
+            callbacks: state::CallbackConfig::default(),
+            keymap: common::KeyMap::new(),
             force_redraw: false
         }
     }
@@ -93,63 +110,76 @@ impl state::GenericState for LayoutState {
 
     fn set_size_hint(&mut self, size_hint: state::SizeHint) {
         self.size_hint = size_hint;
-        self.changed = true;
     }
 
     fn get_size_hint(&self) -> &state::SizeHint { &self.size_hint }
 
     fn set_pos_hint(&mut self, pos_hint: state::PosHint) {
+        if self.pos_hint != pos_hint { self.changed = true }
         self.pos_hint = pos_hint;
-        self.changed = true;
     }
 
     fn get_pos_hint(&self) -> &state::PosHint { &self.pos_hint }
 
     fn set_auto_scale(&mut self, auto_scale: state::AutoScale) {
+        if self.auto_scale != auto_scale { self.changed = true }
         self.auto_scale = auto_scale;
-        self.changed = true;
     }
 
     fn get_auto_scale(&self) -> &state::AutoScale { &self.auto_scale }
 
     fn set_size(&mut self, size: state::Size) {
         self.size = size;
-        self.changed = true;
     }
 
     fn get_size(&self) -> &state::Size { &self.size  }
 
     fn set_position(&mut self, position: state::Coordinates) {
         self.position = position;
-        self.changed = true;
     }
 
     fn get_position(&self) -> state::Coordinates { self.position }
 
     fn set_absolute_position(&mut self, pos: state::Coordinates) {
+        if self.absolute_position != pos { self.changed = true }
         self.absolute_position = pos;
-        self.changed = true;
     }
 
     fn get_absolute_position(&self) -> state::Coordinates { self.absolute_position }
 
+    fn set_callbacks(&mut self, config: state::CallbackConfig) {
+        self.callbacks = config;
+    }
+
+    fn get_callbacks(&self) -> &state::CallbackConfig { &self.callbacks }
+
+    fn get_callbacks_mut(&mut self) -> &mut state::CallbackConfig {
+        &mut self.callbacks
+    }
+
+    fn get_key_map(&self) -> &common::KeyMap { &self.keymap }
+
+    fn bind_key(&mut self, key: KeyCode, func: common::KeyboardCallbackFunction) {
+        self.keymap.insert(key, func);
+    }
+
     fn set_horizontal_alignment(&mut self, alignment: state::HorizontalAlignment) {
+        if self.halign != alignment { self.changed = true }
         self.halign = alignment;
-        self.changed = true;
     }
 
     fn get_horizontal_alignment(&self) -> state::HorizontalAlignment { self.halign }
 
     fn set_vertical_alignment(&mut self, alignment: state::VerticalAlignment) {
+        if self.valign != alignment { self.changed = true }
         self.valign = alignment;
-        self.changed = true;
     }
 
     fn get_vertical_alignment(&self) -> state::VerticalAlignment { self.valign }
 
     fn set_padding(&mut self, padding: state::Padding) {
+        if self.padding != padding { self.changed = true }
         self.padding = padding;
-        self.changed = true;
     }
 
     fn get_padding(&self) -> &state::Padding { &self.padding }
@@ -157,20 +187,20 @@ impl state::GenericState for LayoutState {
     fn has_border(&self) -> bool { self.border }
 
     fn set_border(&mut self, enabled: bool) {
+        if self.border != enabled { self.changed = true }
         self.border = enabled;
-        self.changed = true;
     }
 
     fn set_border_config(&mut self, config: state::BorderConfig) {
+        if self.border_config != config { self.changed = true }
         self.border_config = config;
-        self.changed = true;
     }
 
     fn get_border_config(&self) -> &state::BorderConfig { &self.border_config  }
 
     fn set_colors(&mut self, config: state::ColorConfig) {
+        if self.colors != config { self.changed = true }
         self.colors = config;
-        self.changed = true;
     }
 
     fn get_colors(&self) -> &state::ColorConfig { &self.colors }
@@ -191,16 +221,36 @@ impl LayoutState {
 
     /// Set [filler_symbol]
     pub fn set_filler_symbol(&mut self, symbol: String) {
-        self.filler_symbol = symbol; 
-        self.changed = true;
+        if self.filler_symbol != symbol { self.changed = true }
+        self.filler_symbol = symbol;
     }
 
     /// Get [filler_symbol]
     pub fn get_filler_symbol(&self) -> String { self.filler_symbol.clone() }
+
+    /// Open a popup based on a template defined in the Ez file. Returns the state of the new popup
+    pub fn open_popup(&mut self, template: String) -> (String, StateTree) {
+        let mut popup = self.templates.get_mut(&template).unwrap().clone();
+        let init_popup = popup.parse(&mut self.templates);
+        self.force_redraw = true;
+        self.open_modal(init_popup)
+    }
     
-    /// Open a new modal
-    pub fn open_modal(&mut self, modal: EzObjects) {
+    /// Open a new modal. Returns the state of the new modal.
+    pub fn open_modal(&mut self, mut modal: EzObjects) -> (String, StateTree) {
+        let modal_path = format!("/modal/{}", modal.as_ez_object().get_id());
+        modal.as_ez_object_mut().set_full_path(modal_path.clone());
+        let mut extra_state_tree;
+        if let EzObjects::Layout(ref mut i) = modal {
+            i.propagate_paths();
+            extra_state_tree = common::get_state_tree(i);
+        } else {
+            extra_state_tree = HashMap::new();
+            extra_state_tree.insert(modal_path.clone(),modal.as_ez_object().get_state());
+        }
         self.open_modals.push(modal);
+        self.changed = true;
+        (modal_path, extra_state_tree)
     }
     
     /// Dismiss the current modal
@@ -227,4 +277,15 @@ impl LayoutState {
         self.changed = true;
         &mut self.open_modals
     }
+
+    /// Set templates. Used by [ez_parser] on the root layout to keep a hold of all templates
+    /// defined by the user. They can be used to instantiate e.g. popups at runtime.
+    pub fn set_templates(&mut self, templates: common::Templates) {
+        self.templates = templates
+    }
+
+    /// Get templates. Use on the root layout to get all templates defined by the user.
+    /// They can be used to instantiate e.g. popups at runtime.
+    pub fn get_templates(&self) -> &common::Templates { &self.templates }
+
 }

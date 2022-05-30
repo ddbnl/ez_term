@@ -3,12 +3,12 @@ use std::fs::File;
 use std::io::prelude::*;
 use std::io::{Error, ErrorKind};
 use crate::common;
+use crate::common::{StateTree, WidgetTree};
 use crate::widgets::widget::{Pixel, EzObject, EzWidget};
 use crate::states::label_state::LabelState;
-use crate::states::state::{self, GenericState};
+use crate::states::state::{self, EzState, GenericState};
 use crate::ez_parser;
 
-#[derive(Clone)]
 pub struct Label {
 
     /// ID of the widget, used to construct [path]
@@ -126,20 +126,11 @@ impl EzObject for Label {
         self.path = path
     }
 
-    fn get_full_path(&self) -> String {
-        self.path.clone()
-    }
+    fn get_full_path(&self) -> String { self.path.clone() }
 
-    fn update_state(&mut self, new_state: &state::EzState) {
-        let state = new_state.as_label();
-        self.state = state.clone();
-        self.state.changed = false;
-        self.state.force_redraw = false;
-    }
+    fn get_state(&self) -> EzState { EzState::Label(LabelState::default()) }
 
-    fn get_state(&self) -> state::EzState { state::EzState::Label(self.state.clone()) }
-
-    fn get_contents(&self, state_tree: &mut common::StateTree) -> common::PixelMap {
+    fn get_contents(&self, state_tree: &mut common::StateTree, widget_tree: &common::WidgetTree) -> common::PixelMap {
 
         let state = state_tree
             .get_mut(&self.get_full_path()).unwrap().as_label_mut();

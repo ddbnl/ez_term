@@ -6,7 +6,7 @@ use std::io::prelude::*;
 use std::io::{Error, ErrorKind};
 use crossterm::style::Color;
 use crate::widgets::layout::{Layout};
-use crate::widgets::canvas::CanvasWidget;
+use crate::widgets::canvas::Canvas;
 use crate::widgets::label::Label;
 use crate::widgets::button::Button;
 use crate::widgets::radio_button::RadioButton;
@@ -112,13 +112,13 @@ impl EzWidgetDefinition {
         }
         initialized.set_id("root".to_string());
         initialized.set_full_path(format!("/root"));
-        initialized.set_templates(templates);
+        initialized.state.templates = templates;
         initialized
     }
 
     /// Parse a definition by separating the config lines from the sub widget definitions. Then
     /// apply the config to the initialized widget, then initialize and add sub widgets.
-    fn parse(&mut self, templates: &mut common::Templates) -> EzObjects {
+    pub fn parse(&mut self, templates: &mut common::Templates) -> EzObjects {
 
         let (config, mut sub_widgets, _) =
             parse_level(self.content.clone(), self.indentation_offset, self.line_offset)
@@ -146,7 +146,7 @@ impl EzWidgetDefinition {
         }
         match self.type_name.as_str() {
             "Layout" => Ok(EzObjects::Layout(Layout::from_config(config))),
-            "Canvas" => Ok(EzObjects::CanvasWidget(CanvasWidget::from_config(config))),
+            "Canvas" => Ok(EzObjects::CanvasWidget(Canvas::from_config(config))),
             "Label" => Ok(EzObjects::Label(Label::from_config(config))),
             "Button" => Ok(EzObjects::Button(Button::from_config(config))),
             "CheckBox" => Ok(EzObjects::Checkbox(Checkbox::from_config(config))),

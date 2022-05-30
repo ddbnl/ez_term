@@ -5,11 +5,12 @@ use crossterm::style::{Color, StyledContent, Stylize};
 use crossterm::event::{Event, KeyCode};
 use std::io::{Error};
 use crate::common;
-use crate::states::state::{self};
+use crate::common::{StateTree, WidgetTree};
+use crate::states::state::{self, EzState};
 use crate::widgets::layout::{Layout};
 use crate::widgets::label::{Label};
 use crate::widgets::button::{Button};
-use crate::widgets::canvas::{CanvasWidget};
+use crate::widgets::canvas::{Canvas};
 use crate::widgets::checkbox::{Checkbox};
 use crate::widgets::dropdown::{Dropdown, DroppedDownMenu};
 use crate::widgets::radio_button::{RadioButton};
@@ -20,12 +21,11 @@ use crate::widgets::text_input::{TextInput};
 /// widget, so this enum gathers widgets and layouts in one place, as they do have methods in
 /// common (e.g. both have positions, sizes, etc.). To access common methods, cast this enum
 /// into a EzObject (trait for Layouts+Widgets) or EzWidget (Widgets only).
-#[derive(Clone)]
 pub enum EzObjects {
     Layout(Layout),
     Label(Label),
     Button(Button),
-    CanvasWidget(CanvasWidget),
+    CanvasWidget(Canvas),
     Checkbox(Checkbox),
     Dropdown(Dropdown),
     DroppedDownMenu(DroppedDownMenu),
@@ -110,13 +110,13 @@ impl EzObjects {
         else { panic!("wrong EzObject.") }
     }
     /// Cast this as a Canvas widget ref, you must be sure you have one.
-    pub fn as_canvas(&self) -> &CanvasWidget {
+    pub fn as_canvas(&self) -> &Canvas {
         if let EzObjects::CanvasWidget(i) = self { i }
         else { panic!("wrong EzObject.") }
     }
 
     /// Cast this as a mutable Canvas widget ref, you must be sure you have one.
-    pub fn as_canvas_mut(&mut self) -> &mut CanvasWidget {
+    pub fn as_canvas_mut(&mut self) -> &mut Canvas {
         if let EzObjects::CanvasWidget(i) = self { i }
         else { panic!("wrong EzObject.") }
     }
@@ -244,20 +244,18 @@ pub trait EzObject {
     /// method on the root layout and pass a full widget pass to retrieve a widget.
     fn get_full_path(&self) -> String;
 
-    /// Set a passed state as the current state.
-    fn update_state(&mut self, new_state: &state::EzState);
-
-    /// Get the State object belonging to this widget.
-    fn get_state(&self) -> state::EzState;
+    /// Return an empty [EzState]. Each EzObject must implement this to return the variant state
+    /// that belongs to it.
+    fn get_state(&self) -> EzState;
 
     /// Redraw the widget on the screen. Using the view tree, only changed content is written to
     /// improve performance.
     fn redraw(&self, view_tree: &mut common::ViewTree, state_tree: &mut common::StateTree,
-              protect_modal: bool ) {
+              widget_tree: &common::WidgetTree, protect_modal: bool ) {
 
         let state = state_tree.get(&self.get_full_path()).unwrap().as_generic();
         let pos = state.get_absolute_position();
-        let content = self.get_contents(state_tree);
+        let content = self.get_contents(state_tree, widget_tree);
         common::write_to_screen(pos, content, view_tree, state_tree, protect_modal);
     }
 
@@ -268,7 +266,8 @@ pub trait EzObject {
 
     /// Gets the visual content for this widget. Overloaded by each widget module. E.g. a label
     /// gets its' content from its' text, a checkbox from whether it has been checked, etc.
-    fn get_contents(&self, state_tree: &mut common::StateTree) -> common::PixelMap;
+    fn get_contents(&self, state_tree: &mut common::StateTree, widget_tree: &common::WidgetTree)
+        -> common::PixelMap;
 }
 
 
@@ -297,32 +296,6 @@ pub trait EzWidget: EzObject {
     /// will select 1, then 2, then this widget. Used for keyboard up and down keys.
     fn set_selection_order(&mut self, _order: usize) {
         panic!("Widget has no selection implementation: {}", self.get_id())
-    }
-
-    /// Get the key map belonging to a widget. Any keys bound to the widget are in here along with
-    /// their callbacks. Key map should be used inside the "handle_event" method of a widget.
-    fn get_key_map(&self) -> &common::KeyMap {
-        panic!("Widget does not support keymap: {}", self.get_id())
-    }
-
-    /// Bind a new key to the widget and the callback it should activate. Focussed widgets have
-    /// priority consuming events, next are global key binds, and then the selected widget.
-    fn bind_key(&mut self, _key: KeyCode, _func: common::KeyboardCallbackFunction) {
-    }
-
-    /// Optionally consume an event that was passed to this widget. Return true if the event should
-    /// be considered consumed. Simply consults the keymap by default, but can be overloaded for
-    /// more complex circumstances.
-    fn handle_event(&self, event: Event, context: common::EzContext) -> bool {
-        if let Event::Key(key) = event {
-            if self.get_key_map().contains_key(&key.code) {
-                let func =
-                    self.get_key_map().get(&key.code).unwrap();
-                func(context, key.code);
-                return true
-            }
-        }
-        false
     }
 
     /// Set the callback for when the value of a widget changes.

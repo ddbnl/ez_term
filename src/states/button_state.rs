@@ -1,8 +1,9 @@
+use crossterm::event::KeyCode;
 use crate::states::state;
+use crate::common;
 
 
 /// [State] implementation for [Button].
-#[derive(Clone)]
 pub struct ButtonState {
 
     /// Text currently being displayed by the label
@@ -53,6 +54,13 @@ pub struct ButtonState {
     /// Bool representing whether this widget is currently displaying it's flash color.
     pub flashing: bool,
 
+    /// [CallbackConfig] containing callbacks to be called in different situations
+    pub callbacks: state::CallbackConfig,
+
+    /// A Key to callback function lookup used to store keybinds for this widget. See
+    /// [KeyboardCallbackFunction] type for callback function signature.
+    pub keymap: common::KeyMap,
+
     /// If true this forces a global screen redraw on the next frame. Screen redraws are diffed
     /// so this can be called when needed without degrading performance. If only screen positions
     /// that fall within this widget must be redrawn, call [EzObject.redraw] instead.
@@ -78,6 +86,8 @@ impl Default for ButtonState {
            border_config: state::BorderConfig::default(),
            colors: state::ColorConfig::default(),
            changed: false,
+           callbacks: state::CallbackConfig::default(),
+           keymap: common::KeyMap::new(),
            force_redraw: false,
        }
     }
@@ -89,36 +99,34 @@ impl state::GenericState for ButtonState {
     fn get_changed(&self) -> bool { self.changed }
 
     fn set_size_hint(&mut self, size_hint: state::SizeHint) {
+        if self.size_hint != size_hint { self.changed = true }
         self.size_hint = size_hint;
-        self.changed = true;
     }
 
     fn get_size_hint(&self) -> &state::SizeHint { &self.size_hint }
 
     fn set_pos_hint(&mut self, pos_hint: state::PosHint) {
+        if self.pos_hint != pos_hint { self.changed = true }
         self.pos_hint = pos_hint;
-        self.changed = true;
     }
 
     fn get_pos_hint(&self) -> &state::PosHint { &self.pos_hint }
 
     fn set_auto_scale(&mut self, auto_scale: state::AutoScale) {
+        if self.auto_scale != auto_scale { self.changed = true }
         self.auto_scale = auto_scale;
-        self.changed = true;
     }
 
     fn get_auto_scale(&self) -> &state::AutoScale { &self.auto_scale }
 
     fn set_size(&mut self, size: state::Size) {
         self.size = size;
-        self.changed = true;
     }
 
     fn get_size(&self) -> &state::Size { &self.size }
 
     fn set_position(&mut self, position: state::Coordinates) {
         self.position = position;
-        self.changed = true;
     }
 
     fn get_position(&self) -> state::Coordinates { self.position }
@@ -127,23 +135,39 @@ impl state::GenericState for ButtonState {
 
     fn get_absolute_position(&self) -> state::Coordinates { self.absolute_position }
 
+    fn set_callbacks(&mut self, config: state::CallbackConfig) {
+        self.callbacks = config;
+    }
+
+    fn get_callbacks(&self) -> &state::CallbackConfig { &self.callbacks }
+
+    fn get_callbacks_mut(&mut self) -> &mut state::CallbackConfig {
+        &mut self.callbacks
+    }
+
+    fn get_key_map(&self) -> &common::KeyMap { &self.keymap }
+
+    fn bind_key(&mut self, key: KeyCode, func: common::KeyboardCallbackFunction) {
+        self.keymap.insert(key, func);
+    }
+
     fn set_horizontal_alignment(&mut self, alignment: state::HorizontalAlignment) {
+        if self.halign != alignment { self.changed = true }
         self.halign = alignment;
-        self.changed = true;
     }
 
     fn get_horizontal_alignment(&self) -> state::HorizontalAlignment { self.halign }
 
     fn set_vertical_alignment(&mut self, alignment: state::VerticalAlignment) {
+        if self.valign != alignment { self.changed = true }
         self.valign = alignment;
-        self.changed = true;
     }
 
     fn get_vertical_alignment(&self) -> state::VerticalAlignment { self.valign }
 
     fn set_padding(&mut self, padding: state::Padding) {
+        if self.padding != padding { self.changed = true }
         self.padding = padding;
-        self.changed = true;
     }
 
     fn get_padding(&self) -> &state::Padding { &self.padding }
@@ -151,20 +175,20 @@ impl state::GenericState for ButtonState {
     fn has_border(&self) -> bool { true }
 
     fn set_border(&mut self, enabled: bool) {
+        if self.border != enabled { self.changed = true }
         self.border = enabled;
-        self.changed = true;
     }
 
     fn set_border_config(&mut self, config: state::BorderConfig) {
+        if self.border_config != config { self.changed = true }
         self.border_config = config;
-        self.changed = true;
     }
 
     fn get_border_config(&self) -> &state::BorderConfig { &self.border_config  }
 
     fn set_colors(&mut self, config: state::ColorConfig) {
+        if self.colors != config { self.changed = true }
         self.colors = config;
-        self.changed = true;
     }
 
     fn get_colors(&self) -> &state::ColorConfig { &self.colors }
@@ -182,24 +206,26 @@ impl state::GenericState for ButtonState {
     fn get_force_redraw(&self) -> bool { self.force_redraw }
 }
 impl state::SelectableState for ButtonState {
+
     fn set_selected(&mut self, state: bool) {
+        if self.selected != state { self.changed = true }
         self.selected = state;
-        self.changed = true;
     }
+
     fn get_selected(&self) -> bool { self.selected }
 }
 impl ButtonState {
 
     pub fn set_text(&mut self, text: String) {
+        if self.text != text { self.changed = true }
         self.text = text;
-        self.changed = true;
     }
 
     pub fn get_text(&self) -> String { self.text.clone() }
 
     pub fn set_flashing(&mut self, flashing: bool) {
+        if self.flashing != flashing { self.changed = true }
         self.flashing = flashing;
-        self.changed = true;
     }
 
     pub fn get_flashing(&self) -> bool { self.flashing }

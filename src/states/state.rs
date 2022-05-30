@@ -1,13 +1,16 @@
 //! # Widget state:
 //! A module containing the base structs and traits for widget states.
+use crossterm::event::{Event, KeyCode};
 use crossterm::style::Color;
+use crate::common;
 use crate::states::canvas_state::{CanvasState};
 use crate::states::label_state::{LabelState};
 use crate::states::button_state::{ButtonState};
 use crate::states::checkbox_state::{CheckboxState};
-use crate::states::dropdown_state::{ DropdownState};
+use crate::states::dropdown_state::{DropdownState, DroppedDownMenuState};
 use crate::states::layout_state::LayoutState;
 use crate::states::radio_button_state::{RadioButtonState};
+use crate::states::state;
 use crate::states::text_input_state::{TextInputState};
 
 
@@ -17,14 +20,14 @@ use crate::states::text_input_state::{TextInputState};
 /// mutable ref to the widget itself. Every frame the StateTree is compared to each widget to see
 /// which widget has changed so it can be redrawn. The specific state struct for each widget type
 /// is defined its' own module.
-#[derive(Clone)]
 pub enum EzState {
     Layout(LayoutState),
     Label(LabelState),
     Button(ButtonState),
-    CanvasWidget(CanvasState),
+    Canvas(CanvasState),
     Checkbox(CheckboxState),
     Dropdown(DropdownState),
+    DroppedDownMenu(DroppedDownMenuState),
     RadioButton(RadioButtonState),
     TextInput(TextInputState),
 }
@@ -39,9 +42,10 @@ impl EzState {
             EzState::Button(i) => i,
             EzState::Checkbox(i) => i,
             EzState::Dropdown(i) => i,
+            EzState::DroppedDownMenu(i) => i,
             EzState::RadioButton(i) => i,
             EzState::TextInput(i) => i,
-            EzState::CanvasWidget(i) => i,
+            EzState::Canvas(i) => i,
         }
     }
 
@@ -54,9 +58,10 @@ impl EzState {
             EzState::Button(i) => i,
             EzState::Checkbox(i) => i,
             EzState::Dropdown(i) => i,
+            EzState::DroppedDownMenu(i) => i,
             EzState::RadioButton(i) => i,
             EzState::TextInput(i) => i,
-            EzState::CanvasWidget(i) => i,
+            EzState::Canvas(i) => i,
         }
     }
 
@@ -110,13 +115,13 @@ impl EzState {
 
     /// Cast this state as a Canvas widget state ref, you must be sure you have one.
     pub fn as_canvas(&self) -> &CanvasState {
-        if let EzState::CanvasWidget(i) = self { i }
+        if let EzState::Canvas(i) = self { i }
         else { panic!("wrong state.") }
     }
 
     /// Cast this state as a mutable Canvas widget state ref, you must be sure you have one.
     pub fn as_canvas_mut(&mut self) -> &mut CanvasState {
-        if let EzState::CanvasWidget(i) = self { i }
+        if let EzState::Canvas(i) = self { i }
         else { panic!("wrong state.") }
     }
 
@@ -165,6 +170,18 @@ impl EzState {
     /// Cast this state as a mutable Dropdown widget state ref, you must be sure you have one.
     pub fn as_dropdown_mut(&mut self) -> &mut DropdownState {
         if let EzState::Dropdown(i) = self { i }
+        else { panic!("wrong state.") }
+    }
+
+    /// Cast this state as a dropped down menu modal state ref, you must be sure you have one.
+    pub fn as_dropped_down_menu(&self) -> &DroppedDownMenuState {
+        if let EzState::DroppedDownMenu(i) = self { i }
+        else { panic!("wrong state.") }
+    }
+
+    /// Cast this state as a mutable dropped down menu modal state ref, you must be sure you have one.
+    pub fn as_dropped_down_menu_mut(&mut self) -> &mut DroppedDownMenuState {
+        if let EzState::DroppedDownMenu(i) = self { i }
         else { panic!("wrong state.") }
     }
 
@@ -355,6 +372,39 @@ pub trait GenericState {
              + self.get_padding().top)
     }
 
+    /// Set the [CallbackConfig]
+    fn set_callbacks(&mut self, config: state::CallbackConfig);
+
+    /// Get the [CallbackConfig]
+    fn get_callbacks(&self) -> &state::CallbackConfig;
+
+    /// Get a mut ref to the [CallbackConfig]
+    fn get_callbacks_mut(&mut self) -> &mut state::CallbackConfig;
+
+    /// Get the key map belonging to a widget. Any keys bound to the widget are in here along with
+    /// their callbacks. Key map should be used inside the "handle_event" method of a widget.
+    fn get_key_map(&self) -> &common::KeyMap {
+        panic!("Widget does not support keymap")
+    }
+
+    /// Bind a new key to the widget and the callback it should activate. Focussed widgets have
+    /// priority consuming events, next are global key binds, and then the selected widget.
+    fn bind_key(&mut self, _key: KeyCode, _func: common::KeyboardCallbackFunction);
+
+    /// Optionally consume an event that was passed to this widget. Return true if the event should
+    /// be considered consumed. Simply consults the keymap by default, but can be overloaded for
+    /// more complex circumstances.
+    fn handle_event(&mut self, event: Event, context: common::EzContext) -> bool {
+        if let Event::Key(key) = event {
+            if self.get_key_map().contains_key(&key.code) {
+                let func = self.get_key_map().get_mut(&key.code).unwrap();
+                func(context, key.code);
+                return true
+            }
+        }
+        false
+    }
+
     /// Set [HorizontalAlignment] of this widget.
     fn set_horizontal_alignment(&mut self, alignment: HorizontalAlignment);
 
@@ -476,7 +526,7 @@ pub trait SelectableState {
 }
 
 
-#[derive(Clone, Copy, Debug)]
+#[derive(PartialEq, Clone, Copy, Debug)]
 pub enum HorizontalAlignment {
     Left,
     Right,
@@ -484,7 +534,7 @@ pub enum HorizontalAlignment {
 }
 
 
-#[derive(Clone, Copy, Debug)]
+#[derive(PartialEq, Clone, Copy, Debug)]
 pub enum VerticalAlignment {
     Top,
     Bottom,
@@ -492,7 +542,7 @@ pub enum VerticalAlignment {
 }
 
 
-#[derive(Clone, Copy, Debug)]
+#[derive(PartialEq, Clone, Copy, Debug)]
 pub enum HorizontalPositionHint {
     Left,
     Right,
@@ -500,7 +550,7 @@ pub enum HorizontalPositionHint {
 }
 
 
-#[derive(Clone, Copy, Debug)]
+#[derive(PartialEq, Clone, Copy, Debug)]
 pub enum VerticalPositionHint {
     Top,
     Bottom,
@@ -509,7 +559,7 @@ pub enum VerticalPositionHint {
 
 
 /// Convenience wrapper around a size tuple.
-#[derive(Copy, Clone, Default, Debug)]
+#[derive(PartialEq, Copy, Clone, Default, Debug)]
 pub struct Size {
     pub width: usize,
     pub height: usize,
@@ -534,7 +584,7 @@ impl Coordinates {
 
 
 /// Convenience wrapper around an size_hint tuple.
-#[derive(Copy, Clone, Debug)]
+#[derive(PartialEq, Copy, Clone, Default, Debug)]
 pub struct AutoScale {
     pub width: bool,
     pub height: bool,
@@ -542,13 +592,10 @@ pub struct AutoScale {
 impl AutoScale {
     pub fn new(width: bool, height: bool) -> Self { AutoScale{width, height} }
 }
-impl Default for AutoScale {
-    fn default() -> Self { AutoScale{width: false, height: false }}
-}
 
 
 /// Convenience wrapper around an size_hint tuple.
-#[derive(Copy, Clone, Debug)]
+#[derive(PartialEq, Copy, Clone, Debug)]
 pub struct SizeHint {
     pub x: Option<f64>,
     pub y: Option<f64>,
@@ -562,7 +609,7 @@ impl Default for SizeHint {
 
 
 /// Convenience wrapper around an pos_hint tuple.
-#[derive(Copy, Clone, Debug)]
+#[derive(PartialEq, Copy, Clone, Debug)]
 pub struct PosHint {
     pub x: Option<(HorizontalPositionHint, f64)>,
     pub y: Option<(VerticalPositionHint, f64)>,
@@ -579,8 +626,36 @@ impl Default for PosHint {
 }
 
 
+// Convenience wrapper around a callback configuration
+#[derive(Default)]
+pub struct CallbackConfig {
+
+    /// Function to call when an object is selected.
+    pub on_select: Option<common::OptionalMouseCallbackFunction>,
+
+    /// Function to call when an object is deselected.
+    pub on_deselect: Option<common::GenericEzFunction>,
+
+    /// Function to call when an object is keyboard entered or left clicked,
+    pub on_press: Option<common::GenericEzFunction>,
+
+    /// Function to call when this widget is right clicked
+    pub on_keyboard_enter: Option<common::GenericEzFunction>,
+
+    /// Function to call when this widget is right clicked
+    pub on_left_mouse_click: Option<common::MouseCallbackFunction>,
+
+    /// Function to call when this widget is right clicked
+    pub on_right_mouse_click: Option<common::MouseCallbackFunction>,
+
+    /// Function to call when the value of an object changes
+    pub bound_on_value_change: Option<common::GenericEzFunction>,
+
+}
+
+
 /// Convenience wrapper around a border configuration
-#[derive(Clone, Debug)]
+#[derive(PartialEq, Clone, Debug)]
 pub struct BorderConfig {
     
     /// The [Pixel.symbol] to use for the horizontal border if [border] is true
@@ -623,7 +698,7 @@ impl Default for BorderConfig {
 }
 
 
-#[derive(Clone, Debug)]
+#[derive(PartialEq, Clone, Debug)]
 pub struct ColorConfig {
 
     /// The [Pixel.foreground_color] to use for this widgets' content
@@ -672,7 +747,7 @@ impl Default for ColorConfig {
 }
 
 
-#[derive(Clone, Copy, Default, Debug)]
+#[derive(PartialEq, Clone, Copy, Default, Debug)]
 pub struct Padding {
     pub top: usize,
     pub bottom: usize,

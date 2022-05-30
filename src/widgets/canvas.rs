@@ -5,14 +5,14 @@ use std::fs::File;
 use std::io::prelude::*;
 use crate::widgets::widget::{EzWidget, EzObject, Pixel};
 use crate::states::canvas_state::CanvasState;
-use crate::states::state::{self, GenericState};
+use crate::states::state::{self, EzState, GenericState};
 use crate::common;
 use std::io::{Error, ErrorKind};
 use unicode_segmentation::UnicodeSegmentation;
+use crate::common::{StateTree, WidgetTree};
 use crate::ez_parser;
 
-#[derive(Clone)]
-pub struct CanvasWidget {
+pub struct Canvas {
     /// ID of the widget, used to construct [path]
     pub id: String,
 
@@ -30,11 +30,11 @@ pub struct CanvasWidget {
 }
 
 
-impl Default for CanvasWidget {
+impl Default for Canvas {
 
     fn default() -> Self {
 
-        CanvasWidget {
+        Canvas {
             id: "".to_string(),
             path: String::new(),
             from_file: None,
@@ -45,7 +45,7 @@ impl Default for CanvasWidget {
 }
 
 
-impl EzObject for CanvasWidget {
+impl EzObject for Canvas {
     fn load_ez_parameter(&mut self, parameter_name: String, parameter_value: String)
                          -> Result<(), Error> {
 
@@ -128,15 +128,7 @@ impl EzObject for CanvasWidget {
 
     fn get_full_path(&self) -> String { self.path.clone() }
 
-    fn update_state(&mut self, new_state: &state::EzState) {
-
-        let state = new_state.as_canvas();
-        self.state = state.clone();
-        self.state.changed = false;
-        self.state.force_redraw = false;
-    }
-
-    fn get_state(&self) -> state::EzState { state::EzState::CanvasWidget(self.state.clone()) }
+    fn get_state(&self) -> EzState { EzState::Canvas(CanvasState::default()) }
 
     /// Set the content of this Widget. You must manually fill a [PixelMap] of the same
     /// [height] and [width] as this widget and pass it here.
@@ -151,7 +143,7 @@ impl EzObject for CanvasWidget {
        self.contents = valid_contents
     }
 
-    fn get_contents(&self, state_tree: &mut common::StateTree) -> common::PixelMap {
+    fn get_contents(&self, state_tree: &mut common::StateTree, widget_tree: &common::WidgetTree) -> common::PixelMap {
 
         let state = state_tree
             .get_mut(&self.get_full_path()).unwrap().as_canvas_mut();
@@ -215,13 +207,13 @@ impl EzObject for CanvasWidget {
     }
 }
 
-impl EzWidget for CanvasWidget {}
+impl EzWidget for Canvas {}
 
-impl CanvasWidget {
+impl Canvas {
 
     /// Load this widget from a config vector coming from [ez_parser]
     pub fn from_config(config: Vec<String>) -> Self {
-        let mut obj = CanvasWidget::default();
+        let mut obj = Canvas::default();
         obj.load_ez_config(config).unwrap();
         obj
     }

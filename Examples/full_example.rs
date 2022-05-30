@@ -1,7 +1,7 @@
 use std::time::Duration;
 use crossterm::style::Color;
 use ez_term::{ez_parser, run};
-use ez_term::common::{EzContext};
+use ez_term::common::{self, EzContext};
 use ez_term::states::state::{GenericState, SelectableState};
 use ez_term::widgets::widget::EzObject;
 
@@ -37,6 +37,10 @@ fn main() {
     root_widget.get_child_by_path_mut(
         "/root/left_box/bottom_box/small_box_3/dropdown_section_box/dropdown_box/dropdown")
         .unwrap().as_ez_widget_mut().set_bind_on_value_change(test_dropdown_on_value_change);
+    // Set a button callback to create a popup
+    root_widget.get_child_by_path_mut(
+        "/root/left_box/bottom_box/small_box_3/popup_section_box/popup_button")
+        .unwrap().as_ez_widget_mut().set_bind_on_press(test_popup_button_on_press);
 
     // Set a text input on value change callback
     root_widget.get_child_by_path_mut(
@@ -78,8 +82,8 @@ fn main() {
             .get_colors_mut().foreground = color;
         true
     };
-    scheduler.schedule_interval("/root/left_box/canvas_box/canvas".to_string(),
-                                Box::new(neon_banner), Duration::from_millis(200));
+    //scheduler.schedule_interval("/root/left_box/canvas_box/canvas".to_string(),
+    //                            Box::new(neon_banner), Duration::from_millis(200));
 
     // Step 3: Run app
     // Now everything must happen from bindings as root widget is passed over
@@ -221,4 +225,15 @@ fn test_on_button_press(context: EzContext) {
         label_state.get_text().split_once(':').unwrap().1.trim().split_once("times")
             .unwrap().0.trim().parse().unwrap();
     label_state.set_text(format!("Clicked: {} times", number + 1));
+}
+
+
+// As an example we will change a label after a button is pressed.
+fn test_popup_button_on_press(context: EzContext) {
+
+    // We will retrieve a label widget and change the 'text' field of its' state. This will
+    // cause the text to change on the next frame.
+    let popup_path = common::open_popup("TestPopup".to_string(), context.state_tree);
+
+
 }

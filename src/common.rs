@@ -8,7 +8,7 @@ use crossterm::event::KeyCode;
 use crate::ez_parser::EzWidgetDefinition;
 use crate::scheduler::Scheduler;
 use crate::widgets::layout::Layout;
-use crate::states::state::{self, Coordinates, Padding};
+use crate::states::state::{self, EzState};
 use crate::widgets::widget::{EzWidget, EzObjects, Pixel, EzObject};
 
 
@@ -49,17 +49,22 @@ pub type WidgetTree<'a> = HashMap<String, &'a EzObjects>;
 /// ## Keyboard callback function:
 /// This is used for binding keyboard callbacks to widgets, meaning that any callback functions a
 /// user makes should use this signature.
-pub type KeyboardCallbackFunction = fn(EzContext, key: KeyCode);
+pub type KeyboardCallbackFunction = Box<dyn FnMut(EzContext, KeyCode)>;
 
 /// ## Mouse callback function:
 /// This is used for binding mouse event callbacks to widgets, meaning that any callback functions
 /// user makes should use this signature.
-pub type MouseCallbackFunction = fn(EzContext, mouse_pos: state::Coordinates);
+pub type MouseCallbackFunction = Box<dyn FnMut(EzContext, state::Coordinates)>;
+
+/// ## Optional mouse callback function:
+/// This is used for callbacks that may or may not have been initiated by mouse. 'on_select' uses
+/// this for example, because a widget may have been selected by mouse, or maybe by keyboard.
+pub type OptionalMouseCallbackFunction = Box<dyn FnMut(EzContext, Option<state::Coordinates>)>;
 
 /// ## Generic Ez function:
 /// Used for callbacks and scheduled tasks that don't require special parameter such as KeyCodes
 /// or mouse positions. Used e.g. for [on_value_change] and [on_keyboard_enter].
-pub type GenericEzFunction = fn(EzContext);
+pub type GenericEzFunction = Box<dyn FnMut(EzContext)>;
 
 /// ## Generic Ez task:
 /// Scheduled task implementation. Using FnMut allows users to capture variables in their scheduled
@@ -94,12 +99,20 @@ impl<'a, 'b , 'c, 'd> EzContext<'a, 'b , 'c, 'd> {
     }
 }
 
-/// Find a widget by a screen position coordinate. Used e.g. by mouse event handlers.
+/// Find a widget by a screen position coordinate. Used e.g. by mouse event handlers. If a modal
+/// if active only the modal is searched.
 pub fn get_widget_by_position<'a>(pos: state::Coordinates, widget_tree: &'a WidgetTree,
                                   state_tree: &StateTree) -> Option<&'a dyn EzWidget> {
 
+    let modals = state_tree.get("/root").unwrap().as_layout().get_modals();
+    let path_prefix = if modals.is_empty() {
+        "/root".to_string()
+    } else {
+        modals.first().unwrap().as_ez_object().get_full_path()
+    };
     for (widget_path, state) in state_tree {
-        if let state::EzState::Layout(_) = state { continue }
+        if !widget_path.starts_with(&path_prefix) { continue }
+        if let EzState::Layout(_) = state { continue }
         if state.as_generic().collides(pos) {
             return Some(widget_tree.get(widget_path).unwrap().as_ez_widget())
         }
@@ -116,18 +129,19 @@ pub fn write_to_screen(base_position: state::Coordinates, content: PixelMap,
 
     let root_state = state_tree.get("/root").unwrap().as_layout();
     // Get list of coordinates for the open modal if any so we can exclude those for redraw
-    let modal_coords = if !root_state.open_modals.is_empty() {
-        let modal_path = root_state.open_modals.first().unwrap()
-            .as_ez_object().get_full_path();
-        state_tree.get(&modal_path).unwrap().as_generic().get_box_coords()
+    let modal_coords = if protect_modal && !root_state.open_modals.is_empty() {
+        println!("AAL {:?}", root_state.open_modals.first().unwrap()
+            .as_ez_object().get_state().as_generic().get_box_coords());
+        root_state.open_modals.first().unwrap()
+            .as_ez_object().get_state().as_generic().get_box_coords()
     } else {
         Vec::new()
     };
     for x in 0..content.len() {
         for y in 0..content[x].len() {
-            let write_pos = Coordinates::new(base_position.x + x, base_position.y + y);
+            let write_pos = state::Coordinates::new(base_position.x + x, base_position.y + y);
             let write_content = content[x][y].get_pixel().clone();
-            if protect_modal && modal_coords.contains(&write_pos) { continue }
+            if modal_coords.contains(&write_pos) { continue}
             if write_pos.x < view_tree.len() && write_pos.y < view_tree[write_pos.x].len() &&
                 view_tree[write_pos.x][write_pos.y] != write_content {
                 view_tree[write_pos.x][write_pos.y] = write_content.clone();
@@ -154,20 +168,7 @@ pub fn initialize_view_tree(width: usize, height: usize) -> ViewTree {
 }
 
 
-/// Update the state of all widgets from a state tree
-pub fn update_state_tree(state_tree: &StateTree, root_widget: &mut Layout) {
 
-    for widget in state_tree.keys() {
-        if widget == &root_widget.get_full_path() {
-            root_widget.update_state(state_tree.get(widget)
-                .unwrap());
-            continue
-        }
-        root_widget.get_child_by_path_mut(widget).unwrap()
-            .as_ez_object_mut().update_state(
-            state_tree.get(widget).unwrap())
-    }
-}
 
 
 /// Check each widget state tree for two things:
@@ -178,52 +179,61 @@ pub fn update_state_tree(state_tree: &StateTree, root_widget: &mut Layout) {
 /// be redrawn, and widgets will not be redrawn individually. Their state will still be updated.
 pub fn redraw_changed_widgets(view_tree: &mut ViewTree, state_tree: &mut StateTree,
                               root_widget: &mut Layout) -> bool {
+
     let mut force_redraw = false;
     // We separate widgets and modals to redraw because modals need to be drawn last
     let mut widgets_to_redraw = Vec::new();
     let mut modals_to_redraw = Vec::new();
 
-    // We update the root state first, as it might contain new modals we need to reference below
-    let root_state = state_tree.get(&root_widget.path).unwrap();
-    if root_state.as_generic().get_changed() || root_state.as_generic().get_force_redraw() {
-        force_redraw = true;
-    }
-    root_widget.update_state(root_state);
-
-    for widget_path in state_tree.keys() {
-        if widget_path == &root_widget.get_full_path() {
-            continue  // We updated root first so skip it now
-        }
-        let state = state_tree.get(widget_path).unwrap();
-        if state.as_generic().get_force_redraw() {
+    for (widget_path, state) in state_tree.iter_mut() {
+        let generic_state = state.as_generic_mut();
+        if generic_state.get_force_redraw() {
             force_redraw = true;
-            let widget =
-                root_widget.get_child_by_path_mut(widget_path).unwrap().as_ez_object_mut();
-            widget.update_state(state);
-        } else if state.as_generic().get_changed() {
-            let widget =
-                root_widget.get_child_by_path_mut(widget_path).unwrap().as_ez_object_mut();
-            widget.update_state(state);
+            generic_state.set_force_redraw(false);
+        }
+        if generic_state.get_changed() {
             // Check overlap between widget and modal. Redraw modal if there's any.
+            generic_state.set_changed(false);
             if !widget_path.starts_with("/modal") {
                 let parent_path = widget_path.rsplit_once('/').unwrap().0;
                 widgets_to_redraw.push(parent_path.to_string());
+                force_redraw = true;
             } else{
                 modals_to_redraw.push(widget_path.to_string());
             }
         }
     }
+    let widget_tree = root_widget.get_widget_tree();
     if !force_redraw {
         for widget_path in widgets_to_redraw.iter() {
-            root_widget.get_child_by_path_mut(widget_path).unwrap().as_ez_object_mut()
-                .redraw(view_tree, state_tree, true);
+            if widget_path.is_empty() || widget_path == &root_widget.path {
+                root_widget.redraw(view_tree, state_tree, &widget_tree, false);
+            } else {
+                root_widget.get_child_by_path_mut(widget_path).unwrap().as_ez_object_mut()
+                    .redraw(view_tree, state_tree, &widget_tree, true);
+            }
         }
         for widget_path in modals_to_redraw.iter() {
-            root_widget.get_child_by_path_mut(widget_path).unwrap().as_ez_object_mut()
-                .redraw(view_tree, state_tree, false);
+            let root_state = state_tree.get_mut("/root").unwrap().as_layout_mut();
+            for modal in root_state.open_modals.iter_mut() {
+                if &modal.as_ez_object().get_full_path() == widget_path {
+                    modal.as_ez_object().redraw(view_tree, state_tree, &widget_tree, false);
+                }
+            }
         }
     }
     force_redraw
+}
+
+
+/// Get the State for each child [EzWidget] and return it in a <[path], [State]> HashMap.
+pub fn get_state_tree(root_layout: &Layout) -> StateTree {
+    let mut state_tree = HashMap::new();
+    for (child_path, child) in root_layout.get_widgets_recursive() {
+        state_tree.insert(child_path, child.as_ez_object().get_state());
+    }
+    state_tree.insert(root_layout.get_full_path(), root_layout.get_state());
+    state_tree
 }
 
 
@@ -261,14 +271,14 @@ pub fn deselect_selected_widget(view_tree: &mut ViewTree, state_tree: &mut State
 pub fn select_next(view_tree: &mut ViewTree, state_tree: &mut StateTree,
                    widget_tree: &WidgetTree, scheduler: &mut Scheduler) {
     let current_selection = get_selected_widget(widget_tree, state_tree);
+
     let mut current_order = if let Some(i) = current_selection {
         state_tree.get_mut(&i.get_full_path()).unwrap().as_selectable_mut().set_selected(false);
         i.get_selection_order()
     } else {
         0
     };
-    let result = find_next_selection(current_order,
-                                     widget_tree);
+    let result = find_next_selection(current_order, widget_tree);
     if let Some( next_widget) = result {
         let context = EzContext::new(next_widget.clone(), view_tree,
                                      state_tree, widget_tree, scheduler);
@@ -279,8 +289,8 @@ pub fn select_next(view_tree: &mut ViewTree, state_tree: &mut StateTree,
         if let Some( next_widget) = result {
             let context = EzContext::new(next_widget.clone(), view_tree,
                                          state_tree, widget_tree, scheduler);
-            widget_tree.get(&next_widget).unwrap()
-                .as_ez_widget().on_select(context,None);
+            widget_tree.get(&next_widget).unwrap().as_ez_widget()
+                .on_select(context,None);
         }
     }
 }
@@ -331,7 +341,6 @@ pub fn select_previous(view_tree: &mut ViewTree, state_tree: &mut StateTree,
                                      state_tree, widget_tree, scheduler);
         widget_tree.get(&previous_widget).unwrap()
             .as_ez_widget().on_select(context,None);
-        state_tree.get_mut(&previous_widget).unwrap().as_selectable_mut().set_selected(true);
     } else {
         current_order = 99999999;
         let result = find_previous_selection(current_order, widget_tree);
@@ -369,6 +378,53 @@ pub fn find_previous_selection(current_selection: usize, widget_tree: &WidgetTre
         }
     }
     previous_widget
+}
+
+pub fn resize_with_size_hint(state: &mut EzState, parent_width: usize, parent_height: usize) {
+
+    let mut_state = state.as_generic_mut();
+    if let Some(size_hint_x) = mut_state.get_size_hint().x {
+        let raw_child_size = parent_width as f64 * size_hint_x;
+        let child_size = raw_child_size.round() as usize;
+        mut_state.set_width(child_size);
+    }
+
+    if let Some(size_hint_y) = mut_state.get_size_hint().y {
+        let raw_child_size = parent_height as f64 * size_hint_y;
+        let child_size = raw_child_size.round() as usize;
+        mut_state.set_height(child_size);
+    }
+}
+
+
+/// Set the positions of children that use pos_hint(s) using own proportions and position.
+pub fn reposition_with_pos_hint(parent_width: usize, parent_height: usize,
+                                child_state: &mut dyn state::GenericState) {
+
+    // Set x by pos_hint if any
+    if let Some((keyword, fraction)) = child_state.get_pos_hint().x {
+        let initial_pos = match keyword {
+            state::HorizontalPositionHint::Left => 0,
+            state::HorizontalPositionHint::Right => parent_width - child_state.get_size().width,
+            state::HorizontalPositionHint::Center =>
+                (parent_width as f64 / 2.0).round() as usize -
+                    (child_state.get_size().width as f64 / 2.0).round() as usize,
+        };
+        let x = (initial_pos as f64 * fraction).round() as usize;
+        child_state.set_x(x);
+    }
+    // Set y by pos hint if any
+    if let Some((keyword, fraction)) = child_state.get_pos_hint().y {
+        let initial_pos = match keyword {
+            state::VerticalPositionHint::Top => 0,
+            state::VerticalPositionHint::Bottom => parent_height - child_state.get_size().height,
+            state::VerticalPositionHint::Middle =>
+                (parent_height as f64 / 2.0).round() as usize -
+                    (child_state.get_size().height as f64 / 2.0).round() as usize,
+        };
+        let y = (initial_pos as f64 * fraction).round() as usize;
+        child_state.set_y(y);
+    }
 }
 
 
@@ -421,7 +477,7 @@ pub fn add_border(mut content: PixelMap, config: &state::BorderConfig) -> PixelM
 
 
 /// Add padding around a PixelMap.
-pub fn add_padding(mut content: PixelMap, padding: &Padding, bg_color: Color, fg_color: Color)
+pub fn add_padding(mut content: PixelMap, padding: &state::Padding, bg_color: Color, fg_color: Color)
     -> PixelMap {
 
     if content.is_empty() {
@@ -630,4 +686,12 @@ pub fn rotate_pixel_map(content: PixelMap) -> PixelMap {
         }
     }
     rotated_content
+}
+
+
+pub fn open_popup(template: String, state_tree: &mut StateTree) -> String {
+    let (path, sub_tree) = state_tree.get_mut("/root").unwrap().as_layout_mut()
+        .open_popup(template);
+    state_tree.extend(sub_tree);
+    path
 }

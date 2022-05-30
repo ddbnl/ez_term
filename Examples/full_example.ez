@@ -101,7 +101,7 @@
         width: 20
         bg_color: blue
         text: small input to test views
-        selection_order: 2
+        selection_order: 1
         padding: 1, 1, 1, 1
 
 
@@ -116,7 +116,7 @@
         text: sample larger input
         bg_color: blue
         max_length: 25
-        selection_order: 3
+        selection_order: 5
         padding_left: 1
 
 
@@ -129,7 +129,7 @@
         id: input_3
         bg_color: blue
         text: Mirror text
-        selection_order: 4
+        selection_order: 10
         padding: 1, 1, 1, 1
     - Label:
         id: input_3_label
@@ -157,7 +157,7 @@
         id: checkbox_box
         - CheckBox:
             id: checkbox
-            selection_order: 5
+            selection_order: 15
             active: False
             active_symbol: X
             fg_color: yellow
@@ -179,20 +179,20 @@
         - RadioButton:
             id: radio1
             group: test_radios
-            selection_order: 6
+            selection_order: 20
             active: True
             padding_right: 1
             fg_color: red
         - RadioButton:
             id: radio2
             group: test_radios
-            selection_order: 7
+            selection_order: 25
             padding_right: 1
             fg_color: green
         - RadioButton:
             id: radio3
             group: test_radios
-            selection_order: 8
+            selection_order: 30
             fg_color: blue
         - Label:
             id: radio_label
@@ -211,7 +211,7 @@
         id: button_box
         - Button:
             id: button
-            selection_order: 12
+            selection_order: 35
             text: Click me!
             bg_color: red
             fg_color: yellow
@@ -227,31 +227,65 @@
 - <DropdownShowcaseBox@OneThirdBox>:
     - LayoutHeader:
         text: Layout 3
-    - CyanScalingBox:
+    - DropdownShowcase:
         id: dropdown_section_box
-        auto_scale_height: false
-        - Label:
-            text: This is a dropdown menu. We can select from a list of options. Click to open it and select a value; the label should change through a callback:
-            auto_scale: true, true
-        - FullHorizontalBox:
-            id: dropdown_box
-            - Dropdown:
-                id: dropdown
-                selection_order: 13
-                allow_none: True
-                size_hint_x: none
-                width: 20
-                active: option1
-                options: option1, option2, option3, option4, option5
-                fg_color: yellow
-                bg_color: red
-            - Label:
-                id: dropdown_label
-                auto_scale: true, true
-                text: option1
-                padding_top: 1
-                padding_left: 1
-        - Label:
-            text: Test label, overlapped by dropdown when clicked
-            padding_left: 1
+    - PopupShowcase:
+        id: popup_section_box
 
+- <DropdownShowcase@CyanScalingBox>:
+    auto_scale_height: true
+    size_hint_y: None
+    - Label:
+        text: This is a dropdown menu. We can select from a list of options. Click to open it and select a value; the label should change through a callback:
+        auto_scale: true, true
+    - FullHorizontalBox:
+        id: dropdown_box
+        - Dropdown:
+            id: dropdown
+            selection_order: 40
+            allow_none: True
+            size_hint_x: none
+            width: 20
+            active: option1
+            options: option1, option2, option3, option4, option5
+            fg_color: yellow
+            bg_color: red
+        - Label:
+            id: dropdown_label
+            auto_scale: true, true
+            text: option1
+            padding_top: 1
+            padding_left: 1
+    - Label:
+        text: Test label, overlapped by dropdown when clicked
+        padding_left: 1
+
+
+- <PopupShowcase@CyanScalingBox>:
+    auto_scale_height: false
+    - Label:
+        text: This button will create a popup through a callback:
+        auto_scale: true, true
+    - Button:
+        id: popup_button
+        selection_order: 45
+        text: Popup!
+        bg_color: red
+        fg_color: yellow
+        auto_scale: true, true
+
+
+// This is a widget template we will use as a popup in a callback
+- <TestPopup@Layout>:
+    id: test_popup
+    mode: box
+    orientation: vertical
+    size_hint: 0.5, 0.5
+    border: true
+    pos_hint: center, middle
+    - Label:
+        text: This is a test popup.
+        size_hint: 0.5, 0.5
+    - Button:
+        text: dismiss
+        size_hint: 0.5, 0.5
