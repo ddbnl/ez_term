@@ -7,8 +7,7 @@ use crate::widgets::widget::{Pixel, EzObject, EzObjects};
 use crate::states::layout_state::LayoutState;
 use crate::states::state::{self, EzState, GenericState};
 use crate::common;
-use crate::common::{StateTree, WidgetTree};
-use crate::states::label_state::LabelState;
+use crate::common::{StateTree};
 
 
 /// Used with Box mode, determines whether widgets are placed below or above each other.
@@ -36,6 +35,7 @@ pub enum LayoutMode {
 
 /// A layout is where widgets live. They implements methods for hardcoding widget placement or
 /// placing them automatically in various ways.
+#[derive(Clone)]
 pub struct Layout {
 
     /// ID of the layout, used to construct [path]
@@ -178,9 +178,9 @@ impl EzObject for Layout {
 
     fn get_full_path(&self) -> String { self.path.clone() }
 
-    fn get_state(&self) -> EzState { EzState::Layout(LayoutState::default()) }
+    fn get_state(&self) -> EzState { EzState::Layout(self.state.clone()) }
 
-    fn get_contents(&self, state_tree: &mut common::StateTree, widget_tree: &WidgetTree)
+    fn get_contents(&self, state_tree: &mut common::StateTree)
         -> common::PixelMap {
 
         let mut merged_content = common::PixelMap::new();
@@ -189,17 +189,16 @@ impl EzObject for Layout {
                 match self.get_orientation() {
                     LayoutOrientation::Horizontal => {
                         merged_content = self.get_box_mode_horizontal_orientation_contents(
-                            merged_content, state_tree, widget_tree);
+                            merged_content, state_tree);
                     },
                     LayoutOrientation::Vertical => {
                         merged_content = self.get_box_mode_vertical_orientation_contents(
-                            merged_content, state_tree, widget_tree);
+                            merged_content, state_tree);
                     },
                 }
             },
             LayoutMode::Float => {
-                merged_content = self.get_float_mode_contents(merged_content, state_tree,
-                                                              widget_tree);
+                merged_content = self.get_float_mode_contents(merged_content, state_tree);
             }
         }
 
@@ -217,7 +216,7 @@ impl EzObject for Layout {
         merged_content = common::add_padding(
             merged_content, state.get_padding(),state.get_colors().background,
             state.get_colors().foreground);
-        merged_content = self.get_modal_contents(state_tree, widget_tree, merged_content);
+        merged_content = self.get_modal_contents(state_tree, merged_content);
 
         merged_content
     }
@@ -258,8 +257,7 @@ impl Layout {
 
     /// Overwrite a PixelMap of current own content with the content of the active modal. Modals
     /// overlap all content.
-    fn get_modal_contents (&self, state_tree: &mut StateTree, widget_tree: &WidgetTree,
-                           mut contents: common::PixelMap)
+    fn get_modal_contents (&self, state_tree: &mut StateTree, mut contents: common::PixelMap)
          -> common::PixelMap {
 
         if state_tree.get(&self.get_full_path()).unwrap().as_layout().get_modals().is_empty() {
@@ -269,9 +267,9 @@ impl Layout {
         // Size modal
         let parent_size = state_tree.get(&self.get_full_path()).unwrap().as_layout()
             .get_size().clone();
-        let modal_name = state_tree.get(&self.get_full_path()).unwrap().as_layout()
-            .get_modals().first().unwrap().as_ez_object().get_full_path();
-        let state =  state_tree.get_mut(&modal_name).unwrap();
+        let modal = state_tree.get(&self.get_full_path()).unwrap().as_layout()
+            .get_modals().first().unwrap().clone();
+        let state =  state_tree.get_mut(&modal.as_ez_object().get_full_path()).unwrap();
         common::resize_with_size_hint(state,parent_size.width,
                                       parent_size.height);
         common::reposition_with_pos_hint(
@@ -282,14 +280,12 @@ impl Layout {
 
         //Get contents
         let modal_content;
-        if let EzObjects::Layout(ref i) = state_tree.get(&self.get_full_path()).unwrap().as_layout()
-            .get_modals().first().unwrap() {
+        if let EzObjects::Layout(ref i) = modal {
             i.set_child_sizes(state_tree);
-            modal_content = i.get_contents(state_tree, widget_tree);
+            modal_content = i.get_contents(state_tree);
             i.propagate_absolute_positions(state_tree);
         } else {
-            modal_content = state_tree.get(&self.get_full_path()).unwrap().as_layout()
-                .get_modals().first().unwrap().as_ez_object().get_contents(state_tree, widget_tree);
+            modal_content = modal.as_ez_object().get_contents(state_tree);
         }
 
         // Overwrite own content with modal (modal is always on top)
@@ -311,50 +307,52 @@ impl Layout {
     /// Used by [get_contents] when the [LayoutMode] is set to [Box] and [LayoutOrientation] is
     /// set to [Horizontal]. Merges contents of sub layouts and/or widgets horizontally, using
     /// own [height] for each.
-    fn get_box_mode_horizontal_orientation_contents(&self, mut content: common::PixelMap,
-        state_tree: &mut common::StateTree, widget_tree: &common::WidgetTree)
+    fn get_box_mode_horizontal_orientation_contents(
+        &self, mut content: common::PixelMap, state_tree: &mut common::StateTree)
         -> common::PixelMap {
 
-        let own_state = state_tree.get_mut(&self.get_full_path())
-            .unwrap().as_layout().clone();
+        let own_size = state_tree.get_mut(&self.get_full_path())
+            .unwrap().as_layout().get_effective_size().clone();
+        let own_colors = state_tree.get_mut(&self.get_full_path())
+            .unwrap().as_layout().get_colors().clone();
 
         let mut position = state::Coordinates::new(0, 0);
 
         for child in self.get_children() {
-            if content.len() > own_state.get_effective_size().width {
+            if content.len() > own_size.width {
                 // Widget added more content than was allowed, crop it and return as we're full
-                content = content[0..own_state.get_effective_size().width].iter()
-                    .map(|x| x[0..own_state.get_effective_size().height].to_vec()).collect()
+                content = content[0..own_size.width].iter()
+                    .map(|x| x[0..own_size.height].to_vec()).collect()
             }
             let generic_child= child.as_ez_object();
             let state = state_tree.get_mut(&generic_child.get_full_path().clone())
                 .unwrap().as_generic_mut();
 
-            let width_left = own_state.get_effective_size().width - content.len();
+            let width_left = own_size.width - content.len();
             // If autoscaling is enabled set child size to max width. It is then expected to scale
             // itself according to its' content
             if state.get_auto_scale().width {
                 state.set_width(width_left)
             }
             if state.get_auto_scale().height {
-                state.set_height(own_state.get_effective_size().height)
+                state.set_height(own_size.height)
             }
             // Scale down child to remaining size in the case that the child is too large, rather
             // panicking.
             if state.get_size().width > width_left {
                 state.set_width(width_left);
             }
-            if state.get_size().height > own_state.get_effective_size().height {
-                state.set_height(own_state.get_effective_size().height);
+            if state.get_size().height > own_size.height {
+                state.set_height(own_size.height);
             }
 
             let valign = state.get_vertical_alignment();
             state.set_position(position);
-            let child_content = generic_child.get_contents(state_tree, widget_tree);
+            let child_content = generic_child.get_contents(state_tree);
             if child_content.is_empty() { continue }  // handle empty widget
             content = self.merge_horizontal_contents(
                 content, child_content,
-                &own_state,
+                own_size, own_colors.clone(),
                 state_tree.get_mut(&generic_child.get_full_path()).unwrap().as_generic_mut(),
                 valign);
             position.x = content.len();
@@ -366,32 +364,34 @@ impl Layout {
     /// set to [Vertical]. Merges contents of sub layouts and/or widgets vertically, using
     /// own [width] for each.
     fn get_box_mode_vertical_orientation_contents(&self, mut content: common::PixelMap,
-        state_tree: &mut common::StateTree, widget_tree: &common::WidgetTree)
-        -> common::PixelMap {
+        state_tree: &mut common::StateTree) -> common::PixelMap {
 
-        let own_state = state_tree.get(&self.get_full_path()).unwrap().as_layout().clone();
-        for _ in 0..own_state.get_effective_size().width {
+        let own_size = state_tree.get_mut(&self.get_full_path())
+            .unwrap().as_layout().get_effective_size().clone();
+        let own_colors = state_tree.get_mut(&self.get_full_path())
+            .unwrap().as_layout().get_colors().clone();
+        for _ in 0..own_size.width {
             content.push(Vec::new())
         }
         let mut position = state::Coordinates::new(0, 0);
         for child in self.get_children() {
             if content.is_empty() { return content }  // No space left in widget
-            if content.len() > own_state.get_effective_size().width ||
-                content[0].len() > own_state.get_effective_size().height {
+            if content.len() > own_size.width ||
+                content[0].len() > own_size.height {
                 // Widget added more content than was allowed, crop it and return as we're full
-                content = content[0..own_state.get_effective_size().width].iter()
-                    .map(|x| x[0..own_state.get_effective_size().height].to_vec()).collect()
+                content = content[0..own_size.width].iter()
+                    .map(|x| x[0..own_size.height].to_vec()).collect()
             }
 
             let generic_child= child.as_ez_object();
             let state = state_tree.get_mut(&generic_child.get_full_path())
                 .unwrap().as_generic_mut();
 
-            let height_left = own_state.get_effective_size().height - content[0].len();
+            let height_left = own_size.height - content[0].len();
             // If autoscaling is enabled set child size to max width. It is then expected to scale
             // itself according to its' content
             if state.get_auto_scale().width {
-                state.set_width(own_state.get_effective_size().width)
+                state.set_width(own_size.width)
             }
             if state.get_auto_scale().height {
                 state.set_height(height_left)
@@ -401,16 +401,17 @@ impl Layout {
             if state.get_size().height > height_left {
                 state.set_height(height_left);
             }
-            if state.get_size().width > own_state.get_effective_size().width {
-                state.set_width(own_state.get_effective_size().width);
+            if state.get_size().width > own_size.width {
+                state.set_width(own_size.width);
             }
 
             state.set_position(position);
             let halign = state.get_horizontal_alignment();
-            let child_content = generic_child.get_contents(state_tree, widget_tree);
+            let child_content = generic_child.get_contents(state_tree);
 
             content = self.merge_vertical_contents(
-                content, child_content,&own_state,
+                content, child_content,own_size,
+                own_colors.clone(),
                 state_tree.get_mut(&generic_child.get_full_path()).unwrap().as_generic_mut(),
                 halign);
             position.y = content[0].len();
@@ -422,8 +423,7 @@ impl Layout {
     /// XY coordinates defined by that child, relative to itself, and uses
     /// childs' [width] and [height].
     fn get_float_mode_contents(&self, mut content: common::PixelMap,
-                               state_tree: &mut common::StateTree, widget_tree: &common::WidgetTree)
-        -> common::PixelMap {
+                               state_tree: &mut common::StateTree) -> common::PixelMap {
 
         let own_state = state_tree.get(&self.get_full_path()).unwrap().as_layout();
         let own_height = own_state.get_effective_size().height;
@@ -467,7 +467,7 @@ impl Layout {
                 state.set_width(own_width);
             }
 
-            let child_content = generic_child.get_contents(state_tree, widget_tree);
+            let child_content = generic_child.get_contents(state_tree);
             let state = state_tree.get_mut(
                 &generic_child.get_full_path()).unwrap().as_generic_mut(); // re-borrow
             common::reposition_with_pos_hint(own_width, own_height,
@@ -644,20 +644,20 @@ impl Layout {
     /// Get an EzWidget trait object for each child [EzWidget] and return it in a
     /// <[path], [EzObject]> HashMap.
     pub fn get_widget_tree(&self) -> common::WidgetTree {
+
         let mut widget_tree = common::WidgetTree::new();
         for (child_path, child) in self.get_widgets_recursive() {
             widget_tree.insert(child_path, child);
         }
-        for i in 0..self.get_state().as_layout().open_modals.len() {
+        for i in 0..self.state.open_modals.len() {
             if let EzObjects::Layout(ref layout) = self.state.open_modals[i] {
                 for (child_path, child) in layout.get_widgets_recursive() {
                     widget_tree.insert(child_path, child);
                 }
-            } else {
-                widget_tree.insert(
-                    self.state.open_modals[i].as_ez_object().get_full_path(),
-                    &self.state.open_modals[i]);
             }
+            widget_tree.insert(
+                self.state.open_modals[i].as_ez_object().get_full_path(),
+                &self.state.open_modals[i]);
         }
         widget_tree
 
@@ -797,15 +797,16 @@ impl Layout {
 
     /// Take a [PixelMap] and merge it horizontally with another [PixelMap]
     pub fn merge_horizontal_contents(&self, mut merged_content: common::PixelMap, mut new: common::PixelMap,
-                                     parent_state: &LayoutState, state: &mut dyn state::GenericState,
+                                     parent_size: state::Size, parent_colors: state::ColorConfig,
+                                     state: &mut dyn state::GenericState,
                                      valign: state::VerticalAlignment) -> common::PixelMap {
 
-        if parent_state.get_effective_size().height > new[0].len() {
+        if parent_size.height > new[0].len() {
             let offset;
             (new, offset) = common::align_content_vertically(
-                new, valign, parent_state.get_effective_size().height,
-                parent_state.get_colors().foreground,
-                parent_state.get_colors().background);
+                new, valign, parent_size.height,
+                parent_colors.foreground,
+                parent_colors.background);
             state.set_y(state.get_position().y + offset);
         }
 
@@ -817,7 +818,8 @@ impl Layout {
 
     /// Take a [PixelMap] and merge it vertically with another [PixelMap]
     pub fn merge_vertical_contents(&self, mut merged_content: common::PixelMap, mut new: common::PixelMap,
-                                   parent_state: &LayoutState, state: &mut dyn state::GenericState,
+                                   parent_size: state::Size, parent_colors: state::ColorConfig,
+                                   state: &mut dyn state::GenericState,
                                    halign: state::HorizontalAlignment) -> common::PixelMap {
 
         if new.is_empty() {
@@ -825,22 +827,22 @@ impl Layout {
         }
 
         let offset;
-        if parent_state.get_effective_size().width > new.len() {
+        if parent_size.width > new.len() {
             (new, offset) = common::align_content_horizontally(
-                new, halign, parent_state.get_effective_size().width,
-                parent_state.get_colors().foreground,
-                parent_state.get_colors().background);
+                new, halign, parent_size.width,
+                parent_colors.foreground,
+                parent_colors.background);
             state.set_x(state.get_position().x + offset);
         }
 
-        for x in 0..parent_state.get_effective_size().width {
+        for x in 0..parent_size.width {
             for y in 0..new[0].len() {
                 if x < new.len() && y < new[x].len() {
                     merged_content[x].push(new[x][y].clone())
                 } else {
                     merged_content[x].push(Pixel { symbol: " ".to_string(),
-                        foreground_color: parent_state.get_colors().foreground,
-                        background_color: parent_state.get_colors().background,
+                        foreground_color: parent_colors.foreground,
+                        background_color: parent_colors.background,
                         underline: false});
                 }
             }
@@ -848,4 +850,6 @@ impl Layout {
 
         merged_content
     }
+
+
 }

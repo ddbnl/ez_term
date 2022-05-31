@@ -1,12 +1,12 @@
 use std::collections::HashMap;
-use crossterm::event::KeyCode;
 use crate::common;
-use crate::common::StateTree;
+use crate::common::{StateTree};
 use crate::states::state::{self};
 use crate::widgets::widget::EzObjects;
 
 
 /// [State] implementation.
+#[derive(Clone)]
 pub struct LayoutState {
 
     /// Position of this widget relative to its' parent [Layout]
@@ -64,13 +64,6 @@ pub struct LayoutState {
     /// at runtime. E.g. when spawning popups.
     pub templates: common::Templates,
 
-    /// [CallbackConfig] containing callbacks to be called in different situations
-    pub callbacks: state::CallbackConfig,
-
-    /// A Key to callback function lookup used to store keybinds for this widget. See
-    /// [KeyboardCallbackFunction] type for callback function signature.
-    pub keymap: common::KeyMap,
-
     /// If true this forces a global screen redraw on the next frame. Screen redraws are diffed
     /// so this can be called when needed without degrading performance. If only screen positions
     /// that fall within this widget must be redrawn, call [EzObject.redraw] instead.
@@ -96,8 +89,6 @@ impl Default for LayoutState {
             changed: false,
             open_modals: Vec::new(),
             templates: HashMap::new(),
-            callbacks: state::CallbackConfig::default(),
-            keymap: common::KeyMap::new(),
             force_redraw: false
         }
     }
@@ -108,9 +99,7 @@ impl state::GenericState for LayoutState {
 
     fn get_changed(&self) -> bool { self.changed }
 
-    fn set_size_hint(&mut self, size_hint: state::SizeHint) {
-        self.size_hint = size_hint;
-    }
+    fn set_size_hint(&mut self, size_hint: state::SizeHint) { self.size_hint = size_hint; }
 
     fn get_size_hint(&self) -> &state::SizeHint { &self.size_hint }
 
@@ -128,40 +117,17 @@ impl state::GenericState for LayoutState {
 
     fn get_auto_scale(&self) -> &state::AutoScale { &self.auto_scale }
 
-    fn set_size(&mut self, size: state::Size) {
-        self.size = size;
-    }
+    fn set_size(&mut self, size: state::Size) { self.size = size; }
 
     fn get_size(&self) -> &state::Size { &self.size  }
 
-    fn set_position(&mut self, position: state::Coordinates) {
-        self.position = position;
-    }
+    fn set_position(&mut self, position: state::Coordinates) { self.position = position; }
 
     fn get_position(&self) -> state::Coordinates { self.position }
 
-    fn set_absolute_position(&mut self, pos: state::Coordinates) {
-        if self.absolute_position != pos { self.changed = true }
-        self.absolute_position = pos;
-    }
+    fn set_absolute_position(&mut self, pos: state::Coordinates) { self.absolute_position = pos; }
 
     fn get_absolute_position(&self) -> state::Coordinates { self.absolute_position }
-
-    fn set_callbacks(&mut self, config: state::CallbackConfig) {
-        self.callbacks = config;
-    }
-
-    fn get_callbacks(&self) -> &state::CallbackConfig { &self.callbacks }
-
-    fn get_callbacks_mut(&mut self) -> &mut state::CallbackConfig {
-        &mut self.callbacks
-    }
-
-    fn get_key_map(&self) -> &common::KeyMap { &self.keymap }
-
-    fn bind_key(&mut self, key: KeyCode, func: common::KeyboardCallbackFunction) {
-        self.keymap.insert(key, func);
-    }
 
     fn set_horizontal_alignment(&mut self, alignment: state::HorizontalAlignment) {
         if self.halign != alignment { self.changed = true }
@@ -216,6 +182,7 @@ impl state::GenericState for LayoutState {
     }
 
     fn get_force_redraw(&self) -> bool { self.force_redraw }
+
 }
 impl LayoutState {
 
@@ -232,14 +199,19 @@ impl LayoutState {
     pub fn open_popup(&mut self, template: String) -> (String, StateTree) {
         let mut popup = self.templates.get_mut(&template).unwrap().clone();
         let init_popup = popup.parse(&mut self.templates);
-        self.force_redraw = true;
         self.open_modal(init_popup)
     }
     
     /// Open a new modal. Returns the state of the new modal.
     pub fn open_modal(&mut self, mut modal: EzObjects) -> (String, StateTree) {
+
+        if modal.as_ez_object().get_id().is_empty() {
+            modal.as_ez_object_mut().set_id(self.open_modals.len().to_string());
+        }
         let modal_path = format!("/modal/{}", modal.as_ez_object().get_id());
         modal.as_ez_object_mut().set_full_path(modal_path.clone());
+
+        // State tree must be appended with the new states
         let mut extra_state_tree;
         if let EzObjects::Layout(ref mut i) = modal {
             i.propagate_paths();
@@ -262,15 +234,14 @@ impl LayoutState {
 
     /// Dismiss all modals, clearing the entire stack
     pub fn dismiss_all_modals(&mut self) {
+
         self.open_modals.clear();
         self.changed = true;
         self.force_redraw = true;
     }
     
     /// Get reference to all open modals
-    pub fn get_modals(&self) -> &Vec<EzObjects> {
-        &self.open_modals
-    }
+    pub fn get_modals(&self) -> &Vec<EzObjects> { &self.open_modals }
     
     /// Get mutable reference to all open modals
     pub fn get_modals_mut(&mut self) -> &mut Vec<EzObjects> {

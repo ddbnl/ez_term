@@ -5,10 +5,11 @@ use crossterm::{QueueableCommand, cursor, ExecutableCommand};
 use std::io::{stdout, Write};
 use std::collections::HashMap;
 use crossterm::event::KeyCode;
+use crate::common;
 use crate::ez_parser::EzWidgetDefinition;
 use crate::scheduler::Scheduler;
 use crate::widgets::layout::Layout;
-use crate::states::state::{self, EzState};
+use crate::states::state::{self, CallbackConfig, EzState};
 use crate::widgets::widget::{EzWidget, EzObjects, Pixel, EzObject};
 
 
@@ -38,6 +39,13 @@ pub type ViewTree = Vec<Vec<StyledContent<String>>>;
 /// receive a mutable reference to the widget state and can change what they need. Then after each
 /// frame the updated StateTree is diffed with the old one, and only changed widgets are redrawn.
 pub type StateTree = HashMap<String, state::EzState>;
+
+/// ## Widget tree:
+/// A read-only list of all widgets, passed to callbacks. Can be used to access static information
+/// of a widget that is not in its' State. Widgets are represented by the EzWidget enum, but
+/// can be cast to the generic UxObject or IsWidget trait. If you are sure of the type of widget
+/// you are dealing with it can also be cast to specific widget types.
+pub type CallbackTree = HashMap<String, CallbackConfig>;
 
 /// ## Widget tree:
 /// A read-only list of all widgets, passed to callbacks. Can be used to access static information
@@ -124,24 +132,13 @@ pub fn get_widget_by_position<'a>(pos: state::Coordinates, widget_tree: &'a Widg
 /// Write content to screen. Only writes differences between the passed view tree (current content)
 /// and passed content (new content). The view tree is updated when changes are made.
 pub fn write_to_screen(base_position: state::Coordinates, content: PixelMap,
-                       view_tree: &mut ViewTree, state_tree: &StateTree, protect_modal: bool) {
+                       view_tree: &mut ViewTree) {
     stdout().execute(cursor::SavePosition).unwrap();
 
-    let root_state = state_tree.get("/root").unwrap().as_layout();
-    // Get list of coordinates for the open modal if any so we can exclude those for redraw
-    let modal_coords = if protect_modal && !root_state.open_modals.is_empty() {
-        println!("AAL {:?}", root_state.open_modals.first().unwrap()
-            .as_ez_object().get_state().as_generic().get_box_coords());
-        root_state.open_modals.first().unwrap()
-            .as_ez_object().get_state().as_generic().get_box_coords()
-    } else {
-        Vec::new()
-    };
     for x in 0..content.len() {
         for y in 0..content[x].len() {
             let write_pos = state::Coordinates::new(base_position.x + x, base_position.y + y);
             let write_content = content[x][y].get_pixel().clone();
-            if modal_coords.contains(&write_pos) { continue}
             if write_pos.x < view_tree.len() && write_pos.y < view_tree[write_pos.x].len() &&
                 view_tree[write_pos.x][write_pos.y] != write_content {
                 view_tree[write_pos.x][write_pos.y] = write_content.clone();
@@ -168,9 +165,6 @@ pub fn initialize_view_tree(width: usize, height: usize) -> ViewTree {
 }
 
 
-
-
-
 /// Check each widget state tree for two things:
 /// 1. If the state of the widget in the passed StateTree differs from the current widget state.
 /// In this case the widget state should be updated with the new one, and the widget should be
@@ -184,6 +178,17 @@ pub fn redraw_changed_widgets(view_tree: &mut ViewTree, state_tree: &mut StateTr
     // We separate widgets and modals to redraw because modals need to be drawn last
     let mut widgets_to_redraw = Vec::new();
     let mut modals_to_redraw = Vec::new();
+    // We update the root widgets' state only. It's a special case because it can hold new
+    // modals it might need to access internally.
+    root_widget.state = state_tree.get_mut("/root").unwrap().as_layout().clone();
+
+    let mut modal_box = None;
+    if !state_tree.get("/root").unwrap().as_layout().open_modals.is_empty() {
+        let modal_name = state_tree.get("/root").unwrap().as_layout()
+            .open_modals.first().unwrap().as_ez_object().get_full_path().clone();
+        modal_box = Some((modal_name.clone(),
+                          state_tree.get(&modal_name).unwrap().as_generic().get_box()));
+    }
 
     for (widget_path, state) in state_tree.iter_mut() {
         let generic_state = state.as_generic_mut();
@@ -192,32 +197,46 @@ pub fn redraw_changed_widgets(view_tree: &mut ViewTree, state_tree: &mut StateTr
             generic_state.set_force_redraw(false);
         }
         if generic_state.get_changed() {
-            // Check overlap between widget and modal. Redraw modal if there's any.
             generic_state.set_changed(false);
             if !widget_path.starts_with("/modal") {
                 let parent_path = widget_path.rsplit_once('/').unwrap().0;
                 widgets_to_redraw.push(parent_path.to_string());
-                force_redraw = true;
+                if let Some((ref modal_name, modal_box_coords)) = modal_box {
+                    if generic_state.overlaps(modal_box_coords) {
+                        modals_to_redraw.push(modal_name.clone());
+                    }
+                }
             } else{
-                modals_to_redraw.push(widget_path.to_string());
+                modals_to_redraw.push(widget_path.clone());
             }
         }
     }
-    let widget_tree = root_widget.get_widget_tree();
     if !force_redraw {
         for widget_path in widgets_to_redraw.iter() {
             if widget_path.is_empty() || widget_path == &root_widget.path {
-                root_widget.redraw(view_tree, state_tree, &widget_tree, false);
+                root_widget.redraw(view_tree, state_tree);
             } else {
                 root_widget.get_child_by_path_mut(widget_path).unwrap().as_ez_object_mut()
-                    .redraw(view_tree, state_tree, &widget_tree, true);
+                    .redraw(view_tree, state_tree);
             }
         }
-        for widget_path in modals_to_redraw.iter() {
-            let root_state = state_tree.get_mut("/root").unwrap().as_layout_mut();
-            for modal in root_state.open_modals.iter_mut() {
-                if &modal.as_ez_object().get_full_path() == widget_path {
-                    modal.as_ez_object().redraw(view_tree, state_tree, &widget_tree, false);
+        for modal_path in modals_to_redraw.iter() {
+            let modal = root_widget.state.open_modals.first_mut().unwrap();
+            if let EzObjects::Layout(ref mut i) = modal {
+                if modal_path == &i.get_full_path() {
+                    i.redraw(view_tree, state_tree);
+                } else {
+                    for child in i.get_widgets_recursive().values() {
+                        if modal_path == &child.as_ez_widget().get_full_path() {
+                            child.as_ez_object().redraw(view_tree, state_tree);
+                        }
+                    }
+                }
+            } else {
+                if modal_path == &root_widget.state.open_modals.first_mut().unwrap()
+                    .as_ez_widget().get_full_path() {
+                    root_widget.state.open_modals.first_mut().unwrap().as_ez_widget()
+                        .redraw(view_tree, state_tree);
                 }
             }
         }
@@ -228,12 +247,49 @@ pub fn redraw_changed_widgets(view_tree: &mut ViewTree, state_tree: &mut StateTr
 
 /// Get the State for each child [EzWidget] and return it in a <[path], [State]> HashMap.
 pub fn get_state_tree(root_layout: &Layout) -> StateTree {
+
     let mut state_tree = HashMap::new();
     for (child_path, child) in root_layout.get_widgets_recursive() {
         state_tree.insert(child_path, child.as_ez_object().get_state());
     }
     state_tree.insert(root_layout.get_full_path(), root_layout.get_state());
     state_tree
+}
+
+
+/// Get the State for each child [EzWidget] and return it in a <[path], [State]> HashMap.
+pub fn get_callback_tree(root_layout: &Layout) -> CallbackTree {
+
+    let mut callback_tree = HashMap::new();
+    for (child_path, _child) in root_layout.get_widgets_recursive() {
+        callback_tree.insert(child_path, CallbackConfig::default());
+    }
+    callback_tree.insert(root_layout.get_full_path(), CallbackConfig::default());
+    callback_tree
+}
+
+
+/// Clean up orphaned states and callback configs in their respective trees. E.g. for when a
+/// modal closes.
+pub fn clean_trees(root_widget: &mut Layout, state_tree: &mut StateTree,
+                   callback_tree: &mut CallbackTree) {
+
+
+    let widget_tree = root_widget.get_widget_tree();
+    let state_paths: Vec<String> =
+        state_tree.keys().into_iter().map(|x| x.clone()).collect();
+    for path in state_paths {
+        if path != "/root" && !widget_tree.contains_key(&path) {
+            state_tree.remove(&path);
+        }
+    }
+    let callback_paths: Vec<String> =
+        callback_tree.keys().into_iter().map(|x| x.clone()).collect();
+    for path in callback_paths {
+        if path != "/root" && !widget_tree.contains_key(&path) {
+            callback_tree.remove(&path);
+        }
+    }
 }
 
 
@@ -254,14 +310,12 @@ pub fn get_selected_widget<'a>(widget_tree: &'a WidgetTree, state_tree: &mut Sta
 
 /// If any widget is currently selected, deselect it. Can always be called safely.
 pub fn deselect_selected_widget(view_tree: &mut ViewTree, state_tree: &mut StateTree,
-        widget_tree: &WidgetTree, scheduler: &mut Scheduler) {
+        widget_tree: &WidgetTree, callback_tree: &mut CallbackTree, scheduler: &mut Scheduler) {
     let selected_widget = get_selected_widget(widget_tree, state_tree);
     if let Some(i) = selected_widget {
-        let context = EzContext::new(i.get_full_path(), view_tree,
-                                      state_tree, widget_tree, scheduler);
-        i.on_deselect(context)
+        state_tree.get_mut(&i.get_full_path()).unwrap().as_selectable_mut().set_selected(false);
+        i.on_deselect(view_tree, state_tree, widget_tree, callback_tree, scheduler);
     }
-
 }
 
 
@@ -269,28 +323,31 @@ pub fn deselect_selected_widget(view_tree: &mut ViewTree, state_tree: &mut State
 /// widget is currently selected wrap around and select the first. This function can always be
 /// called safely.
 pub fn select_next(view_tree: &mut ViewTree, state_tree: &mut StateTree,
-                   widget_tree: &WidgetTree, scheduler: &mut Scheduler) {
+                   widget_tree: &WidgetTree, callback_tree: &mut CallbackTree,
+                   scheduler: &mut Scheduler) {
     let current_selection = get_selected_widget(widget_tree, state_tree);
-
     let mut current_order = if let Some(i) = current_selection {
         state_tree.get_mut(&i.get_full_path()).unwrap().as_selectable_mut().set_selected(false);
+        i.on_deselect(view_tree, state_tree, widget_tree,
+                      callback_tree,scheduler);
         i.get_selection_order()
     } else {
         0
     };
     let result = find_next_selection(current_order, widget_tree);
     if let Some( next_widget) = result {
-        let context = EzContext::new(next_widget.clone(), view_tree,
-                                     state_tree, widget_tree, scheduler);
-        widget_tree.get(&next_widget).unwrap().as_ez_widget().on_select(context,None);
+        state_tree.get_mut(&next_widget).unwrap().as_selectable_mut().set_selected(true);
+        widget_tree.get(&next_widget).unwrap().as_ez_object().on_select(
+            view_tree,state_tree, widget_tree,
+            callback_tree,scheduler, None);
     } else  {
         current_order = 0;
         let result = find_next_selection(current_order, widget_tree);
         if let Some( next_widget) = result {
-            let context = EzContext::new(next_widget.clone(), view_tree,
-                                         state_tree, widget_tree, scheduler);
-            widget_tree.get(&next_widget).unwrap().as_ez_widget()
-                .on_select(context,None);
+            state_tree.get_mut(&next_widget).unwrap().as_selectable_mut().set_selected(true);
+            widget_tree.get(&next_widget).unwrap().as_ez_object().on_select(
+                view_tree,state_tree, widget_tree,
+                callback_tree,scheduler, None);
         }
     }
 }
@@ -325,30 +382,32 @@ pub fn find_next_selection(current_selection: usize, widget_tree: &WidgetTree) -
 /// widget is currently selected wrap around and select the last. This function can always be
 /// called safely.
 pub fn select_previous(view_tree: &mut ViewTree, state_tree: &mut StateTree,
-                       widget_tree: &WidgetTree, scheduler: &mut Scheduler) {
+                       widget_tree: &WidgetTree, callback_tree: &mut CallbackTree,
+                       scheduler: &mut Scheduler) {
 
     let current_selection = get_selected_widget(widget_tree, state_tree);
     let mut current_order = if let Some(i) = current_selection {
         state_tree.get_mut(&i.get_full_path()).unwrap().as_selectable_mut().set_selected(false);
+        i.on_deselect(view_tree, state_tree, widget_tree,
+                      callback_tree, scheduler);
         i.get_selection_order()
     } else {
         0
     };
     let result = find_previous_selection(current_order, widget_tree);
     if let Some( previous_widget) = result {
-
-        let context = EzContext::new(previous_widget.clone(), view_tree,
-                                     state_tree, widget_tree, scheduler);
-        widget_tree.get(&previous_widget).unwrap()
-            .as_ez_widget().on_select(context,None);
+        state_tree.get_mut(&previous_widget).unwrap().as_selectable_mut().set_selected(true);
+        widget_tree.get(&previous_widget).unwrap().as_ez_object().on_select(
+            view_tree,state_tree, widget_tree,
+            callback_tree,scheduler, None);
     } else {
         current_order = 99999999;
         let result = find_previous_selection(current_order, widget_tree);
         if let Some( previous_widget) = result {
-            let context = EzContext::new(previous_widget.clone(), view_tree,
-                                         state_tree, widget_tree, scheduler);
-            widget_tree.get(&previous_widget).unwrap()
-                .as_ez_widget().on_select(context,None);
+            state_tree.get_mut(&previous_widget).unwrap().as_selectable_mut().set_selected(true);
+            widget_tree.get(&previous_widget).unwrap().as_ez_object().on_select(
+                view_tree,state_tree, widget_tree,
+                callback_tree,scheduler, None);
         }
     }
 }
@@ -689,9 +748,20 @@ pub fn rotate_pixel_map(content: PixelMap) -> PixelMap {
 }
 
 
-pub fn open_popup(template: String, state_tree: &mut StateTree) -> String {
+pub fn open_popup(template: String, state_tree: &mut StateTree, scheduler: &mut Scheduler)
+    -> String {
     let (path, sub_tree) = state_tree.get_mut("/root").unwrap().as_layout_mut()
         .open_popup(template);
     state_tree.extend(sub_tree);
+    scheduler.set_callback_config(path.clone(),
+                                  state::CallbackConfig::default());
+    let modal = state_tree.get("/root").unwrap().as_layout()
+        .open_modals.first().unwrap();
+    if let EzObjects::Layout(ref i) = modal {
+        for sub_widget in i.get_widgets_recursive().values() {
+            scheduler.set_callback_config(sub_widget.as_ez_object().get_full_path(),
+                                          common::CallbackConfig::default());
+        }
+    }
     path
 }

@@ -1,6 +1,6 @@
 //! # Widget state:
 //! A module containing the base structs and traits for widget states.
-use crossterm::event::{Event, KeyCode};
+use crossterm::event::{KeyCode};
 use crossterm::style::Color;
 use crate::common;
 use crate::states::canvas_state::{CanvasState};
@@ -10,7 +10,6 @@ use crate::states::checkbox_state::{CheckboxState};
 use crate::states::dropdown_state::{DropdownState, DroppedDownMenuState};
 use crate::states::layout_state::LayoutState;
 use crate::states::radio_button_state::{RadioButtonState};
-use crate::states::state;
 use crate::states::text_input_state::{TextInputState};
 
 
@@ -20,6 +19,7 @@ use crate::states::text_input_state::{TextInputState};
 /// mutable ref to the widget itself. Every frame the StateTree is compared to each widget to see
 /// which widget has changed so it can be redrawn. The specific state struct for each widget type
 /// is defined its' own module.
+#[derive(Clone)]
 pub enum EzState {
     Layout(LayoutState),
     Label(LabelState),
@@ -372,39 +372,6 @@ pub trait GenericState {
              + self.get_padding().top)
     }
 
-    /// Set the [CallbackConfig]
-    fn set_callbacks(&mut self, config: state::CallbackConfig);
-
-    /// Get the [CallbackConfig]
-    fn get_callbacks(&self) -> &state::CallbackConfig;
-
-    /// Get a mut ref to the [CallbackConfig]
-    fn get_callbacks_mut(&mut self) -> &mut state::CallbackConfig;
-
-    /// Get the key map belonging to a widget. Any keys bound to the widget are in here along with
-    /// their callbacks. Key map should be used inside the "handle_event" method of a widget.
-    fn get_key_map(&self) -> &common::KeyMap {
-        panic!("Widget does not support keymap")
-    }
-
-    /// Bind a new key to the widget and the callback it should activate. Focussed widgets have
-    /// priority consuming events, next are global key binds, and then the selected widget.
-    fn bind_key(&mut self, _key: KeyCode, _func: common::KeyboardCallbackFunction);
-
-    /// Optionally consume an event that was passed to this widget. Return true if the event should
-    /// be considered consumed. Simply consults the keymap by default, but can be overloaded for
-    /// more complex circumstances.
-    fn handle_event(&mut self, event: Event, context: common::EzContext) -> bool {
-        if let Event::Key(key) = event {
-            if self.get_key_map().contains_key(&key.code) {
-                let func = self.get_key_map().get_mut(&key.code).unwrap();
-                func(context, key.code);
-                return true
-            }
-        }
-        false
-    }
-
     /// Set [HorizontalAlignment] of this widget.
     fn set_horizontal_alignment(&mut self, alignment: HorizontalAlignment);
 
@@ -631,7 +598,7 @@ impl Default for PosHint {
 pub struct CallbackConfig {
 
     /// Function to call when an object is selected.
-    pub on_select: Option<common::OptionalMouseCallbackFunction>,
+    pub on_select: Option<common::OptionalMouseCallbackFunction> ,
 
     /// Function to call when an object is deselected.
     pub on_deselect: Option<common::GenericEzFunction>,
@@ -649,7 +616,83 @@ pub struct CallbackConfig {
     pub on_right_mouse_click: Option<common::MouseCallbackFunction>,
 
     /// Function to call when the value of an object changes
-    pub bound_on_value_change: Option<common::GenericEzFunction>,
+    pub on_value_change: Option<common::GenericEzFunction>,
+
+    /// A Key to callback function lookup used to store keybinds for this widget. See
+    /// [KeyboardCallbackFunction] type for callback function signature.
+    pub keymap: common::KeyMap,
+}
+impl CallbackConfig {
+
+    pub fn bind_key(&mut self, key: KeyCode, func: common::KeyboardCallbackFunction) {
+        self.keymap.insert(key, func);
+    }
+
+    pub fn from_on_select(func: common::OptionalMouseCallbackFunction) -> Self {
+        let mut obj = CallbackConfig::default();
+        obj.on_select = Some(func);
+        obj
+    }
+
+    pub fn from_on_deselect(func: common::GenericEzFunction) -> Self {
+        let mut obj = CallbackConfig::default();
+        obj.on_deselect = Some(func);
+        obj
+    }
+
+    pub fn from_on_press(func: common::GenericEzFunction) -> Self {
+        let mut obj = CallbackConfig::default();
+        obj.on_press = Some(func);
+        obj
+    }
+
+    pub fn from_on_keyboard_enter(func: common::GenericEzFunction) -> Self {
+        let mut obj = CallbackConfig::default();
+        obj.on_keyboard_enter = Some(func);
+        obj
+    }
+
+    pub fn from_on_left_mouse_click(func: common::MouseCallbackFunction) -> Self {
+        let mut obj = CallbackConfig::default();
+        obj.on_left_mouse_click = Some(func);
+        obj
+    }
+
+    pub fn from_on_right_mouse_click(func: common::MouseCallbackFunction) -> Self {
+        let mut obj = CallbackConfig::default();
+        obj.on_right_mouse_click = Some(func);
+        obj
+    }
+
+    pub fn from_on_value_change(func: common::GenericEzFunction) -> Self {
+        let mut obj = CallbackConfig::default();
+        obj.on_value_change = Some(func);
+        obj
+    }
+
+    pub fn from_keymap(keymap: common::KeyMap) -> Self {
+        let mut obj = CallbackConfig::default();
+        obj.keymap = keymap;
+        obj
+    }
+
+    pub fn update_from(&mut self, other: CallbackConfig)  {
+        if let None = other.on_value_change {}
+        else { self.on_value_change = other.on_value_change};
+        if let None = other.on_deselect {}
+        else { self.on_deselect = other.on_deselect};
+        if let None = other.on_select {}
+        else { self.on_select = other.on_select};
+        if let None = other.on_press {}
+        else { self.on_press = other.on_press};
+        if let None = other.on_left_mouse_click {}
+        else { self.on_left_mouse_click = other.on_left_mouse_click};
+        if let None = other.on_right_mouse_click {}
+        else { self.on_right_mouse_click = other.on_right_mouse_click};
+        if let None = other.on_keyboard_enter {}
+        else { self.on_keyboard_enter = other.on_keyboard_enter};
+        self.keymap.extend(other.keymap);
+    }
 
 }
 

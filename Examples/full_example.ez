@@ -287,5 +287,8 @@
         text: This is a test popup.
         size_hint: 0.5, 0.5
     - Button:
+        id: dismiss_button
         text: dismiss
         size_hint: 0.5, 0.5
+        bg_color: red
+        fg_color: yellow

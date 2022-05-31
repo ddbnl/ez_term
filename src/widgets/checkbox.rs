@@ -1,15 +1,15 @@
 //! # Checkbox Widget
 //! Widget which is either on or off and implements an on_value_change callback.
-use std::collections::HashMap;
 use std::io::{Error, ErrorKind};
-use crossterm::event::{KeyCode};
 use crate::common;
-use crate::common::{StateTree, WidgetTree};
+use crate::common::{CallbackTree, StateTree, ViewTree, WidgetTree};
 use crate::widgets::widget::{EzWidget, Pixel, EzObject};
 use crate::states::checkbox_state::CheckboxState;
 use crate::states::state::{self, EzState, GenericState};
 use crate::ez_parser;
+use crate::scheduler::Scheduler;
 
+#[derive(Clone)]
 pub struct Checkbox {
 
     /// ID of the widget, used to construct [path]
@@ -128,17 +128,13 @@ impl EzObject for Checkbox {
 
     fn get_id(&self) -> String { self.id.clone() }
 
-    fn set_full_path(&mut self, path: String) {
-        self.path = path
-    }
+    fn set_full_path(&mut self, path: String) { self.path = path }
 
-    fn get_full_path(&self) -> String {
-        self.path.clone()
-    }
+    fn get_full_path(&self) -> String { self.path.clone() }
 
-    fn get_state(&self) -> EzState { EzState::Checkbox(CheckboxState::default()) }
+    fn get_state(&self) -> EzState { EzState::Checkbox(self.state.clone()) }
 
-    fn get_contents(&self, state_tree: &mut common::StateTree, widget_tree: &common::WidgetTree) -> common::PixelMap {
+    fn get_contents(&self, state_tree: &mut common::StateTree) -> common::PixelMap {
 
         let state = state_tree.get(&self.get_full_path()).unwrap().as_checkbox();
         let active_symbol = { if state.active {self.active_symbol}
@@ -170,6 +166,18 @@ impl EzObject for Checkbox {
         contents
     }
 
+    fn on_keyboard_enter(&self, view_tree: &mut ViewTree, state_tree: &mut StateTree,
+                         widget_tree: &WidgetTree, callback_tree: &mut CallbackTree,
+                         scheduler: &mut Scheduler) {
+        self.handle_toggle(view_tree, state_tree, widget_tree, callback_tree, scheduler);
+    }
+
+    fn on_left_mouse_click(&self, view_tree: &mut ViewTree, state_tree: &mut StateTree,
+                           widget_tree: &WidgetTree, callback_tree: &mut CallbackTree,
+                           scheduler: &mut Scheduler, _mouse_pos: state::Coordinates) {
+        self.handle_toggle(view_tree, state_tree, widget_tree, callback_tree, scheduler);
+    }
+
 }
 
 impl EzWidget for Checkbox {
@@ -178,20 +186,6 @@ impl EzWidget for Checkbox {
 
     fn get_selection_order(&self) -> usize { self.selection_order }
 
-    fn on_left_click(&self, context: common::EzContext, _position: state::Coordinates) {
-        let state = context.state_tree.get_mut(&self.get_full_path())
-            .unwrap().as_checkbox_mut();
-        self.toggle(state);
-        self.on_value_change(context);
-    }
-
-    fn on_keyboard_enter(&self, context: common::EzContext) {
-
-        let state = context.state_tree.get_mut(&self.get_full_path()).unwrap()
-            .as_checkbox_mut();
-        self.toggle(state);
-        self.on_value_change(context);
-    }
 }
 
 impl Checkbox {
@@ -203,12 +197,17 @@ impl Checkbox {
         obj
     }
 
-    /// Sets [active] to true if false, and false if true
-    fn toggle(&self, state: &mut CheckboxState) {
-        if state.get_active() {
-            state.set_active(false);
-        } else {
-            state.set_active(true);
+    fn handle_toggle(&self, view_tree: &mut ViewTree, state_tree: &mut StateTree,
+                           widget_tree: &WidgetTree, callback_tree: &mut CallbackTree,
+                           scheduler: &mut Scheduler) {
+
+        let state = state_tree.get_mut(&self.get_full_path())
+            .unwrap().as_checkbox_mut();
+        state.set_active(!state.get_active());
+        if let Some(ref mut i) = callback_tree
+            .get_mut(&self.get_full_path()).unwrap().on_value_change {
+            i(common::EzContext::new(self.get_full_path().clone(), view_tree,
+                                     state_tree, widget_tree, scheduler));
         }
     }
 }

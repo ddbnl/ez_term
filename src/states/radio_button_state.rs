@@ -1,12 +1,13 @@
-use std::collections::hash_map::Keys;
-use crossterm::event::Event::Key;
-use crossterm::event::KeyCode;
 use crate::states::state::{self, SizeHint};
-use crate::common;
 
 
 /// [State] implementation.
+#[derive(Clone)]
 pub struct RadioButtonState {
+
+    /// Group this radio button belongs to. Set the same group value for a number of radio buttons
+    /// to make them mutually exclusive.
+    pub group: String,
 
     /// Position of this widget relative to its' parent [Layout]
     pub position: state::Coordinates,
@@ -53,13 +54,6 @@ pub struct RadioButtonState {
     /// Bool representing if state has changed. Triggers widget redraw.
     pub changed: bool,
 
-    /// [CallbackConfig] containing callbacks to be called in different situations
-    pub callbacks: state::CallbackConfig,
-
-    /// A Key to callback function lookup used to store keybinds for this widget. See
-    /// [KeyboardCallbackFunction] type for callback function signature.
-    pub keymap: common::KeyMap,
-
     /// If true this forces a global screen redraw on the next frame. Screen redraws are diffed
     /// so this can be called when needed without degrading performance. If only screen positions
     /// that fall within this widget must be redrawn, call [EzObject.redraw] instead.
@@ -68,6 +62,7 @@ pub struct RadioButtonState {
 impl Default for RadioButtonState {
     fn default() -> Self {
        RadioButtonState {
+           group: String::new(),
            position: state::Coordinates::default(),
            absolute_position: state::Coordinates::default(),
            size: state::Size::new(5, 1),
@@ -83,8 +78,6 @@ impl Default for RadioButtonState {
            border_config: state::BorderConfig::default(),
            colors: state::ColorConfig::default(),
            changed: false,
-           callbacks: state::CallbackConfig::default(),
-           keymap: common::KeyMap::new(),
            force_redraw: false
        }
     }
@@ -134,18 +127,6 @@ impl state::GenericState for RadioButtonState {
     }
 
     fn get_absolute_position(&self) -> state::Coordinates { self.absolute_position }
-
-    fn set_callbacks(&mut self, config: state::CallbackConfig) { self.callbacks = config; }
-
-    fn get_callbacks(&self) -> &state::CallbackConfig { &self.callbacks }
-
-    fn get_callbacks_mut(&mut self) -> &mut state::CallbackConfig { &mut self.callbacks }
-
-    fn get_key_map(&self) -> &common::KeyMap { &self.keymap }
-
-    fn bind_key(&mut self, key: KeyCode, func: common::KeyboardCallbackFunction) {
-        self.keymap.insert(key, func);
-    }
 
     fn set_horizontal_alignment(&mut self, alignment: state::HorizontalAlignment) {
         if self.halign != alignment { self.changed = true }
@@ -200,6 +181,7 @@ impl state::GenericState for RadioButtonState {
     }
 
     fn get_force_redraw(&self) -> bool { self.force_redraw }
+
 }
 impl state::SelectableState for RadioButtonState {
 
@@ -212,10 +194,15 @@ impl state::SelectableState for RadioButtonState {
 }
 impl RadioButtonState {
 
+    /// Get the group this radio button belongs to. Radio buttons that share a group are
+    /// mutually exclusive.
+    pub fn get_group(&self) -> String { self.group.clone() }
+
     pub fn set_active(&mut self, active: bool) {
         if self.active != active { self.changed = true }
         self.active = active;
     }
 
     pub fn get_active(&self) -> bool { self.active }
+
 }

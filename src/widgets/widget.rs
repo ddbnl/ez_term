@@ -2,11 +2,12 @@
 //! A module containing the base structs and traits for widgets"
 //! functions allows starting the app based on a root layout.
 use crossterm::style::{Color, StyledContent, Stylize};
-use crossterm::event::{Event, KeyCode};
 use std::io::{Error};
+use crossterm::event::Event;
 use crate::common;
-use crate::common::{StateTree, WidgetTree};
-use crate::states::state::{self, EzState};
+use crate::common::{CallbackTree, EzContext, StateTree, ViewTree, WidgetTree};
+use crate::scheduler::Scheduler;
+use crate::states::state::{Coordinates, EzState};
 use crate::widgets::layout::{Layout};
 use crate::widgets::label::{Label};
 use crate::widgets::button::{Button};
@@ -21,6 +22,7 @@ use crate::widgets::text_input::{TextInput};
 /// widget, so this enum gathers widgets and layouts in one place, as they do have methods in
 /// common (e.g. both have positions, sizes, etc.). To access common methods, cast this enum
 /// into a EzObject (trait for Layouts+Widgets) or EzWidget (Widgets only).
+#[derive(Clone)]
 pub enum EzObjects {
     Layout(Layout),
     Label(Label),
@@ -250,13 +252,12 @@ pub trait EzObject {
 
     /// Redraw the widget on the screen. Using the view tree, only changed content is written to
     /// improve performance.
-    fn redraw(&self, view_tree: &mut common::ViewTree, state_tree: &mut common::StateTree,
-              widget_tree: &common::WidgetTree, protect_modal: bool ) {
+    fn redraw(&self, view_tree: &mut ViewTree, state_tree: &mut StateTree) {
 
         let state = state_tree.get(&self.get_full_path()).unwrap().as_generic();
         let pos = state.get_absolute_position();
-        let content = self.get_contents(state_tree, widget_tree);
-        common::write_to_screen(pos, content, view_tree, state_tree, protect_modal);
+        let content = self.get_contents(state_tree);
+        common::write_to_screen(pos, content, view_tree);
     }
 
     /// Set the content for a widget manually. This is not implemented for most widgets, as they
@@ -266,8 +267,105 @@ pub trait EzObject {
 
     /// Gets the visual content for this widget. Overloaded by each widget module. E.g. a label
     /// gets its' content from its' text, a checkbox from whether it has been checked, etc.
-    fn get_contents(&self, state_tree: &mut common::StateTree, widget_tree: &common::WidgetTree)
+    fn get_contents(&self, state_tree: &mut common::StateTree)
         -> common::PixelMap;
+
+    /// Optionally consume an event that was passed to this widget. Return true if the event should
+    /// be considered consumed. Simply consults the keymap by default, but can be overloaded for
+    /// more complex circumstances.
+    fn handle_event(&self, event: Event, view_tree: &mut ViewTree,
+                    state_tree: &mut StateTree, widget_tree: &WidgetTree,
+                    callback_tree: &mut CallbackTree, scheduler: &mut Scheduler) -> bool {
+        if let Event::Key(key) = event {
+            if callback_tree.get_mut(&self.get_full_path()).unwrap()
+                .keymap.contains_key(&key.code) {
+                let func = callback_tree.get_mut(&self.get_full_path()).unwrap()
+                    .keymap.get_mut(&key.code).unwrap();
+                let context = EzContext::new(self.get_full_path(),
+                view_tree, state_tree, widget_tree, scheduler);
+                func(context, key.code);
+                return true
+            }
+        }
+        false
+    }
+
+    fn on_keyboard_enter(&self, view_tree: &mut ViewTree,
+                         state_tree: &mut StateTree, widget_tree: &WidgetTree,
+                         callback_tree: &mut CallbackTree, scheduler: &mut Scheduler) {
+
+        self.on_press(view_tree, state_tree, widget_tree,
+                      callback_tree, scheduler);
+        if let Some(ref mut i) = callback_tree
+            .get_mut(&self.get_full_path()).unwrap().on_keyboard_enter {
+            i(common::EzContext::new(self.get_full_path().clone(),
+            view_tree, state_tree, widget_tree, scheduler));
+        }
+
+    }
+
+    fn on_left_mouse_click(&self, view_tree: &mut ViewTree,
+                           state_tree: &mut StateTree, widget_tree: &WidgetTree,
+                           callback_tree: &mut CallbackTree, scheduler: &mut Scheduler,
+                           mouse_pos: Coordinates) {
+        self.on_press(view_tree, state_tree, widget_tree,
+                      callback_tree, scheduler);
+        if let Some(ref mut i) = callback_tree
+            .get_mut(&self.get_full_path()).unwrap().on_left_mouse_click {
+            i(common::EzContext::new(self.get_full_path().clone(),
+                                     view_tree, state_tree, widget_tree, scheduler),
+              mouse_pos);
+        }
+    }
+
+    fn on_press(&self, view_tree: &mut ViewTree,
+                state_tree: &mut StateTree, widget_tree: &WidgetTree,
+                callback_tree: &mut CallbackTree, scheduler: &mut Scheduler) {
+        if let Some(ref mut i) = callback_tree
+            .get_mut(&self.get_full_path()).unwrap().on_press {
+            i(common::EzContext::new(self.get_full_path().clone(),
+                                     view_tree, state_tree, widget_tree, scheduler));
+        }
+    }
+
+    fn on_right_mouse_click(&self, view_tree: &mut ViewTree,
+                            state_tree: &mut StateTree, widget_tree: &WidgetTree,
+                            callback_tree: &mut CallbackTree, scheduler: &mut Scheduler,
+                            mouse_pos: Coordinates) {
+
+        if let Some(ref mut i) = callback_tree
+            .get_mut(&self.get_full_path()).unwrap().on_right_mouse_click {
+            i(common::EzContext::new(self.get_full_path().clone(),
+                                     view_tree, state_tree, widget_tree, scheduler),
+              mouse_pos);
+        }
+    }
+    fn on_value_change(&self, _view_tree: &mut ViewTree,
+                       _state_tree: &mut StateTree, _widget_tree: &WidgetTree,
+                       _callback_tree: &mut CallbackTree, _scheduler: &mut Scheduler) {
+
+    }
+
+    fn on_select(&self, view_tree: &mut ViewTree, state_tree: &mut StateTree,
+                 widget_tree: &WidgetTree, callback_tree: &mut CallbackTree,
+                 scheduler: &mut Scheduler, mouse_pos: Option<Coordinates>) {
+        if let Some(ref mut i) = callback_tree
+            .get_mut(&self.get_full_path()).unwrap().on_select {
+            i(common::EzContext::new(self.get_full_path().clone(),
+                                     view_tree, state_tree, widget_tree, scheduler),
+            mouse_pos);
+        }
+    }
+
+    fn on_deselect(&self, view_tree: &mut ViewTree, state_tree: &mut StateTree,
+                   widget_tree: &WidgetTree, callback_tree: &mut CallbackTree,
+                   scheduler: &mut Scheduler) {
+        if let Some(ref mut i) = callback_tree
+            .get_mut(&self.get_full_path()).unwrap().on_deselect {
+            i(common::EzContext::new(self.get_full_path().clone(),
+                                     view_tree, state_tree, widget_tree, scheduler));
+        }
+    }
 }
 
 
@@ -296,132 +394,6 @@ pub trait EzWidget: EzObject {
     /// will select 1, then 2, then this widget. Used for keyboard up and down keys.
     fn set_selection_order(&mut self, _order: usize) {
         panic!("Widget has no selection implementation: {}", self.get_id())
-    }
-
-    /// Set the callback for when the value of a widget changes.
-    fn set_bind_on_value_change(&mut self, _func: common::GenericEzFunction) {
-        panic!("Cannot set on value change bind for: {}", self.get_id())
-    }
-
-    /// Get the callback for when the value of a widget changes.
-    fn get_bind_on_value_change(&self) -> Option<common::GenericEzFunction> {None}
-
-
-    /// Call this function whenever the value of a widget is considered changed. E.g. when a
-    /// checkbox is checked. This will active any bound on_value callbacks.
-    fn on_value_change(&self, context: common::EzContext) {
-        if let Some(i) = self.get_bind_on_value_change() {
-            i(context);
-        }
-    }
-
-    /// Set the callback for when enter is pressed when this widget is selected or on left click
-    fn set_bind_on_press(&mut self, _func: common::GenericEzFunction) {
-        panic!("Cannot set on press bind for: {}", self.get_id())
-    }
-
-    /// Get the callback for when enter is pressed when this widget is selected or on left click
-    fn get_bind_on_press(&self) -> Option<common::GenericEzFunction> {None}
-
-    /// This is called automatically by a global key/mouse bind on enter or left click.
-    /// Will activate the 'on_keyboard_enter' callback.
-    fn on_press(&self, context: common::EzContext) {
-        match self.get_bind_on_press() {
-            Some(i) => i(context),
-            None => (),
-        }
-    }
-
-    /// Set the callback for when this widget is left clicked.
-    fn set_bind_left_click(&mut self, _func: common::MouseCallbackFunction) {
-        panic!("Cannot set on left click bind for: {}", self.get_id())
-    }
-
-    /// Get the callback for when this widget is left clicked.
-    fn get_bind_left_click(&self) -> Option<common::MouseCallbackFunction> {None}
-
-    /// This is called automatically by a global mouse bind on the currently selected widget.
-    /// Will activate the 'on_left_click' callback.
-    fn on_left_click(&self, context: common::EzContext, position: state::Coordinates) {
-        match self.get_bind_left_click() {
-            Some(i) => {
-                i(context, position);
-            },
-            None => (),
-        }
-    }
-
-    /// Set the callback for when enter is pressed when this widget is selected.
-    fn set_bind_keyboard_enter(&mut self, _func: common::GenericEzFunction) {
-        panic!("Cannot set on keyboard enter bind for: {}", self.get_id())
-    }
-
-    /// Get the callback for when enter is pressed when this widget is selected.
-    fn get_bind_keyboard_enter(&self) -> Option<common::GenericEzFunction> {None}
-
-    /// This is called automatically by a global keybind on the currently selected widget.
-    /// Will active the 'on_keyboard_enter' callback.
-    fn on_keyboard_enter(&self, context: common::EzContext){
-        match self.get_bind_keyboard_enter() {
-            Some(i) => i(context),
-            None => (),
-        }
-    }
-
-    /// Set the callback for when this widget is right clicked.
-    fn set_bind_right_click(&mut self, _func: common::MouseCallbackFunction) {
-        panic!("Cannot set on right click bind for: {}", self.get_id())
-    }
-
-    /// Get the callback for when this widget is right clicked.
-    fn get_bind_right_click(&self) -> Option<common::MouseCallbackFunction> {None}
-
-    /// This is called automatically by a global mouse bind on the currently selected widget.
-    /// Will active the 'on_right_click' callback.
-    fn on_right_click(&self, context: common::EzContext, position: state::Coordinates) {
-        match self.get_bind_right_click() {
-            Some(i) => i(context, position),
-            None => (),
-        }
-    }
-
-    /// Set the callback for when this widget is selected.
-    fn set_bind_on_select(&mut self, _func: fn(context: common::EzContext, mouse_pos: Option<state::Coordinates>)) {
-        panic!("Cannot set on deselect bind for: {}", self.get_id())
-    }
-
-    /// Get the callback for when this widget is selected.
-    fn get_bind_on_select(&self) -> Option<fn(context: common::EzContext, mouse_pos: Option<state::Coordinates>)> {
-        None
-    }
-
-    /// This is called when the widget is selected.
-    fn on_select(&self, context: common::EzContext, mouse_pos: Option<state::Coordinates>) {
-        context.state_tree.get_mut(&context.widget_path).unwrap().as_selectable_mut()
-            .set_selected(true);
-        match self.get_bind_on_select() {
-            Some(i) => i(context, mouse_pos),
-            None => (),
-        }
-    }
-
-    /// Set the callback for when this widget is deselected.
-    fn set_bind_on_deselect(&mut self, _func: common::GenericEzFunction) {
-        panic!("Cannot set on deselect bind for: {}", self.get_id())
-    }
-
-    /// Get the callback for when this widget is deselected.
-    fn get_bind_on_deselect(&self) -> Option<common::GenericEzFunction> {None}
-
-    /// This is called when the widget is deselected.
-    fn on_deselect(&self, context: common::EzContext) {
-
-        context.state_tree.get_mut(&context.widget_path).unwrap().as_selectable_mut()
-            .set_selected(false);
-        match self.get_bind_on_deselect() {
-            Some(i) => i(context),
-            None => (),
-        }
     }
 }
 

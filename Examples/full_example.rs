@@ -2,7 +2,8 @@ use std::time::Duration;
 use crossterm::style::Color;
 use ez_term::{ez_parser, run};
 use ez_term::common::{self, EzContext};
-use ez_term::states::state::{GenericState, SelectableState};
+use ez_term::states::state;
+use ez_term::states::state::{CallbackConfig, GenericState, SelectableState};
 use ez_term::widgets::widget::EzObject;
 
 fn main() {
@@ -13,48 +14,50 @@ fn main() {
     // subwidgets and make any changes we need before starting the app.
     // We can use the scheduler to schedule any (recurring) functions we need to before starting
     // the app.
-    let (mut root_widget, mut scheduler) =
+    let (root_widget, mut scheduler) =
         ez_parser::load_ez_ui("./Examples/full_example.ez");
 
     // Step 2: Customize widgets where needed. Here are some examples:
+
     // Set a checkbox on value callback
-    root_widget.get_child_by_path_mut(
-        "/root/left_box/bottom_box/small_box_2/checkbox_section_box/checkbox_box/checkbox")
-        .unwrap().as_ez_widget_mut().set_bind_on_value_change(test_checkbox_on_value_change);
+    scheduler.update_callback_config(
+        "/root/left_box/bottom_box/small_box_2/checkbox_section_box/checkbox_box/checkbox".to_string(),
+        CallbackConfig::from_on_value_change(Box::new(test_checkbox_on_value_change)));
 
     // Set a radio button group on value callback
-    root_widget.get_child_by_path_mut(
-        "/root/left_box/bottom_box/small_box_2/radio_section_box/radio_box/radio1")
-        .unwrap().as_ez_widget_mut().set_bind_on_value_change(test_radio_button_on_value_change);
-    root_widget.get_child_by_path_mut(
-        "/root/left_box/bottom_box/small_box_2/radio_section_box/radio_box/radio2")
-        .unwrap().as_ez_widget_mut().set_bind_on_value_change(test_radio_button_on_value_change);
-    root_widget.get_child_by_path_mut(
-        "/root/left_box/bottom_box/small_box_2/radio_section_box/radio_box/radio3")
-        .unwrap().as_ez_widget_mut().set_bind_on_value_change(test_radio_button_on_value_change);
+    scheduler.update_callback_config(
+        "/root/left_box/bottom_box/small_box_2/radio_section_box/radio_box/radio1".to_string(),
+        CallbackConfig::from_on_value_change(Box::new(test_radio_button_on_value_change)));
+    scheduler.update_callback_config(
+        "/root/left_box/bottom_box/small_box_2/radio_section_box/radio_box/radio2".to_string(),
+        CallbackConfig::from_on_value_change(Box::new(test_radio_button_on_value_change)));
+    scheduler.update_callback_config(
+        "/root/left_box/bottom_box/small_box_2/radio_section_box/radio_box/radio3".to_string(),
+        CallbackConfig::from_on_value_change(Box::new(test_radio_button_on_value_change)));
 
     // Set a dropdown on value change callback
-    root_widget.get_child_by_path_mut(
-        "/root/left_box/bottom_box/small_box_3/dropdown_section_box/dropdown_box/dropdown")
-        .unwrap().as_ez_widget_mut().set_bind_on_value_change(test_dropdown_on_value_change);
+    scheduler.update_callback_config(
+        "/root/left_box/bottom_box/small_box_3/dropdown_section_box/dropdown_box/dropdown".to_string(),
+        CallbackConfig::from_on_value_change(Box::new(test_dropdown_on_value_change)));
+
     // Set a button callback to create a popup
-    root_widget.get_child_by_path_mut(
-        "/root/left_box/bottom_box/small_box_3/popup_section_box/popup_button")
-        .unwrap().as_ez_widget_mut().set_bind_on_press(test_popup_button_on_press);
+    scheduler.update_callback_config(
+        "/root/left_box/bottom_box/small_box_3/popup_section_box/popup_button".to_string(),
+        CallbackConfig::from_on_press(Box::new(test_popup_button_on_press)));
 
     // Set a text input on value change callback
-    root_widget.get_child_by_path_mut(
-        "/root/left_box/bottom_box/small_box_1/input_3_box/input_3")
-        .unwrap().as_ez_widget_mut().set_bind_on_value_change(test_text_input_on_value_change);
+    scheduler.update_callback_config(
+        "/root/left_box/bottom_box/small_box_1/input_3_box/input_3".to_string(),
+        CallbackConfig::from_on_value_change(Box::new(test_text_input_on_value_change)));
     // Set a text input on keyboard enter
-    root_widget.get_child_by_path_mut(
-        "/root/left_box/bottom_box/small_box_1/input_3_box/input_3")
-        .unwrap().as_ez_widget_mut().set_bind_keyboard_enter(test_text_input_on_keyboard_enter);
+    scheduler.update_callback_config(
+        "/root/left_box/bottom_box/small_box_1/input_3_box/input_3".to_string(),
+        CallbackConfig::from_on_keyboard_enter(Box::new(test_text_input_on_keyboard_enter)));
 
     // Set a button on press
-    root_widget.get_child_by_path_mut(
-        "/root/left_box/bottom_box/small_box_2/button_section_box/button_box/button")
-        .unwrap().as_ez_widget_mut().set_bind_on_press(test_on_button_press);
+    scheduler.update_callback_config(
+        "/root/left_box/bottom_box/small_box_2/button_section_box/button_box/button".to_string(),
+        CallbackConfig::from_on_press(Box::new(test_on_button_press)));
 
     let mut neon = (0, 255, 0);
     let mut switch: u8 = 0;
@@ -82,8 +85,9 @@ fn main() {
             .get_colors_mut().foreground = color;
         true
     };
-    //scheduler.schedule_interval("/root/left_box/canvas_box/canvas".to_string(),
-    //                            Box::new(neon_banner), Duration::from_millis(200));
+
+    scheduler.schedule_interval("/root/left_box/canvas_box/canvas".to_string(),
+                                Box::new(neon_banner), Duration::from_millis(200));
 
     // Step 3: Run app
     // Now everything must happen from bindings as root widget is passed over
@@ -231,9 +235,31 @@ fn test_on_button_press(context: EzContext) {
 // As an example we will change a label after a button is pressed.
 fn test_popup_button_on_press(context: EzContext) {
 
-    // We will retrieve a label widget and change the 'text' field of its' state. This will
-    // cause the text to change on the next frame.
-    let popup_path = common::open_popup("TestPopup".to_string(), context.state_tree);
+    // We will open a popup in this callback. We open a popup by defining a template in the
+    // Ez file, and then using the template name with the [common::open_popup] function to
+    // spawn the template.
+    let popup_path = common::open_popup("TestPopup".to_string(),
+                                        context.state_tree, context.scheduler);
+
+    // We want to bind a callback to the dismiss button that dismisses the popup. In order to allow
+    // allow the button to finish its click animation we will create two closures. One closure
+    // actually dismisses the popup. The second closure simply schedules the first one to run with
+    // a delay. We will bind the delaying function to the dismiss button.
+    let dismiss =
+        move |context: common::EzContext| {
+            context.state_tree.get_mut("/root").unwrap().as_layout_mut().dismiss_modal();
+            false
+        };
+    let path_clone = popup_path.clone();
+    let dismiss_delay =
+        move |context: common::EzContext| {
+            context.scheduler.schedule_once(path_clone.clone(), Box::new(dismiss),
+                                            Duration::from_millis(50));
+        };
+
+    context.scheduler.update_callback_config(
+        format!("{}/dismiss_button", popup_path.clone()),
+        state::CallbackConfig::from_on_press(Box::new(dismiss_delay)));
 
 
 }

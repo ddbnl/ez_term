@@ -5,13 +5,13 @@ use std::fs::File;
 use std::io::prelude::*;
 use crate::widgets::widget::{EzWidget, EzObject, Pixel};
 use crate::states::canvas_state::CanvasState;
-use crate::states::state::{self, EzState, GenericState};
+use crate::states::state::{EzState, GenericState};
 use crate::common;
 use std::io::{Error, ErrorKind};
 use unicode_segmentation::UnicodeSegmentation;
-use crate::common::{StateTree, WidgetTree};
 use crate::ez_parser;
 
+#[derive(Clone)]
 pub struct Canvas {
     /// ID of the widget, used to construct [path]
     pub id: String,
@@ -128,7 +128,7 @@ impl EzObject for Canvas {
 
     fn get_full_path(&self) -> String { self.path.clone() }
 
-    fn get_state(&self) -> EzState { EzState::Canvas(CanvasState::default()) }
+    fn get_state(&self) -> EzState { EzState::Canvas(self.state.clone()) }
 
     /// Set the content of this Widget. You must manually fill a [PixelMap] of the same
     /// [height] and [width] as this widget and pass it here.
@@ -143,7 +143,7 @@ impl EzObject for Canvas {
        self.contents = valid_contents
     }
 
-    fn get_contents(&self, state_tree: &mut common::StateTree, widget_tree: &common::WidgetTree) -> common::PixelMap {
+    fn get_contents(&self, state_tree: &mut common::StateTree) -> common::PixelMap {
 
         let state = state_tree
             .get_mut(&self.get_full_path()).unwrap().as_canvas_mut();

@@ -1,9 +1,13 @@
 use std::time::{Duration, Instant};
-use crate::common::{EzContext, GenericEzTask, StateTree, ViewTree, WidgetTree};
+use crate::states::state;
+use crate::common::{CallbackTree, EzContext, GenericEzTask, StateTree, ViewTree, WidgetTree};
+use crate::states::state::CallbackConfig;
 
 #[derive(Default)]
 pub struct Scheduler {
-    pub tasks: Vec<Task>,
+    tasks: Vec<Task>,
+    new_callback_configs: Vec<(String, CallbackConfig)>,
+    updated_callback_configs: Vec<(String, CallbackConfig)>,
 }
 
 pub struct Task {
@@ -32,13 +36,13 @@ impl Scheduler {
     }
 
     pub fn run_tasks(&mut self, view_tree: &mut ViewTree, state_tree: &mut StateTree,
-                     widget_tree: &WidgetTree) {
+                     widget_tree: &WidgetTree, _callback_tree: &mut CallbackTree) {
 
         let mut remaining_tasks = Vec::new();
         while !self.tasks.is_empty() {
             let mut task = self.tasks.pop().unwrap();
             let context = EzContext::new(task.widget.clone(), view_tree,
-                                         state_tree, widget_tree,self);
+                                         state_tree, widget_tree, self);
 
             if let Some(time) = task.last_execution {
                 let elapsed = time.elapsed();
@@ -61,6 +65,34 @@ impl Scheduler {
 
         }
         self.tasks = remaining_tasks;
+    }
+
+    /// Pass a callback config that will be set verbatim on the object on the next frame.
+    pub fn set_callback_config(&mut self, widget_path: String,
+                                  callback_config: state::CallbackConfig) {
+        self.new_callback_configs.push((widget_path, callback_config));
+    }
+
+    /// Pass a callback config that will update the current callback config for the object on the
+    /// next frame. Only sets new callbacks, cannot remove old ones.
+    pub fn update_callback_config(&mut self, widget_path: String,
+                                  callback_config: state::CallbackConfig) {
+        self.updated_callback_configs.push((widget_path, callback_config));
+
+    }
+
+    pub fn update_callback_configs(&mut self, callback_tree: &mut CallbackTree) {
+
+        while !self.new_callback_configs.is_empty() {
+            let (path, callback_config) =
+                self.new_callback_configs.pop().unwrap();
+            callback_tree.insert(path, callback_config);
+        }
+        while !self.updated_callback_configs.is_empty() {
+            let (path, callback_config) =
+                self.updated_callback_configs.pop().unwrap();
+            callback_tree.get_mut(&path).unwrap().update_from(callback_config);
+        }
     }
 }
 

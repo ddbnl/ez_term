@@ -1,14 +1,15 @@
 //! A widget that displays text non-interactively.
 use std::io::{Error, ErrorKind};
 use std::time::Duration;
-use crossterm::event::KeyCode;
-use crate::states::state::{self, EzState, GenericState, SelectableState};
+use crate::states::state::{self, EzState, GenericState};
 use crate::states::button_state::ButtonState;
 use crate::common;
-use crate::common::{PixelMap, StateTree, ViewTree, WidgetTree};
+use crate::common::{CallbackTree, StateTree, ViewTree, WidgetTree};
 use crate::widgets::widget::{EzWidget, Pixel, EzObject};
 use crate::ez_parser;
+use crate::scheduler::Scheduler;
 
+#[derive(Clone)]
 pub struct Button {
 
     /// ID of the widget, used to construct [path]
@@ -133,9 +134,9 @@ impl EzObject for Button {
 
     fn get_full_path(&self) -> String { self.path.clone() }
 
-    fn get_state(&self) -> EzState { EzState::Button(ButtonState::default()) }
+    fn get_state(&self) -> EzState { EzState::Button(self.state.clone()) }
 
-    fn get_contents(&self, state_tree: &mut common::StateTree, widget_tree: &common::WidgetTree) -> common::PixelMap {
+    fn get_contents(&self, state_tree: &mut common::StateTree) -> common::PixelMap {
 
         let state = state_tree.get_mut(&self.get_full_path()).unwrap()
             .as_button_mut();
@@ -183,6 +184,13 @@ impl EzObject for Button {
             parent_colors.foreground);
         contents
     }
+
+    fn on_press(&self, view_tree: &mut ViewTree, state_tree: &mut StateTree,
+                     widget_tree: &WidgetTree, callback_tree: &mut CallbackTree,
+                     scheduler: &mut Scheduler) {
+
+        self.handle_on_press(view_tree, state_tree, widget_tree, callback_tree, scheduler);
+    }
 }
 
 
@@ -192,13 +200,6 @@ impl EzWidget for Button {
 
     fn get_selection_order(&self) -> usize { self.selection_order }
 
-    fn on_left_click(&self, context: common::EzContext, _position: state::Coordinates) {
-        context.state_tree.get_mut(&self.get_full_path()).unwrap().as_button_mut()
-            .set_selected(false);
-        self._on_press(context);
-    }
-
-    fn on_keyboard_enter(&self, context: common::EzContext) { self._on_press(context) }
 }
 
 impl Button {
@@ -210,19 +211,26 @@ impl Button {
         obj
     }
 
-    fn _on_press(&self, context: common::EzContext) {
+    pub fn handle_on_press(&self, view_tree: &mut ViewTree, state_tree: &mut StateTree,
+                           widget_tree: &WidgetTree, callback_tree: &mut CallbackTree, scheduler: &mut Scheduler) {
 
-        context.state_tree.get_mut(&context.widget_path.clone()).unwrap().as_button_mut()
+        state_tree.get_mut(&self.get_full_path()).unwrap().as_button_mut()
             .set_flashing(true);
         let scheduled_func =
             | context: common::EzContext | {
+                if !context.state_tree.contains_key(&context.widget_path) { return false }
                 context.state_tree.get_mut(&context.widget_path).unwrap().as_button_mut()
                     .set_flashing(false);
                 true
             };
-        context.scheduler.schedule_once(self.get_full_path(),
+        scheduler.schedule_once(self.get_full_path().clone(),
                                         Box::new(scheduled_func),
                                         Duration::from_millis(50));
-        self.on_press(context);
+        let context = common::EzContext::new(self.get_full_path().clone(),
+                                                 view_tree, state_tree, widget_tree, scheduler);
+        if let Some(ref mut i) = callback_tree
+            .get_mut(&self.get_full_path()).unwrap().on_press {
+            i(context)
+        }
     }
 }

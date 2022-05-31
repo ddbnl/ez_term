@@ -5,14 +5,15 @@
 use std::io::{Error, ErrorKind};
 use crossterm::event::{Event, KeyCode, MouseButton, MouseEventKind};
 use crate::common;
-use crate::common::{PixelMap, StateTree, ViewTree, WidgetTree};
+use crate::common::{CallbackTree, StateTree, ViewTree, WidgetTree};
 use crate::states::dropdown_state::{DropdownState, DroppedDownMenuState};
 use crate::states::state::{self, AutoScale, EzState, GenericState, PosHint, Size, SizeHint};
 use crate::widgets::widget::{self, EzObject, EzWidget};
 use crate::ez_parser;
+use crate::scheduler::Scheduler;
 
 
-#[derive(Default)]
+#[derive(Default, Clone)]
 pub struct Dropdown {
 
     /// ID of the widget, used to construct [path]
@@ -122,12 +123,12 @@ impl widget::EzObject for Dropdown {
 
     fn get_full_path(&self) -> String { self.path.clone() }
 
-    fn get_state(&self) -> EzState { EzState::Dropdown(DropdownState::default()) }
+    fn get_state(&self) -> EzState { EzState::Dropdown(self.state.clone()) }
 
     /// Content of this widget depends on whether it is currently dropped down or not. If not,
     /// then display a label with a border representing the currently selected value. If dropped
     /// down show a list of all options, with the currently selected one on top.
-    fn get_contents(&self, state_tree: &mut common::StateTree, widget_tree: &common::WidgetTree) -> common::PixelMap {
+    fn get_contents(&self, state_tree: &mut common::StateTree) -> common::PixelMap {
 
         let state =
             state_tree.get_mut(&self.get_full_path()).unwrap().as_dropdown_mut();
@@ -160,6 +161,45 @@ impl widget::EzObject for Dropdown {
         state.set_effective_height(1);
         contents
     }
+
+
+    /// Called when the widgets is not dropped down and enter/left mouse click occurs on it.
+    fn on_press(&self, _view_tree: &mut ViewTree, state_tree: &mut StateTree,
+                _widget_tree: &WidgetTree, _callback_tree: &mut CallbackTree,
+                _scheduler: &mut Scheduler) {
+
+        let state = state_tree.get(&self.get_full_path()).unwrap()
+            .as_dropdown();
+        let modal_id = format!("{}_modal", self.get_id());
+        let modal_path = format!("/modal/{}", modal_id);
+        let new_modal_state = DroppedDownMenuState {
+            size: Size::new(state.get_size().width, state.total_options() + 2),
+            auto_scale: AutoScale::new(false, false),
+            options: state.get_options(),
+            allow_none: state.allow_none,
+            size_hint: SizeHint::new(None, None),
+            position: state.get_absolute_position(),
+            padding: state::Padding::new(0, 0, 0, 0),
+            absolute_position: state.get_absolute_position(),
+            pos_hint: PosHint::new(None, None),
+            dropped_down_selected_row: 1,
+            border_config: state.border_config.clone(),
+            colors: state.colors.clone(),
+            changed: false,
+            choice: state.get_choice(),
+            parent_path: self.path.clone(),
+            force_redraw: false
+        };
+        let new_modal = DroppedDownMenu {
+            id: modal_id,
+            path: modal_path.clone(),
+            state: new_modal_state,
+        };
+        let root_state = state_tree.get_mut("/root").unwrap();
+        let (_, extra_state_tree) = root_state.as_layout_mut()
+            .open_modal(widget::EzObjects::DroppedDownMenu(new_modal));
+        state_tree.extend(extra_state_tree);
+    }
 }
 
 impl widget::EzWidget for Dropdown {
@@ -171,11 +211,6 @@ impl widget::EzWidget for Dropdown {
 
     fn get_selection_order(&self) -> usize { self.selection_order }
 
-    fn on_left_click(&self, context: common::EzContext, _position: state::Coordinates) {
-        self.on_press(context);
-    }
-
-    fn on_keyboard_enter(&self, context: common::EzContext) { self.on_press(context); }
 }
 
 impl Dropdown {
@@ -186,41 +221,6 @@ impl Dropdown {
         obj.load_ez_config(config).unwrap();
         obj
     }
-
-    /// Called when the widgets is not dropped down and enter/left mouse click occurs on it.
-    fn on_press(&self, context: common::EzContext) {
-
-        let root_state = context.state_tree.get_mut("/root").unwrap();
-        let state = context.state_tree.get(&self.get_full_path()).unwrap()
-            .as_dropdown();
-        let modal_id = format!("{}_modal", self.get_id());
-        let modal_path = format!("/modal/{}", modal_id);
-        let new_modal_state = DroppedDownMenuState {
-            size: Size::new(state.get_size().width, state.total_options() + 2),
-            auto_scale: AutoScale::new(false, false),
-            options: state.get_options(),
-            allow_none: state.allow_none,
-            size_hint: SizeHint::new(None, None),
-            position: state.get_absolute_position(),
-            absolute_position: state.get_absolute_position(),
-            pos_hint: PosHint::new(None, None),
-            dropped_down_selected_row: 1,
-            border_config: state.border_config.clone(),
-            colors: state.colors.clone(),
-            changed: false,
-            choice: state.get_choice(),
-            force_redraw: false
-        };
-        let new_modal = DroppedDownMenu {
-            id: modal_id,
-            path: modal_path.clone(),
-            parent_path: self.path.clone(),
-            state: new_modal_state,
-        };
-        let (_, extra_state_tree) = root_state.as_layout_mut()
-            .open_modal(widget::EzObjects::DroppedDownMenu(new_modal));
-        context.state_tree.extend(extra_state_tree);
-    }
 }
 
 
@@ -228,6 +228,7 @@ impl Dropdown {
 #[derive(Default)]
 /// This is the menu displayed when the dropdown is actually dropped down. It is implemented as a
 /// separate modal.
+#[derive(Clone)]
 pub struct DroppedDownMenu {
 
     /// ID of the widget, used to construct [path]
@@ -253,13 +254,13 @@ impl EzObject for DroppedDownMenu {
 
     fn get_full_path(&self) -> String { self.path.clone() }
 
-    fn get_state(&self) -> EzState { EzState::Dropdown(DropdownState::default()) }
+    fn get_state(&self) -> EzState { EzState::DroppedDownMenu(self.state.clone()) }
 
-    fn get_contents(&self, state_tree: &mut common::StateTree, widget_tree: &common::WidgetTree) -> common::PixelMap {
+    fn get_contents(&self, state_tree: &mut common::StateTree) -> common::PixelMap {
 
         let state = state_tree
             .get_mut(&self.get_full_path()).unwrap().as_dropped_down_menu_mut();
-        let mut options:Vec<String> = self.get_dropped_down_options(state).iter()
+        let mut options:Vec<String> = state.get_dropped_down_options().iter()
             .map(|x| x.chars().rev().collect::<String>()).collect();
 
         let mut contents = Vec::new();
@@ -284,11 +285,143 @@ impl EzObject for DroppedDownMenu {
 
         }
         let state = state_tree
-            .get(&self.get_full_path()).unwrap().as_dropdown();
+            .get(&self.get_full_path()).unwrap().as_dropped_down_menu();
         contents = common::add_padding(
             contents, state.get_padding(), state.colors.background,
             state.colors.foreground);
         contents = common::add_border(contents, state.get_border_config());
         contents
+    }
+
+    fn handle_event(&self, event: Event, view_tree: &mut ViewTree,
+                    state_tree: &mut StateTree, widget_tree: &WidgetTree,
+                    callback_tree: &mut CallbackTree, scheduler: &mut Scheduler) -> bool {
+
+        let state = state_tree.get_mut(&self.get_full_path().clone())
+            .unwrap().as_dropped_down_menu_mut();
+        match event {
+            Event::Key(key) => {
+                match key.code {
+                    KeyCode::Enter => {
+                        self.handle_enter(view_tree, state_tree, widget_tree, callback_tree,
+                                          scheduler);
+                        return true
+                    }
+                    KeyCode::Down => {
+                        self.handle_down(state);
+                        return true
+                    },
+                    KeyCode::Up => {
+                        self.handle_up(state);
+                        return true
+                    },
+                    _ => ()
+                }
+            }
+            Event::Mouse(event) => {
+                let mouse_position = state::Coordinates::new(event.column as usize,
+                                                             event.row as usize);
+                if let MouseEventKind::Down(button) = event.kind {
+                    if button == MouseButton::Left {
+                        self.handle_left_click(view_tree, state_tree, widget_tree, callback_tree,
+                                               scheduler,mouse_position);
+                        return true
+                    }
+                } else if event.kind == MouseEventKind::Moved &&
+                    state.collides(mouse_position) {
+                    return self.handle_hover(state, mouse_position)
+                }
+            },
+            _ => ()
+        }
+        false
+    }
+}
+
+impl EzWidget for DroppedDownMenu { }
+
+impl DroppedDownMenu {
+    /// Called when this widget is already dropped down and enter is pressed
+    pub fn handle_enter(&self, view_tree: &mut ViewTree, state_tree: &mut StateTree,
+                        widget_tree: &WidgetTree, callback_tree: &mut CallbackTree,
+                        scheduler: &mut Scheduler) {
+
+        let selected = state_tree.get(&self.get_full_path()).unwrap()
+            .as_dropped_down_menu().dropped_down_selected_row;
+        let choice = state_tree
+            .get(&self.get_full_path()).unwrap().as_dropped_down_menu()
+            .get_dropped_down_options()[selected].clone();
+        let parent = state_tree.get(&self.get_full_path()).unwrap()
+            .as_dropped_down_menu().parent_path.clone();
+        state_tree.get_mut(&parent).unwrap()
+            .as_dropdown_mut().set_choice(choice);
+        state_tree
+            .get_mut("/root").unwrap().as_layout_mut().dismiss_modal();
+        if let Some(ref mut i) = callback_tree
+            .get_mut(&parent).unwrap().on_value_change {
+            let context = common::EzContext::new(parent,
+                                                 view_tree, state_tree, widget_tree, scheduler);
+            i(context);
+        }
+    }
+
+    /// Called when this widget is already dropped down and up is pressed
+    pub fn handle_up(&self, state: &mut DroppedDownMenuState) {
+
+        if state.dropped_down_selected_row == 0 {
+            state.set_dropped_down_selected_row(state.total_options() - 1);
+        } else {
+            state.set_dropped_down_selected_row(state.dropped_down_selected_row - 1);
+        }
+    }
+
+    /// Called when this widget is already dropped down and down is pressed
+    pub fn handle_down(&self, state: &mut DroppedDownMenuState) {
+        if state.dropped_down_selected_row == state.total_options() - 1 {
+            state.set_dropped_down_selected_row(0);
+        } else {
+            state.set_dropped_down_selected_row(state.dropped_down_selected_row + 1);
+        }
+    }
+
+    /// Called when this widget is already dropped down and widget is left clicked
+    pub fn handle_left_click(&self, view_tree: &mut ViewTree, state_tree: &mut StateTree,
+                             widget_tree: &WidgetTree, callback_tree: &mut CallbackTree,
+                             scheduler: &mut Scheduler, pos: state::Coordinates) {
+
+        let state = state_tree.get(&self.get_full_path()).unwrap()
+            .as_dropped_down_menu();
+        let parent = state.parent_path.clone();
+        if state.collides(pos) {
+            let clicked_row = pos.y - state.absolute_position.y;
+            // Check if not click on border
+            if clicked_row != 0 && clicked_row <= state.get_effective_size().height {
+                let choice = state.get_dropped_down_options()[clicked_row - 1]
+                    .clone();
+                state_tree.get_mut(&parent).unwrap()
+                    .as_dropdown_mut().set_choice(choice);
+                state_tree.get_mut("/root").unwrap().as_layout_mut().dismiss_modal();
+                if let Some(ref mut i) = callback_tree
+                    .get_mut(&parent).unwrap().on_value_change {
+                    let context = common::EzContext::new(parent,
+                                                         view_tree, state_tree, widget_tree, scheduler);
+                    i(context);
+                }
+            }
+        } else {
+            state_tree.get_mut("/root").unwrap().as_layout_mut().dismiss_modal();
+        }
+    }
+
+    /// Called when this widget is already dropped down and widget is hovered
+    pub fn handle_hover(&self, state: &mut DroppedDownMenuState, pos: state::Coordinates) -> bool {
+        let hovered_row = pos.y - state.absolute_position.y;
+        // Check if not hover on border
+        if hovered_row - 1 != state.dropped_down_selected_row &&
+            hovered_row != 0 && hovered_row <= state.get_dropped_down_options().len() {
+            state.set_dropped_down_selected_row(hovered_row - 1);
+            return true
+        }
+        false
     }
 }

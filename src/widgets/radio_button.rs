@@ -3,17 +3,17 @@
 //! same 'group' field value for all. The radio buttons in a group are mutually exlusive, so when
 //! one is selected the others are deselected. Supports on_value_change callback, which is only
 //! called for the radio button that became active.
-use std::collections::HashMap;
 use std::io::{Error, ErrorKind};
-use crossterm::event::{KeyCode};
 use crate::common;
-use crate::common::{StateTree, WidgetTree};
+use crate::common::{CallbackTree, StateTree, ViewTree, WidgetTree};
 use crate::states::radio_button_state::RadioButtonState;
-use crate::states::state::{self, EzState, GenericState};
-use crate::widgets::widget::{EzWidget, Pixel, EzObject, EzObjects};
+use crate::states::state::{self, Coordinates, EzState, GenericState};
+use crate::widgets::widget::{EzWidget, Pixel, EzObject};
 use crate::ez_parser;
+use crate::scheduler::Scheduler;
 
 
+#[derive(Clone)]
 pub struct RadioButton {
 
     /// ID of the widget, used to construct [path]
@@ -31,10 +31,6 @@ pub struct RadioButton {
     /// Global order number in which this widget will be selection when user presses down/up keys
     pub selection_order: usize,
 
-    /// Group this radio button belongs to. Set the same group value for a number of radio buttons
-    /// to make them mutually exclusive.
-    pub group: String,
-
     /// Runtime state of this widget, see [RadioButtonState] and [State]
     pub state: RadioButtonState,
 }
@@ -44,7 +40,6 @@ impl Default for RadioButton {
         RadioButton {
             id: "".to_string(),
             path: String::new(),
-            group: String::new(),
             active_symbol: 'X',
             inactive_symbol: ' ',
             selection_order: 0,
@@ -98,7 +93,7 @@ impl EzObject for RadioButton {
                     return Err(Error::new(ErrorKind::InvalidData,
                                           "Radio button widget must have a group."))
                 }
-                self.group = group.to_string();
+                self.state.group = group.to_string();
             },
             "active" => self.state.active = ez_parser::load_bool_parameter(parameter_value.trim()).unwrap(),
             "active_symbol" => self.active_symbol = parameter_value.chars().last().unwrap(),
@@ -145,9 +140,9 @@ impl EzObject for RadioButton {
 
     fn get_full_path(&self) -> String { self.path.clone() }
 
-    fn get_state(&self) -> EzState { EzState::RadioButton(RadioButtonState::default()) }
+    fn get_state(&self) -> EzState { EzState::RadioButton(self.state.clone()) }
 
-    fn get_contents(&self, state_tree: &mut common::StateTree, widget_tree: &common::WidgetTree) -> common::PixelMap {
+    fn get_contents(&self, state_tree: &mut StateTree) -> common::PixelMap {
 
         let state = state_tree
             .get_mut(&self.get_full_path()).unwrap().as_radio_button();
@@ -181,6 +176,18 @@ impl EzObject for RadioButton {
             parent_colors.foreground);
         contents
     }
+
+    fn on_keyboard_enter(&self, view_tree: &mut ViewTree, state_tree: &mut StateTree,
+                         widget_tree: &WidgetTree, callback_tree: &mut CallbackTree,
+                         scheduler: &mut Scheduler) {
+        self.handle_press(view_tree, state_tree, widget_tree, callback_tree, scheduler)
+    }
+
+    fn on_left_mouse_click(&self, view_tree: &mut ViewTree, state_tree: &mut StateTree,
+                           widget_tree: &WidgetTree, callback_tree: &mut CallbackTree,
+                           scheduler: &mut Scheduler, _mouse_pos: Coordinates) {
+        self.handle_press(view_tree, state_tree, widget_tree, callback_tree, scheduler)
+    }
 }
 
 impl EzWidget for RadioButton {
@@ -188,11 +195,6 @@ impl EzWidget for RadioButton {
 
     fn get_selection_order(&self) -> usize { self.selection_order }
 
-    fn on_left_click(&self, context: common::EzContext, _position: state::Coordinates) {
-        self.handle_press(context);
-    }
-
-    fn on_keyboard_enter(&self, context: common::EzContext) { self.handle_press(context); }
 }
 
 impl RadioButton {
@@ -203,30 +205,31 @@ impl RadioButton {
         obj.load_ez_config(config).unwrap();
         obj
     }
-    /// Get the group this radio button belongs to. Radio buttons that share a group are
-    /// mutually exclusive.
-    fn get_group(&self) -> String { self.group.clone() }
 
     /// Function that handles this RadioButton being pressed (mouse clicked/keyboard entered).
-    fn handle_press(&self, context: common::EzContext) {
+    fn handle_press(&self, view_tree: &mut ViewTree, state_tree: &mut StateTree,
+                    widget_tree: &WidgetTree, callback_tree: &mut CallbackTree,
+                    scheduler: &mut Scheduler) {
 
         // Find all other radio buttons in same group and make them inactive (mutual exclusivity)
-        for widget in context.widget_tree.values() {
-            if let EzObjects::RadioButton(i) = widget {
-                if i.get_group() == self.group && i.get_id() != self.get_id() {
-                    let other_state =
-                        context.state_tree.get_mut(&i.get_full_path()).unwrap()
-                            .as_radio_button_mut();
-                    other_state.set_active(false);
+        for (path, state) in state_tree.iter_mut() {
+            if let state::EzState::RadioButton(ref mut i) = state {
+                if i.get_group() == state.as_radio_button().group && path != &self.get_full_path() {
+                    state.as_radio_button_mut().set_active(false);
                 }
             }
         }
         // Set entered radio button to active and select it
-        let state = context.state_tree.
-            get_mut(&self.get_full_path()).unwrap().as_radio_button_mut();
+        let state = state_tree.get_mut(&self.get_full_path()).unwrap()
+            .as_radio_button_mut();
         if !state.active {
             state.set_active(true);
-            self.on_value_change(context);
+            if let Some(ref mut i) = callback_tree
+                .get_mut(&self.get_full_path()).unwrap().on_value_change {
+                let context = common::EzContext::new(self.get_full_path().clone(),
+                view_tree, state_tree, widget_tree, scheduler);
+                i(context);
+            }
         } else {
             return // Nothing to do
         }
