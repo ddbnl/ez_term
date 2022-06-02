@@ -3,12 +3,11 @@
 //! same 'group' field value for all. The radio buttons in a group are mutually exlusive, so when
 //! one is selected the others are deselected. Supports on_value_change callback, which is only
 //! called for the radio button that became active.
-use std::io::{Error, ErrorKind};
 use crate::common;
 use crate::common::{CallbackTree, StateTree, ViewTree, WidgetTree};
 use crate::states::radio_button_state::RadioButtonState;
 use crate::states::state::{self, Coordinates, EzState, GenericState};
-use crate::widgets::widget::{EzWidget, Pixel, EzObject};
+use crate::widgets::widget::{Pixel, EzObject};
 use crate::ez_parser;
 use crate::scheduler::Scheduler;
 
@@ -28,9 +27,6 @@ pub struct RadioButton {
     /// [Pixel.symbol] used when the Checkbox is not active
     pub inactive_symbol: char,
 
-    /// Global order number in which this widget will be selection when user presses down/up keys
-    pub selection_order: usize,
-
     /// Runtime state of this widget, see [RadioButtonState] and [State]
     pub state: RadioButtonState,
 }
@@ -42,7 +38,6 @@ impl Default for RadioButton {
             path: String::new(),
             active_symbol: 'X',
             inactive_symbol: ' ',
-            selection_order: 0,
             state: RadioButtonState::default(),
         }
     }
@@ -51,54 +46,56 @@ impl Default for RadioButton {
 
 impl EzObject for RadioButton {
 
-    fn load_ez_parameter(&mut self, parameter_name: String, parameter_value: String)
-                         -> Result<(), Error> {
+    fn load_ez_parameter(&mut self, parameter_name: String, parameter_value: String) {
+
         match parameter_name.as_str() {
             "id" => self.set_id(parameter_value.trim().to_string()),
             "x" => self.state.set_x(parameter_value.trim().parse().unwrap()),
             "y" => self.state.set_y(parameter_value.trim().parse().unwrap()),
             "pos" => self.state.set_position(
-                ez_parser::load_pos_parameter(parameter_value.trim()).unwrap()),
+                ez_parser::load_pos_parameter(parameter_value.trim())),
             "pos_hint" => self.state.set_pos_hint(
-                ez_parser::load_full_pos_hint_parameter(parameter_value.trim()).unwrap()),
+                ez_parser::load_full_pos_hint_parameter(parameter_value.trim())),
             "pos_hint_x" => self.state.set_pos_hint_x(
-                ez_parser::load_pos_hint_x_parameter(parameter_value.trim()).unwrap()),
+                ez_parser::load_pos_hint_x_parameter(parameter_value.trim())),
             "pos_hint_y" => self.state.set_pos_hint_y(
-                ez_parser::load_pos_hint_y_parameter(parameter_value.trim()).unwrap()),
+                ez_parser::load_pos_hint_y_parameter(parameter_value.trim())),
             "padding" => self.state.set_padding(ez_parser::load_full_padding_parameter(
-                parameter_value.trim())?),
+                parameter_value.trim())),
             "padding_x" => self.state.set_padding(ez_parser::load_padding_x_parameter(
-                parameter_value.trim())?),
+                parameter_value.trim())),
             "padding_y" => self.state.set_padding(ez_parser::load_padding_y_parameter(
-                parameter_value.trim())?),
-            "padding_top" => self.state.set_padding_top(parameter_value.trim().parse().unwrap()),
-            "padding_bottom" => self.state.set_padding_bottom(parameter_value.trim().parse().unwrap()),
-            "padding_left" => self.state.set_padding_left(parameter_value.trim().parse().unwrap()),
-            "padding_right" => self.state.set_padding_right(parameter_value.trim().parse().unwrap()),
+                parameter_value.trim())),
+            "padding_top" =>
+                self.state.set_padding_top(parameter_value.trim().parse().unwrap()),
+            "padding_bottom" =>
+                self.state.set_padding_bottom(parameter_value.trim().parse().unwrap()),
+            "padding_left" =>
+                self.state.set_padding_left(parameter_value.trim().parse().unwrap()),
+            "padding_right" =>
+                self.state.set_padding_right(parameter_value.trim().parse().unwrap()),
             "halign" =>
-                self.state.halign =  ez_parser::load_halign_parameter(parameter_value.trim()).unwrap(),
+                self.state.halign =
+                    ez_parser::load_halign_parameter(parameter_value.trim()),
             "valign" =>
-                self.state.valign =  ez_parser::load_valign_parameter(parameter_value.trim()).unwrap(),
+                self.state.valign =
+                    ez_parser::load_valign_parameter(parameter_value.trim()),
             "selection_order" => {
                 let order = parameter_value.trim().parse().unwrap();
-                if order == 0 {
-                    return Err(Error::new(ErrorKind::InvalidData,
-                                          "selection_order must be higher than 0."))
-                }
-                self.selection_order = order;
+                if order == 0 { panic!("selection_order must be higher than 0.") }
+                self.state.selection_order = order;
             },
             "group" => {
                 let group = parameter_value.trim();
-                if group.is_empty() {
-                    return Err(Error::new(ErrorKind::InvalidData,
-                                          "Radio button widget must have a group."))
-                }
+                if group.is_empty() { panic!("Radio button widget must have a group.") }
                 self.state.group = group.to_string();
             },
-            "active" => self.state.active = ez_parser::load_bool_parameter(parameter_value.trim()).unwrap(),
+            "active" =>
+                self.state.active = ez_parser::load_bool_parameter(parameter_value.trim()),
             "active_symbol" => self.active_symbol = parameter_value.chars().last().unwrap(),
             "inactive_symbol" => self.inactive_symbol = parameter_value.chars().last().unwrap(),
-            "border" => self.state.set_border(ez_parser::load_bool_parameter(parameter_value.trim())?),
+            "border" => self.state.border_config.enabled =
+                ez_parser::load_bool_parameter(parameter_value.trim()),
             "border_horizontal_symbol" => self.state.border_config.horizontal_symbol =
                 parameter_value.trim().to_string(),
             "border_vertical_symbol" => self.state.border_config.vertical_symbol =
@@ -111,25 +108,20 @@ impl EzObject for RadioButton {
                 parameter_value.trim().to_string(),
             "border_bottom_right_symbol" => self.state.border_config.bottom_right_symbol =
                 parameter_value.trim().to_string(),
-            "border_fg_color" =>
-                self.state.border_config.fg_color = ez_parser::load_color_parameter(parameter_value).unwrap(),
-            "border_bg_color" =>
-                self.state.border_config.bg_color = ez_parser::load_color_parameter(parameter_value).unwrap(),
-            "fg_color" =>
-                self.state.colors.foreground = ez_parser::load_color_parameter(parameter_value).unwrap(),
-            "bg_color" =>
-                self.state.colors.background = ez_parser::load_color_parameter(parameter_value).unwrap(),
-            "selection_fg_color" =>
-                self.state.colors.selection_foreground =
-                    ez_parser::load_color_parameter(parameter_value).unwrap(),
-            "selection_bg_color" =>
-                self.state.colors.selection_background =
-                    ez_parser::load_color_parameter(parameter_value).unwrap(),
-            _ => return Err(Error::new(ErrorKind::InvalidData,
-                                format!("Invalid parameter name for radio button {}",
-                                        parameter_name)))
+            "border_fg_color" => self.state.border_config.fg_color =
+                ez_parser::load_color_parameter(parameter_value),
+            "border_bg_color" => self.state.border_config.bg_color =
+                ez_parser::load_color_parameter(parameter_value),
+            "fg_color" => self.state.colors.foreground =
+                ez_parser::load_color_parameter(parameter_value),
+            "bg_color" => self.state.colors.background =
+                ez_parser::load_color_parameter(parameter_value),
+            "selection_fg_color" => self.state.colors.selection_foreground =
+                    ez_parser::load_color_parameter(parameter_value),
+            "selection_bg_color" => self.state.colors.selection_background =
+                    ez_parser::load_color_parameter(parameter_value),
+            _ => panic!("Invalid parameter name for radio button {}", parameter_name)
         }
-        Ok(())
     }
 
     fn set_id(&mut self, id: String) { self.id = id }
@@ -148,10 +140,10 @@ impl EzObject for RadioButton {
             .get_mut(&self.get_full_path()).unwrap().as_radio_button();
         let active_symbol = { if state.active {self.active_symbol}
                                     else {self.inactive_symbol} };
-        let fg_color = if state.selected {state.get_colors().selection_foreground }
-        else {state.get_colors().foreground };
-        let bg_color = if state.selected {state.get_colors().selection_background }
-        else {state.get_colors().background };
+        let fg_color = if state.selected {state.get_color_config().selection_foreground }
+        else {state.get_color_config().foreground };
+        let bg_color = if state.selected {state.get_color_config().selection_background }
+        else {state.get_color_config().background };
         let mut contents = vec!(
             vec!(Pixel {symbol: "(".to_string(), foreground_color: fg_color,
                 background_color: bg_color, underline: false}),
@@ -164,13 +156,13 @@ impl EzObject for RadioButton {
             vec!(Pixel {symbol: ")".to_string(), foreground_color: fg_color,
                 background_color: bg_color, underline: false}),
         );
-        if state.has_border() {
+        if state.get_border_config().enabled {
             contents = common::add_border(contents, state.get_border_config());
         }
         let state = state_tree
             .get(&self.get_full_path()).unwrap().as_radio_button();
         let parent_colors = state_tree.get(self.get_full_path()
-            .rsplit_once('/').unwrap().0).unwrap().as_generic().get_colors();
+            .rsplit_once('/').unwrap().0).unwrap().as_generic().get_color_config();
         contents = common::add_padding(
             contents, state.get_padding(), parent_colors.background,
             parent_colors.foreground);
@@ -189,14 +181,6 @@ impl EzObject for RadioButton {
         self.handle_press(view_tree, state_tree, widget_tree, callback_tree, scheduler)
     }
 }
-
-impl EzWidget for RadioButton {
-    fn is_selectable(&self) -> bool { true}
-
-    fn get_selection_order(&self) -> usize { self.selection_order }
-
-}
-
 impl RadioButton {
 
     /// Initialize an instance of this object using the passed config coming from [ez_parser]

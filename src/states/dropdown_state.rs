@@ -36,6 +36,9 @@ pub struct DropdownState {
     /// chance to consume all events
     pub focussed: bool,
 
+    /// Global order number in which this widget will be selection when user presses down/up keys
+    pub selection_order: usize,
+    
     /// Bool representing whether this widget is currently selected.
     pub selected: bool,
 
@@ -47,9 +50,6 @@ pub struct DropdownState {
 
     /// The currently active choice of the dropdown.
     pub choice: String,
-
-    /// Bool representing whether this layout should have a surrounding border
-    pub border: bool,
 
     /// [BorderConfig] object that will be used to draw the border if enabled
     pub border_config: state::BorderConfig,
@@ -79,10 +79,10 @@ impl Default for DropdownState {
            valign: state::VerticalAlignment::Top,
            focussed: false,
            selected: false,
+           selection_order: 0,
            options: Vec::new(),
            allow_none: true,
            choice: String::new(),
-           border: true,
            border_config: state::BorderConfig::default(),
            colors: state::ColorConfig::default(),
            changed: false,
@@ -117,15 +117,13 @@ impl GenericState for DropdownState {
 
     fn get_auto_scale(&self) -> &state::AutoScale { &self.auto_scale }
 
-    fn set_size(&mut self, size: state::Size) {
-        self.size = size;
-    }
+    fn set_size(&mut self, size: state::Size) { self.size = size; }
 
     fn get_size(&self) -> &state::Size { &self.size }
 
-    fn set_position(&mut self, position: state::Coordinates) {
-        self.position = position;
-    }
+    fn get_size_mut(&mut self) -> &mut state::Size { &mut self.size }
+
+    fn set_position(&mut self, position: state::Coordinates) { self.position = position; }
 
     fn get_position(&self) -> state::Coordinates { self.position }
 
@@ -155,13 +153,6 @@ impl GenericState for DropdownState {
 
     fn get_padding(&self) -> &state::Padding { &self.padding }
 
-    fn has_border(&self) -> bool { self.border }
-
-    fn set_border(&mut self, enabled: bool) {
-        if self.border != enabled { self.changed = true }
-        self.border = enabled;
-    }
-
     fn set_border_config(&mut self, config: state::BorderConfig) {
         if self.border_config != config { self.changed = true }
         self.border_config = config;
@@ -169,17 +160,26 @@ impl GenericState for DropdownState {
 
     fn get_border_config(&self) -> &state::BorderConfig { &self.border_config  }
 
-    fn set_colors(&mut self, config: state::ColorConfig) {
+    fn get_border_config_mut(&mut self) -> &mut state::BorderConfig {
+        self.changed = true;
+        &mut self.border_config
+    }
+
+    fn set_color_config(&mut self, config: state::ColorConfig) {
         if self.colors != config { self.changed = true }
         self.colors = config;
     }
 
-    fn get_colors(&self) -> &state::ColorConfig { &self.colors }
+    fn get_color_config(&self) -> &state::ColorConfig { &self.colors }
 
-    fn get_colors_mut(&mut self) -> &mut state::ColorConfig {
+    fn get_colors_config_mut(&mut self) -> &mut state::ColorConfig {
         self.changed = true;
         &mut self.colors
     }
+
+    fn is_selectable(&self) -> bool { true }
+
+    fn get_selection_order(&self) -> usize { self.selection_order }
 
     fn set_force_redraw(&mut self, redraw: bool) {
         self.force_redraw = redraw;
@@ -187,8 +187,6 @@ impl GenericState for DropdownState {
     }
 
     fn get_force_redraw(&self) -> bool { self.force_redraw }
-}
-impl state::SelectableState for DropdownState {
 
     fn set_selected(&mut self, state: bool) {
         if self.selected != state { self.changed = true }
@@ -336,6 +334,8 @@ impl GenericState for DroppedDownMenuState {
 
     fn get_size(&self) -> &state::Size { &self.size }
 
+    fn get_size_mut(&mut self) -> &mut state::Size { &mut self.size }
+
     fn set_position(&mut self, position: state::Coordinates) { self.position = position; }
 
     fn get_position(&self) -> state::Coordinates { self.position }
@@ -362,10 +362,6 @@ impl GenericState for DroppedDownMenuState {
 
     fn get_padding(&self) -> &state::Padding { &self.padding }
 
-    fn has_border(&self) -> bool { true }
-
-    fn set_border(&mut self, _enabled: bool) { }
-
     fn set_border_config(&mut self, config: state::BorderConfig) {
         if self.border_config != config { self.changed = true }
         self.border_config = config;
@@ -373,14 +369,19 @@ impl GenericState for DroppedDownMenuState {
 
     fn get_border_config(&self) -> &state::BorderConfig { &self.border_config  }
 
-    fn set_colors(&mut self, config: state::ColorConfig) {
+    fn get_border_config_mut(&mut self) -> &mut state::BorderConfig {
+        self.changed = true;
+        &mut self.border_config
+    }
+
+    fn set_color_config(&mut self, config: state::ColorConfig) {
         if self.colors != config { self.changed = true }
         self.colors = config;
     }
 
-    fn get_colors(&self) -> &state::ColorConfig { &self.colors }
+    fn get_color_config(&self) -> &state::ColorConfig { &self.colors }
 
-    fn get_colors_mut(&mut self) -> &mut state::ColorConfig {
+    fn get_colors_config_mut(&mut self) -> &mut state::ColorConfig {
         self.changed = true;
         &mut self.colors
     }

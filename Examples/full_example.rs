@@ -3,7 +3,7 @@ use crossterm::style::Color;
 use ez_term::{ez_parser, run};
 use ez_term::common::{self, EzContext};
 use ez_term::states::state;
-use ez_term::states::state::{CallbackConfig, GenericState, SelectableState};
+use ez_term::states::state::{CallbackConfig, GenericState};
 use ez_term::widgets::widget::EzObject;
 
 fn main() {
@@ -82,12 +82,12 @@ fn main() {
             neon = (neon.0, neon.1, neon.2 + 2);
         }
         context.state_tree.get_mut(&context.widget_path).unwrap().as_canvas_mut()
-            .get_colors_mut().foreground = color;
+            .get_colors_config_mut().foreground = color;
         true
     };
 
-    scheduler.schedule_interval("/root/left_box/canvas_box/canvas".to_string(),
-                                Box::new(neon_banner), Duration::from_millis(200));
+  //  scheduler.schedule_interval("/root/left_box/canvas_box/canvas".to_string(),
+    //                            Box::new(neon_banner), Duration::from_millis(200));
 
     // Step 3: Run app
     // Now everything must happen from bindings as root widget is passed over
@@ -116,7 +116,7 @@ fn test_checkbox_on_value_change(context: EzContext) {
         .unwrap()
         .as_label_mut();
     label_state.set_text(text.to_string());
-    label_state.get_colors_mut().foreground = color;
+    label_state.get_colors_config_mut().foreground = color;
 }
 
 
@@ -140,7 +140,7 @@ fn test_radio_button_on_value_change(context: EzContext) {
         .get(&context.widget_path)
         .unwrap()
         .as_radio_button()
-        .get_colors()
+        .get_color_config()
         .foreground;
     // Next we will retrieve a label widget and change the 'text' field of its' state to the ID of
     // the radio button that became active. This will cause the text to change on the next frame.
@@ -149,7 +149,7 @@ fn test_radio_button_on_value_change(context: EzContext) {
         .unwrap()
         .as_label_mut();
     label_state.set_text(name);
-    label_state.get_colors_mut().foreground = color;
+    label_state.get_colors_config_mut().foreground = color;
 }
 
 // As an example we will change the label next to a dropdown display the active dropdown choice.

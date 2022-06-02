@@ -9,8 +9,8 @@ use crate::common;
 use crate::ez_parser::EzWidgetDefinition;
 use crate::scheduler::Scheduler;
 use crate::widgets::layout::Layout;
-use crate::states::state::{self, CallbackConfig, EzState};
-use crate::widgets::widget::{EzWidget, EzObjects, Pixel, EzObject};
+use crate::states::state::{self, CallbackConfig, EzState, GenericState};
+use crate::widgets::widget::{EzObjects, Pixel, EzObject};
 
 
 /// # Convenience types
@@ -110,7 +110,7 @@ impl<'a, 'b , 'c, 'd> EzContext<'a, 'b , 'c, 'd> {
 /// Find a widget by a screen position coordinate. Used e.g. by mouse event handlers. If a modal
 /// if active only the modal is searched.
 pub fn get_widget_by_position<'a>(pos: state::Coordinates, widget_tree: &'a WidgetTree,
-                                  state_tree: &StateTree) -> Option<&'a dyn EzWidget> {
+                                  state_tree: &StateTree) -> Option<&'a dyn EzObject> {
 
     let modals = state_tree.get("/root").unwrap().as_layout().get_modals();
     let path_prefix = if modals.is_empty() {
@@ -122,7 +122,7 @@ pub fn get_widget_by_position<'a>(pos: state::Coordinates, widget_tree: &'a Widg
         if !widget_path.starts_with(&path_prefix) { continue }
         if let EzState::Layout(_) = state { continue }
         if state.as_generic().collides(pos) {
-            return Some(widget_tree.get(widget_path).unwrap().as_ez_widget())
+            return Some(widget_tree.get(widget_path).unwrap().as_ez_object())
         }
     }
     None
@@ -212,11 +212,24 @@ pub fn redraw_changed_widgets(view_tree: &mut ViewTree, state_tree: &mut StateTr
         }
     }
     if !force_redraw {
-        for widget_path in widgets_to_redraw.iter() {
-            if widget_path.is_empty() || widget_path == &root_widget.path {
+        for mut widget_path in widgets_to_redraw.into_iter() {
+            if widget_path.is_empty() || widget_path == root_widget.path {
                 root_widget.redraw(view_tree, state_tree);
             } else {
-                root_widget.get_child_by_path_mut(widget_path).unwrap().as_ez_object_mut()
+                // We will check if the content to redraw is scrolled. If the widget has infinite
+                // height or width then somewhere upstream it is scrolled; we will find the origin
+                // of the scroll and redraw that widget instead to keep the view intact.
+                loop {
+                    let state = state_tree.get(&widget_path).unwrap();
+                    if !state.as_generic().get_size().infinite_width &&
+                        !state.as_generic().get_size().infinite_height {
+                        break
+                    } else {
+                        widget_path = widget_path.rsplit_once('/').unwrap().0.to_string()
+                    }
+                }
+
+                root_widget.get_child_by_path_mut(&widget_path).unwrap().as_ez_object_mut()
                     .redraw(view_tree, state_tree);
             }
         }
@@ -227,17 +240,15 @@ pub fn redraw_changed_widgets(view_tree: &mut ViewTree, state_tree: &mut StateTr
                     i.redraw(view_tree, state_tree);
                 } else {
                     for child in i.get_widgets_recursive().values() {
-                        if modal_path == &child.as_ez_widget().get_full_path() {
+                        if modal_path == &child.as_ez_object().get_full_path() {
                             child.as_ez_object().redraw(view_tree, state_tree);
                         }
                     }
                 }
-            } else {
-                if modal_path == &root_widget.state.open_modals.first_mut().unwrap()
-                    .as_ez_widget().get_full_path() {
-                    root_widget.state.open_modals.first_mut().unwrap().as_ez_widget()
-                        .redraw(view_tree, state_tree);
-                }
+            } else if modal_path == &root_widget.state.open_modals.first_mut().unwrap()
+                    .as_ez_object().get_full_path() {
+                root_widget.state.open_modals.first_mut().unwrap().as_ez_object()
+                    .redraw(view_tree, state_tree);
             }
         }
     }
@@ -295,12 +306,12 @@ pub fn clean_trees(root_widget: &mut Layout, state_tree: &mut StateTree,
 
 /// Return the widget that is currently selected. Can be none.
 pub fn get_selected_widget<'a>(widget_tree: &'a WidgetTree, state_tree: &mut StateTree)
-    -> Option<&'a dyn EzWidget> {
+    -> Option<&'a dyn EzObject> {
     for widget in widget_tree.values() {
-        if let EzObjects::Layout(_) = widget { continue }  // Layouts cannot be selected
-        let generic_widget = widget.as_ez_widget();
-        if generic_widget.is_selectable() && state_tree.get(&generic_widget.get_full_path())
-            .unwrap().as_selectable().get_selected() {
+        let generic_widget = widget.as_ez_object();
+        let state = state_tree.get(&generic_widget.get_full_path())
+            .unwrap().as_generic();
+        if state.is_selectable() && state.get_selected() {
             return Some(generic_widget)
         }
     }
@@ -313,7 +324,7 @@ pub fn deselect_selected_widget(view_tree: &mut ViewTree, state_tree: &mut State
         widget_tree: &WidgetTree, callback_tree: &mut CallbackTree, scheduler: &mut Scheduler) {
     let selected_widget = get_selected_widget(widget_tree, state_tree);
     if let Some(i) = selected_widget {
-        state_tree.get_mut(&i.get_full_path()).unwrap().as_selectable_mut().set_selected(false);
+        state_tree.get_mut(&i.get_full_path()).unwrap().as_generic_mut().set_selected(false);
         i.on_deselect(view_tree, state_tree, widget_tree, callback_tree, scheduler);
     }
 }
@@ -327,24 +338,24 @@ pub fn select_next(view_tree: &mut ViewTree, state_tree: &mut StateTree,
                    scheduler: &mut Scheduler) {
     let current_selection = get_selected_widget(widget_tree, state_tree);
     let mut current_order = if let Some(i) = current_selection {
-        state_tree.get_mut(&i.get_full_path()).unwrap().as_selectable_mut().set_selected(false);
+        state_tree.get_mut(&i.get_full_path()).unwrap().as_generic_mut().set_selected(false);
         i.on_deselect(view_tree, state_tree, widget_tree,
                       callback_tree,scheduler);
-        i.get_selection_order()
+        state_tree.get_mut(&i.get_full_path()).unwrap().as_generic_mut().get_selection_order()
     } else {
         0
     };
-    let result = find_next_selection(current_order, widget_tree);
+    let result = find_next_selection(current_order, state_tree);
     if let Some( next_widget) = result {
-        state_tree.get_mut(&next_widget).unwrap().as_selectable_mut().set_selected(true);
+        state_tree.get_mut(&next_widget).unwrap().as_generic_mut().set_selected(true);
         widget_tree.get(&next_widget).unwrap().as_ez_object().on_select(
             view_tree,state_tree, widget_tree,
             callback_tree,scheduler, None);
     } else  {
         current_order = 0;
-        let result = find_next_selection(current_order, widget_tree);
+        let result = find_next_selection(current_order, state_tree);
         if let Some( next_widget) = result {
-            state_tree.get_mut(&next_widget).unwrap().as_selectable_mut().set_selected(true);
+            state_tree.get_mut(&next_widget).unwrap().as_generic_mut().set_selected(true);
             widget_tree.get(&next_widget).unwrap().as_ez_object().on_select(
                 view_tree,state_tree, widget_tree,
                 callback_tree,scheduler, None);
@@ -355,22 +366,24 @@ pub fn select_next(view_tree: &mut ViewTree, state_tree: &mut StateTree,
 
 /// Given a current selection order number, find the next widget, or
 /// wrap back around to the first if none. Returns the full path of the next widget to be selected.
-pub fn find_next_selection(current_selection: usize, widget_tree: &WidgetTree) -> Option<String> {
+pub fn find_next_selection(current_selection: usize, state_tree: &StateTree) -> Option<String> {
+
     let mut next_order: Option<usize> = None;
     let mut next_widget: Option<String> = None;
-    for widget in widget_tree.values()  {
-        if let EzObjects::Layout(_) = widget { continue }  // Layouts cannot be selected
-        let generic_widget = widget.as_ez_widget();
-        if generic_widget.is_selectable() {
+    for (path, state) in state_tree  {
+        let generic_state = state.as_generic();
+        if generic_state.is_selectable() {
             if let Some(i) = next_order {
-                if generic_widget.get_selection_order() > current_selection &&
-                    generic_widget.get_selection_order() < i {
-                    next_order = Some(generic_widget.get_selection_order());
-                    next_widget = Some(generic_widget.get_full_path());
+                if generic_state.get_selection_order() > current_selection &&
+                    generic_state.get_selection_order() < i &&
+                    is_in_view(path.to_string(), state_tree) {
+                    next_order = Some(generic_state.get_selection_order());
+                    next_widget = Some(path.to_string());
                 }
-            } else if generic_widget.get_selection_order() > current_selection {
-                next_order = Some(generic_widget.get_selection_order());
-                next_widget = Some(generic_widget.get_full_path());
+            } else if generic_state.get_selection_order() > current_selection &&
+                is_in_view(path.to_string(), state_tree) {
+                next_order = Some(generic_state.get_selection_order());
+                next_widget = Some(path.to_string());
             }
         }
     }
@@ -387,24 +400,24 @@ pub fn select_previous(view_tree: &mut ViewTree, state_tree: &mut StateTree,
 
     let current_selection = get_selected_widget(widget_tree, state_tree);
     let mut current_order = if let Some(i) = current_selection {
-        state_tree.get_mut(&i.get_full_path()).unwrap().as_selectable_mut().set_selected(false);
+        state_tree.get_mut(&i.get_full_path()).unwrap().as_generic_mut().set_selected(false);
         i.on_deselect(view_tree, state_tree, widget_tree,
                       callback_tree, scheduler);
-        i.get_selection_order()
+        state_tree.get_mut(&i.get_full_path()).unwrap().as_generic().get_selection_order()
     } else {
         0
     };
-    let result = find_previous_selection(current_order, widget_tree);
+    let result = find_previous_selection(current_order, state_tree);
     if let Some( previous_widget) = result {
-        state_tree.get_mut(&previous_widget).unwrap().as_selectable_mut().set_selected(true);
+        state_tree.get_mut(&previous_widget).unwrap().as_generic_mut().set_selected(true);
         widget_tree.get(&previous_widget).unwrap().as_ez_object().on_select(
             view_tree,state_tree, widget_tree,
             callback_tree,scheduler, None);
     } else {
         current_order = 99999999;
-        let result = find_previous_selection(current_order, widget_tree);
+        let result = find_previous_selection(current_order, state_tree);
         if let Some( previous_widget) = result {
-            state_tree.get_mut(&previous_widget).unwrap().as_selectable_mut().set_selected(true);
+            state_tree.get_mut(&previous_widget).unwrap().as_generic_mut().set_selected(true);
             widget_tree.get(&previous_widget).unwrap().as_ez_object().on_select(
                 view_tree,state_tree, widget_tree,
                 callback_tree,scheduler, None);
@@ -415,29 +428,145 @@ pub fn select_previous(view_tree: &mut ViewTree, state_tree: &mut StateTree,
 
 /// Given a current selection order number, find the previous widget, or
 /// wrap back around to the last if none. Returns the full path of the previous widget.
-pub fn find_previous_selection(current_selection: usize, widget_tree: &WidgetTree)
-                                   -> Option<String> {
+pub fn find_previous_selection(current_selection: usize, state_tree: &StateTree) -> Option<String> {
 
     let mut previous_order: Option<usize> = None;
     let mut previous_widget: Option<String> = None;
-    for widget in widget_tree.values()  {
-        if let EzObjects::Layout(_) = widget { continue }  // Layouts cannot be selected
-        let generic_widget = widget.as_ez_widget();
-        if generic_widget.is_selectable() {
+    for (path, state) in state_tree  {
+        let generic_state = state.as_generic();
+        if generic_state.is_selectable() {
             if let Some(i) = previous_order {
-                if generic_widget.get_selection_order() < current_selection &&
-                    generic_widget.get_selection_order() > i {
-                    previous_order = Some(generic_widget.get_selection_order());
-                    previous_widget = Some(generic_widget.get_full_path());
+                if generic_state.get_selection_order() < current_selection &&
+                    generic_state.get_selection_order() > i &&
+                    is_in_view(path.to_string(), state_tree) {
+                    previous_order = Some(generic_state.get_selection_order());
+                    previous_widget = Some(path.to_string());
                 }
-            } else if generic_widget.get_selection_order() < current_selection {
-                previous_order = Some(generic_widget.get_selection_order());
-                previous_widget = Some(generic_widget.get_full_path());
+            } else if generic_state.get_selection_order() < current_selection &&
+                is_in_view(path.to_string(), state_tree) {
+                previous_order = Some(generic_state.get_selection_order());
+                previous_widget = Some(path.to_string());
             }
         }
     }
     previous_widget
 }
+
+
+/// Determine whether a widget (by path) is in view. We start with the root widget and make our
+/// way down to the widget in question. We check whether the absolute pos of each widget is within
+/// the bounds of the window. If we encounter a scrollview along the way, we will check if each
+/// subsequent object is in bounds of the scrollview instead.
+pub fn is_in_view(path: String, state_tree: &StateTree) -> bool {
+
+    let window_size = state_tree.get("/root").unwrap().as_generic().get_size().clone();
+
+    // Prepare to iterate from root widget to subwidget to sub-sub-widget etc.
+    let mut paths: Vec<&str> = path.split('/').collect();
+    paths = paths[1..].to_vec();
+    paths.reverse();
+    let mut working_path = format!("/{}", paths.pop().unwrap());
+
+    // If we encounter a scrollview we will start using visible_width and visible_height to check
+    // if further subwidgets are in view
+    let mut visible_width: Option<(usize, usize)> = None;
+    let mut visible_height: Option<(usize, usize)> = None;
+
+    loop { // Loop from root widget to subwidget until we complete the full path or something is not in view
+
+        let state = state_tree.get(&working_path).unwrap();
+        // Determine if this part of the tree is in view. It's not in view if a visible area
+        // was determined and this is not in it (visible area means we're scrolling somewhere),
+        // or if absolute positions falls outside of window size.
+
+        // If there's a visible width we're scrolling horizontally. Check if obj is in scrollview
+        if let Some((visible_w_start, visible_w_end)) = visible_width {
+            // If object lies completely left- or completely right of visible area it's out of view
+            if state.as_generic().get_effective_position().x > visible_w_end ||
+                state.as_generic().get_effective_position().x +
+                    state.as_generic().get_effective_size().width < visible_w_start {
+                return false
+            // If object lies partly left of view, we take the part that's still in view as the new
+            // visible area
+            } else if state.as_generic().get_effective_position().x < visible_w_start {
+                visible_width = Some((visible_w_start -
+                                          state.as_generic().get_effective_position().x,
+                                      state.as_generic().get_effective_position().x +
+                                          state.as_generic().get_effective_size().width));
+            // If object lies partly right of view, we take the part that's still in view as the new
+            // visible area
+            } else if state.as_generic().get_effective_position().x +
+                state.as_generic().get_effective_size().width > visible_w_end {
+            visible_width = Some((visible_w_start,
+                                  visible_w_end -
+                                      state.as_generic().get_effective_position().x));
+            // If object lies entirely in view, we take its full width as the new visible area
+            } else {
+                visible_width = Some((0, state.as_generic().get_effective_size().width));
+            }
+        }
+
+        // If there's a visible height we're scrolling vertically. Check if obj is in scrollview
+        if let Some((visible_h_start, visible_h_end)) = visible_height {
+            // If object lies completely above or completely below visible area it's out of view
+            if state.as_generic().get_effective_position().y > visible_h_end ||
+                state.as_generic().get_effective_position().y +
+                    state.as_generic().get_effective_size().height < visible_h_start {
+                return false
+            // If object lies partly above of view, we take the part that's still in view as the new
+            // visible area
+            } else if state.as_generic().get_effective_position().y < visible_h_start {
+                visible_height = Some((visible_h_start -
+                                           state.as_generic().get_effective_position().y,
+                                       state.as_generic().get_effective_position().y +
+                                       state.as_generic().get_effective_size().height));
+            // If object lies partly below view, we take the part that's still in view as the new
+            // visible area
+            } else if state.as_generic().get_effective_position().y +
+                state.as_generic().get_effective_size().height > visible_h_end {
+                visible_height = Some((visible_h_start,
+                                      visible_h_end -
+                                          state.as_generic().get_effective_position().y));
+            // If object lies entirely in view, we take its full height as the new visible area
+            } else {
+                visible_height = Some((0, state.as_generic().get_effective_size().height));
+            }
+        }
+
+        // If there's no visible height and width then we're not scrolling. Simply check if obj is
+        // inside of the root window.
+        if (visible_width == None &&
+            state.as_generic().get_effective_absolute_position().x > window_size.width) ||
+            (visible_height == None &&
+                state.as_generic().get_effective_absolute_position().y > window_size.height) {
+            return false
+        }
+
+        if !paths.is_empty() {
+            // This is not the end of the path so this obj must be a layout. This means we have to
+            // check if it is scrolling. If it is, we must check if each subsequent subwidget is in
+            // this scrollview.
+            if state.as_layout().get_scrolling_config().is_scrolling_x {
+                visible_width =
+                    Some((state.as_layout().get_scrolling_config().view_start_x,
+                         state.as_layout().get_scrolling_config().view_start_x +
+                        state.as_layout().get_effective_size().width));
+            }
+            if state.as_layout().get_scrolling_config().is_scrolling_y {
+                visible_height =
+                    Some((state.as_layout().get_scrolling_config().view_start_y,
+                         state.as_layout().get_scrolling_config().view_start_y +
+                        state.as_layout().get_effective_size().height));
+            }
+            working_path = format!("{}/{}", working_path, paths.pop().unwrap());
+        } else {
+            // End of the path and we did not encounter any out-of-view conditions. Obj is in view.
+            return true
+        }
+
+    }
+}
+
 
 pub fn resize_with_size_hint(state: &mut EzState, parent_width: usize, parent_height: usize) {
 
@@ -445,13 +574,13 @@ pub fn resize_with_size_hint(state: &mut EzState, parent_width: usize, parent_he
     if let Some(size_hint_x) = mut_state.get_size_hint().x {
         let raw_child_size = parent_width as f64 * size_hint_x;
         let child_size = raw_child_size.round() as usize;
-        mut_state.set_width(child_size);
+        mut_state.get_size_mut().width = child_size;
     }
 
     if let Some(size_hint_y) = mut_state.get_size_hint().y {
         let raw_child_size = parent_height as f64 * size_hint_y;
         let child_size = raw_child_size.round() as usize;
-        mut_state.set_height(child_size);
+        mut_state.get_size_mut().height = child_size;
     }
 }
 
@@ -626,18 +755,18 @@ pub fn align_content_horizontally(mut content: PixelMap, halign: state::Horizont
 }
 
 
-    /// Align the passed content vertically within a desired total height. Return the aligned
-    /// [PixelMap] and an offset for how much the content moved vertically. E.g. content:
-    /// ```
-    /// XXX
-    /// ```
-    /// With valign [state::VerticalAlignment::Middle] and total height 3 would return:
-    /// ```
-    ///
-    /// XXX
-    ///
-    /// ````
-    /// With offset 1.
+/// Align the passed content vertically within a desired total height. Return the aligned
+/// [PixelMap] and an offset for how much the content moved vertically. E.g. content:
+/// ```
+/// XXX
+/// ```
+/// With valign [state::VerticalAlignment::Middle] and total height 3 would return:
+/// ```
+///
+/// XXX
+///
+/// ````
+/// With offset 1.
 pub fn align_content_vertically(mut content: PixelMap, valign: state::VerticalAlignment,
                                 total_height: usize, fg_color: Color, bg_color: Color)
                                 -> (PixelMap, usize){

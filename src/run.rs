@@ -280,7 +280,8 @@ fn handle_mouse_event(event: MouseEvent, view_tree: &mut ViewTree, state_tree: &
                                                      event.row as usize);
         return match common::get_widget_by_position(mouse_position, widget_tree, state_tree) {
             Some(widget) => {
-                let abs = state_tree.get(&widget.get_full_path()).unwrap().as_generic()
+                let abs = state_tree.get(&widget.get_full_path()).unwrap()
+                    .as_generic()
                     .get_absolute_position();
                 let relative_position = state::Coordinates::new(mouse_position.x - abs.x,
                                                                     mouse_position.y - abs.y);
@@ -288,17 +289,21 @@ fn handle_mouse_event(event: MouseEvent, view_tree: &mut ViewTree, state_tree: &
                     MouseButton::Left => {
                         common::deselect_selected_widget(view_tree, state_tree, widget_tree,
                                                          callback_tree, scheduler);
-                        if widget.is_selectable() {
+                        if state_tree.get(&widget.get_full_path()).unwrap().as_generic()
+                            .is_selectable() {
                             widget.on_select(view_tree, state_tree, widget_tree,
-                                             callback_tree, scheduler, Some(relative_position))
+                                             callback_tree, scheduler,
+                                             Some(relative_position))
                         }
                         widget.on_left_mouse_click(view_tree, state_tree, widget_tree,
-                                                   callback_tree, scheduler, relative_position);
+                                                   callback_tree, scheduler,
+                                                   relative_position);
 
                     },
                     MouseButton::Right => {
                         widget.on_right_mouse_click(view_tree, state_tree, widget_tree,
-                                                    callback_tree, scheduler, relative_position)
+                                                    callback_tree, scheduler,
+                                                    relative_position)
                     }
                     _ => { return false }
                 }
@@ -317,8 +322,8 @@ fn handle_resize(state_tree: &mut StateTree, root_widget: &mut Layout, new_width
                  new_height: usize) -> ViewTree{
     let state = state_tree.get_mut(&root_widget.path).unwrap()
         .as_generic_mut();
-    state.set_width(new_width as usize);
-    state.set_height(new_height as usize);
+    state.get_size_mut().width = new_width as usize;
+    state.get_size_mut().height = new_height as usize;
     let mut new_view_tree = common::initialize_view_tree(new_width, new_height);
     root_widget.set_child_sizes(state_tree);
     let contents = root_widget.get_contents(state_tree);

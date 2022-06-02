@@ -19,7 +19,7 @@ use crossterm::terminal::size;
 use unicode_segmentation::UnicodeSegmentation;
 use crate::common;
 use crate::scheduler::Scheduler;
-use crate::states::state::{self, GenericState};
+use crate::states::state::{self, GenericState, ScrollingConfig};
 
 
 /// Load a file path into a root Layout. Return the root widget and a new scheduler. Both will
@@ -97,7 +97,7 @@ impl EzWidgetDefinition {
             let (parameter_name, parameter_value) = line.split_once(':')
                 .unwrap();
             initialized.load_ez_parameter(parameter_name.to_string(),
-                                          parameter_value.to_string()).unwrap();
+                                          parameter_value.to_string());
         }
         for sub_widget in sub_widgets.iter_mut() {
             let initialized_sub_widget = sub_widget.parse(&mut templates);
@@ -105,10 +105,10 @@ impl EzWidgetDefinition {
         }
         let terminal_size = size().unwrap();
         if initialized.state.get_size().width == 0  {
-            initialized.state.set_width(terminal_size.0 as usize);
+            initialized.state.get_size_mut().width = terminal_size.0 as usize;
         }
         if initialized.state.get_size().height == 0 {
-            initialized.state.set_height(terminal_size.1 as usize);
+            initialized.state.get_size_mut().height = terminal_size.1 as usize;
         }
         initialized.set_id("root".to_string());
         initialized.set_full_path(format!("/root"));
@@ -250,31 +250,32 @@ fn parse_level<'a>(config_lines: Vec<String>, indentation_offset: usize, line_of
 
 /// Convenience function use by widgets to load a color parameter defined in a .ez file.
 /// Looks like "red".
-pub fn load_color_parameter(value: String) -> Result<Color, Error> {
+pub fn load_color_parameter(value: String) -> Color {
     if value.contains(',') {
         let rgb: Vec<&str> = value.split(',').collect();
         if rgb.len() != 3 {
             panic!("Invalid rgb data in Ez file: {:?}. Must be in format: '255, 0, 0'", rgb)
         }
-        Ok(Color::from(
+        Color::from(
             (rgb[0].trim().parse().unwrap_or_else(
                 |_| panic!("Could not parse the first number in this RGB value: {}", value)),
             rgb[1].trim().parse().unwrap_or_else(
                 |_| panic!("Could not parse the second number in this RGB value: {}", value)),
             rgb[2].trim().parse().unwrap_or_else(
                 |_| panic!("Could not parse the third number in this RGB value: {}", value)),
-            )))
+            ))
     } else {
-        Ok(Color::from_str(value.trim()).unwrap())
+        Color::from_str(value.trim()).unwrap()
     }
 }
 
+
 /// Convenience function use by widgets to load a bool parameter defined in a .ez file.
 /// Looks like "false".
-pub fn load_bool_parameter(value: &str) -> Result<bool, Error> {
+pub fn load_bool_parameter(value: &str) -> bool {
 
-    if value.to_lowercase() == "true" { Ok(true) }
-    else if value.to_lowercase() == "false" { Ok(false) }
+    if value.to_lowercase() == "true" { true }
+    else if value.to_lowercase() == "false" { false }
     else {
         panic!("Ez file bool parameter must be true/false, not: {}", value) }
 }
@@ -282,51 +283,67 @@ pub fn load_bool_parameter(value: &str) -> Result<bool, Error> {
 
 /// Convenience function use by widgets to load a selection order parameter defined in a .ez file.
 /// Looks like "4".
-pub fn load_selection_order_parameter(value: &str) -> Result<usize, Error> {
+pub fn load_selection_order_parameter(value: &str) -> usize {
 
     let value: usize = value.trim().parse().unwrap_or_else(
         |_| panic!("Could not parse this selection order number: {}", value));
     if value == 0 {
         panic!("selection_order must be higher than 0: {}", value);
     }
-    Ok(value)
+    value
 }
+
 
 /// Convenience function use by widgets to load a selection order parameter defined in a .ez file.
 /// Looks like "this is text".
-pub fn load_text_parameter(mut value: &str) -> Result<String, Error> {
+pub fn load_text_parameter(mut value: &str) -> String {
 
     if value.starts_with(' ') {
         value = value.strip_prefix(' ').unwrap();
     }
-    Ok(value.to_string())
+    value.to_string()
 }
+
 
 /// Convenience function used by widgets to load a size parameter defined in an .ez file
 /// Looks like size: 20, 10
-pub fn load_size_parameter(value: &str) -> Result<state::Size, Error> {
+pub fn load_size_parameter(value: &str) -> state::Size {
 
     let (width_str, height_str) = value.split_once(',').unwrap();
     let width = width_str.trim().parse().unwrap_or_else(
         |_| panic!("Could not parse width of this position: {}", width_str));
     let height = height_str.trim().parse().unwrap_or_else(
         |_| panic!("Could not parse height of this position: {}", height_str));
-    Ok(state::Size::new(width, height))
+    state::Size::new(width, height)
 }
+
 
 /// Convenience function used by widgets to load a full auto_scale parameter defined in an .ez file
 /// Looks like "auto_scale: true, false"
-pub fn load_full_auto_scale_parameter(value: &str) -> Result<state::AutoScale, Error> {
+pub fn load_full_enable_scrolling_parameter(value: &str, scrolling_config: &mut ScrollingConfig) {
+
+    let (x_str, y_str) = value.split_once(',').unwrap();
+    let x = load_bool_parameter(x_str.trim());
+    let y = load_bool_parameter(y_str.trim());
+    scrolling_config.enable_x = x;
+    scrolling_config.enable_y = y;
+}
+
+
+/// Convenience function used by widgets to load a full auto_scale parameter defined in an .ez file
+/// Looks like "auto_scale: true, false"
+pub fn load_full_auto_scale_parameter(value: &str) -> state::AutoScale {
 
     let (width_str, height_str) = value.split_once(',').unwrap();
-    let width = load_bool_parameter(width_str.trim()).unwrap();
-    let height = load_bool_parameter(height_str.trim()).unwrap();
-    Ok(state::AutoScale::new(width, height))
+    let width = load_bool_parameter(width_str.trim());
+    let height = load_bool_parameter(height_str.trim());
+    state::AutoScale::new(width, height)
 }
+
 
 /// Convenience function used by widgets to load a full padding parameter defined in an .ez file
 /// Looks like "padding: 2, 2, 2, 2"
-pub fn load_full_padding_parameter(value: &str) -> Result<state::Padding, Error> {
+pub fn load_full_padding_parameter(value: &str) -> state::Padding {
 
     let strings: Vec<&str> = value.split(",").collect();
     if strings.len() != 4 {
@@ -347,47 +364,51 @@ pub fn load_full_padding_parameter(value: &str) -> Result<state::Padding, Error>
     let bottom = strings[1].trim().parse().unwrap();
     let left = strings[2].trim().parse().unwrap();
     let right = strings[3].trim().parse().unwrap();
-    Ok(state::Padding::new(top, bottom, left, right))
+    state::Padding::new(top, bottom, left, right)
 }
+
 
 /// Convenience function used by widgets to load an x padding parameter defined in an .ez file
 /// Looks like "padding_x: 2, 2"
-pub fn load_padding_x_parameter(value: &str) -> Result<state::Padding, Error> {
+pub fn load_padding_x_parameter(value: &str) -> state::Padding {
 
     let (left_str, right_str) = value.split_once(',').unwrap();
     let left = left_str.trim().parse().unwrap();
     let right = right_str.trim().parse().unwrap();
-    Ok(state::Padding::new(0, 0, left, right))
+    state::Padding::new(0, 0, left, right)
 }
+
 
 /// Convenience function used by widgets to load a y padding parameter defined in an .ez file
 /// Looks like "padding_y: 2, 2"
-pub fn load_padding_y_parameter(value: &str) -> Result<state::Padding, Error> {
+pub fn load_padding_y_parameter(value: &str) -> state::Padding {
 
     let (top_str, bottom_str) = value.split_once(',').unwrap();
     let top = top_str.trim().parse().unwrap();
     let bottom = bottom_str.trim().parse().unwrap();
-    Ok(state::Padding::new(top, bottom, 0, 0))
+    state::Padding::new(top, bottom, 0, 0)
 }
+
 
 /// Convenience function use by widgets to load a size_hint parameter defined in a .ez file.
 /// Looks like "0.33, 0.33" or "1/3, 1/3"
-pub fn load_full_size_hint_parameter(value: &str) -> Result<state::SizeHint, Error> {
+pub fn load_full_size_hint_parameter(value: &str) -> state::SizeHint {
 
     let (x_str, y_str) = value.split_once(',').unwrap();
-    let x = load_size_hint_parameter(x_str.trim()).unwrap();
-    let y = load_size_hint_parameter(y_str.trim()).unwrap();
-    Ok(state::SizeHint::new(x, y))
+    let x = load_size_hint_parameter(x_str.trim());
+    let y = load_size_hint_parameter(y_str.trim());
+    state::SizeHint::new(x, y)
 }
+
 
 /// Convenience function use by widgets to load a size_hint parameter defined in a .ez file.
 /// Looks like "0.33" or "1/3"
-pub fn load_size_hint_parameter(value: &str) -> Result<Option<f64>, Error> {
+pub fn load_size_hint_parameter(value: &str) -> Option<f64> {
 
     let to_parse = value.trim();
     // Size hint can be None
     if to_parse.to_lowercase() == "none" {
-        Ok(None)
+        None
     }
     // Size hint can be a fraction
     else if to_parse.contains('/') {
@@ -399,48 +420,49 @@ pub fn load_size_hint_parameter(value: &str) -> Result<Option<f64>, Error> {
         let right: f64 = right_str.trim().parse().unwrap_or_else(
             |_| panic!("Could not parse right side of size hint fraction: {}", value));
         let result = left / right;
-        Ok(Some(result))
+        Some(result)
     }
     // Size hint can be a straight number
     else {
         let size_hint = value.parse().unwrap_or_else(
             |_| panic!("Could not parse this size hint number: {}", value));
-        Ok(Some(size_hint))
+        Some(size_hint)
     }
 }
 
+
 /// Convenience function used by widgets to load a pos parameter defined in an .ez file
 /// Looks like pos: 20, 10
-pub fn load_pos_parameter(value: &str) -> Result<state::Coordinates, Error> {
+pub fn load_pos_parameter(value: &str) -> state::Coordinates {
 
     let (x_str, y_str) = value.split_once(',').unwrap();
     let x = x_str.to_string().parse().unwrap_or_else(
         |_| panic!("Could not parse x coordinate of this position: {}", value));
     let y = y_str.to_string().parse().unwrap_or_else(
         |_| panic!("Could not parse y coordinate of this position: {}", value));
-    Ok(state::Coordinates::new(x, y))
+    state::Coordinates::new(x, y)
 }
+
 
 /// Convenience function use by widgets to load a full pos_hint tuple parameter defined in a .ez
 /// file. Looks like: "pos_hint: center_x, bottom: 0.9"
-pub fn load_full_pos_hint_parameter(value: &str) -> Result<state::PosHint, Error> {
+pub fn load_full_pos_hint_parameter(value: &str) -> state::PosHint {
 
     let (x_str, y_str) = value.split_once(',').unwrap();
-    let x = load_pos_hint_x_parameter(x_str).unwrap();
-    let y = load_pos_hint_y_parameter(y_str).unwrap();
-    Ok(state::PosHint::new(x, y))
+    let x = load_pos_hint_x_parameter(x_str);
+    let y = load_pos_hint_y_parameter(y_str);
+    state::PosHint::new(x, y)
 }
 
 
 /// Convenience function use by widgets to load a pos_hint parameter defined in a .ez file.
 /// Looks like "pos_hint_x: right: 0.9"
-pub fn load_pos_hint_x_parameter(value: &str)
-    -> Result<Option<(state::HorizontalPositionHint, f64)>, Error> {
+pub fn load_pos_hint_x_parameter(value: &str) -> Option<(state::HorizontalPositionHint, f64)> {
 
     let to_parse = value.trim();
     // Pos hint can be None
     if to_parse.to_lowercase() == "none" {
-        return Ok(None)
+        return None
     }
     // pos hint can one or two values. E.g. "top" or "top:0.8"
     let (keyword, fraction);
@@ -460,19 +482,19 @@ pub fn load_pos_hint_x_parameter(value: &str)
         _ => panic!("This value is not allowed for pos_hint_x: {}. Use left/right/center",
                       value)
     };
-    Ok(Some((pos, fraction)))
+    Some((pos, fraction))
 }
 
 
 /// Convenience function use by widgets to load a pos_hint_y parameter defined in a .ez file
 /// Looks like "pos_hint_y: bottom: 0.9"
 pub fn load_pos_hint_y_parameter(value: &str)
-    -> Result<Option<(state::VerticalPositionHint, f64)>, Error> {
+    -> Option<(state::VerticalPositionHint, f64)> {
 
     let to_parse = value.trim();
     // Pos hint can be None
     if to_parse.to_lowercase() == "none" {
-        return Ok(None)
+        return None
     }
     // pos hint can one or two values. E.g. "top" or "top:0.8"
     let (keyword, fraction);
@@ -492,26 +514,27 @@ pub fn load_pos_hint_y_parameter(value: &str)
         _ => panic!("This value is not allowed for pos_hint_y: {}. Use top/bottom/middle",
                       value)
     };
-    Ok(Some((pos, fraction)))
+    Some((pos, fraction))
 }
 
 
 /// Convenience function use by widgets to load a horizontal alignment defined in a .ez file.
 /// Looks like: "left"
-pub fn load_halign_parameter(value: &str) -> Result<state::HorizontalAlignment, Error> {
+pub fn load_halign_parameter(value: &str) -> state::HorizontalAlignment {
 
-    if value.to_lowercase() == "left" { Ok(state::HorizontalAlignment::Left) }
-    else if value.to_lowercase() == "right" { Ok(state::HorizontalAlignment::Right) }
-    else if value.to_lowercase() == "center" { Ok(state::HorizontalAlignment::Center) }
+    if value.to_lowercase() == "left" { state::HorizontalAlignment::Left }
+    else if value.to_lowercase() == "right" { state::HorizontalAlignment::Right }
+    else if value.to_lowercase() == "center" { state::HorizontalAlignment::Center }
     else { panic!("halign parameter must be left/right/center: {}", value) }
 }
 
+
 /// Convenience function use by widgets to load a vertical alignment defined in a .ez file
 /// Looks like: "bottom"
-pub fn load_valign_parameter(value: &str) -> Result<state::VerticalAlignment, Error> {
+pub fn load_valign_parameter(value: &str) -> state::VerticalAlignment {
 
-    if value.to_lowercase() == "top" { Ok(state::VerticalAlignment::Top) }
-    else if value.to_lowercase() == "bottom" { Ok(state::VerticalAlignment::Bottom) }
-    else if value.to_lowercase() == "middle" { Ok(state::VerticalAlignment::Middle) }
+    if value.to_lowercase() == "top" { state::VerticalAlignment::Top }
+    else if value.to_lowercase() == "bottom" { state::VerticalAlignment::Bottom }
+    else if value.to_lowercase() == "middle" { state::VerticalAlignment::Middle }
     else { panic!("valign parameter must be left/right/center: {}", value) }
 }

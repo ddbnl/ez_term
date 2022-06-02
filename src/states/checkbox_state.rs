@@ -8,9 +8,6 @@ pub struct CheckboxState {
     /// Bool representing whether this widget is currently active (i.e. checkbox is checked)
     pub active: bool,
 
-    /// Bool representing whether this widget is currently selected.
-    pub selected: bool,
-
     /// Position of this widget relative to its' parent [Layout]
     pub position: state::Coordinates,
 
@@ -38,14 +35,17 @@ pub struct CheckboxState {
     /// Vertical alignment of this widget
     pub valign: state::VerticalAlignment,
 
-    /// Bool representing whether this layout should have a surrounding border
-    pub border: bool,
-
     /// [BorderConfig] object that will be used to draw the border if enabled
     pub border_config: state::BorderConfig,
 
     /// Object containing colors to be used by this widget in different situations
     pub colors: state::ColorConfig,
+
+    /// Global order number in which this widget will be selection when user presses down/up keys
+    pub selection_order: usize,
+
+    /// Bool representing whether this widget is currently selected.
+    pub selected: bool,
 
     /// Bool representing if state has changed. Triggers widget redraw.
     pub changed: bool,
@@ -69,7 +69,7 @@ impl Default for CheckboxState {
            valign: state::VerticalAlignment::Top,
            active: false,
            selected: false,
-           border: false,
+           selection_order: 0,
            border_config: state::BorderConfig::default(),
            colors: state::ColorConfig::default(),
            changed: false,
@@ -109,9 +109,9 @@ impl state::GenericState for CheckboxState {
 
     fn get_size(&self) -> &state::Size { &self.size  }
 
-    fn set_position(&mut self, position: state::Coordinates) {
-        self.position = position;
-    }
+    fn get_size_mut(&mut self) -> &mut state::Size { &mut self.size }
+
+    fn set_position(&mut self, position: state::Coordinates) { self.position = position; }
 
     fn get_position(&self) -> state::Coordinates { self.position }
 
@@ -143,31 +143,34 @@ impl state::GenericState for CheckboxState {
 
     fn get_padding(&self) -> &state::Padding { &self.padding }
 
-    fn has_border(&self) -> bool { self.border }
-
-    fn set_border(&mut self, enabled: bool) {
-        if self.border != enabled { self.changed = true }
-        self.border = enabled;
-    }
-
     fn set_border_config(&mut self, config: state::BorderConfig) {
         if self.border_config != config { self.changed = true }
         self.border_config = config;
     }
 
+
     fn get_border_config(&self) -> &state::BorderConfig { &self.border_config  }
 
-    fn set_colors(&mut self, config: state::ColorConfig) {
+    fn get_border_config_mut(&mut self) -> &mut state::BorderConfig {
+        self.changed = true;
+        &mut self.border_config
+    }
+
+    fn set_color_config(&mut self, config: state::ColorConfig) {
         if self.colors != config { self.changed = true }
         self.colors = config;
     }
 
-    fn get_colors(&self) -> &state::ColorConfig { &self.colors }
+    fn get_color_config(&self) -> &state::ColorConfig { &self.colors }
 
-    fn get_colors_mut(&mut self) -> &mut state::ColorConfig {
+    fn get_colors_config_mut(&mut self) -> &mut state::ColorConfig {
         self.changed = true;
         &mut self.colors
     }
+
+    fn is_selectable(&self) -> bool { true }
+
+    fn get_selection_order(&self) -> usize { self.selection_order }
 
     fn set_force_redraw(&mut self, redraw: bool) {
         self.force_redraw = redraw;
@@ -175,9 +178,6 @@ impl state::GenericState for CheckboxState {
     }
 
     fn get_force_redraw(&self) -> bool { self.force_redraw }
-
-}
-impl state::SelectableState for CheckboxState {
 
     fn set_selected(&mut self, state: bool) {
         if self.selected != state { self.changed = true }

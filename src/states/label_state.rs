@@ -35,9 +35,6 @@ pub struct LabelState {
     /// Vertical alignment of this widget
     pub valign: state::VerticalAlignment,
 
-    /// Bool representing whether this layout should have a surrounding border
-    pub border: bool,
-
     /// [BorderConfig] object that will be used to draw the border if enabled
     pub border_config: state::BorderConfig,
 
@@ -65,7 +62,6 @@ impl Default for LabelState {
            halign: state::HorizontalAlignment::Left,
            valign: state::VerticalAlignment::Top,
            text: String::new(),
-           border: false,
            border_config: state::BorderConfig::default(),
            colors: state::ColorConfig::default(),
            changed: false,
@@ -100,15 +96,13 @@ impl state::GenericState for LabelState {
 
     fn get_auto_scale(&self) -> &state::AutoScale { &self.auto_scale }
 
-    fn set_size(&mut self, size: state::Size) {
-        self.size = size;
-    }
+    fn set_size(&mut self, size: state::Size) { self.size = size; }
 
     fn get_size(&self) -> &state::Size { &self.size  }
 
-    fn set_position(&mut self, position: state::Coordinates) {
-        self.position = position;
-    }
+    fn get_size_mut(&mut self) -> &mut state::Size { &mut self.size }
+
+    fn set_position(&mut self, position: state::Coordinates) { self.position = position; }
 
     fn get_position(&self) -> state::Coordinates { self.position }
 
@@ -140,13 +134,6 @@ impl state::GenericState for LabelState {
 
     fn get_padding(&self) -> &state::Padding { &self.padding }
 
-    fn has_border(&self) -> bool { self.border }
-
-    fn set_border(&mut self, enabled: bool) {
-        if self.border != enabled { self.changed = true }
-        self.border = enabled;
-    }
-
     fn set_border_config(&mut self, config: state::BorderConfig) {
         if self.border_config != config { self.changed = true }
         self.border_config = config;
@@ -154,14 +141,20 @@ impl state::GenericState for LabelState {
 
     fn get_border_config(&self) -> &state::BorderConfig { &self.border_config  }
 
-    fn set_colors(&mut self, config: state::ColorConfig) {
+    fn get_border_config_mut(&mut self) -> &mut state::BorderConfig {
+        self.changed = true;
+        &mut self.border_config
+    }
+
+
+    fn set_color_config(&mut self, config: state::ColorConfig) {
         if self.colors != config { self.changed = true }
         self.colors = config;
     }
 
-    fn get_colors(&self) -> &state::ColorConfig { &self.colors }
+    fn get_color_config(&self) -> &state::ColorConfig { &self.colors }
 
-    fn get_colors_mut(&mut self) -> &mut state::ColorConfig {
+    fn get_colors_config_mut(&mut self) -> &mut state::ColorConfig {
         self.changed = true;
         &mut self.colors
     }

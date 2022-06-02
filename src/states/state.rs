@@ -65,41 +65,6 @@ impl EzState {
         }
     }
 
-    /// Cast this enum to a selectable widget state trait object, which contains methods
-    /// for managing the selection fields of a widget state. Not all widgets can be selected, so
-    /// you have to be sure you are calling this method on one of the following:
-    /// - CheckboxState
-    /// - DropdownState
-    /// - RadioButtonState
-    /// - TextInputState
-    pub fn as_selectable(&self) -> &dyn SelectableState {
-        match self {
-            EzState::Button(i) => i,
-            EzState::Checkbox(i) => i,
-            EzState::Dropdown(i) => i,
-            EzState::RadioButton(i) => i,
-            EzState::TextInput(i) => i,
-            _ => panic!("Cannot be cast to selectable widget state")
-        }
-    }
-
-    /// Cast this enum to a mutable selectable widget state trait object, which contains methods
-    /// for managing the selection fields of a widget state. Not all widgets can be selected, so
-    /// you have to be sure you are calling this method on one of the following state variants:
-    /// - CheckboxState
-    /// - DropdownState
-    /// - RadioButtonState
-    /// - TextInputState
-    pub fn as_selectable_mut(&mut self) -> &mut dyn SelectableState {
-        match self {
-            EzState::Button(i) => i,
-            EzState::Checkbox(i) => i,
-            EzState::Dropdown(i) => i,
-            EzState::RadioButton(i) => i,
-            EzState::TextInput(i) => i,
-            _ => panic!("Cannot be cast to selectable widget state")
-        }
-    }
 
     /// Cast this state as a Layout state ref, you must be sure you have one.
     pub fn as_layout(&self) -> &LayoutState {
@@ -294,43 +259,41 @@ pub trait GenericState {
     /// Get current [Size] of this object
     fn get_size(&self) -> &Size;
 
+    /// Get mutable current [Size] of this object
+    fn get_size_mut(&mut self) -> &mut Size;
+
     /// Get the effective amount of width and height within this object, taking off e.g. borders,
     /// padding, etc.
     fn get_effective_size(&self) -> Size {
 
-        let width_result: isize = self.get_size().width as isize
-            -if self.has_border() {2} else {0}
-            - self.get_padding().left as isize - self.get_padding().right as isize;
+        let mut size_copy = self.get_size().clone();
+        let width_result: isize = size_copy.width as isize
+            -if self.get_border_config().enabled {2} else {0}
+            -self.get_padding().left as isize - self.get_padding().right as isize;
         let width = if width_result < 0 {0} else { width_result as usize};
-        let height_result: isize = self.get_size().height as isize
-            - if self.has_border() {2} else {0}
-            - self.get_padding().top as isize - self.get_padding().bottom as isize;
+        let height_result: isize = size_copy.height as isize
+            -if self.get_border_config().enabled {2} else {0}
+            -self.get_padding().top as isize - self.get_padding().bottom as isize;
         let height = if height_result < 0 {0} else { height_result as usize};
-        Size::new(width, height)
-    }
-
-    /// Hard code width, only does something when size_hint_x is off
-    fn set_width(&mut self, width: usize) {
-        self.set_size(Size::new(width, self.get_size().height))
+        size_copy.width = width;
+        size_copy.height = height;
+        size_copy
     }
 
     /// Set the how much width you want the actual content inside this widget to have. Width for
     /// e.g. border and padding will be added to this automatically.
     fn set_effective_width(&mut self, width: usize) {
-        self.set_width(width +if self.has_border() {2} else {0}
-            + self.get_padding().left + self.get_padding().right)
-    }
-
-    /// Hard code height, only does something when size_hint_y is off
-    fn set_height(&mut self, height: usize) {
-        self.set_size(Size::new(self.get_size().width, height))
+        self.get_size_mut().width = width
+            +if self.get_border_config().enabled {2} else {0}
+            +self.get_padding().left + self.get_padding().right
     }
 
     /// Set the how much height you want the actual content inside this widget to have. Height for
     /// e.g. border and padding will be added to this automatically.
     fn set_effective_height(&mut self, height: usize) {
-        self.set_height(height +if self.has_border() {2} else {0}
-        + self.get_padding().top + self.get_padding().bottom)
+        self.get_size_mut().height = height
+            +if self.get_border_config().enabled {2} else {0}
+            +self.get_padding().top + self.get_padding().bottom
     }
 
     /// Hard code position relative to parent, only works in float layout mode
@@ -349,8 +312,8 @@ pub trait GenericState {
     /// e.g. borders, padding, etc.
     fn get_effective_position(&self) -> Coordinates {
         Coordinates::new(
-            self.get_position().x +if self.has_border() {1} else {0} + self.get_padding().left,
-            self.get_position().y +if self.has_border() {1} else {0} + self.get_padding().top)
+            self.get_position().x +if self.get_border_config().enabled {1} else {0} + self.get_padding().left,
+            self.get_position().y +if self.get_border_config().enabled {1} else {0} + self.get_padding().top)
     }
 
     /// Set the absolute position of a widget, i.e. the position on screen rather than within its'
@@ -366,9 +329,9 @@ pub trait GenericState {
     /// e.g. border and padding
     fn get_effective_absolute_position(&self) -> Coordinates {
         Coordinates::new(
-         self.get_absolute_position().x +if self.has_border() {1} else {0}
+         self.get_absolute_position().x +if self.get_border_config().enabled {1} else {0}
              + self.get_padding().left,
-         self.get_absolute_position().y +if self.has_border() {1} else {0}
+         self.get_absolute_position().y +if self.get_border_config().enabled {1} else {0}
              + self.get_padding().top)
     }
 
@@ -414,26 +377,22 @@ pub trait GenericState {
         self.set_padding(Padding::new(current.top, current.bottom, current.left, padding))
     }
 
-    /// Get a bool representing whether this object should have a surrounding border
-    fn has_border(&self) -> bool;
-
-    /// Set whether this object should have a surrounding border
-    fn set_border(&mut self, enabled: bool);
-    
     /// Pas a [BorderConfig] abject that will be used to draw the border if enabled
     fn set_border_config(&mut self, config: BorderConfig);
 
     /// Get the [state::BorderConfig] abject that will be used to draw the border if enabled
     fn get_border_config(&self) -> &BorderConfig;
 
+    fn get_border_config_mut(&mut self) -> &mut BorderConfig;
+
     /// Set the [ColorConfig] abject that will be used to draw this widget
-    fn set_colors(&mut self, config: ColorConfig);
+    fn set_color_config(&mut self, config: ColorConfig);
 
     /// Get a ref to the [ColorConfig] abject that will be used to draw this widget
-    fn get_colors(&self) -> &ColorConfig;
+    fn get_color_config(&self) -> &ColorConfig;
 
     /// Get a mut ref to the [ColorConfig] abject that will be used to draw this widget
-    fn get_colors_mut(&mut self) -> &mut ColorConfig;
+    fn get_colors_config_mut(&mut self) -> &mut ColorConfig;
 
     /// Get the top left and bottom right corners of a widget in (X, Y) coordinate tuples.
     fn get_box(&self) -> (Coordinates, Coordinates) {
@@ -475,6 +434,23 @@ pub trait GenericState {
         pos.x >= starting_pos.x && pos.x <= end_pos.x &&
             pos.y >= starting_pos.y && pos.y <= end_pos.y
     }
+
+    /// Returns a bool representing whether this widget can be select by keyboard or mouse. E.g.
+    /// labels cannot be selected, but checkboxes can.
+    fn is_selectable(&self) -> bool { false }
+
+    /// Get the order in which this widget should be selected, represented by a usize number. E.g.
+    /// if there is a '1' widget, a '2' widget, and this widget is '3', calling 'select_next_widget'
+    /// will select 1, then 2, then this widget. Used for keyboard up and down keys.
+    fn get_selection_order(&self) -> usize { 0 }
+
+    /// Set the order in which this widget should be selected, represented by a usize number. E.g.
+    /// if there is a '1' widget, a '2' widget, and this widget is '3', calling 'select_next_widget'
+    /// will select 1, then 2, then this widget. Used for keyboard up and down keys.
+    fn set_selection_order(&mut self, _order: usize) {
+        panic!("Widget has no selection implementation")
+    }
+
     /// Set to true to force redraw the entire screen. The screen is still diffed before redrawing
     /// so this can be called efficiently. Nevertheless you want to call [set_changed] to redraw
     /// only the specific widget in most cases.
@@ -482,14 +458,10 @@ pub trait GenericState {
 
     /// Redraws the entire screen if set to true.
     fn get_force_redraw(&self) -> bool;
-}
 
+    fn set_selected(&mut self, _state: bool) { }
 
-/// State trait which contains methods for managed the selection fields of a state. Only
-/// implemented by widgets that can be selected.
-pub trait SelectableState {
-    fn set_selected(&mut self, state: bool);
-    fn get_selected(&self) -> bool;
+    fn get_selected(&self) -> bool { false }
 }
 
 
@@ -530,9 +502,12 @@ pub enum VerticalPositionHint {
 pub struct Size {
     pub width: usize,
     pub height: usize,
+    pub infinite_width: bool,
+    pub infinite_height: bool,
 }
 impl Size {
-    pub fn new(width: usize, height: usize) -> Self { Size{width, height} }
+    pub fn new(width: usize, height: usize) -> Self { Size{width, height,
+        infinite_width: false, infinite_height: false} }
 }
 
 
@@ -697,10 +672,44 @@ impl CallbackConfig {
 }
 
 
+/// Convenience wrapper around a [LayoutState] scrolling configuration
+#[derive(PartialEq, Clone, Debug, Default)]
+pub struct ScrollingConfig {
+
+    /// Bool representing whether the x axis should be able to scroll
+    pub enable_x: bool,
+
+    /// Bool representing whether the y axis should be able to scroll
+    pub enable_y: bool,
+
+    /// Start of the view on the x axis, content is shown from here until view_start_x + width
+    pub view_start_x: usize,
+
+    /// Start of the view on the y axis, content is shown from here until view_start_y + height
+    pub view_start_y: usize,
+
+    /// Bool representing whether the owning object is actually scrolling, as it is possible for
+    /// scrolling to be enabled but not active (i.e. content already fits within object)
+    pub is_scrolling_x: bool,
+
+    /// Bool representing whether the owning object is actually scrolling, as it is possible for
+    /// scrolling to be enabled but not active (i.e. content already fits within object)
+    pub is_scrolling_y: bool,
+
+    /// Original height of the content being scrolled
+    pub original_height: usize,
+
+    /// Original width of the content being scrolled
+    pub original_width: usize,
+}
+
 /// Convenience wrapper around a border configuration
 #[derive(PartialEq, Clone, Debug)]
 pub struct BorderConfig {
-    
+
+    /// Bool representing whether an object should have a border
+    pub enabled: bool,
+
     /// The [Pixel.symbol] to use for the horizontal border if [border] is true
     pub horizontal_symbol: String,
     
@@ -728,6 +737,7 @@ pub struct BorderConfig {
 impl Default for BorderConfig {
     fn default() -> Self {
        BorderConfig {
+           enabled: false,
            horizontal_symbol: "━".to_string(),
            vertical_symbol: "│".to_string(),
            top_left_symbol: "┌".to_string(),

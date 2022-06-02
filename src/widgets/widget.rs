@@ -68,38 +68,6 @@ impl EzObjects {
         }
     }
 
-    /// Cast this enum to a generic [EzWidget] trait object. As this trait is implemented only
-    /// [widget] and not [Layout], it is safe to call *only* on widgets..
-    pub fn as_ez_widget(&self) -> &dyn EzWidget {
-        match self {
-            EzObjects::Label(i) => i,
-            EzObjects::Button(i) => i,
-            EzObjects::CanvasWidget(i) => i,
-            EzObjects::Checkbox(i) => i,
-            EzObjects::Dropdown(i) => i,
-            EzObjects::DroppedDownMenu(i) => i,
-            EzObjects::RadioButton(i) => i,
-            EzObjects::TextInput(i) => i,
-            _ => panic!("Casted non-widget to IsWidget"),
-        }
-    }
-
-    /// Cast this enum to a generic mutable [EzWidget] trait object. As this trait is implemented
-    /// only [widget] and not [Layout], it is safe to call *only* on widgets..
-    pub fn as_ez_widget_mut(&mut self) -> &mut dyn EzWidget {
-        match self {
-            EzObjects::Label(i) => i,
-            EzObjects::Button(i) => i,
-            EzObjects::CanvasWidget(i) => i,
-            EzObjects::Checkbox(i) => i,
-            EzObjects::Dropdown(i) => i,
-            EzObjects::DroppedDownMenu(i) => i,
-            EzObjects::RadioButton(i) => i,
-            EzObjects::TextInput(i) => i,
-            _ => panic!("Casted non-widget to IsWidget"),
-        }
-    }
-
     /// Cast this as a layout ref, you must be sure you have one.
     pub fn as_layout(&self) -> &Layout {
         if let EzObjects::Layout(i) = self { i }
@@ -220,15 +188,14 @@ pub trait EzObject {
         for line in config {
             let (parameter_name, parameter_value) = line.split_once(':').unwrap();
             self.load_ez_parameter(parameter_name.to_string(),
-                                   parameter_value.to_string())?;
+                                   parameter_value.to_string());
         }
         Ok(())
     }
 
     /// Load parameters for an object. Overloaded in each Widget/Layout module to load parameters
     /// specific to the respective widget definition.
-    fn load_ez_parameter(&mut self, parameter_name: String, parameter_value: String)
-                         -> Result<(), Error>;
+    fn load_ez_parameter(&mut self, parameter_name: String, parameter_value: String);
 
     /// Set ID of the widget. IDs are used to create widgets paths. E.g.
     /// "/root_layout/sub_layout/widget_1".
@@ -290,6 +257,9 @@ pub trait EzObject {
         false
     }
 
+    /// Called on an object when it is selected and the user presses enter on the keyboard. This
+    /// default implementation only calls the appropriate callback. Objects can overwrite this
+    /// function but must remember to also call the callback.
     fn on_keyboard_enter(&self, view_tree: &mut ViewTree,
                          state_tree: &mut StateTree, widget_tree: &WidgetTree,
                          callback_tree: &mut CallbackTree, scheduler: &mut Scheduler) {
@@ -304,6 +274,9 @@ pub trait EzObject {
 
     }
 
+    /// Called on an object when it is left clicked. This default implementation only calls the
+    /// appropriate callback. Objects can overwrite this function but must remember to also
+    /// call the callback.
     fn on_left_mouse_click(&self, view_tree: &mut ViewTree,
                            state_tree: &mut StateTree, widget_tree: &WidgetTree,
                            callback_tree: &mut CallbackTree, scheduler: &mut Scheduler,
@@ -318,6 +291,9 @@ pub trait EzObject {
         }
     }
 
+    /// Called on an object when it is selected and the user presses enter on the keyboard or
+    /// when an object is left clicked. Default implementation only calls the appropriate callback.
+    /// Objects can overwrite this function but must remember to also call the callback.
     fn on_press(&self, view_tree: &mut ViewTree,
                 state_tree: &mut StateTree, widget_tree: &WidgetTree,
                 callback_tree: &mut CallbackTree, scheduler: &mut Scheduler) {
@@ -328,6 +304,9 @@ pub trait EzObject {
         }
     }
 
+    /// Called on an object when it is right clicked. This  default implementation only calls the
+    /// appropriate callback. Objects can overwrite this function but must remember to also call
+    /// the callback.
     fn on_right_mouse_click(&self, view_tree: &mut ViewTree,
                             state_tree: &mut StateTree, widget_tree: &WidgetTree,
                             callback_tree: &mut CallbackTree, scheduler: &mut Scheduler,
@@ -340,12 +319,19 @@ pub trait EzObject {
               mouse_pos);
         }
     }
+
+    /// Called on an object when its' value changes. This default implementation only calls the
+    /// appropriate callback. Objects can overwrite this function but must remember to also call
+    /// the callback.
     fn on_value_change(&self, _view_tree: &mut ViewTree,
                        _state_tree: &mut StateTree, _widget_tree: &WidgetTree,
                        _callback_tree: &mut CallbackTree, _scheduler: &mut Scheduler) {
 
     }
 
+    /// Called on an object when it is selected. This default implementation only calls the
+    /// appropriate callback. Objects can overwrite this function but must remember to also call
+    /// the callback.
     fn on_select(&self, view_tree: &mut ViewTree, state_tree: &mut StateTree,
                  widget_tree: &WidgetTree, callback_tree: &mut CallbackTree,
                  scheduler: &mut Scheduler, mouse_pos: Option<Coordinates>) {
@@ -357,6 +343,9 @@ pub trait EzObject {
         }
     }
 
+    /// Called on an object when it is deselected. This default implementation only calls the
+    /// appropriate callback. Objects can overwrite this function but must remember to also call
+    /// the callback.
     fn on_deselect(&self, view_tree: &mut ViewTree, state_tree: &mut StateTree,
                    widget_tree: &WidgetTree, callback_tree: &mut CallbackTree,
                    scheduler: &mut Scheduler) {
@@ -366,36 +355,14 @@ pub trait EzObject {
                                      view_tree, state_tree, widget_tree, scheduler));
         }
     }
-}
-
-
-/// Trait representing widgets only, implementing methods which are common to all widgets but
-/// not layouts. You can cast an EzObjects enum into this trait using [as_ez_widget]
-/// if you know for sure the [EzObject] you're dealing with is a widget and not a layout.
-pub trait EzWidget: EzObject {
 
     /// Set the focus state of a widget. When a widget is focussed it alone consumes all events.
     fn set_focus(&mut self, _enabled: bool) {}
 
     /// Get the focus state of a widget. When a widget is focussed it alone consumes all events.
     fn get_focus(&self) -> bool { false }
-
-    /// Returns a bool representing whether this widget can be select by keyboard or mouse. E.g.
-    /// labels cannot be selected, but checkboxes can.
-    fn is_selectable(&self) -> bool { false }
-
-    /// Get the order in which this widget should be selected, represented by a usize number. E.g.
-    /// if there is a '1' widget, a '2' widget, and this widget is '3', calling 'select_next_widget'
-    /// will select 1, then 2, then this widget. Used for keyboard up and down keys.
-    fn get_selection_order(&self) -> usize { 0 }
-
-    /// Set the order in which this widget should be selected, represented by a usize number. E.g.
-    /// if there is a '1' widget, a '2' widget, and this widget is '3', calling 'select_next_widget'
-    /// will select 1, then 2, then this widget. Used for keyboard up and down keys.
-    fn set_selection_order(&mut self, _order: usize) {
-        panic!("Widget has no selection implementation: {}", self.get_id())
-    }
 }
+
 
 /// Struct representing a single X,Y position on the screen. It has a symbol, colors, and other
 /// properties governing how the position will look on screen.

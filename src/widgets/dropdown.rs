@@ -2,13 +2,12 @@
 //! Widget which supports and arbitrary amount of possible values of which one can be chosen at any
 //! time. The active value is always displayed, and when selected drops down all other possible
 //! values for the user to select.
-use std::io::{Error, ErrorKind};
 use crossterm::event::{Event, KeyCode, MouseButton, MouseEventKind};
 use crate::common;
 use crate::common::{CallbackTree, StateTree, ViewTree, WidgetTree};
 use crate::states::dropdown_state::{DropdownState, DroppedDownMenuState};
 use crate::states::state::{self, AutoScale, EzState, GenericState, PosHint, Size, SizeHint};
-use crate::widgets::widget::{self, EzObject, EzWidget};
+use crate::widgets::widget::{self, EzObject};
 use crate::ez_parser;
 use crate::scheduler::Scheduler;
 
@@ -22,9 +21,6 @@ pub struct Dropdown {
     /// Full path to this widget, e.g. "/root_layout/layout_2/THIS_ID"
     pub path: String,
 
-    /// Global order number in which this widget will be selection when user presses down/up keys
-    pub selection_order: usize,
-
     /// Runtime state of this widget, see [DropdownState] and [State]
     pub state: DropdownState,
 }
@@ -32,45 +28,50 @@ pub struct Dropdown {
 
 impl widget::EzObject for Dropdown {
 
-    fn load_ez_parameter(&mut self, parameter_name: String, parameter_value: String)
-                         -> Result<(), Error> {
+    fn load_ez_parameter(&mut self, parameter_name: String, parameter_value: String) {
 
         match parameter_name.as_str() {
             "id" => self.set_id(parameter_value.trim().to_string()),
             "x" => self.state.set_x(parameter_value.trim().parse().unwrap()),
             "y" => self.state.set_y(parameter_value.trim().parse().unwrap()),
             "pos" => self.state.set_position(
-                ez_parser::load_pos_parameter(parameter_value.trim()).unwrap()),
+                ez_parser::load_pos_parameter(parameter_value.trim())),
             "size_hint_x" => self.state.set_size_hint_x(
-                ez_parser::load_size_hint_parameter(parameter_value.trim()).unwrap()),
+                ez_parser::load_size_hint_parameter(parameter_value.trim())),
             "pos_hint" => self.state.set_pos_hint(
-                ez_parser::load_full_pos_hint_parameter(parameter_value.trim()).unwrap()),
+                ez_parser::load_full_pos_hint_parameter(parameter_value.trim())),
             "pos_hint_x" => self.state.set_pos_hint_x(
-                ez_parser::load_pos_hint_x_parameter(parameter_value.trim()).unwrap()),
+                ez_parser::load_pos_hint_x_parameter(parameter_value.trim())),
             "pos_hint_y" => self.state.set_pos_hint_y(
-                ez_parser::load_pos_hint_y_parameter(parameter_value.trim()).unwrap()),
+                ez_parser::load_pos_hint_y_parameter(parameter_value.trim())),
             "auto_scale_width" =>
-                self.state.set_auto_scale_width(ez_parser::load_bool_parameter(parameter_value.trim())?),
-            "width" => self.state.set_width(parameter_value.trim().parse().unwrap()),
-            "padding" => self.state.set_padding(ez_parser::load_full_padding_parameter(
-                parameter_value.trim())?),
-            "padding_x" => self.state.set_padding(ez_parser::load_padding_x_parameter(
-                parameter_value.trim())?),
-            "padding_y" => self.state.set_padding(ez_parser::load_padding_y_parameter(
-                parameter_value.trim())?),
-            "padding_top" => self.state.set_padding_top(parameter_value.trim().parse().unwrap()),
-            "padding_bottom" => self.state.set_padding_bottom(parameter_value.trim().parse().unwrap()),
-            "padding_left" => self.state.set_padding_left(parameter_value.trim().parse().unwrap()),
-            "padding_right" => self.state.set_padding_right(parameter_value.trim().parse().unwrap()),
+                self.state.set_auto_scale_width(
+                    ez_parser::load_bool_parameter(parameter_value.trim())),
+            "width" => self.state.get_size_mut().width = parameter_value.trim().parse().unwrap(),
+            "padding" => self.state.set_padding(
+                ez_parser::load_full_padding_parameter(parameter_value.trim())),
+            "padding_x" => self.state.set_padding(
+                ez_parser::load_padding_x_parameter(parameter_value.trim())),
+            "padding_y" => self.state.set_padding(
+                ez_parser::load_padding_y_parameter(parameter_value.trim())),
+            "padding_top" =>
+                self.state.set_padding_top(parameter_value.trim().parse().unwrap()),
+            "padding_bottom" =>
+                self.state.set_padding_bottom(parameter_value.trim().parse().unwrap()),
+            "padding_left" =>
+                self.state.set_padding_left(parameter_value.trim().parse().unwrap()),
+            "padding_right" =>
+                self.state.set_padding_right(parameter_value.trim().parse().unwrap()),
             "halign" =>
-                self.state.halign =  ez_parser::load_halign_parameter(parameter_value.trim()).unwrap(),
+                self.state.halign =  ez_parser::load_halign_parameter(parameter_value.trim()),
             "valign" =>
-                self.state.valign =  ez_parser::load_valign_parameter(parameter_value.trim()).unwrap(),
+                self.state.valign =  ez_parser::load_valign_parameter(parameter_value.trim()),
             "selection_order" => {
-                self.selection_order = ez_parser::load_selection_order_parameter(
-                    parameter_value.as_str()).unwrap();
+                self.state.selection_order = ez_parser::load_selection_order_parameter(
+                    parameter_value.as_str());
             },
-            "border" => self.state.set_border(ez_parser::load_bool_parameter(parameter_value.trim())?),
+            "border" => self.state.border_config.enabled =
+                ez_parser::load_bool_parameter(parameter_value.trim()),
             "border_horizontal_symbol" => self.state.border_config.horizontal_symbol =
                 parameter_value.trim().to_string(),
             "border_vertical_symbol" => self.state.border_config.vertical_symbol =
@@ -84,23 +85,26 @@ impl widget::EzObject for Dropdown {
             "border_bottom_right_symbol" => self.state.border_config.bottom_right_symbol =
                 parameter_value.trim().to_string(),
             "border_fg_color" =>
-                self.state.border_config.fg_color = ez_parser::load_color_parameter(parameter_value).unwrap(),
+                self.state.border_config.fg_color =
+                    ez_parser::load_color_parameter(parameter_value),
             "border_bg_color" =>
-                self.state.border_config.bg_color = ez_parser::load_color_parameter(parameter_value).unwrap(),
+                self.state.border_config.bg_color =
+                    ez_parser::load_color_parameter(parameter_value),
             "fg_color" =>
                 self.state.colors.foreground =
-                    ez_parser::load_color_parameter(parameter_value).unwrap(),
+                    ez_parser::load_color_parameter(parameter_value),
             "bg_color" =>
                 self.state.colors.background =
-                    ez_parser::load_color_parameter(parameter_value).unwrap(),
+                    ez_parser::load_color_parameter(parameter_value),
             "selection_fg_color" =>
                 self.state.colors.selection_foreground =
-                    ez_parser::load_color_parameter(parameter_value).unwrap(),
+                    ez_parser::load_color_parameter(parameter_value),
             "selection_bg_color" =>
                 self.state.colors.selection_background =
-                    ez_parser::load_color_parameter(parameter_value).unwrap(),
+                    ez_parser::load_color_parameter(parameter_value),
             "allow_none" =>
-                self.state.allow_none = ez_parser::load_bool_parameter(parameter_value.trim()).unwrap(),
+                self.state.allow_none =
+                    ez_parser::load_bool_parameter(parameter_value.trim()),
             "options" => {
                 self.state.options = parameter_value.split(',')
                     .map(|x| x.trim().to_string()).collect();
@@ -108,11 +112,8 @@ impl widget::EzObject for Dropdown {
             "active" => {
                 self.state.choice = parameter_value.trim().to_string();
             }
-            _ => return Err(Error::new(ErrorKind::InvalidData,
-                                format!("Invalid parameter name for dropdown {}",
-                                        parameter_name)))
+            _ => panic!("Invalid parameter name for dropdown {}", parameter_name)
         }
-        Ok(())
     }
 
     fn set_id(&mut self, id: String) { self.id = id }
@@ -140,13 +141,17 @@ impl widget::EzObject for Dropdown {
                 .expect("Dropdown widget must have at least one option").to_string(); // todo move to validation
         }
         // Create a bordered label representing currently active value
-        let fg_color = if state.selected {state.get_colors().selection_foreground }
-        else {state.get_colors().foreground };
-        let bg_color = if state.selected {state.get_colors().selection_background }
-        else {state.get_colors().background };
+        let fg_color = if state.selected {state.get_color_config().selection_foreground }
+        else {state.get_color_config().foreground };
+        let bg_color = if state.selected {state.get_color_config().selection_background }
+        else {state.get_color_config().background };
         let mut text = active.chars().rev().collect::<String>();
         let mut contents = Vec::new();
-        for _ in 0..state.get_effective_size().width {
+
+        let write_width = if state.get_effective_size().infinite_width { text.len() }
+                                else {state.get_effective_size().width };
+
+        for _ in 0..write_width {
             let mut new_y = Vec::new();
             if !text.is_empty() {
                 new_y.push(widget::Pixel::new(text.pop().unwrap().to_string(),
@@ -200,17 +205,10 @@ impl widget::EzObject for Dropdown {
             .open_modal(widget::EzObjects::DroppedDownMenu(new_modal));
         state_tree.extend(extra_state_tree);
     }
-}
 
-impl widget::EzWidget for Dropdown {
     fn set_focus(&mut self, enabled: bool) { self.state.focussed = enabled }
 
     fn get_focus(&self) -> bool { self.state.focussed }
-
-    fn is_selectable(&self) -> bool { true }
-
-    fn get_selection_order(&self) -> usize { self.selection_order }
-
 }
 
 impl Dropdown {
@@ -243,8 +241,7 @@ pub struct DroppedDownMenu {
 
 impl EzObject for DroppedDownMenu {
 
-    fn load_ez_parameter(&mut self, _parameter_name: String, _parameter_value: String)
-        -> Result<(), Error> { Ok(()) }
+    fn load_ez_parameter(&mut self, _parameter_name: String, _parameter_value: String) { }
 
     fn set_id(&mut self, id: String) { self.id = id }
 
@@ -264,15 +261,15 @@ impl EzObject for DroppedDownMenu {
             .map(|x| x.chars().rev().collect::<String>()).collect();
 
         let mut contents = Vec::new();
-        for _ in 0..state.get_size().width - 2{
+        for _ in 0..state.get_effective_size().width {
             let mut new_y = Vec::new();
             for y in 0..options.len() {
                 let fg = if y == state.dropped_down_selected_row
-                {state.get_colors().selection_foreground }
-                else {state.get_colors().foreground };
+                {state.get_color_config().selection_foreground }
+                else {state.get_color_config().foreground };
                 let bg = if y == state.dropped_down_selected_row
-                {state.get_colors().selection_background }
-                else {state.get_colors().background };
+                {state.get_color_config().selection_background }
+                else {state.get_color_config().background };
                 if !options[y].is_empty(){
                     new_y.push(widget::Pixel{symbol: options[y].pop().unwrap().to_string(),
                         foreground_color: fg, background_color: bg, underline: false})
@@ -338,9 +335,8 @@ impl EzObject for DroppedDownMenu {
     }
 }
 
-impl EzWidget for DroppedDownMenu { }
-
 impl DroppedDownMenu {
+
     /// Called when this widget is already dropped down and enter is pressed
     pub fn handle_enter(&self, view_tree: &mut ViewTree, state_tree: &mut StateTree,
                         widget_tree: &WidgetTree, callback_tree: &mut CallbackTree,

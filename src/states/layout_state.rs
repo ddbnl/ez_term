@@ -43,17 +43,14 @@ pub struct LayoutState {
     /// The [Pixel.Symbol] to use for filler pixels if [fill] is true
     pub filler_symbol: String,
 
-    /// Bool representing whether this layout should have a surrounding border
-    pub border: bool,
-
     /// [BorderConfig] object that will be used to draw the border if enabled
     pub border_config: state::BorderConfig,
 
     /// Object containing colors to be used by this widget in different situations
     pub colors: state::ColorConfig,
 
-    /// Bool representing if state has changed. Triggers widget redraw.
-    pub changed: bool,
+    /// [ScrollingConfig] of this layout.
+    pub scrolling_config: state::ScrollingConfig,
 
     /// A list of open modals. Modals are widgets that overlap other content; in other words, they
     /// open 'in front of' other content. Only one can be shown at a time (the first on in the
@@ -63,6 +60,15 @@ pub struct LayoutState {
     /// A hashmap of 'Template Name > [EzWidgetDefinition]'. Used to instantiate widget templates
     /// at runtime. E.g. when spawning popups.
     pub templates: common::Templates,
+
+    /// Global order number in which this widget will be selection when user presses down/up keys
+    pub selection_order: usize,
+
+    /// Bool representing whether this widget is currently selected.
+    pub selected: bool,
+
+    /// Bool representing if state has changed. Triggers widget redraw.
+    pub changed: bool,
 
     /// If true this forces a global screen redraw on the next frame. Screen redraws are diffed
     /// so this can be called when needed without degrading performance. If only screen positions
@@ -83,12 +89,14 @@ impl Default for LayoutState {
             valign: state::VerticalAlignment::Top,
             fill: false,
             filler_symbol: String::new(),
-            border: false,
+            scrolling_config: state::ScrollingConfig::default(),
             border_config: state::BorderConfig::default(),
             colors: state::ColorConfig::default(),
             changed: false,
             open_modals: Vec::new(),
             templates: HashMap::new(),
+            selected: false,
+            selection_order: 0,
             force_redraw: false
         }
     }
@@ -121,6 +129,44 @@ impl state::GenericState for LayoutState {
 
     fn get_size(&self) -> &state::Size { &self.size  }
 
+    fn get_size_mut(&mut self) -> &mut state::Size { &mut self.size }
+
+    fn get_effective_size(&self) -> state::Size {
+
+        let mut size_copy = self.get_size().clone();
+        let width_result: isize = size_copy.width as isize
+            -if self.get_border_config().enabled {2} else {0}
+            -if self.scrolling_config.enable_y {1} else {0}
+            -self.get_padding().left as isize - self.get_padding().right as isize;
+        let width = if width_result < 0 {0} else { width_result as usize};
+        let height_result: isize = size_copy.height as isize
+            -if self.get_border_config().enabled {2} else {0}
+            -if self.scrolling_config.enable_x {1} else {0}
+            -self.get_padding().top as isize - self.get_padding().bottom as isize;
+        let height = if height_result < 0 {0} else { height_result as usize};
+        size_copy.width = width;
+        size_copy.height = height;
+        size_copy
+    }
+
+    /// Set the how much width you want the actual content inside this widget to have. Width for
+    /// e.g. border and padding will be added to this automatically.
+    fn set_effective_width(&mut self, width: usize) {
+        self.get_size_mut().width = width
+            +if self.get_border_config().enabled {2} else {0}
+            +if self.scrolling_config.enable_y {1} else {0}
+            +self.get_padding().left + self.get_padding().right
+    }
+
+    /// Set the how much height you want the actual content inside this widget to have. Height for
+    /// e.g. border and padding will be added to this automatically.
+    fn set_effective_height(&mut self, height: usize) {
+        self.get_size_mut().height = height
+            +if self.get_border_config().enabled {2} else {0}
+            +if self.scrolling_config.enable_x {1} else {0}
+            +self.get_padding().top + self.get_padding().bottom
+    }
+
     fn set_position(&mut self, position: state::Coordinates) { self.position = position; }
 
     fn get_position(&self) -> state::Coordinates { self.position }
@@ -150,13 +196,6 @@ impl state::GenericState for LayoutState {
 
     fn get_padding(&self) -> &state::Padding { &self.padding }
 
-    fn has_border(&self) -> bool { self.border }
-
-    fn set_border(&mut self, enabled: bool) {
-        if self.border != enabled { self.changed = true }
-        self.border = enabled;
-    }
-
     fn set_border_config(&mut self, config: state::BorderConfig) {
         if self.border_config != config { self.changed = true }
         self.border_config = config;
@@ -164,17 +203,27 @@ impl state::GenericState for LayoutState {
 
     fn get_border_config(&self) -> &state::BorderConfig { &self.border_config  }
 
-    fn set_colors(&mut self, config: state::ColorConfig) {
+    fn get_border_config_mut(&mut self) -> &mut state::BorderConfig {
+        self.changed = true;
+        &mut self.border_config
+    }
+
+    fn set_color_config(&mut self, config: state::ColorConfig) {
         if self.colors != config { self.changed = true }
         self.colors = config;
     }
 
-    fn get_colors(&self) -> &state::ColorConfig { &self.colors }
+    fn get_color_config(&self) -> &state::ColorConfig { &self.colors }
 
-    fn get_colors_mut(&mut self) -> &mut state::ColorConfig {
+    fn get_colors_config_mut(&mut self) -> &mut state::ColorConfig {
         self.changed = true;
         &mut self.colors
     }
+
+    fn is_selectable(&self) -> bool { self.get_scrolling_config().is_scrolling_x
+        || self.get_scrolling_config().is_scrolling_y }
+
+    fn get_selection_order(&self) -> usize { self.selection_order }
 
     fn set_force_redraw(&mut self, redraw: bool) {
         self.force_redraw = redraw;
@@ -183,8 +232,26 @@ impl state::GenericState for LayoutState {
 
     fn get_force_redraw(&self) -> bool { self.force_redraw }
 
+    fn set_selected(&mut self, state: bool) {
+        if self.selected != state { self.changed = true }
+        self.selected = state;
+    }
+
+    fn get_selected(&self) -> bool { self.selected }
 }
 impl LayoutState {
+
+    pub fn set_scrolling_config(&mut self, config: state::ScrollingConfig) {
+        if self.scrolling_config != config { self.changed = true }
+        self.scrolling_config = config;
+    }
+
+    pub fn get_scrolling_config(&self) -> &state::ScrollingConfig { &self.scrolling_config }
+
+    pub fn get_scrolling_config_mut(&mut self) -> &mut state::ScrollingConfig {
+        self.changed = true;
+        &mut self.scrolling_config
+    }
 
     /// Set [filler_symbol]
     pub fn set_filler_symbol(&mut self, symbol: String) {

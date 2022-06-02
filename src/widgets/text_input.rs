@@ -1,14 +1,13 @@
 //! # Text input Widget
 //! A widget implementing a field in which the user can input characters. Supports on_value_change
 //! and on_keyboard_enter callbacks.
-use std::io::{Error, ErrorKind};
 use std::time::Duration;
 use crossterm::event::{Event, KeyCode};
 use crate::ez_parser;
 use crate::scheduler;
 use crate::states::text_input_state::TextInputState;
-use crate::states::state::{self, EzState, GenericState, SelectableState};
-use crate::widgets::widget::{EzWidget, Pixel, EzObject};
+use crate::states::state::{self, EzState, GenericState};
+use crate::widgets::widget::{Pixel, EzObject};
 use crate::common;
 use crate::common::{CallbackTree, StateTree, ViewTree, WidgetTree};
 use crate::scheduler::Scheduler;
@@ -22,9 +21,6 @@ pub struct TextInput {
     /// Full path to this widget, e.g. "/root_layout/layout_2/THIS_ID"
     pub path: String,
 
-    /// Global order number in which this widget will be selection when user presses down/up keys
-    pub selection_order: usize,
-
     /// Runtime state of this widget, see [TextInputState] and [State]
     pub state: TextInputState,
 
@@ -35,7 +31,6 @@ impl Default for TextInput {
         TextInput {
             id: "".to_string(),
             path: String::new(),
-            selection_order: 0,
             state: TextInputState::default(),
         }
     }
@@ -44,52 +39,56 @@ impl Default for TextInput {
 
 impl EzObject for TextInput {
 
-    fn load_ez_parameter(&mut self, parameter_name: String, mut parameter_value: String)
-                         -> Result<(), Error> {
+    fn load_ez_parameter(&mut self, parameter_name: String, mut parameter_value: String) {
 
         match parameter_name.as_str() {
             "id" => self.set_id(parameter_value.trim().to_string()),
             "x" => self.state.set_x(parameter_value.trim().parse().unwrap()),
             "y" => self.state.set_y(parameter_value.trim().parse().unwrap()),
             "pos" => self.state.set_position(
-                ez_parser::load_pos_parameter(parameter_value.trim()).unwrap()),
+                ez_parser::load_pos_parameter(parameter_value.trim())),
             "size_hint" => self.state.set_size_hint(
-                ez_parser::load_full_size_hint_parameter(parameter_value.trim()).unwrap()),
+                ez_parser::load_full_size_hint_parameter(parameter_value.trim())),
             "size_hint_x" => self.state.set_size_hint_x(
-                ez_parser::load_size_hint_parameter(parameter_value.trim()).unwrap()),
+                ez_parser::load_size_hint_parameter(parameter_value.trim())),
             "pos_hint" => self.state.set_pos_hint(
-                ez_parser::load_full_pos_hint_parameter(parameter_value.trim()).unwrap()),
+                ez_parser::load_full_pos_hint_parameter(parameter_value.trim())),
             "pos_hint_x" => self.state.set_pos_hint_x(
-                ez_parser::load_pos_hint_x_parameter(parameter_value.trim()).unwrap()),
+                ez_parser::load_pos_hint_x_parameter(parameter_value.trim())),
             "pos_hint_y" => self.state.set_pos_hint_y(
-                ez_parser::load_pos_hint_y_parameter(parameter_value.trim()).unwrap()),
+                ez_parser::load_pos_hint_y_parameter(parameter_value.trim())),
             "auto_scale_width" =>
-                self.state.set_auto_scale_width(ez_parser::load_bool_parameter(parameter_value.trim())?),
-            "width" => self.state.set_width(parameter_value.trim().parse().unwrap()),
+                self.state.set_auto_scale_width(
+                    ez_parser::load_bool_parameter(parameter_value.trim())),
+            "width" => self.state.get_size_mut().width = parameter_value.trim().parse().unwrap(),
             "padding" => self.state.set_padding(ez_parser::load_full_padding_parameter(
-                parameter_value.trim())?),
+                parameter_value.trim())),
             "padding_x" => self.state.set_padding(ez_parser::load_padding_x_parameter(
-                parameter_value.trim())?),
+                parameter_value.trim())),
             "padding_y" => self.state.set_padding(ez_parser::load_padding_y_parameter(
-                parameter_value.trim())?),
-            "padding_top" => self.state.set_padding_top(parameter_value.trim().parse().unwrap()),
-            "padding_bottom" => self.state.set_padding_bottom(parameter_value.trim().parse().unwrap()),
-            "padding_left" => self.state.set_padding_left(parameter_value.trim().parse().unwrap()),
-            "padding_right" => self.state.set_padding_right(parameter_value.trim().parse().unwrap()),
+                parameter_value.trim())),
+            "padding_top" =>
+                self.state.set_padding_top(parameter_value.trim().parse().unwrap()),
+            "padding_bottom" =>
+                self.state.set_padding_bottom(parameter_value.trim().parse().unwrap()),
+            "padding_left" =>
+                self.state.set_padding_left(parameter_value.trim().parse().unwrap()),
+            "padding_right" =>
+                self.state.set_padding_right(parameter_value.trim().parse().unwrap()),
             "halign" =>
-                self.state.halign =  ez_parser::load_halign_parameter(parameter_value.trim()).unwrap(),
+                self.state.halign =  ez_parser::load_halign_parameter(parameter_value.trim()),
             "valign" =>
-                self.state.valign =  ez_parser::load_valign_parameter(parameter_value.trim()).unwrap(),
+                self.state.valign =  ez_parser::load_valign_parameter(parameter_value.trim()),
             "max_length" => self.state.set_max_length(parameter_value.trim().parse().unwrap()),
             "selection_order" => {
                 let order = parameter_value.trim().parse().unwrap();
                 if order == 0 {
-                    return Err(Error::new(ErrorKind::InvalidData,
-                                          "selection_order must be higher than 0."))
+                    panic!("selection_order must be higher than 0.")
                 }
-                self.selection_order = order;
+                self.state.selection_order = order;
             },
-            "border" => self.state.set_border(ez_parser::load_bool_parameter(parameter_value.trim())?),
+            "border" => self.state.border_config.enabled =
+                ez_parser::load_bool_parameter(parameter_value.trim()),
             "border_horizontal_symbol" => self.state.border_config.horizontal_symbol =
                 parameter_value.trim().to_string(),
             "border_vertical_symbol" => self.state.border_config.vertical_symbol =
@@ -103,32 +102,31 @@ impl EzObject for TextInput {
             "border_bottom_right_symbol" => self.state.border_config.bottom_right_symbol =
                 parameter_value.trim().to_string(),
             "border_fg_color" =>
-                self.state.border_config.fg_color = ez_parser::load_color_parameter(parameter_value).unwrap(),
+                self.state.border_config.fg_color =
+                    ez_parser::load_color_parameter(parameter_value),
             "border_bg_color" =>
-                self.state.border_config.bg_color = ez_parser::load_color_parameter(parameter_value).unwrap(),
+                self.state.border_config.bg_color =
+                    ez_parser::load_color_parameter(parameter_value),
             "fg_color" =>
-                self.state.colors.foreground = ez_parser::load_color_parameter(parameter_value).unwrap(),
+                self.state.colors.foreground = ez_parser::load_color_parameter(parameter_value),
             "bg_color" =>
-                self.state.colors.background = ez_parser::load_color_parameter(parameter_value).unwrap(),
+                self.state.colors.background = ez_parser::load_color_parameter(parameter_value),
             "selection_fg_color" =>
                 self.state.colors.selection_foreground =
-                    ez_parser::load_color_parameter(parameter_value).unwrap(),
+                    ez_parser::load_color_parameter(parameter_value),
             "selection_bg_color" =>
                 self.state.colors.selection_background =
-                    ez_parser::load_color_parameter(parameter_value).unwrap(),
+                    ez_parser::load_color_parameter(parameter_value),
             "cursor_color" =>
-                self.state.colors.cursor = ez_parser::load_color_parameter(parameter_value).unwrap(),
+                self.state.colors.cursor = ez_parser::load_color_parameter(parameter_value),
             "text" => {
                 if parameter_value.starts_with(' ') {
                     parameter_value = parameter_value.strip_prefix(' ').unwrap().to_string();
                 }
                 self.state.text = parameter_value
             },
-            _ => return Err(Error::new(ErrorKind::InvalidData,
-                                format!("Invalid parameter name for text input {}",
-                                        parameter_name)))
+            _ => panic!("Invalid parameter name for text input {}", parameter_name)
         }
-        Ok(())
     }
     fn set_id(&mut self, id: String) { self.id = id }
 
@@ -144,10 +142,10 @@ impl EzObject for TextInput {
 
         let state = state_tree
             .get_mut(&self.get_full_path()).unwrap().as_text_input_mut();
-        let fg_color = if state.get_selected() {state.get_colors().selection_foreground }
-                           else {state.get_colors().foreground };
-        let bg_color = if state.get_selected() {state.get_colors().selection_background }
-                             else {state.get_colors().background };
+        let fg_color = if state.get_selected() {state.get_color_config().selection_foreground }
+                           else {state.get_color_config().foreground };
+        let bg_color = if state.get_selected() {state.get_color_config().selection_background }
+                             else {state.get_color_config().background };
         let mut text = state.get_text();
         if text.len() > state.get_size().width - 1 {
             let remains = text.len() - state.get_view_start();
@@ -161,15 +159,20 @@ impl EzObject for TextInput {
         }
         let mut contents = Vec::new();
         text = text.chars().rev().collect::<String>();
+
+        let write_height = if !state.get_size().infinite_height {
+            if state.get_effective_size().height >= 1 {1} else {0}
+        } else { 1 };
+
         for x in 0..state.get_effective_size().width {
             let mut new_y = Vec::new();
-            for _ in 0..if state.get_effective_size().height >= 1 {1} else {0} {
+            for _ in 0..write_height {
                 if !text.is_empty() {
                     new_y.push(Pixel{
                         symbol: text.pop().unwrap().to_string(),
                         foreground_color: fg_color,
                         background_color: if state.get_blink_switch() &&
-                            x == state.get_cursor_pos().x {state.get_colors().cursor }
+                            x == state.get_cursor_pos().x {state.get_color_config().cursor }
                         else {bg_color},
                         underline: true})
                 } else {
@@ -177,7 +180,7 @@ impl EzObject for TextInput {
                         symbol: " ".to_string(),
                         foreground_color: fg_color,
                         background_color: if state.get_blink_switch() &&
-                            x == state.get_cursor_pos().x {state.get_colors().cursor }
+                            x == state.get_cursor_pos().x {state.get_color_config().cursor }
                             else {bg_color},
                         underline: true})
                 }
@@ -190,12 +193,12 @@ impl EzObject for TextInput {
         if state.get_auto_scale().height {
             state.set_effective_height(1);
         }
-        if state.has_border() {
+        if state.get_border_config().enabled {
             contents = common::add_border(contents, state.get_border_config());
         }
         let state = state_tree.get(&self.get_full_path()).unwrap().as_text_input();
         let parent_colors = state_tree.get(self.get_full_path()
-            .rsplit_once('/').unwrap().0).unwrap().as_generic().get_colors();
+            .rsplit_once('/').unwrap().0).unwrap().as_generic().get_color_config();
         contents = common::add_padding(
             contents, state.get_padding(),parent_colors.background,
             parent_colors.foreground);
@@ -331,12 +334,6 @@ pub fn handle_char(state: &mut TextInputState, char: char) {
     } else {
         state.set_view_start(state.get_view_start() + 1);
     }
-}
-impl EzWidget for TextInput {
-
-    fn is_selectable(&self) -> bool { true }
-
-    fn get_selection_order(&self) -> usize { self.selection_order }
 
 }
 

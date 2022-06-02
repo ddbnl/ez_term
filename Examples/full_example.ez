@@ -32,11 +32,16 @@
             - DropdownShowcaseBox:
                 id: small_box_3
     - Layout:
+        id: lorem_box
         mode: box
-        orientation: vertical
+        orientation: horizontal
+        scroll_y: true
         size_hint_x: 1/5
         border: True
+        selection_order: 50
+        selection_fg_color: red
         - Label:
+            size_hint_y: none
             from_file: ./Examples/dummy.txt
 
 
@@ -50,6 +55,7 @@
     border: True
     border_fg_color: dark_cyan
     border_bg_color: black
+    scroll_y: true
 
 
 - <LayoutHeader@Label>:
@@ -81,6 +87,7 @@
 // this is possible and often a good idea.
 
 - <InputShowcaseBox@OneThirdBox>:
+    selection_order: 1
     - LayoutHeader:
         text: Layout 1:
     - InputBox1:
@@ -101,7 +108,7 @@
         width: 20
         bg_color: blue
         text: small input to test views
-        selection_order: 1
+        selection_order: 2
         padding: 1, 1, 1, 1
 
 
@@ -121,7 +128,6 @@
 
 
 - <InputBox3@CyanScalingBox>:
-    auto_scale_height: false
     - Label:
         text: This is an input with an on_value and on_keyboard_enter callback. It mirrors what you type in the label, and prints CONFIRMED when enter is pressed.
         auto_scale: true, true
@@ -139,6 +145,7 @@
 
 
 - <ButtonsShowcaseBox@OneThirdBox>:
+    selection_order: 14
     - LayoutHeader:
         text: Layout 2:
     - CheckboxShowcase:
@@ -203,7 +210,6 @@
 
 
 - <ButtonShowcase@CyanScalingBox>:
-    auto_scale_height: false
     - Label:
         text: This is a button. We've bound a callback to it that increments a number on the label:
         auto_scale: true, true
@@ -225,6 +231,7 @@
 
 
 - <DropdownShowcaseBox@OneThirdBox>:
+    selection_order: 39
     - LayoutHeader:
         text: Layout 3
     - DropdownShowcase:
@@ -259,10 +266,10 @@
     - Label:
         text: Test label, overlapped by dropdown when clicked
         padding_left: 1
+        auto_scale_height: true
 
 
 - <PopupShowcase@CyanScalingBox>:
-    auto_scale_height: false
     - Label:
         text: This button will create a popup through a callback:
         auto_scale: true, true
