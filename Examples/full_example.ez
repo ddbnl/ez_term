@@ -295,6 +295,7 @@
         size_hint: 0.5, 0.5
     - Button:
         id: dismiss_button
+        selection_order: 1
         text: dismiss
         size_hint: 0.5, 0.5
         bg_color: red

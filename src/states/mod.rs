@@ -1,4 +1,5 @@
 pub mod state;
+pub mod definitions;
 pub mod button_state;
 pub mod canvas_state;
 pub mod checkbox_state;

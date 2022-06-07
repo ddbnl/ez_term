@@ -22,7 +22,7 @@ pub struct Canvas {
     pub from_file: Option<String>,
 
     /// Grid of pixels that will be written to screen for this widget
-    pub contents: common::PixelMap,
+    pub contents: common::definitions::PixelMap,
 
     /// Runtime state of this widget, see [CanvasState] and [State]
     pub state: CanvasState,
@@ -138,7 +138,7 @@ impl EzObject for Canvas {
 
     /// Set the content of this Widget. You must manually fill a [PixelMap] of the same
     /// [height] and [width] as this widget and pass it here.
-    fn set_contents(&mut self, contents: common::PixelMap) {
+    fn set_contents(&mut self, contents: common::definitions::PixelMap) {
        let mut valid_contents = Vec::new();
        for x in 0..self.state.get_size().width as usize {
            valid_contents.push(Vec::new());
@@ -149,7 +149,7 @@ impl EzObject for Canvas {
        self.contents = valid_contents
     }
 
-    fn get_contents(&self, state_tree: &mut common::StateTree) -> common::PixelMap {
+    fn get_contents(&self, state_tree: &mut common::definitions::StateTree) -> common::definitions::PixelMap {
 
         let state = state_tree
             .get_mut(&self.get_full_path()).unwrap().as_canvas_mut();
@@ -183,7 +183,7 @@ impl EzObject for Canvas {
                 if state.get_effective_size().infinite_height { lines[0].len() }
                 else {state.get_effective_size().height };
 
-            let mut widget_content = common::PixelMap::new();
+            let mut widget_content = common::definitions::PixelMap::new();
             for x in 0..write_width {
                 widget_content.push(Vec::new());
                 for y in 0..write_height {
@@ -207,12 +207,13 @@ impl EzObject for Canvas {
             contents = self.contents.clone();
         }
         if state.get_border_config().enabled {
-            contents = common::add_border(contents, state.get_border_config());
+            contents = common::widget_functions::add_border(
+                contents, state.get_border_config());
         }
         let state = state_tree.get(&self.get_full_path()).unwrap().as_canvas();
         let parent_colors = state_tree.get(self.get_full_path()
             .rsplit_once('/').unwrap().0).unwrap().as_generic().get_color_config();
-        contents = common::add_padding(
+        contents = common::widget_functions::add_padding(
             contents, state.get_padding(),parent_colors.background,
             parent_colors.foreground);
         contents

@@ -1,10 +1,10 @@
 //! # Checkbox Widget
 //! Widget which is either on or off and implements an on_value_change callback.
 use crate::common;
-use crate::common::{CallbackTree, StateTree, ViewTree, WidgetTree};
 use crate::widgets::widget::{Pixel, EzObject};
+use crate::states;
 use crate::states::checkbox_state::CheckboxState;
-use crate::states::state::{self, EzState, GenericState};
+use crate::states::state::{EzState, GenericState};
 use crate::ez_parser;
 use crate::scheduler::Scheduler;
 
@@ -129,7 +129,7 @@ impl EzObject for Checkbox {
 
     fn get_state(&self) -> EzState { EzState::Checkbox(self.state.clone()) }
 
-    fn get_contents(&self, state_tree: &mut common::StateTree) -> common::PixelMap {
+    fn get_contents(&self, state_tree: &mut common::definitions::StateTree) -> common::definitions::PixelMap {
 
         let state = state_tree.get(&self.get_full_path()).unwrap().as_checkbox();
         let active_symbol = { if state.active {self.active_symbol}
@@ -151,25 +151,26 @@ impl EzObject for Checkbox {
                 background_color: bg_color, underline: false}),
         );
         if state.get_border_config().enabled {
-            contents = common::add_border(contents, state.get_border_config());
+            contents = common::widget_functions::add_border(
+                contents, state.get_border_config());
         }
         let parent_colors = state_tree.get(self.get_full_path()
             .rsplit_once('/').unwrap().0).unwrap().as_generic().get_color_config();
-        contents = common::add_padding(
+        contents = common::widget_functions::add_padding(
             contents, state.get_padding(),parent_colors.background,
             parent_colors.foreground);
         contents
     }
 
-    fn on_keyboard_enter(&self, view_tree: &mut ViewTree, state_tree: &mut StateTree,
-                         widget_tree: &WidgetTree, callback_tree: &mut CallbackTree,
+    fn on_keyboard_enter(&self, view_tree: &mut common::definitions::ViewTree, state_tree: &mut common::definitions::StateTree,
+                         widget_tree: &common::definitions::WidgetTree, callback_tree: &mut common::definitions::CallbackTree,
                          scheduler: &mut Scheduler) {
         self.handle_toggle(view_tree, state_tree, widget_tree, callback_tree, scheduler);
     }
 
-    fn on_left_mouse_click(&self, view_tree: &mut ViewTree, state_tree: &mut StateTree,
-                           widget_tree: &WidgetTree, callback_tree: &mut CallbackTree,
-                           scheduler: &mut Scheduler, _mouse_pos: state::Coordinates) {
+    fn on_left_mouse_click(&self, view_tree: &mut common::definitions::ViewTree, state_tree: &mut common::definitions::StateTree,
+                           widget_tree: &common::definitions::WidgetTree, callback_tree: &mut common::definitions::CallbackTree,
+                           scheduler: &mut Scheduler, _mouse_pos: states::definitions::Coordinates) {
         self.handle_toggle(view_tree, state_tree, widget_tree, callback_tree, scheduler);
     }
 }
@@ -182,8 +183,8 @@ impl Checkbox {
         obj
     }
 
-    fn handle_toggle(&self, view_tree: &mut ViewTree, state_tree: &mut StateTree,
-                           widget_tree: &WidgetTree, callback_tree: &mut CallbackTree,
+    fn handle_toggle(&self, view_tree: &mut common::definitions::ViewTree, state_tree: &mut common::definitions::StateTree,
+                           widget_tree: &common::definitions::WidgetTree, callback_tree: &mut common::definitions::CallbackTree,
                            scheduler: &mut Scheduler) {
 
         let state = state_tree.get_mut(&self.get_full_path())
@@ -191,7 +192,7 @@ impl Checkbox {
         state.set_active(!state.get_active());
         if let Some(ref mut i) = callback_tree
             .get_mut(&self.get_full_path()).unwrap().on_value_change {
-            i(common::EzContext::new(self.get_full_path().clone(), view_tree,
+            i(common::definitions::EzContext::new(self.get_full_path().clone(), view_tree,
                                      state_tree, widget_tree, scheduler));
         }
     }

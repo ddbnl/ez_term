@@ -8,11 +8,11 @@ use crossterm::{ExecutableCommand, execute, Result, cursor::{Hide, Show},
                 event::{MouseEvent, MouseEventKind, MouseButton, poll, read, DisableMouseCapture,
                         EnableMouseCapture, Event, KeyCode, KeyEvent},
                 terminal::{disable_raw_mode, enable_raw_mode, self}, QueueableCommand};
-use crate::common::{self, CallbackTree, StateTree, ViewTree, WidgetTree};
+use crate::common;
 use crate::widgets::layout::Layout;
 use crate::widgets::widget::{EzObject};
 use crate::scheduler::{Scheduler};
-use crate::states::state::{self};
+use crate::states;
 use crate::widgets::widget;
 
 
@@ -47,26 +47,29 @@ fn shutdown_terminal() -> Result<()>{
 pub fn run(root_widget: Layout, scheduler: Scheduler) {
 
     initialize_terminal().unwrap();
-    let callback_tree = common::get_callback_tree(&root_widget);
+    let callback_tree = common::screen_functions::initialize_callback_tree(&root_widget);
     run_loop(root_widget, callback_tree, scheduler).unwrap();
 }
 
 
 /// Called just before [run]. Creates initial view- and state trees and writes initial content
 /// to the screen.
-fn initialize_widgets(root_widget: &mut Layout) -> (ViewTree, StateTree) {
+fn initialize_widgets(root_widget: &mut Layout) -> (common::definitions::ViewTree, common::definitions::StateTree) {
 
     // Get initial state tree, then convert all size_hints into actual sizes. After that we can
     // set absolute positions for all children as sizes are now known.
-    let mut state_tree = common::get_state_tree(&root_widget);
+    let mut state_tree = common::screen_functions::initialize_state_tree(&root_widget);
     root_widget.set_child_sizes(&mut state_tree);
     let all_content = root_widget.get_contents(&mut state_tree);
     root_widget.propagate_absolute_positions(&mut state_tree);
+
     // Create an initial view tree so we can diff all future changes against it.
-    let mut view_tree = common::initialize_view_tree(all_content.len(),
-                                                          all_content[0].len());
-    common::write_to_screen(state::Coordinates::new(0, 0), all_content,
-                            &mut view_tree);
+    let old_view_tree = common::screen_functions::initialize_view_tree(
+        all_content.len(),all_content[0].len());
+    let mut view_tree = old_view_tree.clone();
+    common::screen_functions::write_to_view_tree(
+        states::definitions::Coordinates::new(0, 0), all_content, &mut view_tree);
+    common::screen_functions::write_to_screen(&old_view_tree, &view_tree);
     (view_tree, state_tree)
 
 }
@@ -92,22 +95,27 @@ fn initialize_widgets(root_widget: &mut Layout) -> (ViewTree, StateTree) {
 /// (i.e. static things). EzWidget enums can be downcast to UxObject or EzWidget trait objects to
 /// access common functions, or downcast to their specific widget type if you know for sure what it
 /// is.
-fn run_loop(mut root_widget: Layout, mut callback_tree: CallbackTree, mut scheduler: Scheduler)
-    -> Result<()>{
+fn run_loop(mut root_widget: Layout, mut callback_tree: common::definitions::CallbackTree,
+            mut scheduler: Scheduler) -> Result<()>{
 
     let (mut view_tree, mut state_tree) = initialize_widgets(&mut root_widget);
     let mut last_mouse_pos: (u16, u16) = (0, 0);
     loop {
+
         // We set the state of the root widget directly as it may contain new modals, and
         // [get_widget_tree] depends on internal state rather than state_tree due to life times
         {
             let widget_tree = root_widget.get_widget_tree();
             scheduler.update_callback_configs(&mut callback_tree);
-            scheduler.run_tasks(&mut view_tree, &mut state_tree, &widget_tree, &mut callback_tree);
+            scheduler.run_tasks(
+                &mut view_tree, &mut state_tree, &widget_tree, &mut callback_tree);
         }
         root_widget.state = state_tree.get("/root").unwrap().as_layout().clone();
-        common::clean_trees(&mut root_widget, &mut state_tree, &mut callback_tree);
+        common::screen_functions::clean_trees(
+            &mut root_widget, &mut state_tree, &mut callback_tree);
         let widget_tree = root_widget.get_widget_tree();
+
+        // Now we check for and deal with a possible event
         if poll(Duration::from_millis(10))? {
 
             // Get the event; it can only be consumed once
@@ -125,6 +133,7 @@ fn run_loop(mut root_widget: Layout, mut callback_tree: CallbackTree, mut schedu
 
                 }
             }
+
             // Modals get top priority in consuming events
             if !consumed {
                 consumed = handle_modal_event(
@@ -133,7 +142,7 @@ fn run_loop(mut root_widget: Layout, mut callback_tree: CallbackTree, mut schedu
             }
 
             let selected_widget =
-                common::get_selected_widget(&widget_tree, &mut state_tree);
+                common::selection_functions::get_selected_widget(&widget_tree, &mut state_tree);
             // Focussed widgets get second-highest priority in consuming an event
             if !consumed {
                 if let Some(i) = selected_widget {
@@ -156,11 +165,13 @@ fn run_loop(mut root_widget: Layout, mut callback_tree: CallbackTree, mut schedu
             }
             if !consumed {
                 if let Event::Resize(width, height) = event {
-                    let current_size = state_tree.get(&root_widget.path).unwrap().as_generic()
-                        .get_size();
-                    if current_size.height != height as usize || current_size.width != width as usize {
-                        view_tree = handle_resize(&mut state_tree, &mut root_widget,
-                                                  width as usize, height as usize);
+                    let current_size = state_tree.get(&root_widget.path).unwrap()
+                        .as_generic().get_size();
+                    if current_size.height != height as usize ||
+                        current_size.width != width as usize {
+                        view_tree = handle_resize(
+                            &mut state_tree, &mut root_widget,
+                            width as usize, height as usize);
                         continue
                     }
                 }
@@ -169,20 +180,23 @@ fn run_loop(mut root_widget: Layout, mut callback_tree: CallbackTree, mut schedu
         }
         // Update the state tree for each widget, redrawing any that changed. If a global
         // forced redraw was issued by a widget we'll perform one.
-        let forced_redraw = common::redraw_changed_widgets(
+        let old_view_tree = view_tree.clone();
+        let forced_redraw = common::screen_functions::redraw_changed_widgets(
             &mut view_tree, &mut state_tree,  &mut root_widget);
         if forced_redraw {
             let contents = root_widget.get_contents(&mut state_tree);
-            common::write_to_screen(state::Coordinates::new(0, 0),
-                                    contents, &mut view_tree);
+            common::screen_functions::write_to_view_tree(
+                states::definitions::Coordinates::new(0, 0), contents,
+                &mut view_tree);
         }
+        common::screen_functions::write_to_screen(&old_view_tree, &view_tree);
     }
 }
 
 /// Try to handle an event by passing it to the active modal if any. The modal will return whether
 /// it consumed the event or not.
-fn handle_modal_event (event: Event, view_tree: &mut ViewTree, state_tree: &mut StateTree,
-                       widget_tree: &WidgetTree, callback_tree: &mut CallbackTree,
+fn handle_modal_event (event: Event, view_tree: &mut common::definitions::ViewTree, state_tree: &mut common::definitions::StateTree,
+                       widget_tree: &common::definitions::WidgetTree, callback_tree: &mut common::definitions::CallbackTree,
                        scheduler: &mut Scheduler, root_widget: &Layout)
     -> bool {
 
@@ -214,8 +228,10 @@ fn handle_modal_event (event: Event, view_tree: &mut ViewTree, state_tree: &mut 
 }
 
 /// Try to handle an event as a global keybind. Examples are up/down keys for navigating menu
-fn handle_global_event(event: Event, view_tree: &mut ViewTree, state_tree: &mut StateTree,
-                       widget_tree: &WidgetTree, callback_tree: &mut CallbackTree,
+fn handle_global_event(event: Event, view_tree: &mut common::definitions::ViewTree,
+                       state_tree: &mut common::definitions::StateTree,
+                       widget_tree: &common::definitions::WidgetTree,
+                       callback_tree: &mut common::definitions::CallbackTree,
                        scheduler: &mut Scheduler) -> bool {
 
     match event {
@@ -235,22 +251,26 @@ fn handle_global_event(event: Event, view_tree: &mut ViewTree, state_tree: &mut 
 /// 1. Focussed widget
 /// 2. Global key binds (this function)
 /// 3. Selected widget
-fn handle_key_event(key: KeyEvent, view_tree: &mut ViewTree, state_tree: &mut StateTree,
-                    widget_tree: &WidgetTree, callback_tree: &mut CallbackTree,
+fn handle_key_event(key: KeyEvent, view_tree: &mut common::definitions::ViewTree,
+                    state_tree: &mut common::definitions::StateTree,
+                    widget_tree: &common::definitions::WidgetTree,
+                    callback_tree: &mut common::definitions::CallbackTree,
                     scheduler: &mut Scheduler) -> bool {
 
     match key.code {
         KeyCode::Down => {
-            common::select_next(view_tree, state_tree, widget_tree, callback_tree, scheduler);
+            common::selection_functions::select_next(
+                view_tree, state_tree, widget_tree, callback_tree, scheduler);
             true
         },
         KeyCode::Up => {
-            common::select_previous(view_tree, state_tree, widget_tree, callback_tree, scheduler);
+            common::selection_functions::select_previous(
+                view_tree, state_tree, widget_tree, callback_tree, scheduler);
             true
         },
         KeyCode::Enter => {
             let selected_widget =
-                common::get_selected_widget(widget_tree, state_tree);
+                common::selection_functions::get_selected_widget(widget_tree, state_tree);
             if let Some(widget) = selected_widget {
                 widget.on_keyboard_enter(view_tree, state_tree, widget_tree,
                                          callback_tree, scheduler);
@@ -271,29 +291,31 @@ fn handle_key_event(key: KeyEvent, view_tree: &mut ViewTree, state_tree: &mut St
 /// 1. Focussed widget
 /// 2. Global key binds (this function)
 /// 3. Selected widget
-fn handle_mouse_event(event: MouseEvent, view_tree: &mut ViewTree, state_tree: &mut StateTree,
-                      widget_tree: &WidgetTree, callback_tree: &mut CallbackTree,
+fn handle_mouse_event(event: MouseEvent, view_tree: &mut common::definitions::ViewTree,
+                      state_tree: &mut common::definitions::StateTree,
+                      widget_tree: &common::definitions::WidgetTree,
+                      callback_tree: &mut common::definitions::CallbackTree,
                       scheduler: &mut Scheduler) -> bool {
 
     if let MouseEventKind::Down(button) = event.kind {
-        let mouse_position = state::Coordinates::new(event.column as usize,
-                                                     event.row as usize);
-        return match common::get_widget_by_position(mouse_position, widget_tree, state_tree) {
+        let mouse_position = states::definitions::Coordinates::new(
+            event.column as usize,event.row as usize);
+        return match common::selection_functions::get_widget_by_position(
+            mouse_position, widget_tree, state_tree) {
             Some(widget) => {
                 let abs = state_tree.get(&widget.get_full_path()).unwrap()
                     .as_generic()
                     .get_absolute_position();
-                let relative_position = state::Coordinates::new(mouse_position.x - abs.x,
-                                                                    mouse_position.y - abs.y);
+                let relative_position = states::definitions::Coordinates::new(
+                    mouse_position.x - abs.x, mouse_position.y - abs.y);
                 match button {
                     MouseButton::Left => {
-                        common::deselect_selected_widget(view_tree, state_tree, widget_tree,
-                                                         callback_tree, scheduler);
+                        common::selection_functions::deselect_selected_widget(
+                            view_tree, state_tree, widget_tree, callback_tree, scheduler);
                         if state_tree.get(&widget.get_full_path()).unwrap().as_generic()
                             .is_selectable() {
-                            widget.on_select(view_tree, state_tree, widget_tree,
-                                             callback_tree, scheduler,
-                                             Some(relative_position))
+                            widget.on_select(view_tree, state_tree, widget_tree, callback_tree,
+                                             scheduler,Some(relative_position))
                         }
                         widget.on_left_mouse_click(view_tree, state_tree, widget_tree,
                                                    callback_tree, scheduler,
@@ -318,19 +340,23 @@ fn handle_mouse_event(event: MouseEvent, view_tree: &mut ViewTree, state_tree: &
 
 /// Handle a resize event by setting the size of the root widget to the new window size, updating
 /// the sizes/positions of all children and generating a new view tree of the right size.
-fn handle_resize(state_tree: &mut StateTree, root_widget: &mut Layout, new_width: usize,
-                 new_height: usize) -> ViewTree{
+fn handle_resize(state_tree: &mut common::definitions::StateTree, root_widget: &mut Layout,
+                 new_width: usize, new_height: usize) -> common::definitions::ViewTree{
     let state = state_tree.get_mut(&root_widget.path).unwrap()
         .as_generic_mut();
     state.get_size_mut().width = new_width as usize;
     state.get_size_mut().height = new_height as usize;
-    let mut new_view_tree = common::initialize_view_tree(new_width, new_height);
+    let old_view_tree = common::screen_functions::initialize_view_tree(
+        new_width, new_height);
     root_widget.set_child_sizes(state_tree);
     let contents = root_widget.get_contents(state_tree);
     root_widget.propagate_absolute_positions(state_tree);
     // Cleartype purge is tempting but causes issues on at least Windows
     stdout().queue(terminal::Clear(terminal::ClearType::All)).unwrap();
-    common::write_to_screen(state::Coordinates::new(0, 0),
-                            contents, &mut new_view_tree);
-    new_view_tree
+    let mut view_tree = old_view_tree.clone();
+    common::screen_functions::write_to_view_tree(
+        states::definitions::Coordinates::new(0, 0), contents,
+        &mut view_tree);
+    common::screen_functions::write_to_screen(&old_view_tree, &view_tree);
+    old_view_tree
 }

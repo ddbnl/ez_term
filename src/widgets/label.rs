@@ -133,7 +133,8 @@ impl EzObject for Label {
 
     fn get_state(&self) -> EzState { EzState::Label(self.state.clone()) }
 
-    fn get_contents(&self, state_tree: &mut common::StateTree) -> common::PixelMap {
+    fn get_contents(&self, state_tree: &mut common::definitions::StateTree)
+        -> common::definitions::PixelMap {
 
         let state = state_tree
             .get_mut(&self.get_full_path()).unwrap().as_label_mut();
@@ -151,7 +152,7 @@ impl EzObject for Label {
 
         let chunk_size = if state.get_size().infinite_width {text.len()}
                                else {state.get_effective_size().width};
-        let content_lines = common::wrap_text(text, chunk_size);
+        let content_lines = common::widget_functions::wrap_text(text, chunk_size);
         // If content is scrolled simply scale to length of content on that axis
         if state.get_size().infinite_width {
             let longest_line = content_lines.iter().map(|x| x.len()).max();
@@ -202,12 +203,13 @@ impl EzObject for Label {
             contents.push(new_y);
         }
         if state.get_border_config().enabled {
-            contents = common::add_border(contents, state.get_border_config());
+            contents = common::widget_functions::add_border(
+                contents, state.get_border_config());
         }
         let state = state_tree.get(&self.get_full_path()).unwrap().as_label();
         let parent_colors = state_tree.get(self.get_full_path()
             .rsplit_once('/').unwrap().0).unwrap().as_generic().get_color_config();
-        contents = common::add_padding(
+        contents = common::widget_functions::add_padding(
             contents, state.get_padding(), parent_colors.background,
             parent_colors.foreground);
         contents

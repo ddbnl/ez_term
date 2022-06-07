@@ -4,10 +4,9 @@
 use crossterm::style::{Color, StyledContent, Stylize};
 use std::io::{Error};
 use crossterm::event::Event;
-use crate::common;
-use crate::common::{CallbackTree, EzContext, StateTree, ViewTree, WidgetTree};
+use crate::{common, states};
 use crate::scheduler::Scheduler;
-use crate::states::state::{Coordinates, EzState};
+use crate::states::state::{EzState};
 use crate::widgets::layout::{Layout};
 use crate::widgets::label::{Label};
 use crate::widgets::button::{Button};
@@ -219,36 +218,41 @@ pub trait EzObject {
 
     /// Redraw the widget on the screen. Using the view tree, only changed content is written to
     /// improve performance.
-    fn redraw(&self, view_tree: &mut ViewTree, state_tree: &mut StateTree) {
+    fn redraw(&self, view_tree: &mut common::definitions::ViewTree,
+              state_tree: &mut common::definitions::StateTree) {
 
         let state = state_tree.get(&self.get_full_path()).unwrap().as_generic();
         let pos = state.get_absolute_position();
         let content = self.get_contents(state_tree);
-        common::write_to_screen(pos, content, view_tree);
+        common::screen_functions::write_to_view_tree(pos, content, view_tree);
     }
 
     /// Set the content for a widget manually. This is not implemented for most widgets, as they
     /// get their content from their state. E.g. a label gets content from its' current text.
-    fn set_contents(&mut self, _contents: common::PixelMap) {
+    fn set_contents(&mut self, _contents: common::definitions::PixelMap) {
         panic!("Cannot manually set content color for this widget {}", self.get_id()); }
 
     /// Gets the visual content for this widget. Overloaded by each widget module. E.g. a label
     /// gets its' content from its' text, a checkbox from whether it has been checked, etc.
-    fn get_contents(&self, state_tree: &mut common::StateTree)
-        -> common::PixelMap;
+    fn get_contents(&self, state_tree: &mut common::definitions::StateTree)
+        -> common::definitions::PixelMap;
 
     /// Optionally consume an event that was passed to this widget. Return true if the event should
     /// be considered consumed. Simply consults the keymap by default, but can be overloaded for
     /// more complex circumstances.
-    fn handle_event(&self, event: Event, view_tree: &mut ViewTree,
-                    state_tree: &mut StateTree, widget_tree: &WidgetTree,
-                    callback_tree: &mut CallbackTree, scheduler: &mut Scheduler) -> bool {
+    fn handle_event(&self, event: Event, view_tree: &mut common::definitions::ViewTree,
+                    state_tree: &mut common::definitions::StateTree,
+                    widget_tree: &common::definitions::WidgetTree,
+                    callback_tree: &mut common::definitions::CallbackTree,
+                    scheduler: &mut Scheduler) -> bool {
+
         if let Event::Key(key) = event {
             if callback_tree.get_mut(&self.get_full_path()).unwrap()
                 .keymap.contains_key(&key.code) {
                 let func = callback_tree.get_mut(&self.get_full_path()).unwrap()
                     .keymap.get_mut(&key.code).unwrap();
-                let context = EzContext::new(self.get_full_path(),
+                let context =
+                    common::definitions::EzContext::new(self.get_full_path(),
                 view_tree, state_tree, widget_tree, scheduler);
                 func(context, key.code);
                 return true
@@ -260,15 +264,17 @@ pub trait EzObject {
     /// Called on an object when it is selected and the user presses enter on the keyboard. This
     /// default implementation only calls the appropriate callback. Objects can overwrite this
     /// function but must remember to also call the callback.
-    fn on_keyboard_enter(&self, view_tree: &mut ViewTree,
-                         state_tree: &mut StateTree, widget_tree: &WidgetTree,
-                         callback_tree: &mut CallbackTree, scheduler: &mut Scheduler) {
+    fn on_keyboard_enter(&self, view_tree: &mut common::definitions::ViewTree,
+                         state_tree: &mut common::definitions::StateTree,
+                         widget_tree: &common::definitions::WidgetTree,
+                         callback_tree: &mut common::definitions::CallbackTree,
+                         scheduler: &mut Scheduler) {
 
         self.on_press(view_tree, state_tree, widget_tree,
                       callback_tree, scheduler);
         if let Some(ref mut i) = callback_tree
             .get_mut(&self.get_full_path()).unwrap().on_keyboard_enter {
-            i(common::EzContext::new(self.get_full_path().clone(),
+            i(common::definitions::EzContext::new(self.get_full_path().clone(),
             view_tree, state_tree, widget_tree, scheduler));
         }
 
@@ -277,15 +283,17 @@ pub trait EzObject {
     /// Called on an object when it is left clicked. This default implementation only calls the
     /// appropriate callback. Objects can overwrite this function but must remember to also
     /// call the callback.
-    fn on_left_mouse_click(&self, view_tree: &mut ViewTree,
-                           state_tree: &mut StateTree, widget_tree: &WidgetTree,
-                           callback_tree: &mut CallbackTree, scheduler: &mut Scheduler,
-                           mouse_pos: Coordinates) {
+    fn on_left_mouse_click(&self, view_tree: &mut common::definitions::ViewTree,
+                           state_tree: &mut common::definitions::StateTree,
+                           widget_tree: &common::definitions::WidgetTree,
+                           callback_tree: &mut common::definitions::CallbackTree,
+                           scheduler: &mut Scheduler, mouse_pos: states::definitions::Coordinates) {
+
         self.on_press(view_tree, state_tree, widget_tree,
                       callback_tree, scheduler);
         if let Some(ref mut i) = callback_tree
             .get_mut(&self.get_full_path()).unwrap().on_left_mouse_click {
-            i(common::EzContext::new(self.get_full_path().clone(),
+            i(common::definitions::EzContext::new(self.get_full_path().clone(),
                                      view_tree, state_tree, widget_tree, scheduler),
               mouse_pos);
         }
@@ -294,12 +302,13 @@ pub trait EzObject {
     /// Called on an object when it is selected and the user presses enter on the keyboard or
     /// when an object is left clicked. Default implementation only calls the appropriate callback.
     /// Objects can overwrite this function but must remember to also call the callback.
-    fn on_press(&self, view_tree: &mut ViewTree,
-                state_tree: &mut StateTree, widget_tree: &WidgetTree,
-                callback_tree: &mut CallbackTree, scheduler: &mut Scheduler) {
+    fn on_press(&self, view_tree: &mut common::definitions::ViewTree,
+                state_tree: &mut common::definitions::StateTree,
+                widget_tree: &common::definitions::WidgetTree,
+                callback_tree: &mut common::definitions::CallbackTree, scheduler: &mut Scheduler) {
         if let Some(ref mut i) = callback_tree
             .get_mut(&self.get_full_path()).unwrap().on_press {
-            i(common::EzContext::new(self.get_full_path().clone(),
+            i(common::definitions::EzContext::new(self.get_full_path().clone(),
                                      view_tree, state_tree, widget_tree, scheduler));
         }
     }
@@ -307,14 +316,15 @@ pub trait EzObject {
     /// Called on an object when it is right clicked. This  default implementation only calls the
     /// appropriate callback. Objects can overwrite this function but must remember to also call
     /// the callback.
-    fn on_right_mouse_click(&self, view_tree: &mut ViewTree,
-                            state_tree: &mut StateTree, widget_tree: &WidgetTree,
-                            callback_tree: &mut CallbackTree, scheduler: &mut Scheduler,
-                            mouse_pos: Coordinates) {
+    fn on_right_mouse_click(&self, view_tree: &mut common::definitions::ViewTree,
+                            state_tree: &mut common::definitions::StateTree,
+                            widget_tree: &common::definitions::WidgetTree,
+                            callback_tree: &mut common::definitions::CallbackTree,
+                            scheduler: &mut Scheduler, mouse_pos: states::definitions::Coordinates) {
 
         if let Some(ref mut i) = callback_tree
             .get_mut(&self.get_full_path()).unwrap().on_right_mouse_click {
-            i(common::EzContext::new(self.get_full_path().clone(),
+            i(common::definitions::EzContext::new(self.get_full_path().clone(),
                                      view_tree, state_tree, widget_tree, scheduler),
               mouse_pos);
         }
@@ -323,21 +333,31 @@ pub trait EzObject {
     /// Called on an object when its' value changes. This default implementation only calls the
     /// appropriate callback. Objects can overwrite this function but must remember to also call
     /// the callback.
-    fn on_value_change(&self, _view_tree: &mut ViewTree,
-                       _state_tree: &mut StateTree, _widget_tree: &WidgetTree,
-                       _callback_tree: &mut CallbackTree, _scheduler: &mut Scheduler) {
+    fn on_value_change(&self, view_tree: &mut common::definitions::ViewTree,
+                       state_tree: &mut common::definitions::StateTree,
+                       widget_tree: &common::definitions::WidgetTree,
+                       callback_tree: &mut common::definitions::CallbackTree,
+                       scheduler: &mut Scheduler) {
 
+        if let Some(ref mut i) = callback_tree
+            .get_mut(&self.get_full_path()).unwrap().on_value_change {
+            i(common::definitions::EzContext::new(self.get_full_path().clone(),
+                                                  view_tree, state_tree, widget_tree, scheduler));
+        }
     }
 
     /// Called on an object when it is selected. This default implementation only calls the
     /// appropriate callback. Objects can overwrite this function but must remember to also call
     /// the callback.
-    fn on_select(&self, view_tree: &mut ViewTree, state_tree: &mut StateTree,
-                 widget_tree: &WidgetTree, callback_tree: &mut CallbackTree,
-                 scheduler: &mut Scheduler, mouse_pos: Option<Coordinates>) {
+    fn on_select(&self, view_tree: &mut common::definitions::ViewTree,
+                 state_tree: &mut common::definitions::StateTree,
+                 widget_tree: &common::definitions::WidgetTree,
+                 callback_tree: &mut common::definitions::CallbackTree,
+                 scheduler: &mut Scheduler, mouse_pos: Option<states::definitions::Coordinates>) {
+
         if let Some(ref mut i) = callback_tree
             .get_mut(&self.get_full_path()).unwrap().on_select {
-            i(common::EzContext::new(self.get_full_path().clone(),
+            i(common::definitions::EzContext::new(self.get_full_path().clone(),
                                      view_tree, state_tree, widget_tree, scheduler),
             mouse_pos);
         }
@@ -346,12 +366,15 @@ pub trait EzObject {
     /// Called on an object when it is deselected. This default implementation only calls the
     /// appropriate callback. Objects can overwrite this function but must remember to also call
     /// the callback.
-    fn on_deselect(&self, view_tree: &mut ViewTree, state_tree: &mut StateTree,
-                   widget_tree: &WidgetTree, callback_tree: &mut CallbackTree,
+    fn on_deselect(&self, view_tree: &mut common::definitions::ViewTree,
+                   state_tree: &mut common::definitions::StateTree,
+                   widget_tree: &common::definitions::WidgetTree,
+                   callback_tree: &mut common::definitions::CallbackTree,
                    scheduler: &mut Scheduler) {
+
         if let Some(ref mut i) = callback_tree
             .get_mut(&self.get_full_path()).unwrap().on_deselect {
-            i(common::EzContext::new(self.get_full_path().clone(),
+            i(common::definitions::EzContext::new(self.get_full_path().clone(),
                                      view_tree, state_tree, widget_tree, scheduler));
         }
     }

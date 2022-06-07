@@ -1,9 +1,9 @@
 //! A widget that displays text non-interactively.
 use std::time::Duration;
-use crate::states::state::{self, EzState, GenericState};
+use crate::states::state::{EzState, GenericState};
 use crate::states::button_state::ButtonState;
+use crate::states;
 use crate::common;
-use crate::common::{CallbackTree, StateTree, ViewTree, WidgetTree};
 use crate::widgets::widget::{Pixel, EzObject};
 use crate::ez_parser;
 use crate::scheduler::Scheduler;
@@ -136,7 +136,7 @@ impl EzObject for Button {
 
     fn get_state(&self) -> EzState { EzState::Button(self.state.clone()) }
 
-    fn get_contents(&self, state_tree: &mut common::StateTree) -> common::PixelMap {
+    fn get_contents(&self, state_tree: &mut common::definitions::StateTree) -> common::definitions::PixelMap {
 
         let state = state_tree.get_mut(&self.get_full_path()).unwrap()
             .as_button_mut();
@@ -152,7 +152,7 @@ impl EzObject for Button {
 
         let write_width = if state.get_effective_size().infinite_width { text.len() }
                               else {state.get_effective_size().width };
-        let content_lines = common::wrap_text(text, write_width);
+        let content_lines = common::widget_functions::wrap_text(text, write_width);
         let write_height =
             if state.get_effective_size().infinite_height { content_lines.len() }
             else {state.get_effective_size().height };
@@ -176,25 +176,27 @@ impl EzObject for Button {
         if state.get_auto_scale().height {
             state.set_effective_height(contents[0].len());
         }
-        (contents, _) = common::align_content_horizontally(
-            contents,state::HorizontalAlignment::Center, state.get_effective_size().width,
-                    fg_color, bg_color);
-        (contents, _) = common::align_content_vertically(
-            contents,state::VerticalAlignment::Middle, state.get_effective_size().height,
-            fg_color, bg_color);
-        contents = common::add_border(contents, state.get_border_config());
+        (contents, _) = common::widget_functions::align_content_horizontally(
+            contents,states::definitions::HorizontalAlignment::Center,
+            state.get_effective_size().width, fg_color, bg_color);
+        (contents, _) = common::widget_functions::align_content_vertically(
+            contents,states::definitions::VerticalAlignment::Middle,
+            state.get_effective_size().height, fg_color, bg_color);
+        contents = common::widget_functions::add_border(
+            contents, state.get_border_config());
         let state = state_tree.get(&self.get_full_path()).unwrap().as_button();
         let parent_colors = state_tree.get(self.get_full_path()
             .rsplit_once('/').unwrap().0).unwrap().as_generic().get_color_config();
-        contents = common::add_padding(
+        contents = common::widget_functions::add_padding(
             contents, state.get_padding(), parent_colors.background,
             parent_colors.foreground);
         contents
     }
 
-    fn on_press(&self, view_tree: &mut ViewTree, state_tree: &mut StateTree,
-                     widget_tree: &WidgetTree, callback_tree: &mut CallbackTree,
-                     scheduler: &mut Scheduler) {
+    fn on_press(&self, view_tree: &mut common::definitions::ViewTree,
+                state_tree: &mut common::definitions::StateTree,
+                widget_tree: &common::definitions::WidgetTree,
+                callback_tree: &mut common::definitions::CallbackTree, scheduler: &mut Scheduler) {
 
         self.handle_on_press(view_tree, state_tree, widget_tree, callback_tree, scheduler);
     }
@@ -208,13 +210,16 @@ impl Button {
         obj
     }
 
-    pub fn handle_on_press(&self, view_tree: &mut ViewTree, state_tree: &mut StateTree,
-                           widget_tree: &WidgetTree, callback_tree: &mut CallbackTree, scheduler: &mut Scheduler) {
+    pub fn handle_on_press(&self, view_tree: &mut common::definitions::ViewTree,
+                           state_tree: &mut common::definitions::StateTree,
+                           widget_tree: &common::definitions::WidgetTree,
+                           callback_tree: &mut common::definitions::CallbackTree,
+                           scheduler: &mut Scheduler) {
 
         state_tree.get_mut(&self.get_full_path()).unwrap().as_button_mut()
             .set_flashing(true);
         let scheduled_func =
-            | context: common::EzContext | {
+            | context: common::definitions::EzContext | {
                 if !context.state_tree.contains_key(&context.widget_path) { return false }
                 context.state_tree.get_mut(&context.widget_path).unwrap().as_button_mut()
                     .set_flashing(false);
@@ -223,8 +228,8 @@ impl Button {
         scheduler.schedule_once(self.get_full_path().clone(),
                                         Box::new(scheduled_func),
                                         Duration::from_millis(50));
-        let context = common::EzContext::new(self.get_full_path().clone(),
-                                                 view_tree, state_tree, widget_tree, scheduler);
+        let context = common::definitions::EzContext::new(
+            self.get_full_path().clone(), view_tree, state_tree, widget_tree, scheduler);
         if let Some(ref mut i) = callback_tree
             .get_mut(&self.get_full_path()).unwrap().on_press {
             i(context)

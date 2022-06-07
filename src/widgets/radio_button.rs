@@ -4,9 +4,9 @@
 //! one is selected the others are deselected. Supports on_value_change callback, which is only
 //! called for the radio button that became active.
 use crate::common;
-use crate::common::{CallbackTree, StateTree, ViewTree, WidgetTree};
+use crate::states;
 use crate::states::radio_button_state::RadioButtonState;
-use crate::states::state::{self, Coordinates, EzState, GenericState};
+use crate::states::state::{EzState, GenericState};
 use crate::widgets::widget::{Pixel, EzObject};
 use crate::ez_parser;
 use crate::scheduler::Scheduler;
@@ -134,7 +134,8 @@ impl EzObject for RadioButton {
 
     fn get_state(&self) -> EzState { EzState::RadioButton(self.state.clone()) }
 
-    fn get_contents(&self, state_tree: &mut StateTree) -> common::PixelMap {
+    fn get_contents(&self, state_tree: &mut common::definitions::StateTree)
+        -> common::definitions::PixelMap {
 
         let state = state_tree
             .get_mut(&self.get_full_path()).unwrap().as_radio_button();
@@ -157,27 +158,33 @@ impl EzObject for RadioButton {
                 background_color: bg_color, underline: false}),
         );
         if state.get_border_config().enabled {
-            contents = common::add_border(contents, state.get_border_config());
+            contents = common::widget_functions::add_border(
+                contents, state.get_border_config());
         }
         let state = state_tree
             .get(&self.get_full_path()).unwrap().as_radio_button();
         let parent_colors = state_tree.get(self.get_full_path()
             .rsplit_once('/').unwrap().0).unwrap().as_generic().get_color_config();
-        contents = common::add_padding(
+        contents = common::widget_functions::add_padding(
             contents, state.get_padding(), parent_colors.background,
             parent_colors.foreground);
         contents
     }
 
-    fn on_keyboard_enter(&self, view_tree: &mut ViewTree, state_tree: &mut StateTree,
-                         widget_tree: &WidgetTree, callback_tree: &mut CallbackTree,
+    fn on_keyboard_enter(&self, view_tree: &mut common::definitions::ViewTree,
+                         state_tree: &mut common::definitions::StateTree,
+                         widget_tree: &common::definitions::WidgetTree,
+                         callback_tree: &mut common::definitions::CallbackTree,
                          scheduler: &mut Scheduler) {
         self.handle_press(view_tree, state_tree, widget_tree, callback_tree, scheduler)
     }
 
-    fn on_left_mouse_click(&self, view_tree: &mut ViewTree, state_tree: &mut StateTree,
-                           widget_tree: &WidgetTree, callback_tree: &mut CallbackTree,
-                           scheduler: &mut Scheduler, _mouse_pos: Coordinates) {
+    fn on_left_mouse_click(&self, view_tree: &mut common::definitions::ViewTree,
+                           state_tree: &mut common::definitions::StateTree,
+                           widget_tree: &common::definitions::WidgetTree,
+                           callback_tree: &mut common::definitions::CallbackTree,
+                           scheduler: &mut Scheduler,
+                           _mouse_pos: states::definitions::Coordinates) {
         self.handle_press(view_tree, state_tree, widget_tree, callback_tree, scheduler)
     }
 }
@@ -191,13 +198,15 @@ impl RadioButton {
     }
 
     /// Function that handles this RadioButton being pressed (mouse clicked/keyboard entered).
-    fn handle_press(&self, view_tree: &mut ViewTree, state_tree: &mut StateTree,
-                    widget_tree: &WidgetTree, callback_tree: &mut CallbackTree,
+    fn handle_press(&self, view_tree: &mut common::definitions::ViewTree,
+                    state_tree: &mut common::definitions::StateTree,
+                    widget_tree: &common::definitions::WidgetTree,
+                    callback_tree: &mut common::definitions::CallbackTree,
                     scheduler: &mut Scheduler) {
 
         // Find all other radio buttons in same group and make them inactive (mutual exclusivity)
         for (path, state) in state_tree.iter_mut() {
-            if let state::EzState::RadioButton(ref mut i) = state {
+            if let EzState::RadioButton(ref mut i) = state {
                 if i.get_group() == state.as_radio_button().group && path != &self.get_full_path() {
                     state.as_radio_button_mut().set_active(false);
                 }
@@ -210,8 +219,9 @@ impl RadioButton {
             state.set_active(true);
             if let Some(ref mut i) = callback_tree
                 .get_mut(&self.get_full_path()).unwrap().on_value_change {
-                let context = common::EzContext::new(self.get_full_path().clone(),
-                view_tree, state_tree, widget_tree, scheduler);
+                let context = common::definitions::EzContext::new(
+                    self.get_full_path().clone(), view_tree, state_tree, widget_tree,
+                    scheduler);
                 i(context);
             }
         } else {

@@ -1,8 +1,6 @@
 //! # Widget state:
 //! A module containing the base structs and traits for widget states.
-use crossterm::event::{KeyCode};
-use crossterm::style::Color;
-use crate::common;
+use crate::states;
 use crate::states::canvas_state::{CanvasState};
 use crate::states::label_state::{LabelState};
 use crate::states::button_state::{ButtonState};
@@ -187,37 +185,37 @@ pub trait GenericState {
 
     /// Set to None for passing an absolute width, or to a value between 0 and 1 to
     /// automatically scale width based on parent width
-    fn set_size_hint(&mut self, _size_hint: SizeHint) {}
+    fn set_size_hint(&mut self, _size_hint: states::definitions::SizeHint) {}
 
     /// Set to None for passing an absolute width, or to a value between 0 and 1 to
     /// automatically scale width based on parent width
     fn set_size_hint_x(&mut self, size_hint: Option<f64>) {
-        self.set_size_hint(SizeHint::new(size_hint, self.get_size_hint().y))
+        self.set_size_hint(states::definitions::SizeHint::new(size_hint, self.get_size_hint().y))
     }
 
     /// Set to None for passing an absolute height, or to a value between 0 and 1 to
     /// automatically scale width based on parent height
     fn set_size_hint_y(&mut self, size_hint: Option<f64>) {
-        self.set_size_hint(SizeHint::new(self.get_size_hint().x, size_hint))
+        self.set_size_hint(states::definitions::SizeHint::new(self.get_size_hint().x, size_hint))
     }
 
     /// If not None automatically scaled width based on parent width
-    fn get_size_hint(&self) -> &SizeHint;
+    fn get_size_hint(&self) -> &states::definitions::SizeHint;
 
     /// Set to None to allow hardcoded or default positions. Set a pos hint to position relative
     /// to parent. A pos hint is a string and a float e.g:
     /// ("center_x", 0.9)
     /// When positioning the widget, "center_x" will be replaced with the middle x coordinate of
     /// parent Layout, and multiplied with the float.
-    fn set_pos_hint(&mut self, _pos_hint: PosHint) {}
+    fn set_pos_hint(&mut self, _pos_hint: states::definitions::PosHint) {}
 
     /// Set to None to allow hardcoded or default positions. Set a pos hint to position relative
     /// to parent. A pos hint is a string and a float e.g:
     /// ("center_x", 0.9)
     /// When positioning the widget, "center_x" will be replaced with the middle x coordinate of
     /// parent Layout, and multiplied with the float.
-    fn set_pos_hint_x(&mut self, pos_hint: Option<(HorizontalPositionHint, f64)>) {
-        self.set_pos_hint(PosHint::new(pos_hint, self.get_pos_hint().y))
+    fn set_pos_hint_x(&mut self, pos_hint: Option<(states::definitions::HorizontalPositionHint, f64)>) {
+        self.set_pos_hint(states::definitions::PosHint::new(pos_hint, self.get_pos_hint().y))
     }
 
     /// Set to None to allow hardcoded or default positions. Set a pos hint to position relative
@@ -225,46 +223,46 @@ pub trait GenericState {
     /// ("top", 0.9)
     /// When positioning the widget, "top" will be replaced with the y coordinate of the top of the
     /// parent Layout, and multiplied by the float.
-    fn set_pos_hint_y(&mut self, pos_hint: Option<(VerticalPositionHint, f64)>) {
-        self.set_pos_hint(PosHint::new(self.get_pos_hint().x, pos_hint))
+    fn set_pos_hint_y(&mut self, pos_hint: Option<(states::definitions::VerticalPositionHint, f64)>) {
+        self.set_pos_hint(states::definitions::PosHint::new(self.get_pos_hint().x, pos_hint))
     }
 
     /// If none widget uses hardcoded or default positions. If a pos hint the widget will be
     /// positioned relative to its' parent.
-    fn get_pos_hint(&self) -> &PosHint;
+    fn get_pos_hint(&self) -> &states::definitions::PosHint;
 
     /// Set width autoscaling bool. If the widget supports it and turned on,
     /// automatically adjusts width to the actual width of its' content
-    fn set_auto_scale(&mut self, _auto_scale: AutoScale);
+    fn set_auto_scale(&mut self, _auto_scale: states::definitions::AutoScale);
 
     /// Get autoscaling config. If the widget supports it and turned on,
     /// automatically adjusts size to the actual size of its' content
-    fn get_auto_scale(&self) -> &AutoScale;
+    fn get_auto_scale(&self) -> &states::definitions::AutoScale;
 
     /// Set width autoscaling bool. If the widget supports it and turned on,
     /// automatically adjusts width to the actual width of its' content
     fn set_auto_scale_width(&mut self, auto_scale: bool) {
-        self.set_auto_scale(AutoScale::new(auto_scale, self.get_auto_scale().height));
+        self.set_auto_scale(states::definitions::AutoScale::new(auto_scale, self.get_auto_scale().height));
     }
 
     /// Set height autoscaling bool. If the widget supports it and turned on,
     /// automatically adjusts height to the actual height of its' content
     fn set_auto_scale_height(&mut self, auto_scale: bool) {
-        self.set_auto_scale(AutoScale::new(self.get_auto_scale().width, auto_scale));
+        self.set_auto_scale(states::definitions::AutoScale::new(self.get_auto_scale().width, auto_scale));
     }
 
     /// Hard code size, only does something when size_hint is off
-    fn set_size(&mut self, size: Size);
+    fn set_size(&mut self, size: states::definitions::Size);
 
     /// Get current [Size] of this object
-    fn get_size(&self) -> &Size;
+    fn get_size(&self) -> &states::definitions::Size;
 
     /// Get mutable current [Size] of this object
-    fn get_size_mut(&mut self) -> &mut Size;
+    fn get_size_mut(&mut self) -> &mut states::definitions::Size;
 
     /// Get the effective amount of width and height within this object, taking off e.g. borders,
     /// padding, etc.
-    fn get_effective_size(&self) -> Size {
+    fn get_effective_size(&self) -> states::definitions::Size {
 
         let mut size_copy = self.get_size().clone();
         let width_result: isize = size_copy.width as isize
@@ -297,21 +295,21 @@ pub trait GenericState {
     }
 
     /// Hard code position relative to parent, only works in float layout mode
-    fn set_position(&mut self, pos: Coordinates);
+    fn set_position(&mut self, pos: states::definitions::Coordinates);
 
     /// Set the x coordinate relative to parent, only works in float layout mode
-    fn set_x(&mut self, x: usize) { self.set_position(Coordinates::new(x, self.get_position().y)) }
+    fn set_x(&mut self, x: usize) { self.set_position(states::definitions::Coordinates::new(x, self.get_position().y)) }
 
     /// Set the x coordinate relative to parent, only works in float layout mode
-    fn set_y(&mut self, y: usize) { self.set_position(Coordinates::new(self.get_position().x, y)) }
+    fn set_y(&mut self, y: usize) { self.set_position(states::definitions::Coordinates::new(self.get_position().x, y)) }
 
     /// Get position relative to parent
-    fn get_position(&self) -> Coordinates;
+    fn get_position(&self) -> states::definitions::Coordinates;
 
     /// Get position where the actual content of this widget starts relative to parent, taking out
     /// e.g. borders, padding, etc.
-    fn get_effective_position(&self) -> Coordinates {
-        Coordinates::new(
+    fn get_effective_position(&self) -> states::definitions::Coordinates {
+        states::definitions::Coordinates::new(
             self.get_position().x +if self.get_border_config().enabled {1} else {0} + self.get_padding().left,
             self.get_position().y +if self.get_border_config().enabled {1} else {0} + self.get_padding().top)
     }
@@ -319,16 +317,16 @@ pub trait GenericState {
     /// Set the absolute position of a widget, i.e. the position on screen rather than within its'
     /// parent widget. Should be set automatically through the "propagate_absolute_positions"
     /// function.
-    fn set_absolute_position(&mut self, pos: Coordinates);
+    fn set_absolute_position(&mut self, pos: states::definitions::Coordinates);
 
     /// Get the absolute position of a widget, i.e. the position on screen rather than within its'
     /// parent widget.
-    fn get_absolute_position(&self) -> Coordinates;
+    fn get_absolute_position(&self) -> states::definitions::Coordinates;
 
     /// Get the absolute position of where the actual content of the widget starts, taking out
     /// e.g. border and padding
-    fn get_effective_absolute_position(&self) -> Coordinates {
-        Coordinates::new(
+    fn get_effective_absolute_position(&self) -> states::definitions::Coordinates {
+        states::definitions::Coordinates::new(
          self.get_absolute_position().x +if self.get_border_config().enabled {1} else {0}
              + self.get_padding().left,
          self.get_absolute_position().y +if self.get_border_config().enabled {1} else {0}
@@ -336,86 +334,87 @@ pub trait GenericState {
     }
 
     /// Set [HorizontalAlignment] of this widget.
-    fn set_horizontal_alignment(&mut self, alignment: HorizontalAlignment);
+    fn set_horizontal_alignment(&mut self, alignment: states::definitions::HorizontalAlignment);
 
     /// Get [HorizontalAlignment] of this widget
-    fn get_horizontal_alignment(&self) -> HorizontalAlignment;
+    fn get_horizontal_alignment(&self) -> states::definitions::HorizontalAlignment;
 
     /// Set [VerticalAlignment] of this widget
-    fn set_vertical_alignment(&mut self, alignment: VerticalAlignment);
+    fn set_vertical_alignment(&mut self, alignment: states::definitions::VerticalAlignment);
 
     /// Get [VerticalAlignment] of this widget
-    fn get_vertical_alignment(&self) -> VerticalAlignment;
+    fn get_vertical_alignment(&self) -> states::definitions::VerticalAlignment;
 
     /// Set [padding]
-    fn set_padding(&mut self, padding: Padding);
+    fn set_padding(&mut self, padding: states::definitions::Padding);
 
     /// Get [padding]
-    fn get_padding(&self) -> &Padding;
+    fn get_padding(&self) -> &states::definitions::Padding;
 
     /// Set height of top padding
     fn set_padding_top(&mut self, padding: usize) {
         let current = self.get_padding().clone();
-        self.set_padding(Padding::new(padding, current.bottom, current.left, current.right))
+        self.set_padding(states::definitions::Padding::new(padding, current.bottom, current.left, current.right))
     }
 
     /// Set height of bottom padding
     fn set_padding_bottom(&mut self, padding: usize) {
         let current = self.get_padding().clone();
-        self.set_padding(Padding::new(current.top, padding, current.left, current.right))
+        self.set_padding(states::definitions::Padding::new(current.top, padding, current.left, current.right))
     }
 
     /// Set width of left padding
     fn set_padding_left(&mut self, padding: usize) {
         let current = self.get_padding().clone();
-        self.set_padding(Padding::new(current.top, current.bottom, padding, current.right))
+        self.set_padding(states::definitions::Padding::new(current.top, current.bottom, padding, current.right))
     }
 
     /// Set width of right padding
     fn set_padding_right(&mut self, padding: usize) {
         let current = self.get_padding().clone();
-        self.set_padding(Padding::new(current.top, current.bottom, current.left, padding))
+        self.set_padding(states::definitions::Padding::new(current.top, current.bottom, current.left, padding))
     }
 
     /// Pas a [BorderConfig] abject that will be used to draw the border if enabled
-    fn set_border_config(&mut self, config: BorderConfig);
+    fn set_border_config(&mut self, config: states::definitions::BorderConfig);
 
     /// Get the [state::BorderConfig] abject that will be used to draw the border if enabled
-    fn get_border_config(&self) -> &BorderConfig;
+    fn get_border_config(&self) -> &states::definitions::BorderConfig;
 
-    fn get_border_config_mut(&mut self) -> &mut BorderConfig;
+    fn get_border_config_mut(&mut self) -> &mut states::definitions::BorderConfig;
 
     /// Set the [ColorConfig] abject that will be used to draw this widget
-    fn set_color_config(&mut self, config: ColorConfig);
+    fn set_color_config(&mut self, config: states::definitions::ColorConfig);
 
     /// Get a ref to the [ColorConfig] abject that will be used to draw this widget
-    fn get_color_config(&self) -> &ColorConfig;
+    fn get_color_config(&self) -> &states::definitions::ColorConfig;
 
     /// Get a mut ref to the [ColorConfig] abject that will be used to draw this widget
-    fn get_colors_config_mut(&mut self) -> &mut ColorConfig;
+    fn get_colors_config_mut(&mut self) -> &mut states::definitions::ColorConfig;
 
     /// Get the top left and bottom right corners of a widget in (X, Y) coordinate tuples.
-    fn get_box(&self) -> (Coordinates, Coordinates) {
+    fn get_box(&self) -> (states::definitions::Coordinates, states::definitions::Coordinates) {
         let top_left = self.get_absolute_position();
-        let bottom_right = Coordinates::new(
+        let bottom_right = states::definitions::Coordinates::new(
             top_left.x + self.get_size().width, top_left.y + self.get_size().height);
         (top_left, bottom_right)
     }
 
     /// Get all the coordinates of a box in list.
-    fn get_box_coords(&self) -> Vec<Coordinates> {
+    fn get_box_coords(&self) -> Vec<states::definitions::Coordinates> {
         let mut coords = Vec::new();
         let (top_left, bottom_right) = self.get_box();
         for x in top_left.x..bottom_right.x + 1 {
             for y in top_left.y..bottom_right.y + 1 {
-                coords.push(Coordinates::new(x, y));
+                coords.push(states::definitions::Coordinates::new(x, y));
             }
         }
         coords
     }
 
     /// Returns a bool representing whether two widgets overlap at any point.
-    fn overlaps(&self, other_box: (Coordinates, Coordinates)) -> bool {
+    fn overlaps(&self, other_box: (states::definitions::Coordinates,
+                                   states::definitions::Coordinates)) -> bool {
         let (l1, r1) = self.get_box();
         let (l2, r2) = other_box;
         // If one rectangle is on the left of the other there's no overlap
@@ -426,9 +425,9 @@ pub trait GenericState {
     }
 
     /// Returns a bool representing whether a single point collides with a widget.
-    fn collides(&self, pos: Coordinates) -> bool {
+    fn collides(&self, pos: states::definitions::Coordinates) -> bool {
         let starting_pos = self.get_effective_absolute_position();
-        let end_pos = Coordinates::new(
+        let end_pos = states::definitions::Coordinates::new(
             starting_pos.x + self.get_size().width - 1,
              starting_pos.y + self.get_size().height - 1);
         pos.x >= starting_pos.x && pos.x <= end_pos.x &&
@@ -462,353 +461,4 @@ pub trait GenericState {
     fn set_selected(&mut self, _state: bool) { }
 
     fn get_selected(&self) -> bool { false }
-}
-
-
-#[derive(PartialEq, Clone, Copy, Debug)]
-pub enum HorizontalAlignment {
-    Left,
-    Right,
-    Center
-}
-
-
-#[derive(PartialEq, Clone, Copy, Debug)]
-pub enum VerticalAlignment {
-    Top,
-    Bottom,
-    Middle
-}
-
-
-#[derive(PartialEq, Clone, Copy, Debug)]
-pub enum HorizontalPositionHint {
-    Left,
-    Right,
-    Center
-}
-
-
-#[derive(PartialEq, Clone, Copy, Debug)]
-pub enum VerticalPositionHint {
-    Top,
-    Bottom,
-    Middle
-}
-
-
-/// Convenience wrapper around a size tuple.
-#[derive(PartialEq, Copy, Clone, Default, Debug)]
-pub struct Size {
-    pub width: usize,
-    pub height: usize,
-    pub infinite_width: bool,
-    pub infinite_height: bool,
-}
-impl Size {
-    pub fn new(width: usize, height: usize) -> Self { Size{width, height,
-        infinite_width: false, infinite_height: false} }
-}
-
-
-
-/// Convenience wrapper around an XY tuple.
-#[derive(PartialEq, Copy, Clone, Default, Debug)]
-pub struct Coordinates {
-    pub x: usize,
-    pub y: usize,
-}
-impl Coordinates {
-    pub fn new(x: usize, y: usize) -> Self {
-        Coordinates{x, y}
-    }
-}
-
-
-/// Convenience wrapper around an size_hint tuple.
-#[derive(PartialEq, Copy, Clone, Default, Debug)]
-pub struct AutoScale {
-    pub width: bool,
-    pub height: bool,
-}
-impl AutoScale {
-    pub fn new(width: bool, height: bool) -> Self { AutoScale{width, height} }
-}
-
-
-/// Convenience wrapper around an size_hint tuple.
-#[derive(PartialEq, Copy, Clone, Debug)]
-pub struct SizeHint {
-    pub x: Option<f64>,
-    pub y: Option<f64>,
-}
-impl SizeHint {
-    pub fn new(x: Option<f64>, y: Option<f64>) -> Self { SizeHint{x, y} }
-}
-impl Default for SizeHint {
-    fn default() -> Self { SizeHint{x: Some(1.0), y: Some(1.0) }}
-}
-
-
-/// Convenience wrapper around an pos_hint tuple.
-#[derive(PartialEq, Copy, Clone, Debug)]
-pub struct PosHint {
-    pub x: Option<(HorizontalPositionHint, f64)>,
-    pub y: Option<(VerticalPositionHint, f64)>,
-}
-impl PosHint {
-    pub fn new(x: Option<(HorizontalPositionHint, f64)>,
-               y: Option<(VerticalPositionHint, f64)>) -> Self {
-        PosHint{x, y}
-    }
-}
-impl Default for PosHint {
-    fn default() -> Self { PosHint{x: Some((HorizontalPositionHint::Left, 1.0)),
-                                    y: Some((VerticalPositionHint::Top, 1.0)) }}
-}
-
-
-// Convenience wrapper around a callback configuration
-#[derive(Default)]
-pub struct CallbackConfig {
-
-    /// Function to call when an object is selected.
-    pub on_select: Option<common::OptionalMouseCallbackFunction> ,
-
-    /// Function to call when an object is deselected.
-    pub on_deselect: Option<common::GenericEzFunction>,
-
-    /// Function to call when an object is keyboard entered or left clicked,
-    pub on_press: Option<common::GenericEzFunction>,
-
-    /// Function to call when this widget is right clicked
-    pub on_keyboard_enter: Option<common::GenericEzFunction>,
-
-    /// Function to call when this widget is right clicked
-    pub on_left_mouse_click: Option<common::MouseCallbackFunction>,
-
-    /// Function to call when this widget is right clicked
-    pub on_right_mouse_click: Option<common::MouseCallbackFunction>,
-
-    /// Function to call when the value of an object changes
-    pub on_value_change: Option<common::GenericEzFunction>,
-
-    /// A Key to callback function lookup used to store keybinds for this widget. See
-    /// [KeyboardCallbackFunction] type for callback function signature.
-    pub keymap: common::KeyMap,
-}
-impl CallbackConfig {
-
-    pub fn bind_key(&mut self, key: KeyCode, func: common::KeyboardCallbackFunction) {
-        self.keymap.insert(key, func);
-    }
-
-    pub fn from_on_select(func: common::OptionalMouseCallbackFunction) -> Self {
-        let mut obj = CallbackConfig::default();
-        obj.on_select = Some(func);
-        obj
-    }
-
-    pub fn from_on_deselect(func: common::GenericEzFunction) -> Self {
-        let mut obj = CallbackConfig::default();
-        obj.on_deselect = Some(func);
-        obj
-    }
-
-    pub fn from_on_press(func: common::GenericEzFunction) -> Self {
-        let mut obj = CallbackConfig::default();
-        obj.on_press = Some(func);
-        obj
-    }
-
-    pub fn from_on_keyboard_enter(func: common::GenericEzFunction) -> Self {
-        let mut obj = CallbackConfig::default();
-        obj.on_keyboard_enter = Some(func);
-        obj
-    }
-
-    pub fn from_on_left_mouse_click(func: common::MouseCallbackFunction) -> Self {
-        let mut obj = CallbackConfig::default();
-        obj.on_left_mouse_click = Some(func);
-        obj
-    }
-
-    pub fn from_on_right_mouse_click(func: common::MouseCallbackFunction) -> Self {
-        let mut obj = CallbackConfig::default();
-        obj.on_right_mouse_click = Some(func);
-        obj
-    }
-
-    pub fn from_on_value_change(func: common::GenericEzFunction) -> Self {
-        let mut obj = CallbackConfig::default();
-        obj.on_value_change = Some(func);
-        obj
-    }
-
-    pub fn from_keymap(keymap: common::KeyMap) -> Self {
-        let mut obj = CallbackConfig::default();
-        obj.keymap = keymap;
-        obj
-    }
-
-    pub fn update_from(&mut self, other: CallbackConfig)  {
-        if let None = other.on_value_change {}
-        else { self.on_value_change = other.on_value_change};
-        if let None = other.on_deselect {}
-        else { self.on_deselect = other.on_deselect};
-        if let None = other.on_select {}
-        else { self.on_select = other.on_select};
-        if let None = other.on_press {}
-        else { self.on_press = other.on_press};
-        if let None = other.on_left_mouse_click {}
-        else { self.on_left_mouse_click = other.on_left_mouse_click};
-        if let None = other.on_right_mouse_click {}
-        else { self.on_right_mouse_click = other.on_right_mouse_click};
-        if let None = other.on_keyboard_enter {}
-        else { self.on_keyboard_enter = other.on_keyboard_enter};
-        self.keymap.extend(other.keymap);
-    }
-
-}
-
-
-/// Convenience wrapper around a [LayoutState] scrolling configuration
-#[derive(PartialEq, Clone, Debug, Default)]
-pub struct ScrollingConfig {
-
-    /// Bool representing whether the x axis should be able to scroll
-    pub enable_x: bool,
-
-    /// Bool representing whether the y axis should be able to scroll
-    pub enable_y: bool,
-
-    /// Start of the view on the x axis, content is shown from here until view_start_x + width
-    pub view_start_x: usize,
-
-    /// Start of the view on the y axis, content is shown from here until view_start_y + height
-    pub view_start_y: usize,
-
-    /// Bool representing whether the owning object is actually scrolling, as it is possible for
-    /// scrolling to be enabled but not active (i.e. content already fits within object)
-    pub is_scrolling_x: bool,
-
-    /// Bool representing whether the owning object is actually scrolling, as it is possible for
-    /// scrolling to be enabled but not active (i.e. content already fits within object)
-    pub is_scrolling_y: bool,
-
-    /// Original height of the content being scrolled
-    pub original_height: usize,
-
-    /// Original width of the content being scrolled
-    pub original_width: usize,
-}
-
-/// Convenience wrapper around a border configuration
-#[derive(PartialEq, Clone, Debug)]
-pub struct BorderConfig {
-
-    /// Bool representing whether an object should have a border
-    pub enabled: bool,
-
-    /// The [Pixel.symbol] to use for the horizontal border if [border] is true
-    pub horizontal_symbol: String,
-    
-    /// The [Pixel.symbol] to use for the vertical border if [border] is true
-    pub vertical_symbol: String,
-    
-    /// The [Pixel.symbol] to use for the top left border if [border] is true
-    pub top_left_symbol: String,
-    
-    /// The [Pixel.symbol] to use for the top right border if [border] is true
-    pub top_right_symbol: String,
-    
-    /// The [Pixel.symbol] to use for the bottom left border if [border] is true
-    pub bottom_left_symbol: String,
-    
-    /// The [Pixel.symbol] to use for the bottom right border if [border] is true
-    pub bottom_right_symbol: String,
-    
-    /// The [Pixel.foreground_color]  to use for the border if [border] is true
-    pub fg_color: Color,
-    
-    /// The [Pixel.background_color] to use for the border if [border] is true
-    pub bg_color: Color,
-}
-impl Default for BorderConfig {
-    fn default() -> Self {
-       BorderConfig {
-           enabled: false,
-           horizontal_symbol: "━".to_string(),
-           vertical_symbol: "│".to_string(),
-           top_left_symbol: "┌".to_string(),
-           top_right_symbol: "┐".to_string(),
-           bottom_left_symbol: "└".to_string(),
-           bottom_right_symbol: "┘".to_string(),
-           fg_color: Color::White,
-           bg_color: Color::Black,
-       } 
-    }
-}
-
-
-#[derive(PartialEq, Clone, Debug)]
-pub struct ColorConfig {
-
-    /// The [Pixel.foreground_color] to use for this widgets' content
-    pub foreground: Color,
-
-    /// The [Pixel.background_color] to use for this widgets' content
-    pub background: Color,
-
-    /// The [Pixel.foreground_color] to use for this widgets' content when selected
-    pub selection_foreground: Color,
-
-    /// The [Pixel.background_color] to use for this widgets' content when selected
-    pub selection_background: Color,
-
-    /// The [Pixel.foreground_color] to use for this widgets' content when flashed
-    pub flash_foreground: Color,
-
-    /// The [Pixel.background_color] to use for this widgets' content when flashed
-    pub flash_background: Color,
-
-    /// The [Pixel.foreground_color] to use for filler pixels if [fill] is true
-    pub filler_foreground: Color,
-
-    /// The [Pixel.background_color] to use for filler pixels if [fill] is true
-    pub filler_background: Color,
-
-    /// The [Pixel.background_color] to use for this widgets' content when a position has been
-    /// highlighted by the blinking cursor
-    pub cursor: Color,
-
-}
-impl Default for ColorConfig {
-    fn default() -> Self {
-        ColorConfig {
-            background: Color::Black,
-            foreground: Color::White,
-            selection_foreground: Color::Yellow,
-            selection_background: Color::Blue,
-            flash_foreground: Color::Yellow,
-            flash_background: Color::White,
-            filler_background: Color::Black,
-            filler_foreground: Color::White,
-            cursor: Color::DarkYellow,
-        }
-    }
-}
-
-
-#[derive(PartialEq, Clone, Copy, Default, Debug)]
-pub struct Padding {
-    pub top: usize,
-    pub bottom: usize,
-    pub left: usize,
-    pub right: usize,
-}
-impl Padding {
-    pub fn new(top: usize, bottom: usize, left: usize, right: usize) -> Padding{
-        Padding { top, bottom, left, right }
-    }
 }
