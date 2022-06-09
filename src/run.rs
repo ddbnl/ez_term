@@ -3,7 +3,7 @@
 //! functions allows starting the app based on a root layout.
 use std::io::{stdout, Write};
 use std::process::exit;
-use std::time::{Duration};
+use std::time::{Duration, Instant};
 use crossterm::{ExecutableCommand, execute, Result, cursor::{Hide, Show},
                 event::{MouseEvent, MouseEventKind, MouseButton, poll, read, DisableMouseCapture,
                         EnableMouseCapture, Event, KeyCode, KeyEvent},
@@ -99,24 +99,13 @@ fn run_loop(mut root_widget: Layout, mut callback_tree: common::definitions::Cal
             mut scheduler: Scheduler) -> Result<()>{
 
     let (mut view_tree, mut state_tree) = initialize_widgets(&mut root_widget);
+    let mut last_update = Instant::now();
     let mut last_mouse_pos: (u16, u16) = (0, 0);
     loop {
 
-        // We set the state of the root widget directly as it may contain new modals, and
-        // [get_widget_tree] depends on internal state rather than state_tree due to life times
-        {
-            let widget_tree = root_widget.get_widget_tree();
-            scheduler.update_callback_configs(&mut callback_tree);
-            scheduler.run_tasks(
-                &mut view_tree, &mut state_tree, &widget_tree, &mut callback_tree);
-        }
-        root_widget.state = state_tree.get("/root").unwrap().as_layout().clone();
-        common::screen_functions::clean_trees(
-            &mut root_widget, &mut state_tree, &mut callback_tree);
         let widget_tree = root_widget.get_widget_tree();
-
         // Now we check for and deal with a possible event
-        if poll(Duration::from_millis(10))? {
+        if poll(Duration::from_millis(16))? {
 
             // Get the event; it can only be consumed once
             let mut consumed = false;
@@ -178,6 +167,17 @@ fn run_loop(mut root_widget: Layout, mut callback_tree: common::definitions::Cal
             }
 
         }
+        if last_update.elapsed() < Duration::from_millis(16) { continue }
+        {
+            let widget_tree = root_widget.get_widget_tree();
+            scheduler.update_callback_configs(&mut callback_tree);
+            scheduler.run_tasks(
+                &mut view_tree, &mut state_tree, &widget_tree, &mut callback_tree);
+        }
+        root_widget.state = state_tree.get("/root").unwrap().as_layout().clone();
+        common::screen_functions::clean_trees(
+            &mut root_widget, &mut state_tree, &mut callback_tree);
+
         // Update the state tree for each widget, redrawing any that changed. If a global
         // forced redraw was issued by a widget we'll perform one.
         let old_view_tree = view_tree.clone();
@@ -300,38 +300,36 @@ fn handle_mouse_event(event: MouseEvent, view_tree: &mut common::definitions::Vi
     if let MouseEventKind::Down(button) = event.kind {
         let mouse_position = states::definitions::Coordinates::new(
             event.column as usize,event.row as usize);
-        return match common::selection_functions::get_widget_by_position(
+        for widget in common::selection_functions::get_widget_by_position(
             mouse_position, widget_tree, state_tree) {
-            Some(widget) => {
-                let abs = state_tree.get(&widget.get_full_path()).unwrap()
-                    .as_generic()
-                    .get_absolute_position();
-                let relative_position = states::definitions::Coordinates::new(
-                    mouse_position.x - abs.x, mouse_position.y - abs.y);
-                match button {
-                    MouseButton::Left => {
-                        common::selection_functions::deselect_selected_widget(
-                            view_tree, state_tree, widget_tree, callback_tree, scheduler);
-                        if state_tree.get(&widget.get_full_path()).unwrap().as_generic()
-                            .is_selectable() {
-                            widget.on_select(view_tree, state_tree, widget_tree, callback_tree,
-                                             scheduler,Some(relative_position))
-                        }
-                        widget.on_left_mouse_click(view_tree, state_tree, widget_tree,
-                                                   callback_tree, scheduler,
-                                                   relative_position);
+            let abs = state_tree.get(&widget.get_full_path()).unwrap()
+                .as_generic()
+                .get_absolute_position();
+            let relative_position = states::definitions::Coordinates::new(
+                mouse_position.x - abs.x, mouse_position.y - abs.y);
+            let consumed = match button {
+                MouseButton::Left => {
+                    common::selection_functions::deselect_selected_widget(
+                        view_tree, state_tree, widget_tree, callback_tree, scheduler);
 
-                    },
-                    MouseButton::Right => {
-                        widget.on_right_mouse_click(view_tree, state_tree, widget_tree,
-                                                    callback_tree, scheduler,
-                                                    relative_position)
+                    let consumed = widget.on_left_mouse_click(view_tree, state_tree, widget_tree,
+                                               callback_tree, scheduler,
+                                               relative_position);
+                    if consumed && state_tree.get(&widget.get_full_path()).unwrap().as_generic()
+                            .is_selectable() {
+                        widget.on_select(view_tree, state_tree, widget_tree, callback_tree,
+                                         scheduler,Some(relative_position));
                     }
-                    _ => { return false }
+                    consumed
+                },
+                MouseButton::Right => {
+                    widget.on_right_mouse_click(view_tree, state_tree, widget_tree,
+                                                callback_tree, scheduler,
+                                                relative_position)
                 }
-                true
-            },
-            None => false, // click outside of root widget bounds
+                _ => { false }
+            };
+            if consumed { return true }
         }
     }
     false

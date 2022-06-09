@@ -175,7 +175,7 @@ impl widget::EzObject for Dropdown {
                 state_tree: &mut common::definitions::StateTree,
                 _widget_tree: &common::definitions::WidgetTree,
                 _callback_tree: &mut common::definitions::CallbackTree,
-                _scheduler: &mut Scheduler) {
+                _scheduler: &mut Scheduler) -> bool {
 
         let state = state_tree.get(&self.get_full_path()).unwrap()
             .as_dropdown();
@@ -209,6 +209,7 @@ impl widget::EzObject for Dropdown {
         let (_, extra_state_tree) = root_state.as_layout_mut()
             .open_modal(widget::EzObjects::DroppedDownMenu(new_modal));
         state_tree.extend(extra_state_tree);
+        true
     }
 
     fn set_focus(&mut self, enabled: bool) { self.state.focussed = enabled }

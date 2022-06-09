@@ -1,6 +1,7 @@
 //! # Text input Widget
 //! A widget implementing a field in which the user can input characters. Supports on_value_change
 //! and on_keyboard_enter callbacks.
+use std::io::Error;
 use std::time::Duration;
 use crossterm::event::{Event, KeyCode};
 use crate::ez_parser;
@@ -10,7 +11,9 @@ use crate::states::text_input_state::TextInputState;
 use crate::states::state::{EzState, GenericState};
 use crate::widgets::widget::{Pixel, EzObject};
 use crate::common;
+use crate::common::definitions::{CallbackTree, PixelMap, StateTree, ViewTree, WidgetTree};
 use crate::scheduler::Scheduler;
+use crate::states::definitions::Coordinates;
 
 #[derive(Clone)]
 pub struct TextInput {
@@ -207,6 +210,12 @@ impl EzObject for TextInput {
         contents
     }
 
+    fn on_left_mouse_click(&self, view_tree: &mut ViewTree, state_tree: &mut StateTree,
+                           widget_tree: &WidgetTree, callback_tree: &mut CallbackTree,
+                           scheduler: &mut Scheduler, mouse_pos: Coordinates) -> bool {
+        true
+    }
+
     fn handle_event(&self, event: Event, view_tree: &mut common::definitions::ViewTree,
                     state_tree: &mut common::definitions::StateTree, widget_tree: &common::definitions::WidgetTree,
                     callback_tree: &mut common::definitions::CallbackTree, scheduler: &mut Scheduler) -> bool {
@@ -260,9 +269,12 @@ impl EzObject for TextInput {
         false
     }
 
-    fn on_select(&self, view_tree: &mut common::definitions::ViewTree, state_tree: &mut common::definitions::StateTree,
-                 widget_tree: &common::definitions::WidgetTree, callback_tree: &mut common::definitions::CallbackTree,
-                 scheduler: &mut Scheduler, mouse_pos: Option<states::definitions::Coordinates>) {
+    fn on_select(&self, view_tree: &mut common::definitions::ViewTree,
+                 state_tree: &mut common::definitions::StateTree,
+                 widget_tree: &common::definitions::WidgetTree,
+                 callback_tree: &mut common::definitions::CallbackTree,
+                 scheduler: &mut Scheduler,
+                 mouse_pos: Option<states::definitions::Coordinates>) -> bool {
 
         let state = state_tree.get_mut(
             &self.get_full_path()).unwrap().as_text_input_mut();
@@ -297,7 +309,8 @@ impl EzObject for TextInput {
                 self.get_full_path().clone(), view_tree, state_tree, widget_tree,
                 scheduler);
             i(context, mouse_pos);
-        }
+        };
+        true
     }
 }
 

@@ -320,7 +320,7 @@ pub fn is_in_view(path: String, state_tree: &common::definitions::StateTree) -> 
 pub fn get_widget_by_position<'a>(pos: states::definitions::Coordinates,
                                   widget_tree: &'a common::definitions::WidgetTree,
                                   state_tree: &common::definitions::StateTree)
-    -> Option<&'a dyn EzObject> {
+    -> Vec<&'a dyn EzObject> {
 
     let modals = state_tree.get("/root").unwrap().as_layout().get_modals();
     let path_prefix = if modals.is_empty() {
@@ -328,13 +328,13 @@ pub fn get_widget_by_position<'a>(pos: states::definitions::Coordinates,
     } else {
         modals.first().unwrap().as_ez_object().get_full_path()
     };
+    let mut results = Vec::new();
     for (widget_path, state) in state_tree {
-        if !widget_path.starts_with(&path_prefix) { continue }
-        if let EzState::Layout(_) = state { continue }
+        if !widget_path.starts_with(&path_prefix) || widget_path == "/root" { continue }
         if state.as_generic().collides(pos) {
-            return Some(widget_tree.get(widget_path).unwrap().as_ez_object())
+            results.push(widget_tree.get(widget_path).unwrap().as_ez_object());
         }
     }
-    None
+    results
 }
 

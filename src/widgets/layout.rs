@@ -1,14 +1,17 @@
 //! # Layout
 //! Module implementing the Layout struct.
 use std::collections::HashMap;
+use std::io::Error;
 use crossterm::event::{Event, KeyCode};
 use crate::ez_parser;
 use crate::common;
+use crate::common::definitions::{CallbackTree, PixelMap, StateTree, ViewTree, WidgetTree};
 use crate::widgets::widget::{Pixel, EzObject, EzObjects};
 use crate::states::layout_state::LayoutState;
 use crate::states::state::{EzState, GenericState};
 use crate::states;
 use crate::scheduler::Scheduler;
+use crate::states::definitions::Coordinates;
 
 
 /// Used with Box mode, determines whether widgets are placed below or above each other.
@@ -262,6 +265,48 @@ impl EzObject for Layout {
                 return true
             } else if key.code == KeyCode::Right {
                 self.handle_scroll_right(state);
+                return true
+            }
+        }
+        false
+    }
+
+    fn on_left_mouse_click(&self, view_tree: &mut ViewTree, state_tree: &mut StateTree,
+                           widget_tree: &WidgetTree, callback_tree: &mut CallbackTree,
+                           scheduler: &mut Scheduler, mouse_pos: Coordinates) -> bool {
+
+        let state = state_tree.get_mut(&self.path).unwrap().as_layout_mut();
+
+        if state.scrolling_config.is_scrolling_x &&
+            mouse_pos.y == state.get_effective_size().height + 1{
+
+            let (scrollbar_size, scrollbar_pos) = self.get_horizontal_scrollbar_parameters(
+                state.get_scrolling_config().original_width,
+                state.get_effective_size().width,
+                state.get_scrolling_config().view_start_x);
+
+            if mouse_pos.x < scrollbar_pos {
+                self.handle_scroll_left(state);
+                return true
+            } else if mouse_pos.x > scrollbar_pos + scrollbar_size {
+                self.handle_scroll_right(state);
+                return true
+            }
+        }
+
+        if state.scrolling_config.is_scrolling_y &&
+            mouse_pos.x == state.get_effective_size().width + 1 {
+
+            let (scrollbar_size, scrollbar_pos) = self.get_vertical_scrollbar_parameters(
+                state.get_scrolling_config().original_height,
+                state.get_effective_size().height,
+                state.get_scrolling_config().view_start_y);
+
+            if mouse_pos.y < scrollbar_pos {
+                self.handle_scroll_up(state);
+                return true
+            } else if mouse_pos.y > scrollbar_pos + scrollbar_size {
+                self.handle_scroll_down(state);
                 return true
             }
         }
@@ -1102,16 +1147,10 @@ impl Layout {
         else {state.get_color_config().foreground};
         let bg_color = state.get_color_config().background;
 
-        let scrollbar_ratio =  state.get_scrolling_config().original_width as f32
-            / state.get_effective_size().width as f32;
-        let scrollbar_size =
-            (state.get_effective_size().width as f32 / scrollbar_ratio) as usize;
-        let mut scrollbar_pos =
-            if state.scrolling_config.view_start_x != 0 {
-                (state.scrolling_config.view_start_x as f32 / scrollbar_ratio).round() as usize
-            }
-            else { 0 };
-        if scrollbar_pos == 0 && state.scrolling_config.view_start_x != 0 { scrollbar_pos = 1 }
+        let (scrollbar_size, scrollbar_pos) = self.get_horizontal_scrollbar_parameters(
+            state.get_scrolling_config().original_width,
+            state.get_effective_size().width,
+            state.get_scrolling_config().view_start_x);
 
         for (i, x) in contents.iter_mut().enumerate() {
             let symbol = if i >= scrollbar_pos
@@ -1133,16 +1172,10 @@ impl Layout {
         else {state.get_color_config().foreground};
         let bg_color = state.get_color_config().background;
 
-        let scrollbar_ratio =  state.get_scrolling_config().original_height as f32
-            / state.get_effective_size().height as f32;
-        let scrollbar_size =
-            (state.get_effective_size().height as f32  / scrollbar_ratio) as usize;
-        let mut scrollbar_pos =
-            if state.scrolling_config.view_start_y != 0 {
-                (state.scrolling_config.view_start_y as f32 / scrollbar_ratio).round() as usize
-            }
-            else { 0 };
-        if scrollbar_pos == 0 && state.scrolling_config.view_start_y != 0 { scrollbar_pos = 1 }
+        let (scrollbar_size, scrollbar_pos) = self.get_vertical_scrollbar_parameters(
+            state.get_scrolling_config().original_height,
+            state.get_effective_size().height,
+            state.get_scrolling_config().view_start_y);
 
         for x in 0..state.get_effective_size().height {
             let symbol = if x >= scrollbar_pos
@@ -1152,5 +1185,33 @@ impl Layout {
         }
         contents.push(scrollbar);
         contents
+    }
+
+    fn get_horizontal_scrollbar_parameters(&self, content_width: usize, widget_width: usize,
+                                           view_start: usize) -> (usize, usize) {
+
+        let scrollbar_ratio =  content_width as f32
+            / widget_width as f32;
+        let scrollbar_size =
+            (widget_width as f32 / scrollbar_ratio) as usize;
+        let mut scrollbar_pos =
+            if view_start != 0 { (view_start as f32 / scrollbar_ratio).round() as usize }
+            else { 0 };
+        if scrollbar_pos == 0 && view_start != 0 { scrollbar_pos = 1 }
+        (scrollbar_size, scrollbar_pos)
+    }
+
+    fn get_vertical_scrollbar_parameters(&self, content_height: usize, widget_height: usize,
+                                         view_start: usize) -> (usize, usize) {
+
+        let scrollbar_ratio =  content_height as f32
+            / widget_height as f32;
+        let scrollbar_size =
+            (widget_height as f32  / scrollbar_ratio) as usize;
+        let mut scrollbar_pos =
+            if view_start != 0 { (view_start as f32 / scrollbar_ratio).round() as usize }
+            else { 0 };
+        if scrollbar_pos == 0 && view_start != 0 { scrollbar_pos = 1 };
+        (scrollbar_size, scrollbar_pos)
     }
 }

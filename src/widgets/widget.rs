@@ -268,15 +268,14 @@ pub trait EzObject {
                          state_tree: &mut common::definitions::StateTree,
                          widget_tree: &common::definitions::WidgetTree,
                          callback_tree: &mut common::definitions::CallbackTree,
-                         scheduler: &mut Scheduler) {
+                         scheduler: &mut Scheduler) -> bool {
 
-        self.on_press(view_tree, state_tree, widget_tree,
-                      callback_tree, scheduler);
         if let Some(ref mut i) = callback_tree
             .get_mut(&self.get_full_path()).unwrap().on_keyboard_enter {
             i(common::definitions::EzContext::new(self.get_full_path().clone(),
             view_tree, state_tree, widget_tree, scheduler));
         }
+        self.on_press(view_tree, state_tree, widget_tree, callback_tree, scheduler)
 
     }
 
@@ -287,16 +286,16 @@ pub trait EzObject {
                            state_tree: &mut common::definitions::StateTree,
                            widget_tree: &common::definitions::WidgetTree,
                            callback_tree: &mut common::definitions::CallbackTree,
-                           scheduler: &mut Scheduler, mouse_pos: states::definitions::Coordinates) {
+                           scheduler: &mut Scheduler, mouse_pos: states::definitions::Coordinates)
+    -> bool {
 
-        self.on_press(view_tree, state_tree, widget_tree,
-                      callback_tree, scheduler);
         if let Some(ref mut i) = callback_tree
             .get_mut(&self.get_full_path()).unwrap().on_left_mouse_click {
             i(common::definitions::EzContext::new(self.get_full_path().clone(),
                                      view_tree, state_tree, widget_tree, scheduler),
               mouse_pos);
         }
+        self.on_press(view_tree, state_tree, widget_tree, callback_tree, scheduler)
     }
 
     /// Called on an object when it is selected and the user presses enter on the keyboard or
@@ -305,12 +304,15 @@ pub trait EzObject {
     fn on_press(&self, view_tree: &mut common::definitions::ViewTree,
                 state_tree: &mut common::definitions::StateTree,
                 widget_tree: &common::definitions::WidgetTree,
-                callback_tree: &mut common::definitions::CallbackTree, scheduler: &mut Scheduler) {
+                callback_tree: &mut common::definitions::CallbackTree, scheduler: &mut Scheduler)
+    -> bool {
+
         if let Some(ref mut i) = callback_tree
             .get_mut(&self.get_full_path()).unwrap().on_press {
-            i(common::definitions::EzContext::new(self.get_full_path().clone(),
+            return i(common::definitions::EzContext::new(self.get_full_path().clone(),
                                      view_tree, state_tree, widget_tree, scheduler));
         }
+        false
     }
 
     /// Called on an object when it is right clicked. This  default implementation only calls the
@@ -320,14 +322,16 @@ pub trait EzObject {
                             state_tree: &mut common::definitions::StateTree,
                             widget_tree: &common::definitions::WidgetTree,
                             callback_tree: &mut common::definitions::CallbackTree,
-                            scheduler: &mut Scheduler, mouse_pos: states::definitions::Coordinates) {
+                            scheduler: &mut Scheduler, mouse_pos: states::definitions::Coordinates)
+    -> bool {
 
         if let Some(ref mut i) = callback_tree
             .get_mut(&self.get_full_path()).unwrap().on_right_mouse_click {
-            i(common::definitions::EzContext::new(self.get_full_path().clone(),
+            return i(common::definitions::EzContext::new(self.get_full_path().clone(),
                                      view_tree, state_tree, widget_tree, scheduler),
-              mouse_pos);
+              mouse_pos)
         }
+        false
     }
 
     /// Called on an object when its' value changes. This default implementation only calls the
@@ -337,13 +341,14 @@ pub trait EzObject {
                        state_tree: &mut common::definitions::StateTree,
                        widget_tree: &common::definitions::WidgetTree,
                        callback_tree: &mut common::definitions::CallbackTree,
-                       scheduler: &mut Scheduler) {
+                       scheduler: &mut Scheduler) -> bool {
 
         if let Some(ref mut i) = callback_tree
             .get_mut(&self.get_full_path()).unwrap().on_value_change {
-            i(common::definitions::EzContext::new(self.get_full_path().clone(),
-                                                  view_tree, state_tree, widget_tree, scheduler));
+            return i(common::definitions::EzContext::new(self.get_full_path().clone(),
+                                                  view_tree, state_tree, widget_tree, scheduler))
         }
+        false
     }
 
     /// Called on an object when it is selected. This default implementation only calls the
@@ -353,14 +358,16 @@ pub trait EzObject {
                  state_tree: &mut common::definitions::StateTree,
                  widget_tree: &common::definitions::WidgetTree,
                  callback_tree: &mut common::definitions::CallbackTree,
-                 scheduler: &mut Scheduler, mouse_pos: Option<states::definitions::Coordinates>) {
+                 scheduler: &mut Scheduler, mouse_pos: Option<states::definitions::Coordinates>)
+    -> bool {
 
         if let Some(ref mut i) = callback_tree
             .get_mut(&self.get_full_path()).unwrap().on_select {
-            i(common::definitions::EzContext::new(self.get_full_path().clone(),
+            return i(common::definitions::EzContext::new(self.get_full_path().clone(),
                                      view_tree, state_tree, widget_tree, scheduler),
-            mouse_pos);
+            mouse_pos)
         }
+        false
     }
 
     /// Called on an object when it is deselected. This default implementation only calls the
@@ -370,13 +377,14 @@ pub trait EzObject {
                    state_tree: &mut common::definitions::StateTree,
                    widget_tree: &common::definitions::WidgetTree,
                    callback_tree: &mut common::definitions::CallbackTree,
-                   scheduler: &mut Scheduler) {
+                   scheduler: &mut Scheduler) -> bool {
 
         if let Some(ref mut i) = callback_tree
             .get_mut(&self.get_full_path()).unwrap().on_deselect {
-            i(common::definitions::EzContext::new(self.get_full_path().clone(),
-                                     view_tree, state_tree, widget_tree, scheduler));
+            return i(common::definitions::EzContext::new(self.get_full_path().clone(),
+                                     view_tree, state_tree, widget_tree, scheduler))
         }
+        false
     }
 
     /// Set the focus state of a widget. When a widget is focussed it alone consumes all events.

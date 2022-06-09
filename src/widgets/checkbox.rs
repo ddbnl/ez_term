@@ -1,12 +1,16 @@
 //! # Checkbox Widget
 //! Widget which is either on or off and implements an on_value_change callback.
+use std::io::Error;
+use crossterm::event::Event;
 use crate::common;
+use crate::common::definitions::{CallbackTree, PixelMap, StateTree, ViewTree, WidgetTree};
 use crate::widgets::widget::{Pixel, EzObject};
 use crate::states;
 use crate::states::checkbox_state::CheckboxState;
 use crate::states::state::{EzState, GenericState};
 use crate::ez_parser;
 use crate::scheduler::Scheduler;
+use crate::states::definitions::Coordinates;
 
 #[derive(Clone)]
 pub struct Checkbox {
@@ -162,16 +166,11 @@ impl EzObject for Checkbox {
         contents
     }
 
-    fn on_keyboard_enter(&self, view_tree: &mut common::definitions::ViewTree, state_tree: &mut common::definitions::StateTree,
-                         widget_tree: &common::definitions::WidgetTree, callback_tree: &mut common::definitions::CallbackTree,
-                         scheduler: &mut Scheduler) {
+    fn on_press(&self, view_tree: &mut ViewTree, state_tree: &mut StateTree,
+                widget_tree: &WidgetTree, callback_tree: &mut CallbackTree,
+                scheduler: &mut Scheduler) -> bool {
         self.handle_toggle(view_tree, state_tree, widget_tree, callback_tree, scheduler);
-    }
-
-    fn on_left_mouse_click(&self, view_tree: &mut common::definitions::ViewTree, state_tree: &mut common::definitions::StateTree,
-                           widget_tree: &common::definitions::WidgetTree, callback_tree: &mut common::definitions::CallbackTree,
-                           scheduler: &mut Scheduler, _mouse_pos: states::definitions::Coordinates) {
-        self.handle_toggle(view_tree, state_tree, widget_tree, callback_tree, scheduler);
+        true
     }
 }
 impl Checkbox {

@@ -3,13 +3,17 @@
 //! same 'group' field value for all. The radio buttons in a group are mutually exlusive, so when
 //! one is selected the others are deselected. Supports on_value_change callback, which is only
 //! called for the radio button that became active.
+use std::io::Error;
+use crossterm::event::Event;
 use crate::common;
+use crate::common::definitions::{CallbackTree, PixelMap, StateTree, ViewTree, WidgetTree};
 use crate::states;
 use crate::states::radio_button_state::RadioButtonState;
 use crate::states::state::{EzState, GenericState};
 use crate::widgets::widget::{Pixel, EzObject};
 use crate::ez_parser;
 use crate::scheduler::Scheduler;
+use crate::states::definitions::Coordinates;
 
 
 #[derive(Clone)]
@@ -171,21 +175,11 @@ impl EzObject for RadioButton {
         contents
     }
 
-    fn on_keyboard_enter(&self, view_tree: &mut common::definitions::ViewTree,
-                         state_tree: &mut common::definitions::StateTree,
-                         widget_tree: &common::definitions::WidgetTree,
-                         callback_tree: &mut common::definitions::CallbackTree,
-                         scheduler: &mut Scheduler) {
-        self.handle_press(view_tree, state_tree, widget_tree, callback_tree, scheduler)
-    }
-
-    fn on_left_mouse_click(&self, view_tree: &mut common::definitions::ViewTree,
-                           state_tree: &mut common::definitions::StateTree,
-                           widget_tree: &common::definitions::WidgetTree,
-                           callback_tree: &mut common::definitions::CallbackTree,
-                           scheduler: &mut Scheduler,
-                           _mouse_pos: states::definitions::Coordinates) {
-        self.handle_press(view_tree, state_tree, widget_tree, callback_tree, scheduler)
+    fn on_press(&self, view_tree: &mut ViewTree, state_tree: &mut StateTree,
+                widget_tree: &WidgetTree, callback_tree: &mut CallbackTree,
+                scheduler: &mut Scheduler) -> bool {
+        self.handle_press(view_tree, state_tree, widget_tree, callback_tree, scheduler);
+        true
     }
 }
 impl RadioButton {

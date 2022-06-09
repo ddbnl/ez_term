@@ -196,9 +196,11 @@ impl EzObject for Button {
     fn on_press(&self, view_tree: &mut common::definitions::ViewTree,
                 state_tree: &mut common::definitions::StateTree,
                 widget_tree: &common::definitions::WidgetTree,
-                callback_tree: &mut common::definitions::CallbackTree, scheduler: &mut Scheduler) {
+                callback_tree: &mut common::definitions::CallbackTree, scheduler: &mut Scheduler)
+    -> bool {
 
         self.handle_on_press(view_tree, state_tree, widget_tree, callback_tree, scheduler);
+        true
     }
 }
 impl Button {
@@ -232,7 +234,7 @@ impl Button {
             self.get_full_path().clone(), view_tree, state_tree, widget_tree, scheduler);
         if let Some(ref mut i) = callback_tree
             .get_mut(&self.get_full_path()).unwrap().on_press {
-            i(context)
+            i(context);
         }
     }
 }
