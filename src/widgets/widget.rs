@@ -270,12 +270,16 @@ pub trait EzObject {
                          callback_tree: &mut common::definitions::CallbackTree,
                          scheduler: &mut Scheduler) -> bool {
 
-        if let Some(ref mut i) = callback_tree
+        let mut consumed = false;
+         if let Some(ref mut i) = callback_tree
             .get_mut(&self.get_full_path()).unwrap().on_keyboard_enter {
-            i(common::definitions::EzContext::new(self.get_full_path().clone(),
-            view_tree, state_tree, widget_tree, scheduler));
+            consumed = i(common::definitions::EzContext::new(self.get_full_path().clone(),
+                view_tree, state_tree, widget_tree, scheduler));
+        };
+        if !consumed {
+            consumed = self.on_press(view_tree, state_tree, widget_tree, callback_tree, scheduler)
         }
-        self.on_press(view_tree, state_tree, widget_tree, callback_tree, scheduler)
+        consumed
 
     }
 
@@ -289,13 +293,17 @@ pub trait EzObject {
                            scheduler: &mut Scheduler, mouse_pos: states::definitions::Coordinates)
     -> bool {
 
+        let mut consumed = false;
         if let Some(ref mut i) = callback_tree
             .get_mut(&self.get_full_path()).unwrap().on_left_mouse_click {
-            i(common::definitions::EzContext::new(self.get_full_path().clone(),
+            consumed = i(common::definitions::EzContext::new(self.get_full_path().clone(),
                                      view_tree, state_tree, widget_tree, scheduler),
               mouse_pos);
         }
-        self.on_press(view_tree, state_tree, widget_tree, callback_tree, scheduler)
+        if !consumed {
+            consumed = self.on_press(view_tree, state_tree, widget_tree, callback_tree, scheduler);
+        }
+        consumed
     }
 
     /// Called on an object when it is selected and the user presses enter on the keyboard or
@@ -309,7 +317,7 @@ pub trait EzObject {
 
         if let Some(ref mut i) = callback_tree
             .get_mut(&self.get_full_path()).unwrap().on_press {
-            return i(common::definitions::EzContext::new(self.get_full_path().clone(),
+            i(common::definitions::EzContext::new(self.get_full_path().clone(),
                                      view_tree, state_tree, widget_tree, scheduler));
         }
         false

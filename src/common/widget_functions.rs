@@ -10,7 +10,7 @@ pub fn open_popup(template: String, state_tree: &mut common::definitions::StateT
                   scheduler: &mut Scheduler) -> String {
     
     let (path, sub_tree) = state_tree.get_mut("/root").unwrap().as_layout_mut()
-        .open_popup(template);
+        .open_popup(template, scheduler);
     state_tree.extend(sub_tree);
     scheduler.set_callback_config(path.clone(),
                                   states::definitions::CallbackConfig::default());

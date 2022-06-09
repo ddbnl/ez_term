@@ -126,7 +126,7 @@ fn test_checkbox_on_value_change(context: common::definitions::EzContext) -> boo
         .as_label_mut();
     label_state.set_text(text.to_string());
     label_state.get_colors_config_mut().foreground = color;
-    true
+    false
 }
 
 
@@ -160,7 +160,7 @@ fn test_radio_button_on_value_change(context: common::definitions::EzContext) ->
         .as_label_mut();
     label_state.set_text(name);
     label_state.get_colors_config_mut().foreground = color;
-    true
+    false
 }
 
 // As an example we will change the label next to a dropdown display the active dropdown choice.
@@ -180,7 +180,7 @@ fn test_dropdown_on_value_change(context: common::definitions::EzContext) -> boo
         .get_mut("/root/left_box/bottom_box/small_box_3/dropdown_section_box/dropdown_box/dropdown_label")
         .unwrap()
         .as_label_mut().set_text(value);
-    true
+    false
 }
 
 
@@ -201,7 +201,7 @@ fn test_text_input_on_value_change(context: common::definitions::EzContext) -> b
         .get_mut("/root/left_box/bottom_box/small_box_1/input_3_box/input_3_label")
         .unwrap()
         .as_label_mut().set_text(value);
-    true
+    false
 }
 
 
@@ -226,7 +226,7 @@ fn test_text_input_on_keyboard_enter(context: common::definitions::EzContext) ->
         .get_mut("/root/left_box/bottom_box/small_box_1/input_3_box/input_3_label")
         .unwrap()
         .as_label_mut().set_text(format!("{} CONFIRMED", value));
-    true
+    false
 }
 
 
@@ -243,7 +243,7 @@ fn test_on_button_press(context: common::definitions::EzContext) -> bool {
         label_state.get_text().split_once(':').unwrap().1.trim().split_once("times")
             .unwrap().0.trim().parse().unwrap();
     label_state.set_text(format!("Clicked: {} times", number + 1));
-    true
+    false
 }
 
 
@@ -276,5 +276,5 @@ fn test_popup_button_on_press(context: common::definitions::EzContext) -> bool {
     context.scheduler.update_callback_config(
         format!("{}/dismiss_button", popup_path.clone()),
         states::definitions::CallbackConfig::from_on_press(Box::new(dismiss_delay)));
-    true
+    false
 }

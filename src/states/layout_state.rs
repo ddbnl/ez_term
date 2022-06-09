@@ -1,6 +1,9 @@
 use std::collections::HashMap;
+use crossterm::style::Stylize;
 use crate::common;
+use crate::scheduler::Scheduler;
 use crate::states;
+use crate::states::definitions::LayoutMode;
 use crate::states::state::GenericState;
 use crate::widgets::widget::EzObjects;
 
@@ -27,6 +30,12 @@ pub struct LayoutState {
     /// Automatically adjust size of widget to content
     pub auto_scale: states::definitions::AutoScale,
 
+    /// Layout mode enum, see [LayoutMode] for options
+    pub mode: states::definitions::LayoutMode,
+
+    /// Orientation enum, see [LayoutOrientation] for options
+    pub orientation: states::definitions::LayoutOrientation,
+
     /// Amount of space to leave between sides of the widget and other widgets
     pub padding: states::definitions::Padding,
 
@@ -35,6 +44,15 @@ pub struct LayoutState {
 
     /// Vertical alignment of this widget
     pub valign: states::definitions::VerticalAlignment,
+
+    /// Name shown for tab if [is_tab] is true and parent [is_tabbed]
+    pub tab_name: String,
+
+    /// Path to active tab (i.e. its content is visible)
+    pub active_tab: String,
+
+    /// Path to active tab header button
+    pub selected_tab_header: String,
 
     /// Bool representing whether this layout should be filled with [filler_symbol] in positions
     /// where it does not get other content from [get_contents]
@@ -84,9 +102,14 @@ impl Default for LayoutState {
             pos_hint: states::definitions::PosHint::default(),
             size: states::definitions::Size::default(),
             auto_scale: states::definitions::AutoScale::default(),
+            orientation: states::definitions::LayoutOrientation::Horizontal,
+            mode: states::definitions::LayoutMode::Box,
             padding: states::definitions::Padding::default(),
             halign: states::definitions::HorizontalAlignment::Left,
             valign: states::definitions::VerticalAlignment::Top,
+            tab_name: "Tab".to_string(),
+            active_tab: String::new(),
+            selected_tab_header: String::new(),
             fill: false,
             filler_symbol: String::new(),
             scrolling_config: states::definitions::ScrollingConfig::default(),
@@ -221,7 +244,7 @@ impl GenericState for LayoutState {
     }
 
     fn is_selectable(&self) -> bool { self.get_scrolling_config().is_scrolling_x
-        || self.get_scrolling_config().is_scrolling_y }
+        || self.get_scrolling_config().is_scrolling_y || self.mode == LayoutMode::Tabbed }
 
     fn get_selection_order(&self) -> usize { self.selection_order }
 
@@ -240,6 +263,38 @@ impl GenericState for LayoutState {
     fn get_selected(&self) -> bool { self.selected }
 }
 impl LayoutState {
+
+    /// Set [LayoutMode]
+    pub fn set_mode(&mut self, mode: states::definitions::LayoutMode) { self.mode = mode }
+
+    /// Get [LayoutMode]
+    pub fn get_mode(&self) -> &states::definitions::LayoutMode { &self.mode }
+
+    /// Set [LayoutOrientation]
+    pub fn set_orientation(&mut self, orientation: states::definitions::LayoutOrientation) {
+        self.orientation = orientation
+    }
+
+    /// Get [LayoutOrientation]
+    pub fn get_orientation(&self) -> &states::definitions::LayoutOrientation { &self.orientation }
+
+    /// Set the tab that is currently active (i.e. content is showing)
+    pub fn set_active_tab(&mut self, path: String) {
+        if self.active_tab != path { self.changed = true }
+        self.active_tab = path;
+    }
+
+    /// Get the tab that is currently active (i.e. content is showing)
+    pub fn get_active_tab(&self) -> String { self.active_tab.clone() }
+
+    /// Set the tab header that is currently selected
+    pub fn set_selected_tab_header(&mut self, path: String) {
+        if self.selected_tab_header != path { self.changed = true }
+        self.selected_tab_header = path;
+    }
+
+    /// Get the tab header that is currently selected
+    pub fn get_selected_tab_header(&self) -> String { self.selected_tab_header.clone() }
 
     pub fn set_scrolling_config(&mut self, config: states::definitions::ScrollingConfig) {
         if self.scrolling_config != config { self.changed = true }
@@ -263,9 +318,11 @@ impl LayoutState {
     pub fn get_filler_symbol(&self) -> String { self.filler_symbol.clone() }
 
     /// Open a popup based on a template defined in the Ez file. Returns the state of the new popup
-    pub fn open_popup(&mut self, template: String) -> (String, common::definitions::StateTree) {
+    pub fn open_popup(&mut self, template: String, scheduler: &mut Scheduler)
+        -> (String, common::definitions::StateTree) {
         let mut popup = self.templates.get_mut(&template).unwrap().clone();
-        let init_popup = popup.parse(&mut self.templates);
+        let init_popup = popup.parse(&mut self.templates, scheduler,
+                                     "/modal".to_string(), 0);
         self.open_modal(init_popup)
     }
     

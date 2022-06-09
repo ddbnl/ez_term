@@ -93,6 +93,7 @@ Currently supports the following:
   - Box layouts (automatically place widgets next to each other or below each
     other)
   - Float layouts (use size hints and position hints, or hard code positions/sizes)
+  - Tabbed layouts
   - Label 
   - Text input
   - Checkbox 

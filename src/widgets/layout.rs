@@ -2,39 +2,18 @@
 //! Module implementing the Layout struct.
 use std::collections::HashMap;
 use std::io::Error;
+use std::os::raw::c_int;
 use crossterm::event::{Event, KeyCode};
 use crate::ez_parser;
 use crate::common;
-use crate::common::definitions::{CallbackTree, PixelMap, StateTree, ViewTree, WidgetTree};
+use crate::common::definitions::{CallbackTree, EzContext, PixelMap, StateTree, ViewTree, WidgetTree};
 use crate::widgets::widget::{Pixel, EzObject, EzObjects};
 use crate::states::layout_state::LayoutState;
 use crate::states::state::{EzState, GenericState};
 use crate::states;
 use crate::scheduler::Scheduler;
-use crate::states::definitions::Coordinates;
-
-
-/// Used with Box mode, determines whether widgets are placed below or above each other.
-#[derive(Clone)]
-pub enum LayoutOrientation {
-    Horizontal,
-    Vertical
-}
-
-
-/// Different modes determining how widgets are placed in this layout.
-#[derive(Clone)]
-pub enum LayoutMode {
-    /// # Box mode:
-    /// Widgets are placed next to each other or under one another depending on orientation.
-    /// In horizontal orientation widgets always use the full height of the layout, and in
-    /// vertical position they always use the full with.
-    Box,
-    /// Widgets are placed in their hardcoded XY positions.
-    Float,
-    // todo table
-    // todo stack
-}
+use crate::states::definitions::{AutoScale, CallbackConfig, Coordinates, LayoutMode, Size, SizeHint, VerticalAlignment};
+use crate::widgets::button::Button;
 
 
 /// A layout is where widgets live. They implements methods for hardcoding widget placement or
@@ -47,12 +26,6 @@ pub struct Layout {
 
     /// Full path to this layout, e.g. "/root_layout/layout_2/THIS_ID"
     pub path: String,
-
-    /// Layout mode enum, see [LayoutMode] for options
-    pub mode: LayoutMode,
-
-    /// Orientation enum, see [LayoutOrientation] for options
-    pub orientation: LayoutOrientation,
 
     /// List of children widgets and/or layouts
     pub children: Vec<EzObjects>,
@@ -70,8 +43,6 @@ impl Default for Layout {
         Layout {
             id: "".to_string(),
             path: String::new(),
-            orientation: LayoutOrientation::Horizontal,
-            mode: LayoutMode::Box,
             children: Vec::new(),
             child_lookup: HashMap::new(),
             state: LayoutState::default(),
@@ -136,16 +107,19 @@ impl EzObject for Layout {
             "padding_right" =>
                 self.state.set_padding_right(parameter_value.trim().parse().unwrap()),
             "mode" => {
-                match parameter_value.trim() {
-                    "box" => self.set_mode(LayoutMode::Box),
-                    "float" => self.set_mode(LayoutMode::Float),
+                match parameter_value.to_lowercase().trim() {
+                    "box" => self.state.mode = states::definitions::LayoutMode::Box,
+                    "float" => self.state.mode = states::definitions::LayoutMode::Float,
+                    "tabbed" => self.state.mode = states::definitions::LayoutMode::Tabbed,
                     _ => panic!("Invalid parameter value for mode {}", parameter_value)
                 }
             },
             "orientation" => {
                 match parameter_value.trim() {
-                    "horizontal" => self.set_orientation(LayoutOrientation::Horizontal),
-                    "vertical" => self.set_orientation(LayoutOrientation::Vertical),
+                    "horizontal" =>
+                        self.state.orientation = states::definitions::LayoutOrientation::Horizontal,
+                    "vertical" =>
+                        self.state.orientation = states::definitions::LayoutOrientation::Vertical,
                     _ => panic!("Invalid parameter value for orientation {}",
                                        parameter_value)
                 }
@@ -205,21 +179,28 @@ impl EzObject for Layout {
         -> common::definitions::PixelMap {
 
         let mut merged_content = common::definitions::PixelMap::new();
-        match self.get_mode() {
-            LayoutMode::Box => {
-                match self.get_orientation() {
-                    LayoutOrientation::Horizontal => {
+        let mode = state_tree.get(&self.path).unwrap().as_layout().mode.clone();
+        let orientation =
+            state_tree.get(&self.path).unwrap().as_layout().orientation.clone();
+        match mode {
+            states::definitions::LayoutMode::Box => {
+                match orientation {
+                    states::definitions::LayoutOrientation::Horizontal => {
                         merged_content = self.get_box_mode_horizontal_orientation_contents(
                             merged_content, state_tree);
                     },
-                    LayoutOrientation::Vertical => {
+                    states::definitions::LayoutOrientation::Vertical => {
                         merged_content = self.get_box_mode_vertical_orientation_contents(
                             merged_content, state_tree);
                     },
                 }
             },
-            LayoutMode::Float => {
-                merged_content = self.get_float_mode_contents(merged_content, state_tree);
+            states::definitions::LayoutMode::Float => {
+                merged_content =
+                    self.get_float_mode_contents(merged_content, state_tree);
+            }
+            states::definitions::LayoutMode::Tabbed => {
+                merged_content = self.get_tabbed_mode_contents(state_tree);
             }
         }
 
@@ -261,12 +242,55 @@ impl EzObject for Layout {
                 self.handle_scroll_down(state);
                 return true
             } else if key.code == KeyCode::Left {
-                self.handle_scroll_left(state);
+                if state.get_mode() == &LayoutMode::Tabbed {
+                    self.handle_tab_left(state_tree);
+                } else {
+                    self.handle_scroll_left(state);
+                }
                 return true
             } else if key.code == KeyCode::Right {
-                self.handle_scroll_right(state);
+                if state.get_mode() == &LayoutMode::Tabbed {
+                    self.handle_tab_right(state_tree);
+                } else {
+                    self.handle_scroll_right(state);
+                }
                 return true
             }
+        }
+        false
+    }
+
+    fn on_select(&self, view_tree: &mut ViewTree, state_tree: &mut StateTree,
+                 widget_tree: &WidgetTree, callback_tree: &mut CallbackTree,
+                 scheduler: &mut Scheduler, mouse_pos: Option<Coordinates>) -> bool {
+
+        for child in self.children.iter() {
+            if let EzObjects::Button(i) = child {
+                state_tree.get_mut(&self.path).unwrap().as_layout_mut()
+                    .selected_tab_header = i.path.clone();
+                return true
+            }
+        }
+        true
+    }
+
+    fn on_deselect(&self, view_tree: &mut ViewTree, state_tree: &mut StateTree,
+                 widget_tree: &WidgetTree, callback_tree: &mut CallbackTree,
+                 scheduler: &mut Scheduler) -> bool {
+
+        state_tree.get_mut(&self.path).unwrap().as_layout_mut()
+            .selected_tab_header.clear();
+        true
+    }
+
+    fn on_keyboard_enter(&self, view_tree: &mut ViewTree, state_tree: &mut StateTree,
+                         widget_tree: &WidgetTree, callback_tree: &mut CallbackTree,
+                         scheduler: &mut Scheduler) -> bool {
+        let state = state_tree.get_mut(&self.path).unwrap().as_layout_mut();
+        if !state.selected_tab_header.is_empty() {
+            state.set_active_tab(state.get_selected_tab_header()
+                .rsplit_once('/').unwrap().0.to_string());
+            return true
         }
         false
     }
@@ -295,7 +319,7 @@ impl EzObject for Layout {
         }
 
         if state.scrolling_config.is_scrolling_y &&
-            mouse_pos.x == state.get_effective_size().width + 1 {
+            mouse_pos.x == state.get_size().width - 1 {
 
             let (scrollbar_size, scrollbar_pos) = self.get_vertical_scrollbar_parameters(
                 state.get_scrolling_config().original_height,
@@ -476,7 +500,7 @@ impl Layout {
         // that case give them '1 / number_of_children'. That way the user can add
         // multiple children in a Box layout and have them distributed equally automatically. Any
         // kind of asymmetry breaks this behavior.
-        if self.children.len() > 1 {
+        if self.children.len() > 1 && own_state.mode != states::definitions::LayoutMode::Tabbed {
             let (all_default_size_hint_x, all_default_size_hint_y) =
                 self.check_default_size_hints(state_tree);
             if all_default_size_hint_x {
@@ -514,8 +538,11 @@ impl Layout {
     /// Check if all chrildren employ default size_hints (i.e. size_hint=1) for x and y
     /// separately.
     fn check_default_size_hints(&self, state_tree: &common::definitions::StateTree) -> (bool, bool) {
+
         let mut all_default_size_hint_x = true;
         let mut all_default_size_hint_y = true;
+        let mut own_orientation = state_tree.get(&self.path).unwrap()
+            .as_layout().orientation.clone();
         for child in self.get_children() {
             if !all_default_size_hint_x && !all_default_size_hint_y {
                 break
@@ -523,7 +550,7 @@ impl Layout {
             let generic_child = child.as_ez_object();
             let state = state_tree.get(&generic_child.get_full_path())
                 .unwrap().as_generic();
-            if let LayoutOrientation::Horizontal = self.orientation {
+            if let states::definitions::LayoutOrientation::Horizontal = own_orientation {
                 if let Some(size_hint_x) = state.get_size_hint().x
                 {
                     if size_hint_x != 1.0 || state.get_auto_scale().width ||
@@ -536,7 +563,7 @@ impl Layout {
             } else {
                 all_default_size_hint_x = false;
             }
-            if let LayoutOrientation::Vertical = self.orientation {
+            if let states::definitions::LayoutOrientation::Vertical = own_orientation {
                 if let Some(size_hint_y) = state.get_size_hint().y {
                     if size_hint_y != 1.0 || state.get_auto_scale().height ||
                         state.get_auto_scale().width || state.get_size().height > 0 {
@@ -606,20 +633,41 @@ impl Layout {
     }
 
     /// Add a child ([Layout] or [EzWidget]) to this Layout.
-    pub fn add_child(&mut self, mut child: EzObjects) {
+    pub fn add_child(&mut self, mut child: EzObjects, scheduler: &mut Scheduler) {
+
         let generic_child = child.as_ez_object_mut();
-        let id;
-        if generic_child.get_id().is_empty() {
-            id = self.children.len().to_string();
-            generic_child.set_id(id.clone());
-        } else {
-            id = generic_child.get_id();
-        }
+        let id = generic_child.get_id().clone();
+        let path = generic_child.get_full_path().clone();
+        let parent_path = self.path.clone();
         if self.child_lookup.contains_key(&id) {
-            panic!("A layout may not contain two children with identical IDs: \"{}\"", id);
+            panic!("A layout may not contain two children with identical IDs: \"{}\"",
+                    generic_child.get_id());
         }
-        self.child_lookup.insert(id, self.children.len());
-        self.children.push(child);
+
+        self.child_lookup.insert(generic_child.get_id().clone(), self.children.len());
+        self.children.push(child.clone());
+
+        if self.state.mode == states::definitions::LayoutMode::Tabbed {
+            if let EzObjects::Layout(_) = child.clone() {
+                let mut tab_header = Button::default();
+                tab_header.id = format!("{}_tab_header", id);
+                tab_header.path = format!("{}/{}", path, tab_header.id.clone());
+                tab_header.state.size_hint = SizeHint::new(None, None);
+                tab_header.state.text = id;
+
+                let tab_on_click = move |context: EzContext| {
+                    context.state_tree
+                        .get_mut(&parent_path)
+                        .unwrap().as_layout_mut()
+                        .set_active_tab(path.clone());
+                    true
+                };
+                let callback_config = CallbackConfig::from_on_press(
+                    Box::new(tab_on_click));
+                scheduler.set_callback_config(tab_header.path.clone(), callback_config);
+                self.add_child(EzObjects::Button(tab_header), scheduler);
+            }
+        }
     }
 
     /// Get an EzWidget trait object for each child [EzWidget] and return it in a
@@ -712,18 +760,6 @@ impl Layout {
         results
     }
 
-    /// Set [LayoutMode]
-    pub fn set_mode(&mut self, mode: LayoutMode) { self.mode = mode }
-
-    /// Get [LayoutMode]
-    pub fn get_mode(&self) -> &LayoutMode { &self.mode }
-
-    /// Set [LayoutOrientation]
-    pub fn set_orientation(&mut self, orientation: LayoutOrientation) { self.orientation = orientation }
-
-    /// Get [LayoutOrientation]
-    pub fn get_orientation(&self) -> &LayoutOrientation { &self.orientation }
-
     /// Fill any empty positions with [Pixel] from [get_filler]
     pub fn add_user_filler(&self, state_tree: &mut common::definitions::StateTree, mut contents: common::definitions::PixelMap)
                            -> common::definitions::PixelMap {
@@ -776,6 +812,130 @@ impl Layout {
     }
 }
 
+
+// Tabbed mode implementations
+impl Layout {
+
+    fn handle_tab_left(&self, state_tree: &mut StateTree) {
+
+        let mut next_button = false;
+        for child in self.children.iter().rev() {
+            if let EzObjects::Button(ref widget) = child {
+                let state = state_tree
+                    .get_mut(&widget.path).unwrap().as_generic_mut();
+                if next_button {
+                    state_tree.get_mut(&self.path)
+                        .unwrap().as_layout_mut().set_selected_tab_header(widget.path.clone());
+                    return
+                } else if state_tree
+                    .get_mut(&self.path).unwrap().as_layout_mut().selected_tab_header ==
+                    widget.path {
+                    next_button = true;
+                }
+            }
+        }
+    }
+
+    fn handle_tab_right(&self, state_tree: &mut StateTree) {
+
+        let mut next_button = false;
+        for child in self.children.iter() {
+            if let EzObjects::Button(ref widget) = child {
+                let state = state_tree
+                    .get_mut(&widget.path).unwrap().as_generic_mut();
+                if next_button {
+                    state_tree.get_mut(&self.path)
+                        .unwrap().as_layout_mut().set_selected_tab_header(widget.path.clone());
+                    return
+                } else if state_tree
+                    .get_mut(&self.path).unwrap().as_layout_mut().selected_tab_header ==
+                    widget.path {
+                    next_button = true;
+                }
+            }
+        }
+    }
+
+    fn get_tabbed_mode_contents(&self, state_tree: &mut StateTree) -> PixelMap {
+
+        if self.children.is_empty() { return common::definitions::PixelMap::new() }
+        let state = state_tree.get_mut(&self.path).unwrap().as_layout_mut();
+        let own_size = state.get_effective_size();
+        let own_pos = state.get_effective_absolute_position();
+        let own_colors = state.colors.clone();
+        let selection = state.selected_tab_header.clone();
+        if state.active_tab.is_empty() {
+            state.set_active_tab(self.children[0].as_ez_object().get_full_path());
+        }
+        let active_tab = state.active_tab.clone();
+
+        let mut button_content = PixelMap::new();
+        let mut tab_content = PixelMap::new();
+        let mut pos_x: usize = 0;
+        for child in self.get_children() {
+            if let EzObjects::Layout(i) = child {
+                if i.get_full_path() != active_tab { continue }
+                let child_state = state_tree
+                    .get_mut(&child.as_ez_object().get_full_path()).unwrap().as_generic_mut();
+                child_state.set_effective_height(own_size.height - 3);
+                child_state.set_effective_width(own_size.width - 1);
+                child_state.set_position(Coordinates::new(0, 3));
+                child_state.set_absolute_position(Coordinates::new(
+                    own_pos.x, own_pos.y + 3));
+                tab_content = i.get_contents(state_tree);
+            } else if let EzObjects::Button(i) = child {
+
+                let child_state = state_tree
+                    .get_mut(&i.path).unwrap().as_button_mut();
+
+                child_state.colors.foreground =
+                    if selection == i.path { own_colors.selection_foreground }
+                    else if active_tab.rsplit_once('/').unwrap().1 == child_state.text {
+                        own_colors.active_foreground
+                    } else { own_colors.foreground };
+
+                child_state.colors.background =
+                    if selection == i.path { own_colors.selection_background }
+                    else if active_tab.rsplit_once('/').unwrap().1 == child_state.text {
+                        own_colors.active_background
+                    } else { own_colors.background };
+
+                child_state.set_size_hint(SizeHint::new(None, None));
+                child_state.set_auto_scale(AutoScale::new(true, true));
+                child_state.set_effective_width(own_size.width);
+                child_state.set_effective_height(1);
+                child_state.set_x(pos_x);
+                child_state.set_y(0);
+                let content = i.get_contents(state_tree);
+                let child_state = state_tree
+                    .get_mut(&child.as_ez_object().get_full_path()).unwrap().as_button_mut();
+                child_state.size = Size::new(child_state.text.len() + 2, 3);
+                button_content = self.merge_horizontal_contents(
+                    button_content, content,
+                    Size::new(own_size.width,3),own_colors.clone(),
+                    child_state, VerticalAlignment::Top);
+                child_state.set_absolute_position(
+                    Coordinates::new(own_pos.x + pos_x, own_pos.y + 1));
+                pos_x = button_content.len();
+
+            }
+        }
+        let fill_pixel = Pixel::new(" ".to_string(),
+                                    own_colors.foreground,
+                                    own_colors.background);
+        while button_content.len() < own_size.width {
+            let row =  vec!(fill_pixel.clone(), fill_pixel.clone(), fill_pixel.clone());
+            button_content.push(row);
+        }
+        let state = state_tree.get_mut(&self.path).unwrap().as_layout_mut();
+        self.merge_vertical_contents(
+            button_content,
+            tab_content,
+            own_size.clone(), own_colors.clone(), state,
+            states::definitions::HorizontalAlignment::Left
+        )
+    }
+}
 
 // Box mode implementations
 impl Layout {

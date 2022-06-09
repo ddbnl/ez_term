@@ -4,6 +4,7 @@ use std::collections::HashMap;
 use std::fs::File;
 use std::io::prelude::*;
 use std::io::{Error, ErrorKind};
+use std::ptr::hash;
 use crossterm::style::Color;
 use std::str::FromStr;
 use crossterm::terminal::size;
@@ -18,6 +19,7 @@ use crate::widgets::text_input::TextInput;
 use crate::widgets::dropdown::Dropdown;
 use crate::widgets::widget::{EzObjects, EzObject};
 use crate::{common, states};
+use crate::common::definitions::Templates;
 use crate::scheduler::Scheduler;
 use crate::states::state::{GenericState};
 
@@ -28,8 +30,7 @@ pub fn load_ez_ui(file_path: &str) -> (Layout, Scheduler) {
     let mut file = File::open(file_path).expect("Unable to open file");
     let mut contents = String::new();
     file.read_to_string(&mut contents).expect("Unable to read file");
-    let root_widget = parse_ez(contents).unwrap();
-    let scheduler = Scheduler::default();
+    let (root_widget, scheduler) = parse_ez(contents).unwrap();
     (root_widget, scheduler)
 }
 
@@ -38,7 +39,7 @@ pub fn load_ez_ui(file_path: &str) -> (Layout, Scheduler) {
 /// widget definition found there as the root widget (must be a layout or panic). Then parse the
 /// root widget definition into the actual widget, which will parse sub-widgets, who will parse
 /// their sub-widgets, etc. Thus recursively loading the UI.
-fn parse_ez(file_string: String) -> Result<Layout, Error> {
+fn parse_ez(file_string: String) -> Result<(Layout, Scheduler), Error> {
 
     let config_lines:Vec<String> = file_string.lines().map(|x| x.to_string()).collect();
     let (_, mut widgets, templates) =
@@ -47,11 +48,11 @@ fn parse_ez(file_string: String) -> Result<Layout, Error> {
     if root_widget.type_name != "Layout" {
         panic!("Root widget of an Ez file must be a Layout")
     }
-    let mut initialized_root_widget = root_widget.parse_as_root(templates);
-    // Set full paths for all widgets now that they have all been initialized.
-    initialized_root_widget.propagate_paths();
 
-    Ok(initialized_root_widget)
+    let mut scheduler = Scheduler::default();
+    let mut initialized_root_widget = root_widget.parse_as_root(templates, &mut scheduler);
+
+    Ok((initialized_root_widget, scheduler))
 }
 
 
@@ -87,21 +88,25 @@ impl EzWidgetDefinition {
 
     /// Parse a definition as the root layout. The normal parsed method results in a generic
     /// EzObjects enum, whereas the root widget should be a Layout specifically.
-    fn parse_as_root(&mut self, mut templates: common::definitions::Templates) -> Layout {
+    fn parse_as_root(&mut self, mut templates: Templates, scheduler: &mut Scheduler) -> Layout {
 
         let (config, mut sub_widgets, _) =
             parse_level(self.content.clone(), self.indentation_offset, self.line_offset)
                 .unwrap();
         let mut initialized = Layout::default();
+        initialized.set_id("root".to_string());
+        initialized.set_full_path("/root".to_string());
         for line in config {
             let (parameter_name, parameter_value) = line.split_once(':')
                 .unwrap();
             initialized.load_ez_parameter(parameter_name.to_string(),
                                           parameter_value.to_string());
         }
-        for sub_widget in sub_widgets.iter_mut() {
-            let initialized_sub_widget = sub_widget.parse(&mut templates);
-            initialized.add_child(initialized_sub_widget);
+        for (i, sub_widget) in sub_widgets.iter_mut().enumerate() {
+            let mut initialized_sub_widget = sub_widget.parse(
+                &mut templates, scheduler, initialized.get_full_path().clone(),
+            i);
+            initialized.add_child(initialized_sub_widget, scheduler);
         }
         let terminal_size = size().unwrap();
         if initialized.state.get_size().width == 0  {
@@ -110,37 +115,64 @@ impl EzWidgetDefinition {
         if initialized.state.get_size().height == 0 {
             initialized.state.get_size_mut().height = terminal_size.1 as usize;
         }
-        initialized.set_id("root".to_string());
-        initialized.set_full_path(format!("/root"));
         initialized.state.templates = templates;
         initialized
     }
 
     /// Parse a definition by separating the config lines from the sub widget definitions. Then
     /// apply the config to the initialized widget, then initialize and add sub widgets.
-    pub fn parse(&mut self, templates: &mut common::definitions::Templates) -> EzObjects {
+    pub fn parse(&mut self, templates: &mut Templates, scheduler: &mut Scheduler,
+                 parent_path: String, order: usize) -> EzObjects {
 
         let (config, mut sub_widgets, _) =
             parse_level(self.content.clone(), self.indentation_offset, self.line_offset)
                 .unwrap();
-        let initialized = self.initialize(config, templates).unwrap();
-        if let EzObjects::Layout(mut i) = initialized {
-            for sub_widget in sub_widgets.iter_mut() {
-                let initialized_sub_widget = sub_widget.parse(templates);
-                i.add_child(initialized_sub_widget);
+        let mut initialized = self.initialize(config.clone(), templates, scheduler,
+                                          parent_path.clone(), order).unwrap();
+        let id;
+        if initialized.as_ez_object().get_id().is_empty() {
+            id = order.to_string();
+            initialized.as_ez_object_mut().set_id(id.clone());
+        } else {
+            id = initialized.as_ez_object().get_id();
+        }
+        let path = format!("{}/{}", parent_path.clone(), id);
+        initialized.as_ez_object_mut().set_full_path(path.clone());
+        if let EzObjects::Layout(mut obj) = initialized {
+            for (i, sub_widget) in sub_widgets.iter_mut().enumerate() {
+                let mut initialized_sub_widget = sub_widget.parse(templates, scheduler,
+                                                              path.clone(), i);
+
+                obj.add_child(initialized_sub_widget, scheduler);
             }
-            return EzObjects::Layout(i)
+            return EzObjects::Layout(obj)
         }
         initialized
     }
 
     /// Initialize a widget object based on the type specified by the definition.
-    fn initialize(&mut self, config: Vec<String>, templates: &mut common::definitions::Templates)
+    fn initialize(&mut self, config: Vec<String>, templates: &mut Templates,
+                  scheduler: &mut Scheduler, parent_path: String, order: usize)
         -> Result<EzObjects, Error> {
+
+        // return new root
         if templates.contains_key(&self.type_name) {
             let template = templates.get_mut(&self.type_name).unwrap();
-            let mut object = template.clone().parse(templates);
+            let mut object = template.clone().parse(templates, scheduler, parent_path.clone(),
+                                                    order);
             object.as_ez_object_mut().load_ez_config(config).unwrap();
+            let id;
+            if object.as_ez_object().get_id().is_empty() {
+                id = order.to_string();
+                object.as_ez_object_mut().set_id(id.clone());
+            } else {
+                id = object.as_ez_object().get_id();
+            }
+            let path = format!("{}/{}", parent_path.clone(), id);
+            object.as_ez_object_mut().set_full_path(path.clone());
+            if let EzObjects::Layout(ref mut i) = object {
+                i.propagate_paths();
+            }
             return Ok(object);
 
         }

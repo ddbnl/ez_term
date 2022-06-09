@@ -32,17 +32,27 @@
             - DropdownShowcaseBox:
                 id: small_box_3
     - Layout:
-        id: lorem_box
-        mode: box
-        orientation: horizontal
-        scroll_y: true
+        id: tabbed_box
+        mode: tabbed
         size_hint_x: 1/5
         border: True
         selection_order: 50
-        selection_fg_color: red
-        - Label:
-            size_hint_y: none
-            from_file: ./Examples/dummy.txt
+        - Layout:
+            id: Tab 1
+            mode: box
+            orientation: horizontal
+            scroll_y: true
+            selection_order: 55
+            selection_fg_color: red
+            - Label:
+                size_hint_y: none
+                from_file: ./Examples/dummy.txt
+        - Layout:
+            id: Tab 2
+            mode: box
+            orientation: vertical
+            - Label:
+                text: This is a label on a second tab.
 
 
 // The first templates we define are basic layouts and widgets that we use multiple times. They're basically

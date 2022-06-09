@@ -199,8 +199,19 @@ impl EzObject for Button {
                 callback_tree: &mut common::definitions::CallbackTree, scheduler: &mut Scheduler)
     -> bool {
 
-        self.handle_on_press(view_tree, state_tree, widget_tree, callback_tree, scheduler);
-        true
+        let context = common::definitions::EzContext::new(
+            self.get_full_path().clone(), view_tree, state_tree, widget_tree, scheduler);
+
+        let mut consumed = false;
+        if let Some(ref mut i) = callback_tree
+            .get_mut(&self.get_full_path()).unwrap().on_press {
+            consumed = i(context);
+        }
+        if !consumed {
+            self.handle_on_press(state_tree, scheduler);
+            return true
+        }
+        consumed
     }
 }
 impl Button {
@@ -209,13 +220,11 @@ impl Button {
     pub fn from_config(config: Vec<String>) -> Self {
         let mut obj = Button::default();
         obj.load_ez_config(config).unwrap();
+        obj.state.border_config.enabled = true;
         obj
     }
 
-    pub fn handle_on_press(&self, view_tree: &mut common::definitions::ViewTree,
-                           state_tree: &mut common::definitions::StateTree,
-                           widget_tree: &common::definitions::WidgetTree,
-                           callback_tree: &mut common::definitions::CallbackTree,
+    pub fn handle_on_press(&self, state_tree: &mut common::definitions::StateTree,
                            scheduler: &mut Scheduler) {
 
         state_tree.get_mut(&self.get_full_path()).unwrap().as_button_mut()
@@ -230,11 +239,5 @@ impl Button {
         scheduler.schedule_once(self.get_full_path().clone(),
                                         Box::new(scheduled_func),
                                         Duration::from_millis(50));
-        let context = common::definitions::EzContext::new(
-            self.get_full_path().clone(), view_tree, state_tree, widget_tree, scheduler);
-        if let Some(ref mut i) = callback_tree
-            .get_mut(&self.get_full_path()).unwrap().on_press {
-            i(context);
-        }
     }
 }

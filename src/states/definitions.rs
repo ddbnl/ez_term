@@ -2,6 +2,36 @@ use crossterm::event::KeyCode;
 use crossterm::style::Color;
 use crate::common;
 
+
+/// Used with Box mode [Layout], determines whether widgets are placed below or above each other.
+#[derive(Clone, PartialEq)]
+pub enum LayoutOrientation {
+    Horizontal,
+    Vertical
+}
+
+
+/// Different modes determining how widgets are placed in a [Layout].
+#[derive(Clone, PartialEq)]
+pub enum LayoutMode {
+
+    /// # Box mode:
+    /// Widgets are placed next to each other or under one another depending on orientation.
+    /// In horizontal orientation widgets always use the full height of the layout, and in
+    /// vertical position they always use the full with.
+    Box,
+
+    /// Widgets are placed according to [PositionHint] or in their hardcoded XY positions.
+    Float,
+
+    /// Can only contains other layouts and presents those as tabs
+    Tabbed
+
+    // todo table
+    // todo stack
+}
+
+
 #[derive(PartialEq, Clone, Copy, Debug)]
 pub enum HorizontalAlignment {
     Left,
@@ -303,6 +333,12 @@ pub struct ColorConfig {
     /// The [Pixel.background_color] to use for this widgets' content when selected
     pub selection_background: Color,
 
+    /// The [Pixel.foreground_color] to use for this widgets' content is active
+    pub active_foreground: Color,
+
+    /// The [Pixel.background_color] to use for this widgets' content is active
+    pub active_background: Color,
+
     /// The [Pixel.foreground_color] to use for this widgets' content when flashed
     pub flash_foreground: Color,
 
@@ -327,6 +363,8 @@ impl Default for ColorConfig {
             foreground: Color::White,
             selection_foreground: Color::Yellow,
             selection_background: Color::Blue,
+            active_foreground: Color::Red,
+            active_background: Color::Black,
             flash_foreground: Color::Yellow,
             flash_background: Color::White,
             filler_background: Color::Black,

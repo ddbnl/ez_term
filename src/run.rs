@@ -313,8 +313,7 @@ fn handle_mouse_event(event: MouseEvent, view_tree: &mut common::definitions::Vi
                         view_tree, state_tree, widget_tree, callback_tree, scheduler);
 
                     let consumed = widget.on_left_mouse_click(view_tree, state_tree, widget_tree,
-                                               callback_tree, scheduler,
-                                               relative_position);
+                                               callback_tree, scheduler,relative_position);
                     if consumed && state_tree.get(&widget.get_full_path()).unwrap().as_generic()
                             .is_selectable() {
                         widget.on_select(view_tree, state_tree, widget_tree, callback_tree,

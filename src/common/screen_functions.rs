@@ -75,10 +75,29 @@ pub fn redraw_changed_widgets(view_tree: &mut common::definitions::ViewTree, sta
 pub fn redraw_widgets(paths: Vec<String>, view_tree: &mut common::definitions::ViewTree, state_tree: &mut common::definitions::StateTree,
                       root_widget: &mut Layout) {
 
-    for mut widget_path in paths.into_iter() {
+    'outer: for mut widget_path in paths.into_iter() {
         if widget_path.is_empty() || widget_path == root_widget.path {
             root_widget.redraw(view_tree, state_tree);
         } else {
+            // If the widget is part of a tab somewhere upstream it should only be redrawn if that
+            // tab is also active
+            let mut check_parent_tab =
+                widget_path.rsplit_once('/').unwrap().0.to_string();
+            let mut check_child_tab = widget_path.clone();
+            loop {
+                let parent_state =
+                    state_tree.get(&check_parent_tab).unwrap().as_layout();
+                if parent_state.mode == states::definitions::LayoutMode::Tabbed &&
+                    parent_state.active_tab != check_child_tab &&
+                    check_child_tab.rsplit_once('/').unwrap().1 !=
+                        format!("{}_tab_header", check_parent_tab.split_once('/').unwrap().1) {
+                    continue 'outer
+                }
+                if check_parent_tab == "/root" { break }
+                check_child_tab = check_parent_tab.clone();
+                check_parent_tab = check_parent_tab.rsplit_once('/').unwrap().0.to_string();
+            }
+
             // If the widget has infinite height or width then somewhere upstream it is
             // scrolled; we will find the origin of the scroll and redraw that widget instead
             // to keep the view intact.
