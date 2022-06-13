@@ -872,6 +872,8 @@ impl Layout {
         let mut button_content = PixelMap::new();
         let mut tab_content = PixelMap::new();
         let mut pos_x: usize = 0;
+        let mut selected_pos_x: usize = 0;
+        let mut selected_width: usize = 0;
         for child in self.get_children() {
             if let EzObjects::Layout(i) = child {
                 if i.get_full_path() != active_tab { continue }
@@ -893,7 +895,6 @@ impl Layout {
                     else if active_tab.rsplit_once('/').unwrap().1 == child_state.text {
                         own_colors.active_foreground
                     } else { own_colors.foreground };
-
                 child_state.colors.background =
                     if selection == i.path { own_colors.selection_background }
                     else if active_tab.rsplit_once('/').unwrap().1 == child_state.text {
@@ -912,10 +913,17 @@ impl Layout {
                 child_state.size = Size::new(child_state.text.len() + 2, 3);
                 button_content = self.merge_horizontal_contents(
                     button_content, content,
-                    Size::new(own_size.width,3),own_colors.clone(),
+                    Size::new(own_size.width - 1,3),own_colors.clone(),
                     child_state, VerticalAlignment::Top);
                 child_state.set_absolute_position(
                     Coordinates::new(own_pos.x + pos_x, own_pos.y + 1));
+
+                if (!selection.is_empty() && selection == i.path) || (selection.is_empty() &&
+                    active_tab == i.path.rsplit_once('/').unwrap().0) {
+                    selected_pos_x = pos_x;
+                    selected_width = child_state.size.width;
+                }
+
                 pos_x = button_content.len();
 
             }
@@ -923,10 +931,33 @@ impl Layout {
         let fill_pixel = Pixel::new(" ".to_string(),
                                     own_colors.foreground,
                                     own_colors.background);
+        if own_size.width < selected_pos_x + selected_width  {
+            let mut difference = (selected_pos_x + selected_width) - own_size.width;
+            if button_content.len() - difference > 3 {
+                difference += 3;
+            }
+            button_content = button_content[difference..].to_vec();
+            for child in self.children.iter() {
+                if let EzObjects::Button(button) = child {
+                    let state = state_tree
+                        .get_mut(&button.path).unwrap().as_button_mut();
+                    state.set_x(if state.get_position().x >= difference
+                    { state.get_position().x - difference } else { 0 });
+                    state.set_absolute_position(Coordinates::new(
+                        if state.get_absolute_position().x >= difference
+                        { state.get_absolute_position().x - difference } else { 0 },
+                    state.get_absolute_position().y));
+                }
+            }
+        }
+        if button_content.len() > own_size.width {
+            button_content = button_content[..own_size.width].to_vec();
+        }
         while button_content.len() < own_size.width {
             let row =  vec!(fill_pixel.clone(), fill_pixel.clone(), fill_pixel.clone());
             button_content.push(row);
         }
+
         let state = state_tree.get_mut(&self.path).unwrap().as_layout_mut();
         self.merge_vertical_contents(
             button_content,

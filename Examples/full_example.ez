@@ -53,6 +53,24 @@
             orientation: vertical
             - Label:
                 text: This is a label on a second tab.
+        - Layout:
+            id: Tab 3
+            mode: box
+            orientation: vertical
+            - Label:
+                text: This is a label on a third tab.
+        - Layout:
+            id: Tab 4
+            mode: box
+            orientation: vertical
+            - Label:
+                text: This is a label on a fourth tab.
+        - Layout:
+            id: Tab 5
+            mode: box
+            orientation: vertical
+            - Label:
+                text: This is a label on a fifth tab.
 
 
 // The first templates we define are basic layouts and widgets that we use multiple times. They're basically
