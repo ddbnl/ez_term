@@ -7,7 +7,7 @@ use std::collections::HashMap;
 use crate::common;
 use crate::widgets::layout::Layout;
 use crate::states;
-use crate::widgets::widget::{EzObjects, Pixel, EzObject};
+use crate::widgets::widget::{Pixel, EzObject};
 
 
 /// Write content to a [ViewTree]. Only writes differences. By writing to a view tree first and then
@@ -61,43 +61,29 @@ pub fn redraw_changed_widgets(view_tree: &mut common::definitions::ViewTree, sta
     // We update the root widgets' state only. It's a special case because it can hold new
     // modals it might need to access internally.
     root_widget.state = state_tree.get_mut("/root").unwrap().as_layout().clone();
-    let (force_redraw, widgets_to_redraw, modals_to_redraw)
+    let (mut force_redraw, widgets_to_redraw, modals_to_redraw)
         = get_widgets_to_redraw(state_tree);
+    if !modals_to_redraw.is_empty() {
+        force_redraw = true;
+    }
     if !force_redraw {
         redraw_widgets(widgets_to_redraw, view_tree, state_tree, root_widget);
-        redraw_modals(modals_to_redraw, view_tree, state_tree, root_widget);
     }
     force_redraw
 }
 
 
 /// Redraw a list of widgets.
-pub fn redraw_widgets(paths: Vec<String>, view_tree: &mut common::definitions::ViewTree, state_tree: &mut common::definitions::StateTree,
-                      root_widget: &mut Layout) {
+pub fn redraw_widgets(paths: Vec<String>, view_tree: &mut common::definitions::ViewTree,
+                      state_tree: &mut common::definitions::StateTree, root_widget: &mut Layout) {
 
     'outer: for mut widget_path in paths.into_iter() {
         if widget_path.is_empty() || widget_path == root_widget.path {
             root_widget.redraw(view_tree, state_tree);
         } else {
-            // If the widget is part of a tab somewhere upstream it should only be redrawn if that
-            // tab is also active
-            let mut check_parent_tab =
-                widget_path.rsplit_once('/').unwrap().0.to_string();
-            let mut check_child_tab = widget_path.clone();
-            loop {
-                let parent_state =
-                    state_tree.get(&check_parent_tab).unwrap().as_layout();
-                if parent_state.mode == states::definitions::LayoutMode::Tabbed &&
-                    parent_state.active_tab != check_child_tab &&
-                    check_child_tab.rsplit_once('/').unwrap().1 !=
-                        format!("{}_tab_header", check_parent_tab.split_once('/').unwrap().1) {
-                    continue 'outer
-                }
-                if check_parent_tab == "/root" { break }
-                check_child_tab = check_parent_tab.clone();
-                check_parent_tab = check_parent_tab.rsplit_once('/').unwrap().0.to_string();
+            if common::widget_functions::widget_is_hidden(widget_path.clone(), state_tree) {
+                continue 'outer
             }
-
             // If the widget has infinite height or width then somewhere upstream it is
             // scrolled; we will find the origin of the scroll and redraw that widget instead
             // to keep the view intact.
@@ -112,31 +98,6 @@ pub fn redraw_widgets(paths: Vec<String>, view_tree: &mut common::definitions::V
                 }
             }
             root_widget.get_child_by_path_mut(&widget_path).unwrap().as_ez_object_mut()
-                .redraw(view_tree, state_tree);
-        }
-    }
-}
-
-
-/// Redraw a list of modals
-pub fn redraw_modals(paths: Vec<String>, view_tree: &mut common::definitions::ViewTree, state_tree: &mut common::definitions::StateTree,
-                     root_widget: &mut Layout) {
-
-    for modal_path in paths.iter() {
-        let modal = root_widget.state.open_modals.first_mut().unwrap();
-        if let EzObjects::Layout(ref mut i) = modal {
-            if modal_path == &i.get_full_path() {
-                i.redraw(view_tree, state_tree);
-            } else {
-                for child in i.get_widgets_recursive().values() {
-                    if modal_path == &child.as_ez_object().get_full_path() {
-                        child.as_ez_object().redraw(view_tree, state_tree);
-                    }
-                }
-            }
-        } else if modal_path == &root_widget.state.open_modals.first_mut().unwrap()
-            .as_ez_object().get_full_path() {
-            root_widget.state.open_modals.first_mut().unwrap().as_ez_object()
                 .redraw(view_tree, state_tree);
         }
     }

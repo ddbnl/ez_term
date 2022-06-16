@@ -150,7 +150,7 @@ impl EzObject for Label {
         }
 
 
-        let chunk_size = if state.get_size().infinite_width {text.len()}
+        let chunk_size = if state.get_size().infinite_width || state.get_auto_scale().width {text.len() + 1}
                                else {state.get_effective_size().width};
         let content_lines = common::widget_functions::wrap_text(text, chunk_size);
         // If content is scrolled simply scale to length of content on that axis

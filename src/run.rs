@@ -9,6 +9,7 @@ use crossterm::{ExecutableCommand, execute, Result, cursor::{Hide, Show},
                         EnableMouseCapture, Event, KeyCode, KeyEvent},
                 terminal::{disable_raw_mode, enable_raw_mode, self}, QueueableCommand};
 use crate::common;
+use crate::common::definitions::{CallbackTree, StateTree, ViewTree, WidgetTree};
 use crate::widgets::layout::Layout;
 use crate::widgets::widget::{EzObject};
 use crate::scheduler::{Scheduler};
@@ -31,9 +32,15 @@ fn initialize_terminal() -> Result<()> {
 fn shutdown_terminal() -> Result<()>{
 
     stdout().queue(DisableMouseCapture)?.queue(Show)?.flush()?;
-    //stdout().execute(terminal::Clear(terminal::ClearType::All))?;
+    stdout().execute(terminal::Clear(terminal::ClearType::All))?;
     disable_raw_mode()?;
     Ok(())
+}
+
+
+pub fn stop() {
+    shutdown_terminal().unwrap();
+    exit(0);
 }
 
 
@@ -47,14 +54,15 @@ fn shutdown_terminal() -> Result<()>{
 pub fn run(root_widget: Layout, scheduler: Scheduler) {
 
     initialize_terminal().unwrap();
-    let callback_tree = common::screen_functions::initialize_callback_tree(&root_widget);
+    let callback_tree = 
+        common::screen_functions::initialize_callback_tree(&root_widget);
     run_loop(root_widget, callback_tree, scheduler).unwrap();
 }
 
 
 /// Called just before [run]. Creates initial view- and state trees and writes initial content
 /// to the screen.
-fn initialize_widgets(root_widget: &mut Layout) -> (common::definitions::ViewTree, common::definitions::StateTree) {
+fn initialize_widgets(root_widget: &mut Layout) -> (ViewTree, StateTree) {
 
     // Get initial state tree, then convert all size_hints into actual sizes. After that we can
     // set absolute positions for all children as sizes are now known.
@@ -95,11 +103,11 @@ fn initialize_widgets(root_widget: &mut Layout) -> (common::definitions::ViewTre
 /// (i.e. static things). EzWidget enums can be downcast to UxObject or EzWidget trait objects to
 /// access common functions, or downcast to their specific widget type if you know for sure what it
 /// is.
-fn run_loop(mut root_widget: Layout, mut callback_tree: common::definitions::CallbackTree,
-            mut scheduler: Scheduler) -> Result<()>{
+fn run_loop(mut root_widget: Layout, mut callback_tree: CallbackTree, mut scheduler: Scheduler) 
+    -> Result<()>{
 
     let (mut view_tree, mut state_tree) = initialize_widgets(&mut root_widget);
-    let mut last_update = Instant::now();
+    let last_update = Instant::now();
     let mut last_mouse_pos: (u16, u16) = (0, 0);
     loop {
 
@@ -195,30 +203,29 @@ fn run_loop(mut root_widget: Layout, mut callback_tree: common::definitions::Cal
 
 /// Try to handle an event by passing it to the active modal if any. The modal will return whether
 /// it consumed the event or not.
-fn handle_modal_event (event: Event, view_tree: &mut common::definitions::ViewTree, state_tree: &mut common::definitions::StateTree,
-                       widget_tree: &common::definitions::WidgetTree, callback_tree: &mut common::definitions::CallbackTree,
-                       scheduler: &mut Scheduler, root_widget: &Layout)
-    -> bool {
+fn handle_modal_event (event: Event, view_tree: &mut ViewTree, state_tree: &mut StateTree,
+                       widget_tree: &WidgetTree, callback_tree: &mut CallbackTree,
+                       scheduler: &mut Scheduler, root_widget: &Layout) -> bool {
 
     let mut consumed;
     if state_tree.get(&root_widget.path.clone()).unwrap().as_layout().open_modals.is_empty() {
         return false
     }
     let modal_root = state_tree.get(&root_widget.path.clone()).unwrap().as_layout()
-        .open_modals.first().unwrap().as_ez_object().get_full_path().clone();
+        .open_modals.first().unwrap().as_ez_object().get_full_path();
     for (path, widget) in widget_tree {
         if !path.starts_with(&modal_root) { continue }
         if let widget::EzObjects::Layout(i) = widget {
             for child in i.get_widgets_recursive().values() {
-                consumed = child.as_ez_object().handle_event(event, view_tree, state_tree, widget_tree,
-                                                             callback_tree, scheduler);
+                consumed = child.as_ez_object().handle_event(
+                    event, view_tree, state_tree, widget_tree, callback_tree, scheduler);
                 if consumed {
                     return true
                 }
             }
         } else {
-            consumed = widget.as_ez_object().handle_event(event, view_tree, state_tree, widget_tree,
-                                                          callback_tree, scheduler);
+            consumed = widget.as_ez_object().handle_event(
+                event, view_tree, state_tree, widget_tree, callback_tree, scheduler);
             if consumed {
                 return true
             }
@@ -228,10 +235,8 @@ fn handle_modal_event (event: Event, view_tree: &mut common::definitions::ViewTr
 }
 
 /// Try to handle an event as a global keybind. Examples are up/down keys for navigating menu
-fn handle_global_event(event: Event, view_tree: &mut common::definitions::ViewTree,
-                       state_tree: &mut common::definitions::StateTree,
-                       widget_tree: &common::definitions::WidgetTree,
-                       callback_tree: &mut common::definitions::CallbackTree,
+fn handle_global_event(event: Event, view_tree: &mut ViewTree, state_tree: &mut StateTree,
+                       widget_tree: &WidgetTree, callback_tree: &mut CallbackTree, 
                        scheduler: &mut Scheduler) -> bool {
 
     match event {
@@ -251,10 +256,8 @@ fn handle_global_event(event: Event, view_tree: &mut common::definitions::ViewTr
 /// 1. Focussed widget
 /// 2. Global key binds (this function)
 /// 3. Selected widget
-fn handle_key_event(key: KeyEvent, view_tree: &mut common::definitions::ViewTree,
-                    state_tree: &mut common::definitions::StateTree,
-                    widget_tree: &common::definitions::WidgetTree,
-                    callback_tree: &mut common::definitions::CallbackTree,
+fn handle_key_event(key: KeyEvent, view_tree: &mut ViewTree, state_tree: &mut StateTree,
+                    widget_tree: &WidgetTree, callback_tree: &mut CallbackTree,
                     scheduler: &mut Scheduler) -> bool {
 
     match key.code {
@@ -291,10 +294,8 @@ fn handle_key_event(key: KeyEvent, view_tree: &mut common::definitions::ViewTree
 /// 1. Focussed widget
 /// 2. Global key binds (this function)
 /// 3. Selected widget
-fn handle_mouse_event(event: MouseEvent, view_tree: &mut common::definitions::ViewTree,
-                      state_tree: &mut common::definitions::StateTree,
-                      widget_tree: &common::definitions::WidgetTree,
-                      callback_tree: &mut common::definitions::CallbackTree,
+fn handle_mouse_event(event: MouseEvent, view_tree: &mut ViewTree, state_tree: &mut StateTree,
+                      widget_tree: &WidgetTree, callback_tree: &mut CallbackTree, 
                       scheduler: &mut Scheduler) -> bool {
 
     if let MouseEventKind::Down(button) = event.kind {
@@ -337,8 +338,8 @@ fn handle_mouse_event(event: MouseEvent, view_tree: &mut common::definitions::Vi
 
 /// Handle a resize event by setting the size of the root widget to the new window size, updating
 /// the sizes/positions of all children and generating a new view tree of the right size.
-fn handle_resize(state_tree: &mut common::definitions::StateTree, root_widget: &mut Layout,
-                 new_width: usize, new_height: usize) -> common::definitions::ViewTree{
+fn handle_resize(state_tree: &mut StateTree, root_widget: &mut Layout,
+                 new_width: usize, new_height: usize) -> ViewTree{
     let state = state_tree.get_mut(&root_widget.path).unwrap()
         .as_generic_mut();
     state.get_size_mut().width = new_width as usize;

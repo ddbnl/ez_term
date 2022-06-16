@@ -90,10 +90,11 @@ Currently supports the following:
   - Define entire UI in an Ez file using simple english
   - Supports templates and template inheritance
 - Widgets:
-  - Box layouts (automatically place widgets next to each other or below each
+  - Screen layout (multiple screens, one active at a time)
+  - Tabbed layout
+  - Box layout (automatically place widgets next to each other or below each
     other)
-  - Float layouts (use size hints and position hints, or hard code positions/sizes)
-  - Tabbed layouts
+  - Float layout (use size hints and position hints, or hard code positions/sizes)
   - Label 
   - Text input
   - Checkbox 

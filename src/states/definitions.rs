@@ -21,10 +21,20 @@ pub enum LayoutMode {
     /// vertical position they always use the full with.
     Box,
 
+    /// Float mode:
     /// Widgets are placed according to [PositionHint] or in their hardcoded XY positions.
     Float,
 
-    /// Can only contains other layouts and presents those as tabs
+    /// # Screen mode:
+    /// This layout can only contain other layouts. Only the root widget may be a Screen layout.
+    /// Only the contents of the active screen will be shown. Active screen is controlled through
+    /// [LayoutState.active_screen].
+    Screen,
+
+    ///# Tabbed mode:
+    /// This layout can only contain other layouts and presents those as tabs. A tab header will
+    /// automatically be added for each child Layout, so the user can switch between tabs. The tab
+    /// header will display the [id] of the child Layout.
     Tabbed
 
     // todo table

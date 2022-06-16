@@ -1,12 +1,14 @@
 use crossterm::style::{Color};
 use crate::common;
+use crate::common::definitions::StateTree;
 use crate::scheduler::Scheduler;
 use crate::states::state::{EzState, GenericState};
 use crate::states;
+use crate::states::definitions::LayoutMode;
 use crate::widgets::widget::{EzObjects, Pixel};
 
 
-pub fn open_popup(template: String, state_tree: &mut common::definitions::StateTree,
+pub fn open_popup(template: String, state_tree: &mut StateTree,
                   scheduler: &mut Scheduler) -> String {
     
     let (path, sub_tree) = state_tree.get_mut("/root").unwrap().as_layout_mut()
@@ -316,4 +318,151 @@ pub fn wrap_text (mut text: String, width: usize) -> Vec<String> {
         }
     }
     content_lines
+}
+
+
+/// Determine whether a widget (by path) is in view. We start with the root widget and make our
+/// way down to the widget in question. We check whether the absolute pos of each widget is within
+/// the bounds of the window. If we encounter a scrollview along the way, we will check if each
+/// subsequent object is in bounds of the scrollview instead.
+pub fn is_in_view(path: String, state_tree: &StateTree) -> bool {
+
+    // If the widget belongs to a tab or screen that is not active, it is not in view
+    let window_size = state_tree.get("/root").unwrap().as_generic().get_size().clone();
+
+    // Prepare to iterate from root widget to subwidget to sub-sub-widget etc.
+    let mut paths: Vec<&str> = path.split('/').collect();
+    paths = paths[1..].to_vec();
+    paths.reverse();
+    let mut working_path = format!("/{}", paths.pop().unwrap());
+
+    // If we encounter a scrollview we will start using visible_width and visible_height to check
+    // if further subwidgets are in view
+    let mut visible_width: Option<(usize, usize)> = None;
+    let mut visible_height: Option<(usize, usize)> = None;
+
+    loop { // Loop from root widget to subwidget until we complete the full path or something is not in view
+
+        if working_path == "/modal" {
+            working_path = format!("{}/{}", working_path, paths.pop().unwrap());
+            continue
+        }
+        let state = state_tree.get(&working_path).unwrap();
+        // Determine if this part of the tree is in view. It's not in view if a visible area
+        // was determined and this is not in it (visible area means we're scrolling somewhere),
+        // or if absolute positions falls outside of window size.
+
+        // If there's a visible width we're scrolling horizontally. Check if obj is in scrollview
+        if let Some((visible_w_start, visible_w_end)) = visible_width {
+            // If object lies completely left- or completely right of visible area it's out of view
+            if state.as_generic().get_effective_position().x >= visible_w_end ||
+                state.as_generic().get_effective_position().x +
+                    state.as_generic().get_effective_size().width <= visible_w_start {
+                return false
+                // If object lies partly left of view, we take the part that's still in view as the new
+                // visible area
+            } else if state.as_generic().get_effective_position().x <= visible_w_start {
+                visible_width = Some((visible_w_start -
+                                          state.as_generic().get_effective_position().x,
+                                      state.as_generic().get_effective_position().x +
+                                          state.as_generic().get_effective_size().width));
+                // If object lies partly right of view, we take the part that's still in view as the new
+                // visible area
+            } else if state.as_generic().get_effective_position().x +
+                state.as_generic().get_effective_size().width >= visible_w_end {
+                visible_width = Some((visible_w_start,
+                                      visible_w_end -
+                                          state.as_generic().get_effective_position().x));
+                // If object lies entirely in view, we take its full width as the new visible area
+            } else {
+                visible_width = Some((0, state.as_generic().get_effective_size().width));
+            }
+        }
+
+        // If there's a visible height we're scrolling vertically. Check if obj is in scrollview
+        if let Some((visible_h_start, visible_h_end)) = visible_height {
+            // If object lies completely above or completely below visible area it's out of view
+            if state.as_generic().get_effective_position().y >= visible_h_end ||
+                state.as_generic().get_effective_position().y +
+                    state.as_generic().get_effective_size().height <= visible_h_start {
+                return false
+                // If object lies partly above of view, we take the part that's still in view as the new
+                // visible area
+            } else if state.as_generic().get_effective_position().y <= visible_h_start {
+                visible_height = Some((visible_h_start -
+                                           state.as_generic().get_effective_position().y,
+                                       state.as_generic().get_effective_position().y +
+                                           state.as_generic().get_effective_size().height));
+                // If object lies partly below view, we take the part that's still in view as the new
+                // visible area
+            } else if state.as_generic().get_effective_position().y +
+                state.as_generic().get_effective_size().height >= visible_h_end {
+                visible_height = Some((visible_h_start,
+                                       visible_h_end -
+                                           state.as_generic().get_effective_position().y));
+                // If object lies entirely in view, we take its full height as the new visible area
+            } else {
+                visible_height = Some((0, state.as_generic().get_effective_size().height));
+            }
+        }
+
+        // If there's no visible height and width then we're not scrolling. Simply check if obj is
+        // inside of the root window.
+        if (visible_width == None &&
+            state.as_generic().get_effective_absolute_position().x > window_size.width) ||
+            (visible_height == None &&
+                state.as_generic().get_effective_absolute_position().y > window_size.height) {
+            return false
+        }
+
+        if !paths.is_empty() {
+            // This is not the end of the path so this obj must be a layout. This means we have to
+            // check if it is scrolling. If it is, we must check if each subsequent subwidget is in
+            // this scrollview.
+            if state.as_layout().get_scrolling_config().is_scrolling_x {
+                visible_width =
+                    Some((state.as_layout().get_scrolling_config().view_start_x,
+                          state.as_layout().get_scrolling_config().view_start_x +
+                              state.as_layout().get_effective_size().width));
+            }
+            if state.as_layout().get_scrolling_config().is_scrolling_y {
+                visible_height =
+                    Some((state.as_layout().get_scrolling_config().view_start_y,
+                          state.as_layout().get_scrolling_config().view_start_y +
+                              state.as_layout().get_effective_size().height));
+            }
+            working_path = format!("{}/{}", working_path, paths.pop().unwrap());
+        } else {
+            // End of the path and we did not encounter any out-of-view conditions. Obj is in view.
+            return true
+        }
+
+    }
+}
+
+
+pub fn widget_is_hidden(widget_path: String, state_tree: &StateTree) -> bool {
+
+    let mut check_parent =
+        widget_path.rsplit_once('/').unwrap().0.to_string();
+    let mut check_child = widget_path;
+    loop {
+        if check_parent == "/modal" { break }
+        let parent_state = state_tree.get(&check_parent).unwrap().as_layout();
+        if parent_state.mode == LayoutMode::Screen &&
+            parent_state.active_screen != check_child.rsplit_once('/').unwrap().1 {
+            return true
+        }
+        if parent_state.mode == LayoutMode::Tabbed {
+            if let EzState::Layout(_) = state_tree.get(&check_child).unwrap() {
+                if parent_state.active_tab != check_child {
+                    return true
+                }
+            }
+        }
+        if check_parent == "/root" { break }
+        check_child = check_parent.clone();
+        check_parent = check_parent.rsplit_once('/').unwrap().0.to_string();
+    }
+    false
 }

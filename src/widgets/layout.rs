@@ -1,8 +1,6 @@
 //! # Layout
 //! Module implementing the Layout struct.
 use std::collections::HashMap;
-use std::io::Error;
-use std::os::raw::c_int;
 use crossterm::event::{Event, KeyCode};
 use crate::ez_parser;
 use crate::common;
@@ -12,7 +10,7 @@ use crate::states::layout_state::LayoutState;
 use crate::states::state::{EzState, GenericState};
 use crate::states;
 use crate::scheduler::Scheduler;
-use crate::states::definitions::{AutoScale, CallbackConfig, Coordinates, LayoutMode, Size, SizeHint, VerticalAlignment};
+use crate::states::definitions::{AutoScale, CallbackConfig, ColorConfig, Coordinates, LayoutMode, Size, SizeHint};
 use crate::widgets::button::Button;
 
 
@@ -108,9 +106,10 @@ impl EzObject for Layout {
                 self.state.set_padding_right(parameter_value.trim().parse().unwrap()),
             "mode" => {
                 match parameter_value.to_lowercase().trim() {
-                    "box" => self.state.mode = states::definitions::LayoutMode::Box,
-                    "float" => self.state.mode = states::definitions::LayoutMode::Float,
-                    "tabbed" => self.state.mode = states::definitions::LayoutMode::Tabbed,
+                    "box" => self.state.mode = LayoutMode::Box,
+                    "float" => self.state.mode = LayoutMode::Float,
+                    "screen" => self.state.mode = LayoutMode::Screen,
+                    "tabbed" => self.state.mode = LayoutMode::Tabbed,
                     _ => panic!("Invalid parameter value for mode {}", parameter_value)
                 }
             },
@@ -175,31 +174,33 @@ impl EzObject for Layout {
 
     fn get_state(&self) -> EzState { EzState::Layout(self.state.clone()) }
 
-    fn get_contents(&self, state_tree: &mut common::definitions::StateTree)
-        -> common::definitions::PixelMap {
+    fn get_contents(&self, state_tree: &mut StateTree) -> PixelMap {
 
-        let mut merged_content = common::definitions::PixelMap::new();
+        let mut merged_content = PixelMap::new();
         let mode = state_tree.get(&self.path).unwrap().as_layout().mode.clone();
         let orientation =
             state_tree.get(&self.path).unwrap().as_layout().orientation.clone();
         match mode {
-            states::definitions::LayoutMode::Box => {
+            LayoutMode::Box => {
                 match orientation {
                     states::definitions::LayoutOrientation::Horizontal => {
-                        merged_content = self.get_box_mode_horizontal_orientation_contents(
-                            merged_content, state_tree);
+                        merged_content =
+                            self.get_box_mode_horizontal_orientation_contents(state_tree);
                     },
                     states::definitions::LayoutOrientation::Vertical => {
-                        merged_content = self.get_box_mode_vertical_orientation_contents(
-                            merged_content, state_tree);
+                        merged_content =
+                            self.get_box_mode_vertical_orientation_contents(state_tree);
                     },
                 }
             },
-            states::definitions::LayoutMode::Float => {
+            LayoutMode::Float => {
                 merged_content =
                     self.get_float_mode_contents(merged_content, state_tree);
-            }
-            states::definitions::LayoutMode::Tabbed => {
+            },
+            LayoutMode::Screen => {
+                merged_content = self.get_screen_mode_contents(state_tree);
+            },
+            LayoutMode::Tabbed => {
                 merged_content = self.get_tabbed_mode_contents(state_tree);
             }
         }
@@ -223,13 +224,12 @@ impl EzObject for Layout {
             state.get_color_config().foreground);
         merged_content = self.get_modal_contents(state_tree, merged_content);
 
+        self.propagate_absolute_positions(state_tree);
         merged_content
     }
 
-    fn handle_event(&self, event: Event, _view_tree: &mut common::definitions::ViewTree,
-                    state_tree: &mut common::definitions::StateTree,
-                    _widget_tree: &common::definitions::WidgetTree,
-                    _callback_tree: &mut common::definitions::CallbackTree,
+    fn handle_event(&self, event: Event, _view_tree: &mut ViewTree, state_tree: &mut StateTree,
+                    _widget_tree: &WidgetTree, _callback_tree: &mut CallbackTree,
                     _scheduler: &mut Scheduler) -> bool {
 
         let state = state_tree.get_mut(&self.get_full_path())
@@ -260,44 +260,21 @@ impl EzObject for Layout {
         false
     }
 
-    fn on_select(&self, view_tree: &mut ViewTree, state_tree: &mut StateTree,
-                 widget_tree: &WidgetTree, callback_tree: &mut CallbackTree,
-                 scheduler: &mut Scheduler, mouse_pos: Option<Coordinates>) -> bool {
-
-        for child in self.children.iter() {
-            if let EzObjects::Button(i) = child {
-                state_tree.get_mut(&self.path).unwrap().as_layout_mut()
-                    .selected_tab_header = i.path.clone();
-                return true
-            }
-        }
-        true
-    }
-
-    fn on_deselect(&self, view_tree: &mut ViewTree, state_tree: &mut StateTree,
-                 widget_tree: &WidgetTree, callback_tree: &mut CallbackTree,
-                 scheduler: &mut Scheduler) -> bool {
-
-        state_tree.get_mut(&self.path).unwrap().as_layout_mut()
-            .selected_tab_header.clear();
-        true
-    }
-
-    fn on_keyboard_enter(&self, view_tree: &mut ViewTree, state_tree: &mut StateTree,
-                         widget_tree: &WidgetTree, callback_tree: &mut CallbackTree,
-                         scheduler: &mut Scheduler) -> bool {
+    fn on_keyboard_enter(&self, _view_tree: &mut ViewTree, state_tree: &mut StateTree,
+                         _widget_tree: &WidgetTree, _callback_tree: &mut CallbackTree,
+                         _scheduler: &mut Scheduler) -> bool {
         let state = state_tree.get_mut(&self.path).unwrap().as_layout_mut();
         if !state.selected_tab_header.is_empty() {
             state.set_active_tab(state.get_selected_tab_header()
-                .rsplit_once('/').unwrap().0.to_string());
+                .strip_suffix("_tab_header").unwrap().to_string());
             return true
         }
         false
     }
 
-    fn on_left_mouse_click(&self, view_tree: &mut ViewTree, state_tree: &mut StateTree,
-                           widget_tree: &WidgetTree, callback_tree: &mut CallbackTree,
-                           scheduler: &mut Scheduler, mouse_pos: Coordinates) -> bool {
+    fn on_left_mouse_click(&self, _view_tree: &mut ViewTree, state_tree: &mut StateTree,
+                           _widget_tree: &WidgetTree, _callback_tree: &mut CallbackTree,
+                           _scheduler: &mut Scheduler, mouse_pos: Coordinates) -> bool {
 
         let state = state_tree.get_mut(&self.path).unwrap().as_layout_mut();
 
@@ -336,6 +313,29 @@ impl EzObject for Layout {
         }
         false
     }
+
+    fn on_select(&self, _view_tree: &mut ViewTree, state_tree: &mut StateTree,
+                 _widget_tree: &WidgetTree, _callback_tree: &mut CallbackTree,
+                 _scheduler: &mut Scheduler, _mouse_pos: Option<Coordinates>) -> bool {
+
+        for child in self.children.iter() {
+            if let EzObjects::Button(i) = child {
+                state_tree.get_mut(&self.path).unwrap().as_layout_mut()
+                    .selected_tab_header = i.path.clone();
+                return true
+            }
+        }
+        true
+    }
+
+    fn on_deselect(&self, _view_tree: &mut ViewTree, state_tree: &mut StateTree,
+                 _widget_tree: &WidgetTree, _callback_tree: &mut CallbackTree,
+                 _scheduler: &mut Scheduler) -> bool {
+
+        state_tree.get_mut(&self.path).unwrap().as_layout_mut()
+            .selected_tab_header.clear();
+        true
+    }
 }
 
 impl Layout {
@@ -347,8 +347,7 @@ impl Layout {
     }
 
     /// Scale size down to the size of the actual content of the layout.
-    fn auto_scale_to_content(&self, state_tree: &mut common::definitions::StateTree, contents: common::definitions::PixelMap)
-                             -> common::definitions::PixelMap {
+    fn auto_scale_to_content(&self, state_tree: &mut StateTree, contents: PixelMap) -> PixelMap {
         let state = state_tree.get_mut(&self.get_full_path()).unwrap()
             .as_layout_mut();
         // If user wants to autoscale width we set width to length of content
@@ -371,8 +370,7 @@ impl Layout {
 
     /// Overwrite a PixelMap of current own content with the content of the active modal. Modals
     /// overlap all content.
-    fn get_modal_contents(&self, state_tree: &mut common::definitions::StateTree, mut contents: common::definitions::PixelMap)
-                          -> common::definitions::PixelMap {
+    fn get_modal_contents(&self, state_tree: &mut StateTree, mut contents: PixelMap) -> PixelMap {
         if state_tree.get(&self.get_full_path()).unwrap().as_layout().get_modals().is_empty() {
             return contents
         }
@@ -382,9 +380,10 @@ impl Layout {
             .get_size().clone();
         let modal = state_tree.get(&self.get_full_path()).unwrap().as_layout()
             .get_modals().first().unwrap().clone();
-        let state = state_tree.get_mut(&modal.as_ez_object().get_full_path()).unwrap();
+        let state = state_tree
+            .get_mut(&modal.as_ez_object().get_full_path()).unwrap();
         common::widget_functions::resize_with_size_hint(state, parent_size.width,
-                                      parent_size.height);
+                                                        parent_size.height);
         common::widget_functions::reposition_with_pos_hint(
             parent_size.width, parent_size.height,
             state.as_generic_mut());
@@ -402,14 +401,15 @@ impl Layout {
         }
 
         // Overwrite own content with modal (modal is always on top)
-        let state = state_tree.get_mut(&state_tree.get(&self.get_full_path()).unwrap().as_layout()
+        let state = state_tree
+            .get_mut(&state_tree.get(&self.get_full_path()).unwrap().as_layout()
             .get_modals().first().unwrap().as_ez_object()
             .get_full_path()).unwrap().as_generic();
         let start_pos = state.get_position();
-        for x in 0..state.get_size().width {
-            for y in 0..state.get_size().height {
-                let write_pos = states::definitions::Coordinates::new(start_pos.x + x, start_pos.y + y);
-                if write_pos.x < parent_size.width && write_pos.y < parent_size.height {
+        for x in 0..modal_content.len() {
+            for y in 0..modal_content[x].len() {
+                let write_pos = Coordinates::new(start_pos.x + x, start_pos.y + y);
+                if write_pos.x <= parent_size.width && write_pos.y <= parent_size.height {
                     contents[write_pos.x][write_pos.y] = modal_content[x][y].clone();
                 }
             }
@@ -420,8 +420,8 @@ impl Layout {
     /// Used by [get_contents] when the [LayoutMode] is set to [Float]. Places each child in the
     /// XY coordinates defined by that child, relative to itself, and uses
     /// childs' [width] and [height].
-    fn get_float_mode_contents(&self, mut content: common::definitions::PixelMap,
-                               state_tree: &mut common::definitions::StateTree) -> common::definitions::PixelMap {
+    fn get_float_mode_contents(&self, mut content: PixelMap, state_tree: &mut StateTree)
+        -> PixelMap {
         let own_state = state_tree.get(&self.get_full_path()).unwrap().as_layout();
         let own_height = own_state.get_effective_size().height;
         let own_width = own_state.get_effective_size().width;
@@ -440,7 +440,7 @@ impl Layout {
                     content.last_mut().unwrap().push(
                         Pixel::new(
                             " ".to_string(), own_state.colors.foreground,
-                            own_state.colors.background, ));
+                            own_state.colors.background));
                 }
             }
         }
@@ -474,12 +474,10 @@ impl Layout {
             common::widget_functions::reposition_with_pos_hint(
                 own_width, own_height,state);
             let child_pos = state.get_position();
-            let (child_width, child_height) =
-                (state.get_size().width, state.get_size().height);
-            for width in 0..child_width {
-                for height in 0..child_height {
-                    if child_pos.x + width < content.len() &&
-                        child_pos.y + height < content[0].len() {
+            for width in 0..child_content.len() {
+                for height in 0..child_content[width].len() {
+                    if child_pos.x + width <= content.len()
+                        && child_pos.y + height <= content[child_pos.x + width].len() {
                         content[child_pos.x + width][child_pos.y + height] =
                             child_content[width][height].clone();
                     }
@@ -490,7 +488,7 @@ impl Layout {
     }
 
     /// Set the sizes of children that use size_hint(s) using own proportions.
-    pub fn set_child_sizes(&self, state_tree: &mut common::definitions::StateTree) {
+    pub fn set_child_sizes(&self, state_tree: &mut StateTree) {
         let own_state = state_tree.get_mut(&self.get_full_path())
             .unwrap().as_layout();
         let own_width = own_state.get_effective_size().width;
@@ -500,7 +498,8 @@ impl Layout {
         // that case give them '1 / number_of_children'. That way the user can add
         // multiple children in a Box layout and have them distributed equally automatically. Any
         // kind of asymmetry breaks this behavior.
-        if self.children.len() > 1 && own_state.mode != states::definitions::LayoutMode::Tabbed {
+        if self.children.len() > 1 && own_state.mode != LayoutMode::Tabbed &&
+            own_state.mode != LayoutMode::Screen {
             let (all_default_size_hint_x, all_default_size_hint_y) =
                 self.check_default_size_hints(state_tree);
             if all_default_size_hint_x {
@@ -537,11 +536,11 @@ impl Layout {
 
     /// Check if all chrildren employ default size_hints (i.e. size_hint=1) for x and y
     /// separately.
-    fn check_default_size_hints(&self, state_tree: &common::definitions::StateTree) -> (bool, bool) {
+    fn check_default_size_hints(&self, state_tree: &StateTree) -> (bool, bool) {
 
         let mut all_default_size_hint_x = true;
         let mut all_default_size_hint_y = true;
-        let mut own_orientation = state_tree.get(&self.path).unwrap()
+        let own_orientation = state_tree.get(&self.path).unwrap()
             .as_layout().orientation.clone();
         for child in self.get_children() {
             if !all_default_size_hint_x && !all_default_size_hint_y {
@@ -582,7 +581,7 @@ impl Layout {
     /// Takes [absolute_position] of this layout and adds the [x][y] of children to calculate and
     /// set their [absolute_position]. Then calls this method on children, thus recursively setting
     /// [absolute_position] for all children. Use on root layout to propagate all absolute positions.
-    pub fn propagate_absolute_positions(&self, state_tree: &mut common::definitions::StateTree) {
+    pub fn propagate_absolute_positions(&self, state_tree: &mut StateTree) {
         let absolute_position = state_tree.get(&self.path).unwrap().as_generic()
             .get_effective_absolute_position();
         let size = state_tree.get(&self.path).unwrap().as_layout()
@@ -594,7 +593,7 @@ impl Layout {
                 let child_state =
                     state_tree.get_mut(&i.get_full_path()).unwrap().as_generic_mut();
                 let pos = child_state.get_position();
-                let mut new_absolute_position = states::definitions::Coordinates::new(
+                let mut new_absolute_position = Coordinates::new(
                     absolute_position.x + pos.x, absolute_position.y + pos.y);
                 if scrolling.is_scrolling_x && size.width > 0 {
                     new_absolute_position.x -= scrolling.view_start_x % size.width;
@@ -608,7 +607,7 @@ impl Layout {
                 let child_state = state_tree.get_mut(
                     &child.as_ez_object().get_full_path()).unwrap().as_generic_mut();
                 let pos = child_state.get_position();
-                let new_absolute_position = states::definitions::Coordinates::new(
+                let new_absolute_position = Coordinates::new(
                     absolute_position.x + pos.x, absolute_position.y + pos.y);
                 child_state.set_absolute_position(new_absolute_position);
             }
@@ -647,11 +646,11 @@ impl Layout {
         self.child_lookup.insert(generic_child.get_id().clone(), self.children.len());
         self.children.push(child.clone());
 
-        if self.state.mode == states::definitions::LayoutMode::Tabbed {
+        if self.state.mode == LayoutMode::Tabbed {
             if let EzObjects::Layout(_) = child.clone() {
                 let mut tab_header = Button::default();
                 tab_header.id = format!("{}_tab_header", id);
-                tab_header.path = format!("{}/{}", path, tab_header.id.clone());
+                tab_header.path = format!("{}/{}", parent_path, tab_header.id.clone());
                 tab_header.state.size_hint = SizeHint::new(None, None);
                 tab_header.state.text = id;
 
@@ -672,8 +671,8 @@ impl Layout {
 
     /// Get an EzWidget trait object for each child [EzWidget] and return it in a
     /// <[path], [EzObject]> HashMap.
-    pub fn get_widget_tree(&self) -> common::definitions::WidgetTree {
-        let mut widget_tree = common::definitions::WidgetTree::new();
+    pub fn get_widget_tree(&self) -> WidgetTree {
+        let mut widget_tree = WidgetTree::new();
         for (child_path, child) in self.get_widgets_recursive() {
             widget_tree.insert(child_path, child);
         }
@@ -761,8 +760,7 @@ impl Layout {
     }
 
     /// Fill any empty positions with [Pixel] from [get_filler]
-    pub fn add_user_filler(&self, state_tree: &mut common::definitions::StateTree, mut contents: common::definitions::PixelMap)
-                           -> common::definitions::PixelMap {
+    pub fn add_user_filler(&self, state_tree: &mut StateTree, mut contents: PixelMap) -> PixelMap {
         let state = state_tree.get_mut(&self.get_full_path()).unwrap()
             .as_layout_mut();
         if !state.fill { return contents }
@@ -793,8 +791,7 @@ impl Layout {
 
     /// Fill any empty positions with empty [Pixel]. Used to fill full size of the layout in case
     /// the user did not define a custom filler.
-    pub fn add_empty_filler(&self, state_tree: &mut common::definitions::StateTree, mut contents: common::definitions::PixelMap)
-                            -> common::definitions::PixelMap {
+    pub fn add_empty_filler(&self, state_tree: &mut StateTree, mut contents: PixelMap) -> PixelMap {
 
         let state = state_tree.get_mut(&self.get_full_path()).unwrap()
             .as_layout_mut();
@@ -813,6 +810,23 @@ impl Layout {
 }
 
 
+// Screen mode implementations
+impl Layout {
+
+    fn get_screen_mode_contents(&self, state_tree: &mut StateTree) -> PixelMap {
+
+        let mut active_screen = state_tree.get(&self.path).unwrap()
+            .as_layout().active_screen.clone();
+        if active_screen.is_empty() && !self.children.is_empty() {
+            active_screen = self.children.first().unwrap().as_layout().get_id();
+            state_tree.get_mut(&self.path).unwrap().as_layout_mut().active_screen =
+                active_screen.clone();
+        }
+        self.get_child(&active_screen).as_layout().get_contents(state_tree)
+    }
+}
+
+
 // Tabbed mode implementations
 impl Layout {
 
@@ -821,8 +835,6 @@ impl Layout {
         let mut next_button = false;
         for child in self.children.iter().rev() {
             if let EzObjects::Button(ref widget) = child {
-                let state = state_tree
-                    .get_mut(&widget.path).unwrap().as_generic_mut();
                 if next_button {
                     state_tree.get_mut(&self.path)
                         .unwrap().as_layout_mut().set_selected_tab_header(widget.path.clone());
@@ -841,8 +853,6 @@ impl Layout {
         let mut next_button = false;
         for child in self.children.iter() {
             if let EzObjects::Button(ref widget) = child {
-                let state = state_tree
-                    .get_mut(&widget.path).unwrap().as_generic_mut();
                 if next_button {
                     state_tree.get_mut(&self.path)
                         .unwrap().as_layout_mut().set_selected_tab_header(widget.path.clone());
@@ -858,7 +868,7 @@ impl Layout {
 
     fn get_tabbed_mode_contents(&self, state_tree: &mut StateTree) -> PixelMap {
 
-        if self.children.is_empty() { return common::definitions::PixelMap::new() }
+        if self.children.is_empty() { return PixelMap::new() }
         let state = state_tree.get_mut(&self.path).unwrap().as_layout_mut();
         let own_size = state.get_effective_size();
         let own_pos = state.get_effective_absolute_position();
@@ -879,8 +889,8 @@ impl Layout {
                 if i.get_full_path() != active_tab { continue }
                 let child_state = state_tree
                     .get_mut(&child.as_ez_object().get_full_path()).unwrap().as_generic_mut();
-                child_state.set_effective_height(own_size.height - 3);
-                child_state.set_effective_width(own_size.width - 1);
+                child_state.set_effective_height(if own_size.height >=3 {own_size.height - 3} else {0});
+                child_state.set_effective_width(if own_size.width >= 1 {own_size.width - 1} else {0});
                 child_state.set_position(Coordinates::new(0, 3));
                 child_state.set_absolute_position(Coordinates::new(
                     own_pos.x, own_pos.y + 3));
@@ -914,12 +924,12 @@ impl Layout {
                 button_content = self.merge_horizontal_contents(
                     button_content, content,
                     Size::new(own_size.width - 1,3),own_colors.clone(),
-                    child_state, VerticalAlignment::Top);
+                    child_state);
                 child_state.set_absolute_position(
                     Coordinates::new(own_pos.x + pos_x, own_pos.y + 1));
 
                 if (!selection.is_empty() && selection == i.path) || (selection.is_empty() &&
-                    active_tab == i.path.rsplit_once('/').unwrap().0) {
+                    active_tab == i.path.strip_suffix("_tab_header").unwrap()) {
                     selected_pos_x = pos_x;
                     selected_width = child_state.size.width;
                 }
@@ -931,10 +941,17 @@ impl Layout {
         let fill_pixel = Pixel::new(" ".to_string(),
                                     own_colors.foreground,
                                     own_colors.background);
-        if own_size.width < selected_pos_x + selected_width  {
-            let mut difference = (selected_pos_x + selected_width) - own_size.width;
-            if button_content.len() - difference > 3 {
-                difference += 3;
+        if own_size.width < button_content.len()  {
+            let mut difference;
+            if own_size.width <= selected_pos_x + selected_width {
+                difference = (selected_pos_x + selected_width) - own_size.width;
+                if button_content.len() - difference > 3 {
+                    difference += 3;
+                }
+            } else if selected_pos_x != 0 && button_content.len() > 3 {
+                difference = 3;
+            } else {
+                difference = 0;
             }
             button_content = button_content[difference..].to_vec();
             for child in self.children.iter() {
@@ -962,9 +979,7 @@ impl Layout {
         self.merge_vertical_contents(
             button_content,
             tab_content,
-            own_size.clone(), own_colors.clone(), state,
-            states::definitions::HorizontalAlignment::Left
-        )
+            own_size.clone(), own_colors.clone(), state)
     }
 }
 
@@ -974,19 +989,19 @@ impl Layout {
     /// Used by [get_contents] when the [LayoutMode] is set to [Box] and [LayoutOrientation] is
     /// set to [Horizontal]. Merges contents of sub layouts and/or widgets horizontally, using
     /// own [height] for each.
-    fn get_box_mode_horizontal_orientation_contents(
-        &self, mut content: common::definitions::PixelMap, state_tree: &mut common::definitions::StateTree)
-        -> common::definitions::PixelMap {
+    fn get_box_mode_horizontal_orientation_contents(&self, state_tree: &mut StateTree) -> PixelMap {
 
         let own_size = state_tree.get_mut(&self.get_full_path())
             .unwrap().as_layout().get_effective_size();
+        let own_scaling = state_tree.get_mut(&self.get_full_path())
+            .unwrap().as_layout().get_auto_scale().clone();
         let own_colors = state_tree.get_mut(&self.get_full_path())
             .unwrap().as_layout().get_color_config().clone();
         let own_scrolling = state_tree.get_mut(&self.get_full_path())
             .unwrap().as_layout().get_scrolling_config().clone();
 
-        let mut position = states::definitions::Coordinates::new(0, 0);
-
+        let mut position = Coordinates::new(0, 0);
+        let mut content_list = Vec::new();
         for child in self.get_children() {
 
             let generic_child = child.as_ez_object();
@@ -1000,15 +1015,10 @@ impl Layout {
                 state.get_size_mut().infinite_height = true;
             }
 
-        if !own_scrolling.enable_x && !own_size.infinite_width &&
-                !state.get_size().infinite_width && content.len() > own_size.width {
-                // Widget added more content than was allowed, crop it and return as we're full
-                content = content[0..own_size.width].iter()
-                    .map(|x| x[0..own_size.height].to_vec()).collect()
-            }
             let width_left =
                 if !own_scrolling.enable_x && !own_size.infinite_width &&
-                    !state.get_size().infinite_width {own_size.width - content.len()} else {0};
+                    !state.get_size().infinite_width && own_size.width >= position.x
+                    {own_size.width - position.x} else {0};
             // If autoscaling is enabled set child size to max width. It is then expected to scale
             // itself according to its' content
             if state.get_auto_scale().width {
@@ -1028,7 +1038,6 @@ impl Layout {
                 state.get_size_mut().height = own_size.height;
             }
 
-            let valign = state.get_vertical_alignment();
             state.set_position(position);
             let child_content = generic_child.get_contents(state_tree);
             if child_content.is_empty() { continue }  // handle empty widget
@@ -1040,36 +1049,50 @@ impl Layout {
             if state.get_size().infinite_height {
                 state.get_size_mut().height = child_content[0].len()
             }
-            content = self.merge_horizontal_contents(
-                content, child_content,
-                own_size, own_colors.clone(),
-                state_tree.get_mut(&generic_child.get_full_path()).unwrap().as_generic_mut(),
-                valign);
-            position.x = content.len();
+
+            position.x += child_content.len();
+            content_list.push(child_content);
         }
-        content
+        if own_scaling.width {
+            state_tree.get_mut(&self.path).unwrap().as_layout_mut().set_effective_width(
+                content_list.iter().map(|x| x.len()).max().unwrap());
+        }
+        if own_scaling.height {
+            state_tree.get_mut(&self.path).unwrap().as_layout_mut().set_effective_height(
+                content_list.iter().map(
+                    |child| child.iter().map(|x| x.len()).max().unwrap())
+                    .max().unwrap());
+        }
+        let own_size = state_tree.get_mut(&self.get_full_path())
+            .unwrap().as_layout().get_effective_size();
+        let mut merged_content = PixelMap::new();
+        for (i, content) in content_list.into_iter().enumerate() {
+            merged_content = self.merge_horizontal_contents(
+                merged_content, content,
+                own_size, own_colors.clone(),
+                state_tree.get_mut(&self.children.get(i).unwrap().as_ez_object()
+                    .get_full_path()).unwrap().as_generic_mut());
+        }
+        merged_content
     }
 
     /// Used by [get_contents] when the [LayoutMode] is set to [Box] and [LayoutOrientation] is
     /// set to [Vertical]. Merges contents of sub layouts and/or widgets vertically.
-    fn get_box_mode_vertical_orientation_contents(&self, mut content: common::definitions::PixelMap,
-                                                  state_tree: &mut common::definitions::StateTree) -> common::definitions::PixelMap {
+    fn get_box_mode_vertical_orientation_contents(&self, state_tree: &mut StateTree) -> PixelMap {
 
         // Some clones as we will need to borrow from state tree again later
         let own_size = state_tree.get_mut(&self.get_full_path())
             .unwrap().as_layout().get_effective_size();
+        let own_scaling = state_tree.get_mut(&self.get_full_path())
+            .unwrap().as_layout().get_auto_scale().clone();
         let own_colors = state_tree.get_mut(&self.get_full_path())
             .unwrap().as_layout().get_color_config().clone();
         let own_scrolling = state_tree.get_mut(&self.get_full_path())
             .unwrap().as_layout().get_scrolling_config().clone();
 
-        for _ in 0..own_size.width {
-            content.push(Vec::new())
-        }
-
-        let mut position = states::definitions::Coordinates::new(0, 0);
+        let mut position = Coordinates::new(0, 0);
+        let mut content_list = Vec::new();
         for child in self.get_children() {
-            if content.is_empty() && !own_size.infinite_width { return content }  // No space left in widget
 
             let generic_child = child.as_ez_object();
             let child_state =
@@ -1083,20 +1106,12 @@ impl Layout {
                 child_state.get_size_mut().infinite_height = true;
             }
 
-            // If this layout is full prematurely then crop content and exit.
-            if (!own_scrolling.enable_x && !own_size.infinite_width &&
-                    content.len() > own_size.width) ||
-                (!own_scrolling.enable_y && !own_size.infinite_height &&
-                    content[0].len() > own_size.height) {
-                content = content[0..own_size.width].iter()
-                    .map(|x| x[0..own_size.height].to_vec()).collect()
-            }
-
             // Determine how much height we have left to give the child. Can be 0 if we're scrolling
-            // as we use [Size.infinite_height] then
+            // as we use [Size.infinite_height]
             let height_left =
-                if !own_scrolling.enable_y && !own_size.infinite_height && !child_state.get_size().infinite_height
-                {own_size.height - content[0].len() } else { 0 };
+                if !own_scrolling.enable_y && !own_size.infinite_height &&
+                    own_size.height >= position.y && !child_state.get_size().infinite_height
+                {own_size.height - position.y } else { 0 };
             // If autoscaling is enabled set child size to max width. It is then expected to scale
             // itself according to its' content
             if child_state.get_auto_scale().width {
@@ -1119,7 +1134,6 @@ impl Layout {
             }
 
             child_state.set_position(position);
-            let halign = child_state.get_horizontal_alignment();
             let child_content = generic_child.get_contents(state_tree);
             let state = state_tree.get_mut(&generic_child.get_full_path())
                 .unwrap().as_generic_mut(); // re-borrow
@@ -1129,28 +1143,42 @@ impl Layout {
             if state.get_size().infinite_height {
                 state.get_size_mut().height = child_content[0].len()
             }
-            content = self.merge_vertical_contents(
-                content, child_content, own_size,
-                own_colors.clone(),
-                state_tree.get_mut(&generic_child.get_full_path()).unwrap().as_generic_mut(),
-                halign);
-            position.y = content[0].len();
+            position.y += if !child_content.is_empty() {child_content[0].len()} else {0};
+            content_list.push(child_content);
         }
-        content
+        if own_scaling.width {
+            state_tree.get_mut(&self.path).unwrap().as_layout_mut().set_effective_width(
+                content_list.iter().map(|child| child.len()).max().unwrap());
+        }
+        if own_scaling.height {
+            state_tree.get_mut(&self.path).unwrap().as_layout_mut().set_effective_height(
+                content_list.iter().map(
+                    |child| child.iter().map(|x| x.len()).max().unwrap())
+                    .max().unwrap());
+        }
+        let own_size = state_tree.get_mut(&self.get_full_path())
+            .unwrap().as_layout().get_effective_size();
+        let mut merged_content = PixelMap::new();
+        for (i, content) in content_list.into_iter().enumerate() {
+            merged_content = self.merge_vertical_contents(
+                merged_content, content,
+                own_size, own_colors.clone(),
+                state_tree.get_mut(&self.children.get(i).unwrap().as_ez_object()
+                    .get_full_path()).unwrap().as_generic_mut());
+        }
+        merged_content
     }
 
     /// Take a [PixelMap] and merge it horizontally with another [PixelMap]
-    pub fn merge_horizontal_contents(
-        &self, mut merged_content: common::definitions::PixelMap,
-        mut new: common::definitions::PixelMap,
-        parent_size: states::definitions::Size, parent_colors: states::definitions::ColorConfig,
-        state: &mut dyn GenericState, valign: states::definitions::VerticalAlignment)
-        -> common::definitions::PixelMap {
+    pub fn merge_horizontal_contents(&self, mut merged_content: PixelMap, mut new: PixelMap,
+                                     parent_size: Size,
+                                     parent_colors: ColorConfig, state: &mut dyn GenericState)
+        -> PixelMap {
 
         if !parent_size.infinite_height && parent_size.height > new[0].len() {
             let offset;
             (new, offset) = common::widget_functions::align_content_vertically(
-                new, valign, parent_size.height,
+                new, state.get_vertical_alignment(), parent_size.height,
                 parent_colors.foreground,
                 parent_colors.background);
             state.set_y(state.get_position().y + offset);
@@ -1163,12 +1191,9 @@ impl Layout {
     }
 
     /// Take a [PixelMap] and merge it vertically with another [PixelMap]
-    pub fn merge_vertical_contents(
-        &self, mut merged_content: common::definitions::PixelMap,
-        mut new: common::definitions::PixelMap,
-        parent_size: states::definitions::Size, parent_colors: states::definitions::ColorConfig,
-        state: &mut dyn GenericState, halign: states::definitions::HorizontalAlignment)
-        -> common::definitions::PixelMap {
+    pub fn merge_vertical_contents(&self, mut merged_content: PixelMap, mut new: PixelMap,
+                                   parent_size: Size, parent_colors: ColorConfig,
+                                   state: &mut dyn GenericState) -> PixelMap {
 
         if new.is_empty() {
             return merged_content
@@ -1177,7 +1202,7 @@ impl Layout {
         let offset;
         if parent_size.width > new.len() && !parent_size.infinite_width {
             (new, offset) = common::widget_functions::align_content_horizontally(
-                new, halign, parent_size.width,
+                new, state.get_horizontal_alignment(), parent_size.width,
                 parent_colors.foreground,
                 parent_colors.background);
             state.set_x(state.get_position().x + offset);
@@ -1280,8 +1305,8 @@ impl Layout {
     }
 
     /// Create a horizontal scrollbox out of this layout if its contents width exceed its own width
-    fn create_horizontal_scroll_box(&self, state_tree: &mut common::definitions::StateTree, contents: common::definitions::PixelMap)
-                                    -> common::definitions::PixelMap {
+    fn create_horizontal_scroll_box(&self, state_tree: &mut StateTree, contents: PixelMap)
+                                    -> PixelMap {
 
         let state = state_tree.get_mut(&self.get_full_path()).unwrap()
             .as_layout_mut();
@@ -1304,8 +1329,8 @@ impl Layout {
     }
 
     /// Create a vertical scrollbox out of this layout if its contents width exceed its own width
-    fn create_vertical_scroll_box(&self, state_tree: &mut common::definitions::StateTree, contents: common::definitions::PixelMap)
-                                  -> common::definitions::PixelMap {
+    fn create_vertical_scroll_box(&self, state_tree: &mut StateTree, contents: PixelMap)
+        -> PixelMap {
 
         let state = state_tree.get_mut(&self.get_full_path()).unwrap()
             .as_layout_mut();
@@ -1323,7 +1348,7 @@ impl Layout {
             } else {
                 contents[0].len()
             };
-        let scrolled_contents: common::definitions::PixelMap =
+        let scrolled_contents: PixelMap =
             contents.iter().map(|x| x[view_start..view_end].to_vec()).collect();
         self.propagate_absolute_positions(state_tree);
         self.create_vertical_scrollbar(state_tree, scrolled_contents)
@@ -1331,7 +1356,7 @@ impl Layout {
 
     /// Create a scrolling bar for a horizontal scrollbox
     fn create_horizontal_scrollbar(
-        &self, state_tree: &mut common::definitions::StateTree, mut contents: common::definitions::PixelMap) -> common::definitions::PixelMap {
+        &self, state_tree: &mut StateTree, mut contents: PixelMap) -> PixelMap {
 
         let state = state_tree.get(&self.get_full_path()).unwrap().as_layout();
         let fg_color = if state.selected {state.get_color_config().selection_foreground}
@@ -1354,8 +1379,7 @@ impl Layout {
 
     /// Create a scrolling bar for a vertical scrollbox
     fn create_vertical_scrollbar(
-        &self, state_tree: &mut common::definitions::StateTree,
-        mut contents: common::definitions::PixelMap) -> common::definitions::PixelMap {
+        &self, state_tree: &mut StateTree, mut contents: PixelMap) -> PixelMap {
 
         let mut scrollbar = Vec::new();
         let state = state_tree.get(&self.get_full_path()).unwrap().as_layout();

@@ -4,73 +4,99 @@
 // templates we define below. Using templates can give us a really clean, flat and short UI definition.
 // A UI must always start with a Layout as the root widget. The root widget ID is always "root"
 - Layout:
-    mode: box
-    orientation: horizontal
+    mode: screen
     - Layout:
-        id: left_box
-        mode: box
-        size_hint_x: 4/5
-        orientation: vertical
+        id: menu_screen
+        mode: float
         - Layout:
-            id: canvas_box
+            id: menu_box
             mode: box
             orientation: vertical
+            border: true
             auto_scale: true, true
-            - Canvas:
-                id: canvas
+            pos_hint: center, middle
+            - Button:
+                id: start_button
+                text: Start demo
                 auto_scale: true, true
-                from_file: ./Examples/example_art.txt
                 halign: center
-        - Layout:
-            id: bottom_box
-            mode: box
-            orientation: horizontal
-            - InputShowcaseBox:
-                id: small_box_1
-            - ButtonsShowcaseBox:
-                id: small_box_2
-            - DropdownShowcaseBox:
-                id: small_box_3
+                selection_order: 1
+            - Button:
+                id: quit_button
+                text: Quit
+                auto_scale: true, true
+                halign: center
+                selection_order: 2
+
     - Layout:
-        id: tabbed_box
-        mode: tabbed
-        size_hint_x: 1/5
-        border: True
-        selection_order: 50
+        id: main_screen
+        mode: box
+        orientation: horizontal
         - Layout:
-            id: Tab 1
+            id: left_box
             mode: box
-            orientation: horizontal
-            scroll_y: true
-            selection_order: 55
-            selection_fg_color: red
-            - Label:
-                size_hint_y: none
-                from_file: ./Examples/dummy.txt
-        - Layout:
-            id: Tab 2
-            mode: box
+            size_hint_x: 4/5
             orientation: vertical
-            - Label:
-                text: This is a label on a second tab.
+            - Layout:
+                id: canvas_box
+                mode: box
+                orientation: vertical
+                auto_scale: true, true
+                - Canvas:
+                    id: canvas
+                    auto_scale: true, true
+                    from_file: ./Examples/example_art.txt
+                    halign: center
+            - Layout:
+                id: bottom_box
+                mode: box
+                orientation: horizontal
+                - InputShowcaseBox:
+                    id: small_box_1
+                - ButtonsShowcaseBox:
+                    id: small_box_2
+                - DropdownShowcaseBox:
+                    id: small_box_3
         - Layout:
-            id: Tab 3
-            mode: box
-            orientation: vertical
-            - Label:
-                text: This is a label on a third tab.
-        - Layout:
-            id: Tab 4
-            mode: box
-            orientation: vertical
-            - Label:
-                text: This is a label on a fourth tab.
-        - Layout:
-            id: Tab 5
-            mode: box
-            orientation: vertical
-            - Label:
-                text: This is a label on a fifth tab.
+            id: tabbed_box
+            mode: tabbed
+            size_hint_x: 1/5
+            border: True
+            selection_order: 50
+            - Layout:
+                id: Tab 1
+                mode: box
+                orientation: horizontal
+                scroll_y: true
+                selection_order: 55
+                selection_fg_color: red
+                - Label:
+                    size_hint_y: none
+                    from_file: ./Examples/dummy.txt
+            - Layout:
+                id: Tab 2
+                mode: box
+                orientation: vertical
+                - Label:
+                    text: This is a label on a second tab.
+            - Layout:
+                id: Tab 3
+                mode: box
+                orientation: vertical
+                - Label:
+                    text: This is a label on a third tab.
+            - Layout:
+                id: Tab 4
+                mode: box
+                orientation: vertical
+                - Label:
+                    text: This is a label on a fourth tab.
+            - Layout:
+                id: Tab 5
+                mode: box
+                orientation: vertical
+                - Label:
+                    text: This is a label on a fifth tab.
 
 
 // The first templates we define are basic layouts and widgets that we use multiple times. They're basically
@@ -313,18 +339,20 @@
 // This is a widget template we will use as a popup in a callback
 - <TestPopup@Layout>:
     id: test_popup
-    mode: box
-    orientation: vertical
+    mode: float
     size_hint: 0.5, 0.5
     border: true
     pos_hint: center, middle
     - Label:
         text: This is a test popup.
-        size_hint: 0.5, 0.5
+        auto_scale: true, true
+        pos_hint: center, top
     - Button:
         id: dismiss_button
         selection_order: 1
         text: dismiss
-        size_hint: 0.5, 0.5
+        size_hint_x: 1
+        auto_scale_height: true
+        pos_hint: center, bottom
         bg_color: red
         fg_color: yellow

@@ -150,11 +150,11 @@ impl EzObject for Button {
 
         let text = state.text.clone();
 
-        let write_width = if state.get_effective_size().infinite_width { text.len() }
+        let write_width = if state.get_effective_size().infinite_width || state.get_auto_scale().width { text.len() + 1 }
                               else {state.get_effective_size().width };
         let content_lines = common::widget_functions::wrap_text(text, write_width);
         let write_height =
-            if state.get_effective_size().infinite_height { content_lines.len() }
+            if state.get_effective_size().infinite_height || state.get_auto_scale().height { content_lines.len() }
             else {state.get_effective_size().height };
 
         let longest_line = content_lines.iter().map(|x| x.len()).max();

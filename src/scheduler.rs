@@ -1,5 +1,5 @@
 use std::time::{Duration, Instant};
-use crate::states;
+use crate::{run, states};
 use crate::common;
 
 
@@ -97,8 +97,14 @@ impl Scheduler {
         while !self.updated_callback_configs.is_empty() {
             let (path, callback_config) =
                 self.updated_callback_configs.pop().unwrap();
-            callback_tree.get_mut(&path).unwrap().update_from(callback_config);
+            callback_tree.get_mut(&path).unwrap_or_else(
+                || panic!("Cannot set new callback config for path \"{}\" as it cannot be resolved",
+                path)).update_from(callback_config);
         }
+    }
+
+    pub fn exit(&self) {
+        run::stop();
     }
 }
 

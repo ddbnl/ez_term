@@ -166,27 +166,21 @@ impl EzObject for Canvas {
                 let longest_line = lines.iter().map(|x| x.chars().count()).max();
                 let auto_scale_width =
                     if let Some(i) = longest_line { i } else { 0 };
-                if auto_scale_width < state.get_effective_size().width {
+                if auto_scale_width < state.get_effective_size().width || state.get_size().infinite_width {
                     state.set_effective_width(auto_scale_width);
                 }
             }
             if state.get_auto_scale().height {
                 let auto_scale_height = lines.len();
-                if auto_scale_height < state.get_effective_size().height {
+                if auto_scale_height < state.get_effective_size().height || state.get_size().infinite_height{
                     state.set_effective_height(auto_scale_height);
                 }
             }
 
-            let write_width = if state.get_effective_size().infinite_width { lines.len() }
-                                    else {state.get_effective_size().width };
-            let write_height =
-                if state.get_effective_size().infinite_height { lines[0].len() }
-                else {state.get_effective_size().height };
-
             let mut widget_content = common::definitions::PixelMap::new();
-            for x in 0..write_width {
+            for x in 0..state.get_effective_size().width {
                 widget_content.push(Vec::new());
-                for y in 0..write_height {
+                for y in 0..state.get_effective_size().height {
                     if y < lines.len() && !lines[y].is_empty() {
                         widget_content[x].push(Pixel {
                             symbol: lines[y].pop().unwrap().to_string(),

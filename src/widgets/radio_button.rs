@@ -3,17 +3,13 @@
 //! same 'group' field value for all. The radio buttons in a group are mutually exlusive, so when
 //! one is selected the others are deselected. Supports on_value_change callback, which is only
 //! called for the radio button that became active.
-use std::io::Error;
-use crossterm::event::Event;
 use crate::common;
-use crate::common::definitions::{CallbackTree, PixelMap, StateTree, ViewTree, WidgetTree};
-use crate::states;
+use crate::common::definitions::{CallbackTree, StateTree, ViewTree, WidgetTree};
 use crate::states::radio_button_state::RadioButtonState;
 use crate::states::state::{EzState, GenericState};
 use crate::widgets::widget::{Pixel, EzObject};
 use crate::ez_parser;
 use crate::scheduler::Scheduler;
-use crate::states::definitions::Coordinates;
 
 
 #[derive(Clone)]
@@ -138,8 +134,7 @@ impl EzObject for RadioButton {
 
     fn get_state(&self) -> EzState { EzState::RadioButton(self.state.clone()) }
 
-    fn get_contents(&self, state_tree: &mut common::definitions::StateTree)
-        -> common::definitions::PixelMap {
+    fn get_contents(&self, state_tree: &mut StateTree) -> common::definitions::PixelMap {
 
         let state = state_tree
             .get_mut(&self.get_full_path()).unwrap().as_radio_button();
@@ -192,10 +187,8 @@ impl RadioButton {
     }
 
     /// Function that handles this RadioButton being pressed (mouse clicked/keyboard entered).
-    fn handle_press(&self, view_tree: &mut common::definitions::ViewTree,
-                    state_tree: &mut common::definitions::StateTree,
-                    widget_tree: &common::definitions::WidgetTree,
-                    callback_tree: &mut common::definitions::CallbackTree,
+    fn handle_press(&self, view_tree: &mut ViewTree, state_tree: &mut StateTree,
+                    widget_tree: &WidgetTree, callback_tree: &mut CallbackTree,
                     scheduler: &mut Scheduler) {
 
         // Find all other radio buttons in same group and make them inactive (mutual exclusivity)
@@ -214,7 +207,7 @@ impl RadioButton {
             if let Some(ref mut i) = callback_tree
                 .get_mut(&self.get_full_path()).unwrap().on_value_change {
                 let context = common::definitions::EzContext::new(
-                    self.get_full_path().clone(), view_tree, state_tree, widget_tree,
+                    self.get_full_path(), view_tree, state_tree, widget_tree,
                     scheduler);
                 i(context);
             }

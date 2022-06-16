@@ -1,5 +1,4 @@
 use std::collections::HashMap;
-use crossterm::style::Stylize;
 use crate::common;
 use crate::scheduler::Scheduler;
 use crate::states;
@@ -31,7 +30,7 @@ pub struct LayoutState {
     pub auto_scale: states::definitions::AutoScale,
 
     /// Layout mode enum, see [LayoutMode] for options
-    pub mode: states::definitions::LayoutMode,
+    pub mode: LayoutMode,
 
     /// Orientation enum, see [LayoutOrientation] for options
     pub orientation: states::definitions::LayoutOrientation,
@@ -44,6 +43,9 @@ pub struct LayoutState {
 
     /// Vertical alignment of this widget
     pub valign: states::definitions::VerticalAlignment,
+
+    /// ID of the child that is the active screen (i.e. its content is visible)
+    pub active_screen: String,
 
     /// Name shown for tab if [is_tab] is true and parent [is_tabbed]
     pub tab_name: String,
@@ -103,10 +105,11 @@ impl Default for LayoutState {
             size: states::definitions::Size::default(),
             auto_scale: states::definitions::AutoScale::default(),
             orientation: states::definitions::LayoutOrientation::Horizontal,
-            mode: states::definitions::LayoutMode::Box,
+            mode: LayoutMode::Box,
             padding: states::definitions::Padding::default(),
             halign: states::definitions::HorizontalAlignment::Left,
             valign: states::definitions::VerticalAlignment::Top,
+            active_screen: String::new(),
             tab_name: "Tab".to_string(),
             active_tab: String::new(),
             selected_tab_header: String::new(),
@@ -278,13 +281,23 @@ impl LayoutState {
     /// Get [LayoutOrientation]
     pub fn get_orientation(&self) -> &states::definitions::LayoutOrientation { &self.orientation }
 
-    /// Set the tab that is currently active (i.e. content is showing)
+    /// Set the ID of the child that is the currently active screen (i.e. content is showing)
+    pub fn set_active_screen(&mut self, id: String) {
+        if self.active_screen != id { self.changed = true }
+        self.active_screen = id;
+    }
+
+    /// Get the ID of the child that is the currently active screen (i.e. content is showing)
+    pub fn get_active_screen(&self) -> String { self.active_screen.clone() }
+
+    /// Set the path to the Layout that is currently active as the current tab (i.e. content is
+    /// showing)
     pub fn set_active_tab(&mut self, path: String) {
         if self.active_tab != path { self.changed = true }
         self.active_tab = path;
     }
 
-    /// Get the tab that is currently active (i.e. content is showing)
+    /// Get the [path] to the Layout that is currently active as a tab (i.e. content is showing)
     pub fn get_active_tab(&self) -> String { self.active_tab.clone() }
 
     /// Set the tab header that is currently selected
@@ -296,13 +309,16 @@ impl LayoutState {
     /// Get the tab header that is currently selected
     pub fn get_selected_tab_header(&self) -> String { self.selected_tab_header.clone() }
 
+    /// Set the [ScrollingConfig] active for this Layout
     pub fn set_scrolling_config(&mut self, config: states::definitions::ScrollingConfig) {
         if self.scrolling_config != config { self.changed = true }
         self.scrolling_config = config;
     }
 
+    /// Get a ref to the [ScrollingConfig] active for this Layout
     pub fn get_scrolling_config(&self) -> &states::definitions::ScrollingConfig { &self.scrolling_config }
 
+    /// Get a mutable ref to the [ScrollingConfig] active for this Layout
     pub fn get_scrolling_config_mut(&mut self) -> &mut states::definitions::ScrollingConfig {
         self.changed = true;
         &mut self.scrolling_config
@@ -322,7 +338,7 @@ impl LayoutState {
         -> (String, common::definitions::StateTree) {
         let mut popup = self.templates.get_mut(&template).unwrap().clone();
         let init_popup = popup.parse(&mut self.templates, scheduler,
-                                     "/modal".to_string(), 0);
+                                     "/modal".to_string(), 0, None);
         self.open_modal(init_popup)
     }
     

@@ -2,6 +2,7 @@ use std::time::Duration;
 use crossterm::style::Color;
 use ez_term::{ez_parser, run, states};
 use ez_term::common;
+use ez_term::common::definitions::EzContext;
 use ez_term::widgets::widget::EzObject;
 use ez_term::states::state::{GenericState};
 
@@ -19,58 +20,78 @@ fn main() {
 
     // Step 2: Customize widgets where needed. Here are some examples:
 
+    // We will set up the menu screen buttons with closures.
+    scheduler.update_callback_config(
+        "/root/menu_screen/menu_box/start_button".to_string(),
+        states::definitions::CallbackConfig::from_on_press(Box::new(
+            |context: EzContext| {
+                let root_state = context.state_tree.get_mut("/root")
+                    .unwrap().as_layout_mut();
+                root_state.set_active_screen("main_screen".to_string());
+                false
+            } )));
+
+    scheduler.update_callback_config("/root/menu_screen/menu_box/quit_button".to_string(),
+        states::definitions::CallbackConfig::from_on_press(Box::new(
+                |context: EzContext| {
+                    context.scheduler.exit();
+                    true
+                } )));
+
+    // Now we'll set up the main screen callbacks using functions defined at the buttom of this file
+
     // Set a checkbox on value callback
     scheduler.update_callback_config(
-        "/root/left_box/bottom_box/small_box_2/checkbox_section_box/checkbox_box/checkbox".to_string(),
+        "/root/main_screen/left_box/bottom_box/small_box_2/checkbox_section_box/checkbox_box/checkbox".to_string(),
         states::definitions::CallbackConfig::from_on_value_change(
             Box::new(test_checkbox_on_value_change)));
 
     // Set a radio button group on value callback
     scheduler.update_callback_config(
-        "/root/left_box/bottom_box/small_box_2/radio_section_box/radio_box/radio1".to_string(),
+        "/root/main_screen/left_box/bottom_box/small_box_2/radio_section_box/radio_box/radio1".to_string(),
         states::definitions::CallbackConfig::from_on_value_change(
             Box::new(test_radio_button_on_value_change)));
     scheduler.update_callback_config(
-        "/root/left_box/bottom_box/small_box_2/radio_section_box/radio_box/radio2".to_string(),
+        "/root/main_screen/left_box/bottom_box/small_box_2/radio_section_box/radio_box/radio2".to_string(),
         states::definitions::CallbackConfig::from_on_value_change(
             Box::new(test_radio_button_on_value_change)));
     scheduler.update_callback_config(
-        "/root/left_box/bottom_box/small_box_2/radio_section_box/radio_box/radio3".to_string(),
+        "/root/main_screen/left_box/bottom_box/small_box_2/radio_section_box/radio_box/radio3".to_string(),
         states::definitions::CallbackConfig::from_on_value_change(
             Box::new(test_radio_button_on_value_change)));
 
     // Set a dropdown on value change callback
     scheduler.update_callback_config(
-        "/root/left_box/bottom_box/small_box_3/dropdown_section_box/dropdown_box/dropdown".to_string(),
+        "/root/main_screen/left_box/bottom_box/small_box_3/dropdown_section_box/dropdown_box/dropdown".to_string(),
         states::definitions::CallbackConfig::from_on_value_change(
             Box::new(test_dropdown_on_value_change)));
 
     // Set a button callback to create a popup
     scheduler.update_callback_config(
-        "/root/left_box/bottom_box/small_box_3/popup_section_box/popup_button".to_string(),
+        "/root/main_screen/left_box/bottom_box/small_box_3/popup_section_box/popup_button".to_string(),
         states::definitions::CallbackConfig::from_on_press(
             Box::new(test_popup_button_on_press)));
 
     // Set a text input on value change callback
     scheduler.update_callback_config(
-        "/root/left_box/bottom_box/small_box_1/input_3_box/input_3".to_string(),
+        "/root/main_screen/left_box/bottom_box/small_box_1/input_3_box/input_3".to_string(),
         states::definitions::CallbackConfig::from_on_value_change(
             Box::new(test_text_input_on_value_change)));
     // Set a text input on keyboard enter
     scheduler.update_callback_config(
-        "/root/left_box/bottom_box/small_box_1/input_3_box/input_3".to_string(),
+        "/root/main_screen/left_box/bottom_box/small_box_1/input_3_box/input_3".to_string(),
         states::definitions::CallbackConfig::from_on_keyboard_enter(
             Box::new(test_text_input_on_keyboard_enter)));
 
     // Set a button on press
     scheduler.update_callback_config(
-        "/root/left_box/bottom_box/small_box_2/button_section_box/button_box/button".to_string(),
+        "/root/main_screen/left_box/bottom_box/small_box_2/button_section_box/button_box/button".to_string(),
         states::definitions::CallbackConfig::from_on_press(
             Box::new(test_on_button_press)));
 
     let mut neon = (0, 255, 0);
     let mut switch: u8 = 0;
-    let neon_banner = move | context: common::definitions::EzContext | {
+    let neon_banner = move | context: EzContext | {
         let color = Color::from(neon);
         if switch == 0 {
             if neon.0 > 245 {
@@ -95,7 +116,7 @@ fn main() {
         true
     };
 
-    scheduler.schedule_interval("/root/left_box/canvas_box/canvas".to_string(),
+    scheduler.schedule_interval("/root/main_screen/left_box/canvas_box/canvas".to_string(),
                                 Box::new(neon_banner), Duration::from_millis(200));
 
     // Step 3: Run app
@@ -106,7 +127,7 @@ fn main() {
 
 // As an example we will change the label next to a checkbox to say "enabled" or
 // "disabled" depending on the state of a checkbox.
-fn test_checkbox_on_value_change(context: common::definitions::EzContext) -> bool {
+fn test_checkbox_on_value_change(context: EzContext) -> bool {
 
     // First we get the widget state object of the widget that changed value, using the 'widget_path'
     // parameter as a key. The state contains the current value. Then we cast the generic widget
@@ -121,7 +142,7 @@ fn test_checkbox_on_value_change(context: common::definitions::EzContext) -> boo
     // Next we will retrieve a label widget state and change the text and color field. This will
     // cause the text to change on the next frame.
     let label_state = context.state_tree
-        .get_mut("/root/left_box/bottom_box/small_box_2/checkbox_section_box/checkbox_box/checkbox_label")
+        .get_mut("/root/main_screen/left_box/bottom_box/small_box_2/checkbox_section_box/checkbox_box/checkbox_label")
         .unwrap()
         .as_label_mut();
     label_state.set_text(text.to_string());
@@ -133,7 +154,7 @@ fn test_checkbox_on_value_change(context: common::definitions::EzContext) -> boo
 // As an example we will change the label next to a radio button group to display the id of the
 // selected radio button. We will also change the label to be the color of the radio button that
 // became active.
-fn test_radio_button_on_value_change(context: common::definitions::EzContext) -> bool {
+fn test_radio_button_on_value_change(context: EzContext) -> bool {
 
     // First we get the EzObjects enum of the widget that changed value, using the 'widget_path'
     // parameter as a key. Then we cast it into a radio button object. We will use this object to
@@ -155,7 +176,7 @@ fn test_radio_button_on_value_change(context: common::definitions::EzContext) ->
     // Next we will retrieve a label widget and change the 'text' field of its' state to the ID of
     // the radio button that became active. This will cause the text to change on the next frame.
     let label_state = context.state_tree
-        .get_mut("/root/left_box/bottom_box/small_box_2/radio_section_box/radio_box/radio_label")
+        .get_mut("/root/main_screen/left_box/bottom_box/small_box_2/radio_section_box/radio_box/radio_label")
         .unwrap()
         .as_label_mut();
     label_state.set_text(name);
@@ -164,7 +185,7 @@ fn test_radio_button_on_value_change(context: common::definitions::EzContext) ->
 }
 
 // As an example we will change the label next to a dropdown display the active dropdown choice.
-fn test_dropdown_on_value_change(context: common::definitions::EzContext) -> bool {
+fn test_dropdown_on_value_change(context: EzContext) -> bool {
 
     // First we get the widget state object of the widget that changed value, using the 'widget_path'
     // parameter as a key. The state contains the current value. Then we cast the generic widget
@@ -177,7 +198,7 @@ fn test_dropdown_on_value_change(context: common::definitions::EzContext) -> boo
     // Next we will retrieve a label widget and change the 'text' field of its' state. This will
     // cause the text to change on the next frame.
     context.state_tree
-        .get_mut("/root/left_box/bottom_box/small_box_3/dropdown_section_box/dropdown_box/dropdown_label")
+        .get_mut("/root/main_screen/left_box/bottom_box/small_box_3/dropdown_section_box/dropdown_box/dropdown_label")
         .unwrap()
         .as_label_mut().set_text(value);
     false
@@ -185,7 +206,7 @@ fn test_dropdown_on_value_change(context: common::definitions::EzContext) -> boo
 
 
 // As an example we will change the label below a text input to mirror any typed text.
-fn test_text_input_on_value_change(context: common::definitions::EzContext) -> bool {
+fn test_text_input_on_value_change(context: EzContext) -> bool {
 
     // First we get the widget state object of the widget that changed value, using the 'widget_path'
     // parameter as a key. The state contains the current value. Then we cast the generic widget
@@ -198,7 +219,7 @@ fn test_text_input_on_value_change(context: common::definitions::EzContext) -> b
     // Next we will retrieve a label widget and change the 'text' field of its' state. This will
     // cause the text to change on the next frame.
     context.state_tree
-        .get_mut("/root/left_box/bottom_box/small_box_1/input_3_box/input_3_label")
+        .get_mut("/root/main_screen/left_box/bottom_box/small_box_1/input_3_box/input_3_label")
         .unwrap()
         .as_label_mut().set_text(value);
     false
@@ -207,7 +228,7 @@ fn test_text_input_on_value_change(context: common::definitions::EzContext) -> b
 
 // As an example we will change the label below a text input to add 'confirmed' to its' text after
 // an enter on the text input. We will also deselect the widget.
-fn test_text_input_on_keyboard_enter(context: common::definitions::EzContext) -> bool {
+fn test_text_input_on_keyboard_enter(context: EzContext) -> bool {
 
     // First we get the widget state object of the widget that changed value, using the 'widget_path'
     // parameter as a key. The state contains the current value. Then we cast the generic widget
@@ -223,7 +244,7 @@ fn test_text_input_on_keyboard_enter(context: common::definitions::EzContext) ->
     // Next we will retrieve a label widget and change the 'text' field of its' state. This will
     // cause the text to change on the next frame.
     context.state_tree
-        .get_mut("/root/left_box/bottom_box/small_box_1/input_3_box/input_3_label")
+        .get_mut("/root/main_screen/left_box/bottom_box/small_box_1/input_3_box/input_3_label")
         .unwrap()
         .as_label_mut().set_text(format!("{} CONFIRMED", value));
     false
@@ -231,12 +252,12 @@ fn test_text_input_on_keyboard_enter(context: common::definitions::EzContext) ->
 
 
 // As an example we will change a label after a button is pressed.
-fn test_on_button_press(context: common::definitions::EzContext) -> bool {
+fn test_on_button_press(context: EzContext) -> bool {
 
     // We will retrieve a label widget and change the 'text' field of its' state. This will
     // cause the text to change on the next frame.
     let label_state = context.state_tree
-        .get_mut("/root/left_box/bottom_box/small_box_2/button_section_box/button_box/button_label")
+        .get_mut("/root/main_screen/left_box/bottom_box/small_box_2/button_section_box/button_box/button_label")
         .unwrap()
         .as_label_mut();
     let number: usize =
@@ -248,7 +269,7 @@ fn test_on_button_press(context: common::definitions::EzContext) -> bool {
 
 
 // As an example we will change a label after a button is pressed.
-fn test_popup_button_on_press(context: common::definitions::EzContext) -> bool {
+fn test_popup_button_on_press(context: EzContext) -> bool {
 
     // We will open a popup in this callback. We open a popup by defining a template in the
     // Ez file, and then using the template name with the [common::open_popup] function to
@@ -261,20 +282,20 @@ fn test_popup_button_on_press(context: common::definitions::EzContext) -> bool {
     // actually dismisses the popup. The second closure simply schedules the first one to run with
     // a delay. We will bind the delaying function to the dismiss button.
     let dismiss =
-        move |context: common::definitions::EzContext| {
+        move |context: EzContext| {
             context.state_tree.get_mut("/root").unwrap().as_layout_mut().dismiss_modal();
             false
         };
     let path_clone = popup_path.clone();
     let dismiss_delay =
-        move |context: common::definitions::EzContext| {
+        move |context: EzContext| {
             context.scheduler.schedule_once(path_clone.clone(), Box::new(dismiss),
                                             Duration::from_millis(50));
             true
         };
 
     context.scheduler.update_callback_config(
-        format!("{}/dismiss_button", popup_path.clone()),
+        format!("{}/dismiss_button", popup_path),
         states::definitions::CallbackConfig::from_on_press(Box::new(dismiss_delay)));
     false
 }

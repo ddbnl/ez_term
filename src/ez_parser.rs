@@ -1,11 +1,11 @@
 //! # Ez Parser
 //! Module containing structs and functions for paring a .ez file into a root layout.
 use std::collections::HashMap;
+use std::fmt::{Debug, Formatter};
 use std::fs::File;
 use std::io::prelude::*;
 use std::io::{Error, ErrorKind};
-use std::ptr::hash;
-use crossterm::style::Color;
+use crossterm::style::{Color};
 use std::str::FromStr;
 use crossterm::terminal::size;
 use unicode_segmentation::UnicodeSegmentation;
@@ -18,7 +18,7 @@ use crate::widgets::checkbox::Checkbox;
 use crate::widgets::text_input::TextInput;
 use crate::widgets::dropdown::Dropdown;
 use crate::widgets::widget::{EzObjects, EzObject};
-use crate::{common, states};
+use crate::{states};
 use crate::common::definitions::Templates;
 use crate::scheduler::Scheduler;
 use crate::states::state::{GenericState};
@@ -44,13 +44,18 @@ fn parse_ez(file_string: String) -> Result<(Layout, Scheduler), Error> {
     let config_lines:Vec<String> = file_string.lines().map(|x| x.to_string()).collect();
     let (_, mut widgets, templates) =
         parse_level(config_lines, 0, 0).unwrap();
+    if widgets.len() > 1 {
+        panic!("There can be only one root widget but {} were found ({:?}). If you meant to use \
+        multiple screens, create one root layout with \"mode: screen\" and add the screen \
+        layouts to this root.", widgets.len(), widgets);
+    }
     let mut root_widget = widgets.pop().unwrap();
     if root_widget.type_name != "Layout" {
         panic!("Root widget of an Ez file must be a Layout")
     }
 
     let mut scheduler = Scheduler::default();
-    let mut initialized_root_widget = root_widget.parse_as_root(templates, &mut scheduler);
+    let initialized_root_widget = root_widget.parse_as_root(templates, &mut scheduler);
 
     Ok((initialized_root_widget, scheduler))
 }
@@ -103,9 +108,9 @@ impl EzWidgetDefinition {
                                           parameter_value.to_string());
         }
         for (i, sub_widget) in sub_widgets.iter_mut().enumerate() {
-            let mut initialized_sub_widget = sub_widget.parse(
+            let initialized_sub_widget = sub_widget.parse(
                 &mut templates, scheduler, initialized.get_full_path().clone(),
-            i);
+            i, None);
             initialized.add_child(initialized_sub_widget, scheduler);
         }
         let terminal_size = size().unwrap();
@@ -122,26 +127,43 @@ impl EzWidgetDefinition {
     /// Parse a definition by separating the config lines from the sub widget definitions. Then
     /// apply the config to the initialized widget, then initialize and add sub widgets.
     pub fn parse(&mut self, templates: &mut Templates, scheduler: &mut Scheduler,
-                 parent_path: String, order: usize) -> EzObjects {
+                 parent_path: String, order: usize, merge_config: Option<Vec<String>>)
+                 -> EzObjects {
 
-        let (config, mut sub_widgets, _) =
+        let (mut config, mut sub_widgets, _) =
             parse_level(self.content.clone(), self.indentation_offset, self.line_offset)
                 .unwrap();
-        let mut initialized = self.initialize(config.clone(), templates, scheduler,
-                                          parent_path.clone(), order).unwrap();
-        let id;
-        if initialized.as_ez_object().get_id().is_empty() {
-            id = order.to_string();
-            initialized.as_ez_object_mut().set_id(id.clone());
-        } else {
-            id = initialized.as_ez_object().get_id();
+
+        // Templates can have options, and instances of templates can also have options. Merge the
+        // configs making sure that the instance config takes precedence.
+        let mut merged_config: Vec<String> = Vec::new();
+        if let Some(config_to_merge) = merge_config {
+            let mut existing_options: Vec<String> = Vec::new();
+            for line in config_to_merge {
+                merged_config.push(line.clone());
+                existing_options.push(line.split_once(':').unwrap().0.to_string());
+            }
+            for line in config {
+                if !merged_config.contains(&line.split_once(':').unwrap().0.to_string()) {
+                    merged_config.push(line);
+                }
+            }
+            config = merged_config;
         }
-        let path = format!("{}/{}", parent_path.clone(), id);
+        let mut initialized = self.initialize(config, templates, scheduler,
+                                          parent_path.clone(), order).unwrap();
+        let id=
+            if initialized.as_ez_object().get_id().is_empty() {
+                let auto_id = order.to_string();
+                initialized.as_ez_object_mut().set_id(auto_id.clone());
+                auto_id
+            } else { initialized.as_ez_object().get_id() };
+        let path = format!("{}/{}", parent_path, id);
         initialized.as_ez_object_mut().set_full_path(path.clone());
         if let EzObjects::Layout(mut obj) = initialized {
             for (i, sub_widget) in sub_widgets.iter_mut().enumerate() {
-                let mut initialized_sub_widget = sub_widget.parse(templates, scheduler,
-                                                              path.clone(), i);
+                let initialized_sub_widget = sub_widget.parse(
+                    templates, scheduler,path.clone(), i, None);
 
                 obj.add_child(initialized_sub_widget, scheduler);
             }
@@ -157,45 +179,37 @@ impl EzWidgetDefinition {
 
         // return new root
         if templates.contains_key(&self.type_name) {
-            let template = templates.get_mut(&self.type_name).unwrap();
-            let mut object = template.clone().parse(templates, scheduler, parent_path.clone(),
-                                                    order);
-            object.as_ez_object_mut().load_ez_config(config).unwrap();
-            let id;
-            if object.as_ez_object().get_id().is_empty() {
-                id = order.to_string();
-                object.as_ez_object_mut().set_id(id.clone());
-            } else {
-                id = object.as_ez_object().get_id();
+            let mut template = templates.get_mut(&self.type_name).unwrap().clone();
+            let object = template.parse(templates, scheduler, parent_path,
+                                                    order, Some(config));
+            Ok(object)
+        } else {
+            match self.type_name.as_str() {
+                "Layout" => Ok(EzObjects::Layout(Layout::from_config(config))),
+                "Canvas" => Ok(EzObjects::CanvasWidget(Canvas::from_config(config))),
+                "Label" => Ok(EzObjects::Label(Label::from_config(config))),
+                "Button" => Ok(EzObjects::Button(Button::from_config(config))),
+                "CheckBox" => Ok(EzObjects::Checkbox(Checkbox::from_config(config))),
+                "RadioButton" => Ok(EzObjects::RadioButton(RadioButton::from_config(config))),
+                "TextInput" => Ok(EzObjects::TextInput(TextInput::from_config(config))),
+                "Dropdown" => Ok(EzObjects::Dropdown(Dropdown::from_config(config))),
+                _ => Err(Error::new(ErrorKind::InvalidData,
+                                    format!("Invalid widget type {}", self.type_name)))
             }
-            let path = format!("{}/{}", parent_path.clone(), id);
-            object.as_ez_object_mut().set_full_path(path.clone());
-            if let EzObjects::Layout(ref mut i) = object {
-                i.propagate_paths();
-            }
-            return Ok(object);
-
         }
-        match self.type_name.as_str() {
-            "Layout" => Ok(EzObjects::Layout(Layout::from_config(config))),
-            "Canvas" => Ok(EzObjects::CanvasWidget(Canvas::from_config(config))),
-            "Label" => Ok(EzObjects::Label(Label::from_config(config))),
-            "Button" => Ok(EzObjects::Button(Button::from_config(config))),
-            "CheckBox" => Ok(EzObjects::Checkbox(Checkbox::from_config(config))),
-            "RadioButton" => Ok(EzObjects::RadioButton(RadioButton::from_config(config))),
-            "TextInput" => Ok(EzObjects::TextInput(TextInput::from_config(config))),
-            "Dropdown" => Ok(EzObjects::Dropdown(Dropdown::from_config(config))),
-            _ => Err(Error::new(ErrorKind::InvalidData,
-                                format!("Invalid widget type {}", self.type_name)))
-        }
+    }
+}
+impl Debug for EzWidgetDefinition {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.type_name)
     }
 }
 
 /// Parse a single indentation level of a config file. Returns a Vec of config lines, a Vec
 /// of [EzWidgetDefinition] of widgets found on that level, and a Vec of [EzWidgetDefinition] of
 /// templates found on that level
-fn parse_level<'a>(config_lines: Vec<String>, indentation_offset: usize, line_offset: usize)
-         -> Result<(Vec<String>, Vec<EzWidgetDefinition>, common::definitions::Templates), Error> {
+fn parse_level(config_lines: Vec<String>, indentation_offset: usize, line_offset: usize)
+         -> Result<(Vec<String>, Vec<EzWidgetDefinition>, Templates), Error> {
 
     // All lines before the first widget definition are considered config lines for the widget
     // on this indentation level
@@ -224,7 +238,7 @@ fn parse_level<'a>(config_lines: Vec<String>, indentation_offset: usize, line_of
                         panic!("Error at Line {}: \"{}\". Invalid indentation. indentation must be \
                             in multiples of four.", i + 1 + line_offset, line);
                     }
-                    if !parsing_config && !line.starts_with("-") && j < 4 {
+                    if !parsing_config && !line.starts_with('-') && j < 4 {
                         panic!("Error at Line {0}: \"{1}\". This line must be indented. Try this:\
                         \n{2}{3}\n{4}{1}",
                                i + 1 + line_offset, line, " ".repeat(indentation_offset),
@@ -378,7 +392,7 @@ pub fn load_full_auto_scale_parameter(value: &str) -> states::definitions::AutoS
 /// Looks like "padding: 2, 2, 2, 2"
 pub fn load_full_padding_parameter(value: &str) -> states::definitions::Padding {
 
-    let strings: Vec<&str> = value.split(",").collect();
+    let strings: Vec<&str> = value.split(',').collect();
     if strings.len() != 4 {
         if strings.len() == 1 {
             panic!("Padding parameter must have four values, e.g.: \"2, 2, 2, 2\". You used one \

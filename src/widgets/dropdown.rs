@@ -26,7 +26,7 @@ pub struct Dropdown {
 }
 
 
-impl widget::EzObject for Dropdown {
+impl EzObject for Dropdown {
 
     fn load_ez_parameter(&mut self, parameter_name: String, parameter_value: String) {
 
