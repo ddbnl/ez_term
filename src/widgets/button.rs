@@ -35,92 +35,13 @@ impl Default for Button {
 impl EzObject for Button {
 
     fn load_ez_parameter(&mut self, parameter_name: String, parameter_value: String) {
+        
+        let consumed = ez_parser::load_common_parameters(
+            &parameter_name, parameter_value.clone(),Box::new(self));
+        if consumed { return }
         match parameter_name.as_str() {
-            "id" => self.set_id(parameter_value.trim().to_string()),
-            "x" => self.state.set_x(parameter_value.trim().parse().unwrap()),
-            "y" => self.state.set_y(parameter_value.trim().parse().unwrap()),
-            "pos" => self.state.set_position(
-                ez_parser::load_pos_parameter(parameter_value.trim())),
-            "size_hint" => self.state.set_size_hint(
-                ez_parser::load_full_size_hint_parameter(parameter_value.trim())),
-            "size_hint_x" => self.state.set_size_hint_x(
-                ez_parser::load_size_hint_parameter(parameter_value.trim())),
-            "size_hint_y" => self.state.set_size_hint_y(
-                ez_parser::load_size_hint_parameter(parameter_value.trim())),
-            "size" => self.state.set_size(
-                ez_parser::load_size_parameter(parameter_value.trim())),
-            "width" => self.state.get_size_mut().width = parameter_value.trim().parse().unwrap(),
-            "height" => self.state.get_size_mut().height = parameter_value.trim().parse().unwrap(),
-            "pos_hint" => self.state.set_pos_hint(
-                ez_parser::load_full_pos_hint_parameter(parameter_value.trim())),
-            "pos_hint_x" => self.state.set_pos_hint_x(
-                ez_parser::load_pos_hint_x_parameter(parameter_value.trim())),
-            "pos_hint_y" => self.state.set_pos_hint_y(
-                ez_parser::load_pos_hint_y_parameter(parameter_value.trim())),
-            "auto_scale" => self.state.set_auto_scale(ez_parser::load_full_auto_scale_parameter(
-                parameter_value.trim())),
-            "auto_scale_width" =>
-                self.state.set_auto_scale_width(
-                    ez_parser::load_bool_parameter(parameter_value.trim())),
-            "auto_scale_height" =>
-                self.state.set_auto_scale_height(
-                    ez_parser::load_bool_parameter(parameter_value.trim())),
-            "padding" => self.state.set_padding(ez_parser::load_full_padding_parameter(
-                parameter_value.trim())),
-            "padding_x" => self.state.set_padding(ez_parser::load_padding_x_parameter(
-                parameter_value.trim())),
-            "padding_y" => self.state.set_padding(ez_parser::load_padding_y_parameter(
-                parameter_value.trim())),
-            "padding_top" =>
-                self.state.set_padding_top(parameter_value.trim().parse().unwrap()),
-            "padding_bottom" =>
-                self.state.set_padding_bottom(parameter_value.trim().parse().unwrap()),
-            "padding_left" =>
-                self.state.set_padding_left(parameter_value.trim().parse().unwrap()),
-            "padding_right" =>
-                self.state.set_padding_right(parameter_value.trim().parse().unwrap()),
-            "halign" =>
-                self.state.set_horizontal_alignment(
-                    ez_parser::load_halign_parameter(parameter_value.trim())),
-            "valign" =>
-                self.state.set_vertical_alignment(
-                    ez_parser::load_valign_parameter(parameter_value.trim())),
-            "fg_color" => self.state.colors.foreground =
-                ez_parser::load_color_parameter(parameter_value),
-            "bg_color" => self.state.colors.background =
-                ez_parser::load_color_parameter(parameter_value),
-            "selection_fg_color" => self.state.colors.selection_foreground =
-                ez_parser::load_color_parameter(parameter_value),
-            "selection_bg_color" => self.state.colors.selection_background =
-                ez_parser::load_color_parameter(parameter_value),
-            "flash_fg_color" => self.state.colors.flash_foreground =
-                ez_parser::load_color_parameter(parameter_value),
-            "flash_bg_color" => self.state.colors.flash_background =
-                    ez_parser::load_color_parameter(parameter_value),
-            "selection_order" => { self.state.selection_order =
-                ez_parser::load_selection_order_parameter(parameter_value.as_str()); },
             "text" => self.state.set_text(
                 ez_parser::load_text_parameter(parameter_value.as_str())),
-            "border" => self.state.border_config.enabled =
-                ez_parser::load_bool_parameter(parameter_value.trim()),
-            "border_horizontal_symbol" => self.state.border_config.horizontal_symbol =
-                parameter_value.trim().to_string(),
-            "border_vertical_symbol" => self.state.border_config.vertical_symbol =
-                parameter_value.trim().to_string(),
-            "border_top_right_symbol" => self.state.border_config.top_right_symbol =
-                parameter_value.trim().to_string(),
-            "border_top_left_symbol" => self.state.border_config.top_left_symbol =
-                parameter_value.trim().to_string(),
-            "border_bottom_left_symbol" => self.state.border_config.bottom_left_symbol =
-                parameter_value.trim().to_string(),
-            "border_bottom_right_symbol" => self.state.border_config.bottom_right_symbol =
-                parameter_value.trim().to_string(),
-            "border_fg_color" =>
-                self.state.border_config.fg_color =
-                    ez_parser::load_color_parameter(parameter_value),
-            "border_bg_color" =>
-                self.state.border_config.bg_color =
-                    ez_parser::load_color_parameter(parameter_value),
             _ => panic!("Invalid parameter name for button {}", parameter_name)
         }
     }
@@ -135,6 +56,8 @@ impl EzObject for Button {
     fn get_full_path(&self) -> String { self.path.clone() }
 
     fn get_state(&self) -> EzState { EzState::Button(self.state.clone()) }
+
+    fn get_state_mut(&mut self) -> Box<&mut dyn GenericState>{ Box::new(&mut self.state) }
 
     fn get_contents(&self, state_tree: &mut common::definitions::StateTree) -> common::definitions::PixelMap {
 

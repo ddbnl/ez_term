@@ -249,6 +249,11 @@ impl GenericState for LayoutState {
     fn is_selectable(&self) -> bool { self.get_scrolling_config().is_scrolling_x
         || self.get_scrolling_config().is_scrolling_y || self.mode == LayoutMode::Tabbed }
 
+    fn set_selection_order(&mut self, order: usize) {
+        if self.selection_order != order { self.changed = true };
+        self.selection_order = order;
+    }
+
     fn get_selection_order(&self) -> usize { self.selection_order }
 
     fn set_force_redraw(&mut self, redraw: bool) {

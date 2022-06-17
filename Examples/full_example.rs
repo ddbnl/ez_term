@@ -46,6 +46,12 @@ fn main() {
         states::definitions::CallbackConfig::from_on_value_change(
             Box::new(test_checkbox_on_value_change)));
 
+    // Set a slider on value callback
+    scheduler.update_callback_config(
+        "/root/main_screen/left_box/bottom_box/small_box_2/slider_section_box/slider".to_string(),
+        states::definitions::CallbackConfig::from_on_value_change(
+            Box::new(test_slider_on_value_change)));
+
     // Set a radio button group on value callback
     scheduler.update_callback_config(
         "/root/main_screen/left_box/bottom_box/small_box_2/radio_section_box/radio_box/radio1".to_string(),
@@ -146,6 +152,35 @@ fn test_checkbox_on_value_change(context: EzContext) -> bool {
         .unwrap()
         .as_label_mut();
     label_state.set_text(text.to_string());
+    label_state.get_colors_config_mut().foreground = color;
+    false
+}
+
+
+// As an example we will change the label next to a slider to reflect its' value. We will also
+// change the color from red>yellow>green depending on the value
+fn test_slider_on_value_change(context: EzContext) -> bool {
+
+    // First we get the widget state object of the widget that changed value, using the 'widget_path'
+    // parameter as a key. The state contains the current value.
+    let state = context.state_tree
+        .get(&context.widget_path)
+        .unwrap()
+        .as_slider();
+    let value = state.get_value();
+    // Now we will create a text and a color depending on whether the checkbox was turned on or off
+    let text = value.to_string();
+    let color =
+        if state.value as f32 / state.maximum as f32 <= 1.0/3.0 {Color::Red}
+        else if state.value as f32 / state.maximum as f32 <= 2.0/3.0 {Color::Yellow}
+        else {Color::Green};
+    // Next we will retrieve a label widget state and change the text and color field. This will
+    // cause the text to change on the next frame.
+    let label_state = context.state_tree
+        .get_mut("/root/main_screen/left_box/bottom_box/small_box_2/slider_section_box/slider_label")
+        .unwrap()
+        .as_label_mut();
+    label_state.set_text(text);
     label_state.get_colors_config_mut().foreground = color;
     false
 }

@@ -7,7 +7,7 @@ use crossterm::event::Event;
 use crate::{common, states};
 use crate::common::definitions::{CallbackTree, StateTree, ViewTree, WidgetTree};
 use crate::scheduler::Scheduler;
-use crate::states::state::{EzState};
+use crate::states::state::{EzState, GenericState};
 use crate::widgets::layout::{Layout};
 use crate::widgets::label::{Label};
 use crate::widgets::button::{Button};
@@ -15,6 +15,7 @@ use crate::widgets::canvas::{Canvas};
 use crate::widgets::checkbox::{Checkbox};
 use crate::widgets::dropdown::{Dropdown, DroppedDownMenu};
 use crate::widgets::radio_button::{RadioButton};
+use crate::widgets::slider::Slider;
 use crate::widgets::text_input::{TextInput};
 
 
@@ -33,6 +34,7 @@ pub enum EzObjects {
     DroppedDownMenu(DroppedDownMenu),
     RadioButton(RadioButton),
     TextInput(TextInput),
+    Slider(Slider),
 }
 impl EzObjects {
 
@@ -49,6 +51,7 @@ impl EzObjects {
             EzObjects::DroppedDownMenu(i) => i,
             EzObjects::RadioButton(i) => i,
             EzObjects::TextInput(i) => i,
+            EzObjects::Slider(i) => i,
         }
     }
 
@@ -65,6 +68,7 @@ impl EzObjects {
             EzObjects::DroppedDownMenu(i) => i,
             EzObjects::RadioButton(i) => i,
             EzObjects::TextInput(i) => i,
+            EzObjects::Slider(i) => i,
         }
     }
 
@@ -103,15 +107,27 @@ impl EzObjects {
         else { panic!("wrong EzObject.") }
     }
 
-    /// Cast this state as a Label widget ref, you must be sure you have one.
+    /// Cast this state as a Button widget ref, you must be sure you have one.
     pub fn as_button(&self) -> &Button {
         if let EzObjects::Button(i) = self { i }
         else { panic!("wrong EzObject.") }
     }
 
-    /// Cast this state as a mutable Label widget ref, you must be sure you have one.
+    /// Cast this state as a mutable Button widget ref, you must be sure you have one.
     pub fn as_button_mut(&mut self) -> &mut Button {
         if let EzObjects::Button(i) = self { i }
+        else { panic!("wrong EzObject.") }
+    }
+
+    /// Cast this state as a Slider widget ref, you must be sure you have one.
+    pub fn as_slider(&self) -> &Slider {
+        if let EzObjects::Slider(i) = self { i }
+        else { panic!("wrong EzObject.") }
+    }
+
+    /// Cast this state as a mutable slider widget ref, you must be sure you have one.
+    pub fn as_slider_mut(&mut self) -> &mut Slider {
+        if let EzObjects::Slider(i) = self { i }
         else { panic!("wrong EzObject.") }
     }
 
@@ -213,9 +229,13 @@ pub trait EzObject {
     /// method on the root layout and pass a full widget pass to retrieve a widget.
     fn get_full_path(&self) -> String;
 
-    /// Return an empty [EzState]. Each EzObject must implement this to return the variant state
+    /// Return an [EzState]. Each EzObject must implement this to return the variant state
     /// that belongs to it.
     fn get_state(&self) -> EzState;
+
+    /// Return a mut [EzState]. Each EzObject must implement this to return the variant state
+    /// that belongs to it.
+    fn get_state_mut(&mut self) -> Box<&mut dyn GenericState>;
 
     /// Redraw the widget on the screen. Using the view tree, only changed content is written to
     /// improve performance.

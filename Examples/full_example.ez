@@ -132,7 +132,7 @@
     orientation: horizontal
     size_hint: 1, None
     auto_scale_height: true
-    padding: 1, 1, 1, 1
+    padding_x: 1, 1
 
 
 // Now we will create templates for larger sections of our UI. By splitting the UI into templates it will flatten
@@ -155,7 +155,8 @@
 - <InputBox1@CyanScalingBox>:
     - Label:
         text: This is a small text input. Its' content is bigger than its' size. It allows us to test views. Try selecting it and pressing left and right button to move through the text:
-        auto_scale: true, true
+        auto_scale_height: true
+        padding: 1, 1, 1, 1
     - TextInput:
         id: input_1
         size_hint_x: None
@@ -169,7 +170,7 @@
 - <InputBox2@CyanScalingBox>:
     - Label:
         text: This is a larger input but it has a maximum length, so we can't fill it all:
-        auto_scale: true, true
+        auto_scale_height: true
         padding: 1, 1, 1, 1
     - TextInput:
         id: input_2
@@ -184,7 +185,8 @@
 - <InputBox3@CyanScalingBox>:
     - Label:
         text: This is an input with an on_value and on_keyboard_enter callback. It mirrors what you type in the label, and prints CONFIRMED when enter is pressed.
-        auto_scale: true, true
+        auto_scale_height: true
+        padding: 1, 1, 1, 1
     - TextInput:
         id: input_3
         bg_color: blue
@@ -204,6 +206,8 @@
         text: Layout 2:
     - CheckboxShowcase:
         id: checkbox_section_box
+    - SliderShowcase:
+        id: slider_section_box
     - RadioButtonShowcase:
         id: radio_section_box
     - ButtonShowcase:
@@ -213,7 +217,8 @@
 - <CheckboxShowcase@CyanScalingBox>:
     - Label:
         text: This is a checkbox: a simple on and off switch. Clicking this one triggers a callback that changes the label:
-        auto_scale: true, true
+        auto_scale_height: true
+        padding_x: 1, 1
     - FullHorizontalBox:
         id: checkbox_box
         - CheckBox:
@@ -227,14 +232,15 @@
         - Label:
             id: checkbox_label
             text: Disabled
-            auto_scale: true, true
+            auto_scale_height: true
             fg_color: red
 
 
 - <RadioButtonShowcase@CyanScalingBox>:
     - Label:
         text: These are radio buttons: a group of mutually exclusive off/on switches, matched to each other by group name. Clicking one of these triggers a callback that changes the label:
-        auto_scale: true, true
+        auto_scale_height: true
+        padding_x: 1, 1
     - FullHorizontalBox:
         id: radio_box
         - RadioButton:
@@ -262,11 +268,32 @@
             auto_scale: true, true
             padding_x: 1, 1
 
+- <SliderShowcase@CyanScalingBox>:
+    - Label:
+        text: This is a slider, it allows choosing a value between a minimum and a maximum in steps:
+        auto_scale_height: true
+        padding: 1, 1, 1, 1
+    - Label:
+        id: slider_label
+        text: 10
+        auto_scale_height: true
+        auto_scale_width: true
+        fg_color: yellow
+        halign: center
+    - Slider:
+        id: slider
+        selection_order: 18
+        value: 10
+        minimum: 0
+        maximum: 20
+        padding_x: 1, 1
+
 
 - <ButtonShowcase@CyanScalingBox>:
     - Label:
         text: This is a button. We've bound a callback to it that increments a number on the label:
-        auto_scale: true, true
+        auto_scale_height: true
+        padding: 1, 1, 1, 1
     - FullHorizontalBox:
         id: button_box
         - Button:
@@ -298,7 +325,8 @@
     size_hint_y: None
     - Label:
         text: This is a dropdown menu. We can select from a list of options. Click to open it and select a value; the label should change through a callback:
-        auto_scale: true, true
+        auto_scale_height: true
+        padding: 1, 1, 1, 1
     - FullHorizontalBox:
         id: dropdown_box
         - Dropdown:
@@ -326,7 +354,8 @@
 - <PopupShowcase@CyanScalingBox>:
     - Label:
         text: This button will create a popup through a callback:
-        auto_scale: true, true
+        auto_scale_height: true
+        padding: 1, 1, 1, 1
     - Button:
         id: popup_button
         selection_order: 45

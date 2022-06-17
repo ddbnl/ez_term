@@ -21,7 +21,8 @@ use crate::widgets::widget::{EzObjects, EzObject};
 use crate::{states};
 use crate::common::definitions::Templates;
 use crate::scheduler::Scheduler;
-use crate::states::state::{GenericState};
+use crate::states::state::{EzState, GenericState};
+use crate::widgets::slider::Slider;
 
 
 /// Load a file path into a root Layout. Return the root widget and a new scheduler. Both will
@@ -193,6 +194,7 @@ impl EzWidgetDefinition {
                 "RadioButton" => Ok(EzObjects::RadioButton(RadioButton::from_config(config))),
                 "TextInput" => Ok(EzObjects::TextInput(TextInput::from_config(config))),
                 "Dropdown" => Ok(EzObjects::Dropdown(Dropdown::from_config(config))),
+                "Slider" => Ok(EzObjects::Slider(Slider::from_config(config))),
                 _ => Err(Error::new(ErrorKind::InvalidData,
                                     format!("Invalid widget type {}", self.type_name)))
             }
@@ -584,4 +586,86 @@ pub fn load_valign_parameter(value: &str) -> states::definitions::VerticalAlignm
     else if value.to_lowercase() == "bottom" { states::definitions::VerticalAlignment::Bottom }
     else if value.to_lowercase() == "middle" { states::definitions::VerticalAlignment::Middle }
     else { panic!("valign parameter must be left/right/center: {}", value) }
+}
+
+
+/// Load a parameter common to all [EzObjects]. Returns a bool representing whether the parameter
+/// was consumed. If not consumed it should be a parameter specific to a widget.
+pub fn load_common_parameters(parameter_name: &str, parameter_value: String,
+                              mut obj: Box<&mut dyn EzObject>) -> bool {
+
+    let mut state = obj.get_state_mut();
+    match parameter_name {
+        "id" => obj.set_id(parameter_value.trim().to_string()),
+        "x" => state.set_x(parameter_value.trim().parse().unwrap()),
+        "y" => state.set_y(parameter_value.trim().parse().unwrap()),
+        "pos" => state.set_position(load_pos_parameter(parameter_value.trim())),
+        "size_hint" => state.set_size_hint(
+            load_full_size_hint_parameter(parameter_value.trim())),
+        "size_hint_x" => state.set_size_hint_x(
+            load_size_hint_parameter(parameter_value.trim())),
+        "size_hint_y" => state.set_size_hint_y(
+            load_size_hint_parameter(parameter_value.trim())),
+        "size" => state.set_size(load_size_parameter(parameter_value.trim())),
+        "width" => state.get_size_mut().width = parameter_value.trim().parse().unwrap(),
+        "height" => state.get_size_mut().height = parameter_value.trim().parse().unwrap(),
+        "pos_hint" => state.set_pos_hint(load_full_pos_hint_parameter(parameter_value.trim())),
+        "pos_hint_x" => state.set_pos_hint_x(
+            load_pos_hint_x_parameter(parameter_value.trim())),
+        "pos_hint_y" => state.set_pos_hint_y(
+            load_pos_hint_y_parameter(parameter_value.trim())),
+        "auto_scale" => state.set_auto_scale(load_full_auto_scale_parameter(
+            parameter_value.trim())),
+        "auto_scale_width" =>
+            state.set_auto_scale_width(load_bool_parameter(parameter_value.trim())),
+        "auto_scale_height" =>
+            state.set_auto_scale_height(load_bool_parameter(parameter_value.trim())),
+        "padding" => state.set_padding(load_full_padding_parameter(parameter_value.trim())),
+        "selection_order" => { state.set_selection_order(
+            load_selection_order_parameter(parameter_value.as_str())) },
+        "padding_x" => state.set_padding(load_padding_x_parameter(parameter_value.trim())),
+        "padding_y" => state.set_padding(load_padding_y_parameter(parameter_value.trim())),
+        "padding_top" => state.set_padding_top(parameter_value.trim().parse().unwrap()),
+        "padding_bottom" => state.set_padding_bottom(parameter_value.trim().parse().unwrap()),
+        "padding_left" => state.set_padding_left(parameter_value.trim().parse().unwrap()),
+        "padding_right" => state.set_padding_right(parameter_value.trim().parse().unwrap()),
+        "halign" => state.set_horizontal_alignment(
+            load_halign_parameter(parameter_value.trim())),
+        "valign" => state.set_vertical_alignment(
+            load_valign_parameter(parameter_value.trim())),
+        "fg_color" => state.get_colors_config_mut().foreground =
+            load_color_parameter(parameter_value),
+        "bg_color" => state.get_colors_config_mut().background =
+            load_color_parameter(parameter_value),
+        "selection_fg_color" => state.get_colors_config_mut().selection_foreground =
+            load_color_parameter(parameter_value),
+        "selection_bg_color" => state.get_colors_config_mut().selection_background =
+            load_color_parameter(parameter_value),
+        "flash_fg_color" => state.get_colors_config_mut().flash_foreground =
+            load_color_parameter(parameter_value),
+        "flash_bg_color" => state.get_colors_config_mut().flash_background =
+            load_color_parameter(parameter_value),
+        "cursor_color" =>
+            state.get_colors_config_mut().cursor = load_color_parameter(parameter_value),
+        "border" => state.get_border_config_mut().enabled =
+            load_bool_parameter(parameter_value.trim()),
+        "border_horizontal_symbol" => state.get_border_config_mut().horizontal_symbol =
+            parameter_value.trim().to_string(),
+        "border_vertical_symbol" => state.get_border_config_mut().vertical_symbol =
+            parameter_value.trim().to_string(),
+        "border_top_right_symbol" => state.get_border_config_mut().top_right_symbol =
+            parameter_value.trim().to_string(),
+        "border_top_left_symbol" => state.get_border_config_mut().top_left_symbol =
+            parameter_value.trim().to_string(),
+        "border_bottom_left_symbol" => state.get_border_config_mut().bottom_left_symbol =
+            parameter_value.trim().to_string(),
+        "border_bottom_right_symbol" => state.get_border_config_mut().bottom_right_symbol =
+            parameter_value.trim().to_string(),
+        "border_fg_color" => state.get_border_config_mut().fg_color =
+            load_color_parameter(parameter_value),
+        "border_bg_color" => state.get_border_config_mut().bg_color =
+            load_color_parameter(parameter_value),
+        _ => return false,
+    }
+    true
 }

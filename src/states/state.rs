@@ -1,13 +1,16 @@
 //! # Widget state:
 //! A module containing the base structs and traits for widget states.
-use crate::states;
 use crate::states::canvas_state::{CanvasState};
 use crate::states::label_state::{LabelState};
 use crate::states::button_state::{ButtonState};
 use crate::states::checkbox_state::{CheckboxState};
+use crate::states::definitions::{AutoScale, BorderConfig, ColorConfig, Coordinates,
+                                 HorizontalAlignment, HorizontalPositionHint, Padding, PosHint,
+                                 Size, SizeHint, VerticalAlignment, VerticalPositionHint};
 use crate::states::dropdown_state::{DropdownState, DroppedDownMenuState};
 use crate::states::layout_state::LayoutState;
 use crate::states::radio_button_state::{RadioButtonState};
+use crate::states::slider_state::SliderState;
 use crate::states::text_input_state::{TextInputState};
 
 
@@ -28,6 +31,7 @@ pub enum EzState {
     DroppedDownMenu(DroppedDownMenuState),
     RadioButton(RadioButtonState),
     TextInput(TextInputState),
+    Slider(SliderState)
 }
 impl EzState {
 
@@ -44,6 +48,7 @@ impl EzState {
             EzState::RadioButton(i) => i,
             EzState::TextInput(i) => i,
             EzState::Canvas(i) => i,
+            EzState::Slider(i) => i,
         }
     }
 
@@ -60,6 +65,7 @@ impl EzState {
             EzState::RadioButton(i) => i,
             EzState::TextInput(i) => i,
             EzState::Canvas(i) => i,
+            EzState::Slider(i) => i,
         }
     }
 
@@ -100,15 +106,27 @@ impl EzState {
         else { panic!("wrong state.") }
     }
 
-    /// Cast this state as a Label widget state ref, you must be sure you have one.
+    /// Cast this state as a Button widget state ref, you must be sure you have one.
     pub fn as_button(&self) -> &ButtonState {
         if let EzState::Button(i) = self { i }
         else { panic!("wrong state.") }
     }
 
-    /// Cast this state as a mutable Label widget state ref, you must be sure you have one.
+    /// Cast this state as a mutable Button widget state ref, you must be sure you have one.
     pub fn as_button_mut(&mut self) -> &mut ButtonState {
         if let EzState::Button(i) = self { i }
+        else { panic!("wrong state.") }
+    }
+
+    /// Cast this state as a Slider widget state ref, you must be sure you have one.
+    pub fn as_slider(&self) -> &SliderState {
+        if let EzState::Slider(i) = self { i }
+        else { panic!("wrong state.") }
+    }
+
+    /// Cast this state as a mutable Slider widget state ref, you must be sure you have one.
+    pub fn as_slider_mut(&mut self) -> &mut SliderState {
+        if let EzState::Slider(i) = self { i }
         else { panic!("wrong state.") }
     }
 
@@ -185,37 +203,37 @@ pub trait GenericState {
 
     /// Set to None for passing an absolute width, or to a value between 0 and 1 to
     /// automatically scale width based on parent width
-    fn set_size_hint(&mut self, _size_hint: states::definitions::SizeHint) {}
+    fn set_size_hint(&mut self, _size_hint: SizeHint) {}
 
     /// Set to None for passing an absolute width, or to a value between 0 and 1 to
     /// automatically scale width based on parent width
     fn set_size_hint_x(&mut self, size_hint: Option<f64>) {
-        self.set_size_hint(states::definitions::SizeHint::new(size_hint, self.get_size_hint().y))
+        self.set_size_hint(SizeHint::new(size_hint, self.get_size_hint().y))
     }
 
     /// Set to None for passing an absolute height, or to a value between 0 and 1 to
     /// automatically scale width based on parent height
     fn set_size_hint_y(&mut self, size_hint: Option<f64>) {
-        self.set_size_hint(states::definitions::SizeHint::new(self.get_size_hint().x, size_hint))
+        self.set_size_hint(SizeHint::new(self.get_size_hint().x, size_hint))
     }
 
     /// If not None automatically scaled width based on parent width
-    fn get_size_hint(&self) -> &states::definitions::SizeHint;
+    fn get_size_hint(&self) -> &SizeHint;
 
     /// Set to None to allow hardcoded or default positions. Set a pos hint to position relative
     /// to parent. A pos hint is a string and a float e.g:
     /// ("center_x", 0.9)
     /// When positioning the widget, "center_x" will be replaced with the middle x coordinate of
     /// parent Layout, and multiplied with the float.
-    fn set_pos_hint(&mut self, _pos_hint: states::definitions::PosHint) {}
+    fn set_pos_hint(&mut self, _pos_hint: PosHint) {}
 
     /// Set to None to allow hardcoded or default positions. Set a pos hint to position relative
     /// to parent. A pos hint is a string and a float e.g:
     /// ("center_x", 0.9)
     /// When positioning the widget, "center_x" will be replaced with the middle x coordinate of
     /// parent Layout, and multiplied with the float.
-    fn set_pos_hint_x(&mut self, pos_hint: Option<(states::definitions::HorizontalPositionHint, f64)>) {
-        self.set_pos_hint(states::definitions::PosHint::new(pos_hint, self.get_pos_hint().y))
+    fn set_pos_hint_x(&mut self, pos_hint: Option<(HorizontalPositionHint, f64)>) {
+        self.set_pos_hint(PosHint::new(pos_hint, self.get_pos_hint().y))
     }
 
     /// Set to None to allow hardcoded or default positions. Set a pos hint to position relative
@@ -223,46 +241,46 @@ pub trait GenericState {
     /// ("top", 0.9)
     /// When positioning the widget, "top" will be replaced with the y coordinate of the top of the
     /// parent Layout, and multiplied by the float.
-    fn set_pos_hint_y(&mut self, pos_hint: Option<(states::definitions::VerticalPositionHint, f64)>) {
-        self.set_pos_hint(states::definitions::PosHint::new(self.get_pos_hint().x, pos_hint))
+    fn set_pos_hint_y(&mut self, pos_hint: Option<(VerticalPositionHint, f64)>) {
+        self.set_pos_hint(PosHint::new(self.get_pos_hint().x, pos_hint))
     }
 
     /// If none widget uses hardcoded or default positions. If a pos hint the widget will be
     /// positioned relative to its' parent.
-    fn get_pos_hint(&self) -> &states::definitions::PosHint;
+    fn get_pos_hint(&self) -> &PosHint;
 
     /// Set width autoscaling bool. If the widget supports it and turned on,
     /// automatically adjusts width to the actual width of its' content
-    fn set_auto_scale(&mut self, _auto_scale: states::definitions::AutoScale);
+    fn set_auto_scale(&mut self, _auto_scale: AutoScale);
 
     /// Get autoscaling config. If the widget supports it and turned on,
     /// automatically adjusts size to the actual size of its' content
-    fn get_auto_scale(&self) -> &states::definitions::AutoScale;
+    fn get_auto_scale(&self) -> &AutoScale;
 
     /// Set width autoscaling bool. If the widget supports it and turned on,
     /// automatically adjusts width to the actual width of its' content
     fn set_auto_scale_width(&mut self, auto_scale: bool) {
-        self.set_auto_scale(states::definitions::AutoScale::new(auto_scale, self.get_auto_scale().height));
+        self.set_auto_scale(AutoScale::new(auto_scale, self.get_auto_scale().height));
     }
 
     /// Set height autoscaling bool. If the widget supports it and turned on,
     /// automatically adjusts height to the actual height of its' content
     fn set_auto_scale_height(&mut self, auto_scale: bool) {
-        self.set_auto_scale(states::definitions::AutoScale::new(self.get_auto_scale().width, auto_scale));
+        self.set_auto_scale(AutoScale::new(self.get_auto_scale().width, auto_scale));
     }
 
     /// Hard code size, only does something when size_hint is off
-    fn set_size(&mut self, size: states::definitions::Size);
+    fn set_size(&mut self, size: Size);
 
     /// Get current [Size] of this object
-    fn get_size(&self) -> &states::definitions::Size;
+    fn get_size(&self) -> &Size;
 
     /// Get mutable current [Size] of this object
-    fn get_size_mut(&mut self) -> &mut states::definitions::Size;
+    fn get_size_mut(&mut self) -> &mut Size;
 
     /// Get the effective amount of width and height within this object, taking off e.g. borders,
     /// padding, etc.
-    fn get_effective_size(&self) -> states::definitions::Size {
+    fn get_effective_size(&self) -> Size {
 
         let mut size_copy = self.get_size().clone();
         let width_result: isize = size_copy.width as isize
@@ -295,38 +313,40 @@ pub trait GenericState {
     }
 
     /// Hard code position relative to parent, only works in float layout mode
-    fn set_position(&mut self, pos: states::definitions::Coordinates);
+    fn set_position(&mut self, pos: Coordinates);
 
     /// Set the x coordinate relative to parent, only works in float layout mode
-    fn set_x(&mut self, x: usize) { self.set_position(states::definitions::Coordinates::new(x, self.get_position().y)) }
+    fn set_x(&mut self, x: usize) { self.set_position(Coordinates::new(x, self.get_position().y)) }
 
     /// Set the x coordinate relative to parent, only works in float layout mode
-    fn set_y(&mut self, y: usize) { self.set_position(states::definitions::Coordinates::new(self.get_position().x, y)) }
+    fn set_y(&mut self, y: usize) { self.set_position(Coordinates::new(self.get_position().x, y)) }
 
     /// Get position relative to parent
-    fn get_position(&self) -> states::definitions::Coordinates;
+    fn get_position(&self) -> Coordinates;
 
     /// Get position where the actual content of this widget starts relative to parent, taking out
     /// e.g. borders, padding, etc.
-    fn get_effective_position(&self) -> states::definitions::Coordinates {
-        states::definitions::Coordinates::new(
-            self.get_position().x +if self.get_border_config().enabled {1} else {0} + self.get_padding().left,
-            self.get_position().y +if self.get_border_config().enabled {1} else {0} + self.get_padding().top)
+    fn get_effective_position(&self) -> Coordinates {
+        Coordinates::new(
+            self.get_position().x +if self.get_border_config().enabled {1}
+            else {0} + self.get_padding().left,
+            self.get_position().y +if self.get_border_config().enabled {1}
+            else {0} + self.get_padding().top)
     }
 
     /// Set the absolute position of a widget, i.e. the position on screen rather than within its'
     /// parent widget. Should be set automatically through the "propagate_absolute_positions"
     /// function.
-    fn set_absolute_position(&mut self, pos: states::definitions::Coordinates);
+    fn set_absolute_position(&mut self, pos: Coordinates);
 
     /// Get the absolute position of a widget, i.e. the position on screen rather than within its'
     /// parent widget.
-    fn get_absolute_position(&self) -> states::definitions::Coordinates;
+    fn get_absolute_position(&self) -> Coordinates;
 
     /// Get the absolute position of where the actual content of the widget starts, taking out
     /// e.g. border and padding
-    fn get_effective_absolute_position(&self) -> states::definitions::Coordinates {
-        states::definitions::Coordinates::new(
+    fn get_effective_absolute_position(&self) -> Coordinates {
+        Coordinates::new(
          self.get_absolute_position().x +if self.get_border_config().enabled {1} else {0}
              + self.get_padding().left,
          self.get_absolute_position().y +if self.get_border_config().enabled {1} else {0}
@@ -334,87 +354,86 @@ pub trait GenericState {
     }
 
     /// Set [HorizontalAlignment] of this widget.
-    fn set_horizontal_alignment(&mut self, alignment: states::definitions::HorizontalAlignment);
+    fn set_horizontal_alignment(&mut self, alignment: HorizontalAlignment);
 
     /// Get [HorizontalAlignment] of this widget
-    fn get_horizontal_alignment(&self) -> states::definitions::HorizontalAlignment;
+    fn get_horizontal_alignment(&self) -> HorizontalAlignment;
 
     /// Set [VerticalAlignment] of this widget
-    fn set_vertical_alignment(&mut self, alignment: states::definitions::VerticalAlignment);
+    fn set_vertical_alignment(&mut self, alignment: VerticalAlignment);
 
     /// Get [VerticalAlignment] of this widget
-    fn get_vertical_alignment(&self) -> states::definitions::VerticalAlignment;
+    fn get_vertical_alignment(&self) -> VerticalAlignment;
 
     /// Set [padding]
-    fn set_padding(&mut self, padding: states::definitions::Padding);
+    fn set_padding(&mut self, padding: Padding);
 
     /// Get [padding]
-    fn get_padding(&self) -> &states::definitions::Padding;
+    fn get_padding(&self) -> &Padding;
 
     /// Set height of top padding
     fn set_padding_top(&mut self, padding: usize) {
         let current = self.get_padding().clone();
-        self.set_padding(states::definitions::Padding::new(padding, current.bottom, current.left, current.right))
+        self.set_padding(Padding::new(padding, current.bottom, current.left, current.right))
     }
 
     /// Set height of bottom padding
     fn set_padding_bottom(&mut self, padding: usize) {
         let current = self.get_padding().clone();
-        self.set_padding(states::definitions::Padding::new(current.top, padding, current.left, current.right))
+        self.set_padding(Padding::new(current.top, padding, current.left, current.right))
     }
 
     /// Set width of left padding
     fn set_padding_left(&mut self, padding: usize) {
         let current = self.get_padding().clone();
-        self.set_padding(states::definitions::Padding::new(current.top, current.bottom, padding, current.right))
+        self.set_padding(Padding::new(current.top, current.bottom, padding, current.right))
     }
 
     /// Set width of right padding
     fn set_padding_right(&mut self, padding: usize) {
         let current = self.get_padding().clone();
-        self.set_padding(states::definitions::Padding::new(current.top, current.bottom, current.left, padding))
+        self.set_padding(Padding::new(current.top, current.bottom, current.left, padding))
     }
 
     /// Pas a [BorderConfig] abject that will be used to draw the border if enabled
-    fn set_border_config(&mut self, config: states::definitions::BorderConfig);
+    fn set_border_config(&mut self, config: BorderConfig);
 
     /// Get the [state::BorderConfig] abject that will be used to draw the border if enabled
-    fn get_border_config(&self) -> &states::definitions::BorderConfig;
+    fn get_border_config(&self) -> &BorderConfig;
 
-    fn get_border_config_mut(&mut self) -> &mut states::definitions::BorderConfig;
+    fn get_border_config_mut(&mut self) -> &mut BorderConfig;
 
     /// Set the [ColorConfig] abject that will be used to draw this widget
-    fn set_color_config(&mut self, config: states::definitions::ColorConfig);
+    fn set_color_config(&mut self, config: ColorConfig);
 
     /// Get a ref to the [ColorConfig] abject that will be used to draw this widget
-    fn get_color_config(&self) -> &states::definitions::ColorConfig;
+    fn get_color_config(&self) -> &ColorConfig;
 
     /// Get a mut ref to the [ColorConfig] abject that will be used to draw this widget
-    fn get_colors_config_mut(&mut self) -> &mut states::definitions::ColorConfig;
+    fn get_colors_config_mut(&mut self) -> &mut ColorConfig;
 
     /// Get the top left and bottom right corners of a widget in (X, Y) coordinate tuples.
-    fn get_box(&self) -> (states::definitions::Coordinates, states::definitions::Coordinates) {
+    fn get_box(&self) -> (Coordinates, Coordinates) {
         let top_left = self.get_absolute_position();
-        let bottom_right = states::definitions::Coordinates::new(
+        let bottom_right = Coordinates::new(
             top_left.x + self.get_size().width, top_left.y + self.get_size().height);
         (top_left, bottom_right)
     }
 
     /// Get all the coordinates of a box in list.
-    fn get_box_coords(&self) -> Vec<states::definitions::Coordinates> {
+    fn get_box_coords(&self) -> Vec<Coordinates> {
         let mut coords = Vec::new();
         let (top_left, bottom_right) = self.get_box();
         for x in top_left.x..bottom_right.x + 1 {
             for y in top_left.y..bottom_right.y + 1 {
-                coords.push(states::definitions::Coordinates::new(x, y));
+                coords.push(Coordinates::new(x, y));
             }
         }
         coords
     }
 
     /// Returns a bool representing whether two widgets overlap at any point.
-    fn overlaps(&self, other_box: (states::definitions::Coordinates,
-                                   states::definitions::Coordinates)) -> bool {
+    fn overlaps(&self, other_box: (Coordinates, Coordinates)) -> bool {
         let (l1, r1) = self.get_box();
         let (l2, r2) = other_box;
         // If one rectangle is on the left of the other there's no overlap
@@ -425,9 +444,9 @@ pub trait GenericState {
     }
 
     /// Returns a bool representing whether a single point collides with a widget.
-    fn collides(&self, pos: states::definitions::Coordinates) -> bool {
+    fn collides(&self, pos: Coordinates) -> bool {
         let starting_pos = self.get_effective_absolute_position();
-        let end_pos = states::definitions::Coordinates::new(
+        let end_pos = Coordinates::new(
             starting_pos.x + self.get_size().width - 1,
              starting_pos.y + self.get_size().height - 1);
         pos.x >= starting_pos.x && pos.x <= end_pos.x &&
@@ -446,9 +465,7 @@ pub trait GenericState {
     /// Set the order in which this widget should be selected, represented by a usize number. E.g.
     /// if there is a '1' widget, a '2' widget, and this widget is '3', calling 'select_next_widget'
     /// will select 1, then 2, then this widget. Used for keyboard up and down keys.
-    fn set_selection_order(&mut self, _order: usize) {
-        panic!("Widget has no selection implementation")
-    }
+    fn set_selection_order(&mut self, _order: usize) {}
 
     /// Set to true to force redraw the entire screen. The screen is still diffed before redrawing
     /// so this can be called efficiently. Nevertheless you want to call [set_changed] to redraw

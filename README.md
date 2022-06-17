@@ -98,6 +98,7 @@ Currently supports the following:
   - Label 
   - Text input
   - Checkbox 
+  - Slider
   - Radio buttons
   - Dropdowns 
   - Canvases (load content from text file or fill manually through code)

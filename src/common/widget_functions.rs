@@ -355,9 +355,9 @@ pub fn is_in_view(path: String, state_tree: &StateTree) -> bool {
         // If there's a visible width we're scrolling horizontally. Check if obj is in scrollview
         if let Some((visible_w_start, visible_w_end)) = visible_width {
             // If object lies completely left- or completely right of visible area it's out of view
-            if state.as_generic().get_effective_position().x >= visible_w_end ||
+            if state.as_generic().get_effective_position().x > visible_w_end ||
                 state.as_generic().get_effective_position().x +
-                    state.as_generic().get_effective_size().width <= visible_w_start {
+                    state.as_generic().get_effective_size().width < visible_w_start {
                 return false
                 // If object lies partly left of view, we take the part that's still in view as the new
                 // visible area
@@ -382,9 +382,9 @@ pub fn is_in_view(path: String, state_tree: &StateTree) -> bool {
         // If there's a visible height we're scrolling vertically. Check if obj is in scrollview
         if let Some((visible_h_start, visible_h_end)) = visible_height {
             // If object lies completely above or completely below visible area it's out of view
-            if state.as_generic().get_effective_position().y >= visible_h_end ||
+            if state.as_generic().get_effective_position().y > visible_h_end ||
                 state.as_generic().get_effective_position().y +
-                    state.as_generic().get_effective_size().height <= visible_h_start {
+                    state.as_generic().get_effective_size().height < visible_h_start {
                 return false
                 // If object lies partly above of view, we take the part that's still in view as the new
                 // visible area
@@ -445,7 +445,7 @@ pub fn widget_is_hidden(widget_path: String, state_tree: &StateTree) -> bool {
 
     let mut check_parent =
         widget_path.rsplit_once('/').unwrap().0.to_string();
-    let mut check_child = widget_path;
+    let mut check_child = widget_path.clone();
     loop {
         if check_parent == "/modal" { break }
         let parent_state = state_tree.get(&check_parent).unwrap().as_layout();

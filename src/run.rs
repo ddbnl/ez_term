@@ -303,6 +303,7 @@ fn handle_mouse_event(event: MouseEvent, view_tree: &mut ViewTree, state_tree: &
             event.column as usize,event.row as usize);
         for widget in common::selection_functions::get_widget_by_position(
             mouse_position, widget_tree, state_tree) {
+
             let abs = state_tree.get(&widget.get_full_path()).unwrap()
                 .as_generic()
                 .get_absolute_position();

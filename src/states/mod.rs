@@ -8,3 +8,4 @@ pub mod label_state;
 pub mod layout_state;
 pub mod radio_button_state;
 pub mod text_input_state;
+pub mod slider_state;

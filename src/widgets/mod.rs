@@ -7,3 +7,4 @@ pub mod text_input;
 pub mod checkbox;
 pub mod radio_button;
 pub mod dropdown;
+pub mod slider;
