@@ -109,6 +109,7 @@ fn run_loop(mut root_widget: Layout, mut callback_tree: CallbackTree, mut schedu
     let (mut view_tree, mut state_tree) = initialize_widgets(&mut root_widget);
     let last_update = Instant::now();
     let mut last_mouse_pos: (u16, u16) = (0, 0);
+    let mut track_mouse_pos = false;
     loop {
 
         let widget_tree = root_widget.get_widget_tree();
@@ -117,17 +118,33 @@ fn run_loop(mut root_widget: Layout, mut callback_tree: CallbackTree, mut schedu
 
             // Get the event; it can only be consumed once
             let mut consumed = false;
-            let event = read().unwrap();
+            let mut event = read().unwrap();
 
-            // Prevent mouse moved spam. Only consider mouse moved if it reaches another position
+            // Prevent mouse moved spam. if a mouse move event is detected, drain as many of those
+            // events as possible before the next frame, then check if it moved position.
             if let Event::Mouse(mouse_event) = event {
                 if let MouseEventKind::Moved = mouse_event.kind {
-                    if last_mouse_pos != (mouse_event.column, mouse_event.row) {
-                        last_mouse_pos = (mouse_event.column, mouse_event.row);
+                    if !track_mouse_pos { continue }
+                    let mut pos = (mouse_event.column, mouse_event.row);
+                    while let Ok(true) = poll(Duration::from_millis(1)) {
+                        let spam_event = read();
+                        if let Ok(Event::Mouse(spam_mouse_event)) = spam_event {
+                            if let MouseEventKind::Moved = spam_mouse_event.kind {
+
+                                pos = (spam_mouse_event.column, spam_mouse_event.row);
+                                event = spam_event.unwrap();
+                            }
+                        } else {
+                            break
+                        }
+                    }
+                    if last_mouse_pos != pos {
+                        last_mouse_pos = pos;
                     } else {
                         consumed = true;
                     }
-
+                } else if let MouseEventKind::Drag(i) = mouse_event.kind{
+                    continue
                 }
             }
 
@@ -138,8 +155,9 @@ fn run_loop(mut root_widget: Layout, mut callback_tree: CallbackTree, mut schedu
                     &mut scheduler, &root_widget);
             }
 
-            let selected_widget =
-                common::selection_functions::get_selected_widget(&widget_tree, &mut state_tree);
+            let selected_widget = if consumed {None}
+            else {common::selection_functions::get_selected_widget(&widget_tree, &mut state_tree)};
+
             // Focussed widgets get second-highest priority in consuming an event
             if !consumed {
                 if let Some(i) = selected_widget {
@@ -198,6 +216,8 @@ fn run_loop(mut root_widget: Layout, mut callback_tree: CallbackTree, mut schedu
                 &mut view_tree);
         }
         common::screen_functions::write_to_screen(&old_view_tree, &view_tree);
+
+        track_mouse_pos = !root_widget.state.open_modals.is_empty();
     }
 }
 

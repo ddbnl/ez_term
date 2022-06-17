@@ -67,6 +67,10 @@ impl EzObject for Slider {
         let state = state_tree.get_mut(&self.get_full_path()).unwrap()
             .as_slider_mut();
         state.size.height = 1;
+        if state.auto_scale.width {
+            state.set_effective_width(((state.maximum - state.minimum) / state.step as isize)
+                as usize + 1);
+        }
 
         let fg_color = if state.selected {state.get_color_config().selection_foreground }
             else {state.get_color_config().foreground };
@@ -114,9 +118,10 @@ impl EzObject for Slider {
                            scheduler: &mut Scheduler, mouse_pos: Coordinates) -> bool {
 
         let state = state_tree.get_mut(&self.path).unwrap().as_slider_mut();
-        let ratio = ((state.maximum - state.minimum) as f64 / state.get_effective_size().width as f64);
-        let mut value =
-            (ratio * mouse_pos.x as f64) as isize + state.minimum + 1;
+        let ratio = ((state.maximum - state.minimum) as f64
+            / state.get_effective_size().width as f64);
+        let mut value = (ratio * mouse_pos.x as f64) as isize + state.minimum;
+        value -= (value % state.step as isize);
         value = min(value, state.maximum);
         state.set_value(value);
 

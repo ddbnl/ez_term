@@ -5,6 +5,7 @@ use crossterm::{QueueableCommand, cursor, ExecutableCommand};
 use std::io::{stdout, Write};
 use std::collections::HashMap;
 use crate::common;
+use crate::common::definitions::{StateTree, ViewTree};
 use crate::widgets::layout::Layout;
 use crate::states;
 use crate::widgets::widget::{Pixel, EzObject};
@@ -55,7 +56,7 @@ pub fn write_to_screen(old_view_tree: &common::definitions::ViewTree,
 /// redrawn.
 /// 2. If the state of the widget contains a forced redraw. In this case the entire screen will
 /// be redrawn, and widgets will not be redrawn individually. Their state will still be updated.
-pub fn redraw_changed_widgets(view_tree: &mut common::definitions::ViewTree, state_tree: &mut common::definitions::StateTree,
+pub fn redraw_changed_widgets(view_tree: &mut ViewTree, state_tree: &mut StateTree,
                               root_widget: &mut Layout) -> bool {
 
     // We update the root widgets' state only. It's a special case because it can hold new
@@ -74,8 +75,8 @@ pub fn redraw_changed_widgets(view_tree: &mut common::definitions::ViewTree, sta
 
 
 /// Redraw a list of widgets.
-pub fn redraw_widgets(paths: Vec<String>, view_tree: &mut common::definitions::ViewTree,
-                      state_tree: &mut common::definitions::StateTree, root_widget: &mut Layout) {
+pub fn redraw_widgets(paths: Vec<String>, view_tree: &mut ViewTree,
+                      state_tree: &mut StateTree, root_widget: &mut Layout) {
 
     'outer: for mut widget_path in paths.into_iter() {
         if widget_path.is_empty() || widget_path == root_widget.path {
