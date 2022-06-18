@@ -72,20 +72,23 @@ impl EzObject for Slider {
                 as usize + 1);
         }
 
-        let fg_color = if state.selected {state.get_color_config().selection_foreground }
-            else {state.get_color_config().foreground };
-        let bg_color = if state.selected {state.get_color_config().selection_background }
-            else {state.get_color_config().background };
-
         let mut contents = PixelMap::new();
         let value_pos =
             ((state.get_effective_size().width - 1) as f64 *
             ((state.value - state.minimum) as f64 / (state.maximum - state.minimum) as f64))
                 as usize;
         for x in 0..state.get_effective_size().width {
-            let symbol = if x == value_pos { "|" } else {"-"};
-            contents.push(vec!(Pixel::new(symbol.to_string(), fg_color,
-                                     bg_color)));
+            let fg_color =
+                if state.disabled {state.get_color_config().disabled_foreground }
+                else if x == value_pos &&
+                    state.selected { state.get_color_config().selection_foreground }
+                else { state.get_color_config().foreground };
+            let bg_color =
+                if state.disabled {state.get_color_config().disabled_background }
+                else {state.get_color_config().background};
+            contents.push(vec!(Pixel::new(
+                if x == value_pos { "🮚".to_string() } else { "━".to_string() },
+                fg_color, bg_color)));
         }
 
         let state = state_tree.get(&self.get_full_path()).unwrap().as_slider();

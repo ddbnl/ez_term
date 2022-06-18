@@ -83,10 +83,7 @@ impl EzObject for RadioButton {
             .get_mut(&self.get_full_path()).unwrap().as_radio_button();
         let active_symbol = { if state.active {self.active_symbol}
                                     else {self.inactive_symbol} };
-        let fg_color = if state.selected {state.get_color_config().selection_foreground }
-        else {state.get_color_config().foreground };
-        let bg_color = if state.selected {state.get_color_config().selection_background }
-        else {state.get_color_config().background };
+        let (fg_color, bg_color) = state.get_context_colors();
         let mut contents = vec!(
             vec!(Pixel {symbol: "(".to_string(), foreground_color: fg_color,
                 background_color: bg_color, underline: false}),

@@ -317,10 +317,10 @@ impl Default for BorderConfig {
            enabled: false,
            horizontal_symbol: "━".to_string(),
            vertical_symbol: "│".to_string(),
-           top_left_symbol: "┌".to_string(),
-           top_right_symbol: "┐".to_string(),
-           bottom_left_symbol: "└".to_string(),
-           bottom_right_symbol: "┘".to_string(),
+           top_left_symbol: "┍".to_string(),
+           top_right_symbol: "┑".to_string(),
+           bottom_left_symbol: "┕".to_string(),
+           bottom_right_symbol: "┙".to_string(),
            fg_color: Color::White,
            bg_color: Color::Black,
        } 
@@ -343,6 +343,12 @@ pub struct ColorConfig {
     /// The [Pixel.background_color] to use for this widgets' content when selected
     pub selection_background: Color,
 
+    /// The [Pixel.foreground_color] to use for this widgets' content is disabled
+    pub disabled_foreground: Color,
+
+    /// The [Pixel.background_color] to use for this widgets' content is disabled
+    pub disabled_background: Color,
+
     /// The [Pixel.foreground_color] to use for this widgets' content is active
     pub active_foreground: Color,
 
@@ -354,6 +360,12 @@ pub struct ColorConfig {
 
     /// The [Pixel.background_color] to use for this widgets' content when flashed
     pub flash_background: Color,
+
+    /// The [Pixel.foreground_color] to use for tab headers if [fill] is true
+    pub tab_foreground: Color,
+
+    /// The [Pixel.background_color] to use for tab headers if [fill] is true
+    pub tab_background: Color,
 
     /// The [Pixel.foreground_color] to use for filler pixels if [fill] is true
     pub filler_foreground: Color,
@@ -373,12 +385,16 @@ impl Default for ColorConfig {
             foreground: Color::White,
             selection_foreground: Color::Yellow,
             selection_background: Color::Blue,
+            disabled_foreground: Color::White,
+            disabled_background: Color::Black,
             active_foreground: Color::Red,
             active_background: Color::Black,
             flash_foreground: Color::Yellow,
             flash_background: Color::White,
-            filler_background: Color::Black,
+            tab_foreground: Color::White,
+            tab_background: Color::Black,
             filler_foreground: Color::White,
+            filler_background: Color::Black,
             cursor: Color::DarkYellow,
         }
     }

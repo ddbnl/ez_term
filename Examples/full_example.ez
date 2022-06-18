@@ -63,6 +63,8 @@
             size_hint_x: 1/5
             border: True
             selection_order: 50
+            tab_fg_color: yellow
+            tab_bg_color: red
             - Layout:
                 id: Tab 1
                 mode: box
@@ -208,6 +210,8 @@
         id: checkbox_section_box
     - SliderShowcase:
         id: slider_section_box
+    - ProgressBarShowcase:
+        id: progress_bar_section_box
     - RadioButtonShowcase:
         id: radio_section_box
     - ButtonShowcase:
@@ -278,16 +282,33 @@
         text: 10
         auto_scale_height: true
         auto_scale_width: true
+        padding_x: 1, 1
         fg_color: yellow
-        halign: center
     - Slider:
         id: slider
-        selection_order: 18
+        selection_order: 17
         value: 10
         minimum: 0
         maximum: 20
         padding_x: 1, 1
         auto_scale_width: true
+
+
+- <ProgressBarShowcase@CyanScalingBox>:
+    - Label:
+        text: This is a progress bar, it fills up according to its internal value. Click the button to start a scheduled task that increments the value:
+        auto_scale_height: true
+        padding: 1, 1, 1, 1
+    - Button:
+        id: progress_button
+        text: Start
+        auto_scale: True, True
+        selection_order: 18
+        bg_color: red
+        fg_color: yellow
+    - ProgressBar:
+        id: progress_bar
+        border: true
 
 
 - <ButtonShowcase@CyanScalingBox>:

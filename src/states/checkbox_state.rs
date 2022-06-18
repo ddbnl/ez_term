@@ -42,6 +42,9 @@ pub struct CheckboxState {
     /// Object containing colors to be used by this widget in different situations
     pub colors: states::definitions::ColorConfig,
 
+    /// Bool representing whether widget is disabled, i.e. cannot be interacted with
+    pub disabled: bool,
+
     /// Global order number in which this widget will be selection when user presses down/up keys
     pub selection_order: usize,
 
@@ -69,6 +72,7 @@ impl Default for CheckboxState {
            halign: states::definitions::HorizontalAlignment::Left,
            valign: states::definitions::VerticalAlignment::Top,
            active: false,
+           disabled: false,
            selected: false,
            selection_order: 0,
            border_config: states::definitions::BorderConfig::default(),
@@ -171,12 +175,19 @@ impl GenericState for CheckboxState {
 
     fn is_selectable(&self) -> bool { true }
 
+    fn set_disabled(&mut self, disabled: bool) {
+        if self.disabled != disabled { self.changed = true }
+        self.disabled = disabled
+    }
+
+    fn get_disabled(&self) -> bool { self.disabled }
+
+    fn get_selection_order(&self) -> usize { self.selection_order }
+
     fn set_selection_order(&mut self, order: usize) {
         if self.selection_order != order { self.changed = true };
         self.selection_order = order;
     }
-
-    fn get_selection_order(&self) -> usize { self.selection_order }
 
     fn set_force_redraw(&mut self, redraw: bool) {
         self.force_redraw = redraw;

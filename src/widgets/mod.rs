@@ -8,3 +8,4 @@ pub mod checkbox;
 pub mod radio_button;
 pub mod dropdown;
 pub mod slider;
+pub mod progress_bar;

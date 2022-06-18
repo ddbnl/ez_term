@@ -64,17 +64,16 @@ impl EzObject for Button {
         let state = state_tree.get_mut(&self.get_full_path()).unwrap()
             .as_button_mut();
 
-        let fg_color = if state.flashing {state.get_color_config().flash_foreground }
-        else if state.selected {state.get_color_config().selection_foreground }
-        else {state.get_color_config().foreground };
-        let bg_color = if state.flashing {state.get_color_config().flash_background }
-        else if state.selected {state.get_color_config().selection_background }
-        else {state.get_color_config().background };
+        let (fg_color, bg_color) =
+            if state.flashing {(state.get_color_config().flash_foreground,
+                                state.get_color_config().flash_background)}
+            else { state.get_context_colors() };
 
         let text = state.text.clone();
 
-        let write_width = if state.get_effective_size().infinite_width || state.get_auto_scale().width { text.len() + 1 }
-                              else {state.get_effective_size().width };
+        let write_width = if state.get_effective_size().infinite_width ||
+            state.get_auto_scale().width { text.len() + 1 }
+            else {state.get_effective_size().width };
         let content_lines = common::widget_functions::wrap_text(text, write_width);
         let write_height =
             if state.get_effective_size().infinite_height || state.get_auto_scale().height { content_lines.len() }

@@ -22,6 +22,7 @@ use crate::{states};
 use crate::common::definitions::Templates;
 use crate::scheduler::Scheduler;
 use crate::states::state::{EzState, GenericState};
+use crate::widgets::progress_bar::ProgressBar;
 use crate::widgets::slider::Slider;
 
 
@@ -195,6 +196,7 @@ impl EzWidgetDefinition {
                 "TextInput" => Ok(EzObjects::TextInput(TextInput::from_config(config))),
                 "Dropdown" => Ok(EzObjects::Dropdown(Dropdown::from_config(config))),
                 "Slider" => Ok(EzObjects::Slider(Slider::from_config(config))),
+                "ProgressBar" => Ok(EzObjects::ProgressBar(ProgressBar::from_config(config))),
                 _ => Err(Error::new(ErrorKind::InvalidData,
                                     format!("Invalid widget type {}", self.type_name)))
             }
@@ -621,6 +623,7 @@ pub fn load_common_parameters(parameter_name: &str, parameter_value: String,
         "auto_scale_height" =>
             state.set_auto_scale_height(load_bool_parameter(parameter_value.trim())),
         "padding" => state.set_padding(load_full_padding_parameter(parameter_value.trim())),
+        "disabled" => state.set_disabled(load_bool_parameter(parameter_value.trim())),
         "selection_order" => { state.set_selection_order(
             load_selection_order_parameter(parameter_value.as_str())) },
         "padding_x" => state.set_padding(load_padding_x_parameter(parameter_value.trim())),
@@ -637,6 +640,10 @@ pub fn load_common_parameters(parameter_name: &str, parameter_value: String,
             load_color_parameter(parameter_value),
         "bg_color" => state.get_colors_config_mut().background =
             load_color_parameter(parameter_value),
+        "disabled_fg_color" => state.get_colors_config_mut().disabled_foreground =
+            load_color_parameter(parameter_value),
+        "disabled_bg_color" => state.get_colors_config_mut().disabled_background =
+            load_color_parameter(parameter_value),
         "selection_fg_color" => state.get_colors_config_mut().selection_foreground =
             load_color_parameter(parameter_value),
         "selection_bg_color" => state.get_colors_config_mut().selection_background =
@@ -644,6 +651,14 @@ pub fn load_common_parameters(parameter_name: &str, parameter_value: String,
         "flash_fg_color" => state.get_colors_config_mut().flash_foreground =
             load_color_parameter(parameter_value),
         "flash_bg_color" => state.get_colors_config_mut().flash_background =
+            load_color_parameter(parameter_value),
+        "tab_fg_color" => state.get_colors_config_mut().tab_foreground =
+            load_color_parameter(parameter_value),
+        "tab_bg_color" => state.get_colors_config_mut().tab_background =
+            load_color_parameter(parameter_value),
+        "fill_fg_color" => state.get_colors_config_mut().filler_foreground =
+            load_color_parameter(parameter_value),
+        "fill_bg_color" => state.get_colors_config_mut().filler_background =
             load_color_parameter(parameter_value),
         "cursor_color" =>
             state.get_colors_config_mut().cursor = load_color_parameter(parameter_value),

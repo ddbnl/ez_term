@@ -130,7 +130,6 @@ fn run_loop(mut root_widget: Layout, mut callback_tree: CallbackTree, mut schedu
                         let spam_event = read();
                         if let Ok(Event::Mouse(spam_mouse_event)) = spam_event {
                             if let MouseEventKind::Moved = spam_mouse_event.kind {
-
                                 pos = (spam_mouse_event.column, spam_mouse_event.row);
                                 event = spam_event.unwrap();
                             }
@@ -174,8 +173,13 @@ fn run_loop(mut root_widget: Layout, mut callback_tree: CallbackTree, mut schedu
             // Try to let currently selected widget handle and consume the event
             if !consumed {
                 if let Some(i) = selected_widget {
-                    consumed = i.handle_event(event, &mut view_tree, &mut state_tree, &widget_tree,
-                                                               &mut callback_tree, &mut scheduler);
+                    if !state_tree
+                        .get(&i.get_full_path()).unwrap().as_generic().get_disabled() {
+                        consumed = i.handle_event(
+                            event, &mut view_tree, &mut state_tree, &widget_tree,
+                            &mut callback_tree, &mut scheduler);
+
+                    }
                 };
             }
             if !consumed {
@@ -295,8 +299,11 @@ fn handle_key_event(key: KeyEvent, view_tree: &mut ViewTree, state_tree: &mut St
             let selected_widget =
                 common::selection_functions::get_selected_widget(widget_tree, state_tree);
             if let Some(widget) = selected_widget {
-                widget.on_keyboard_enter(view_tree, state_tree, widget_tree,
-                                         callback_tree, scheduler);
+                if !state_tree
+                    .get(&widget.get_full_path()).unwrap().as_generic().get_disabled() {
+                    widget.on_keyboard_enter(view_tree, state_tree, widget_tree,
+                                             callback_tree, scheduler);
+                }
             }
             true
         },

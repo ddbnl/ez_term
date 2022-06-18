@@ -14,6 +14,7 @@ use crate::widgets::button::{Button};
 use crate::widgets::canvas::{Canvas};
 use crate::widgets::checkbox::{Checkbox};
 use crate::widgets::dropdown::{Dropdown, DroppedDownMenu};
+use crate::widgets::progress_bar::ProgressBar;
 use crate::widgets::radio_button::{RadioButton};
 use crate::widgets::slider::Slider;
 use crate::widgets::text_input::{TextInput};
@@ -35,6 +36,7 @@ pub enum EzObjects {
     RadioButton(RadioButton),
     TextInput(TextInput),
     Slider(Slider),
+    ProgressBar(ProgressBar),
 }
 impl EzObjects {
 
@@ -52,6 +54,7 @@ impl EzObjects {
             EzObjects::RadioButton(i) => i,
             EzObjects::TextInput(i) => i,
             EzObjects::Slider(i) => i,
+            EzObjects::ProgressBar(i) => i,
         }
     }
 
@@ -69,6 +72,7 @@ impl EzObjects {
             EzObjects::RadioButton(i) => i,
             EzObjects::TextInput(i) => i,
             EzObjects::Slider(i) => i,
+            EzObjects::ProgressBar(i) => i,
         }
     }
 
@@ -128,6 +132,18 @@ impl EzObjects {
     /// Cast this state as a mutable slider widget ref, you must be sure you have one.
     pub fn as_slider_mut(&mut self) -> &mut Slider {
         if let EzObjects::Slider(i) = self { i }
+        else { panic!("wrong EzObject.") }
+    }
+
+    /// Cast this state as a Progress bar widget ref, you must be sure you have one.
+    pub fn as_progress_bar(&self) -> &ProgressBar {
+        if let EzObjects::ProgressBar(i) = self { i }
+        else { panic!("wrong EzObject.") }
+    }
+
+    /// Cast this state as a mutable Progress bar widget ref, you must be sure you have one.
+    pub fn as_progress_bar_mut(&mut self) -> &mut ProgressBar {
+        if let EzObjects::ProgressBar(i) = self { i }
         else { panic!("wrong EzObject.") }
     }
 
@@ -202,7 +218,9 @@ pub trait EzObject {
     /// load_ez_parameter below.
     fn load_ez_config(&mut self, config: Vec<String>) -> Result<(), Error> {
         for line in config {
-            let (parameter_name, parameter_value) = line.split_once(':').unwrap();
+            let (parameter_name, parameter_value) = line.split_once(':')
+                .unwrap_or_else(|| panic!("Config parameter must contain a \":\", \
+                e.g. \"parameter: value\". This does not contain one: \"{}\"", line));
             self.load_ez_parameter(parameter_name.to_string(),
                                    parameter_value.to_string());
         }

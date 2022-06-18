@@ -64,7 +64,8 @@ pub fn redraw_changed_widgets(view_tree: &mut ViewTree, state_tree: &mut StateTr
     root_widget.state = state_tree.get_mut("/root").unwrap().as_layout().clone();
     let (mut force_redraw, widgets_to_redraw, modals_to_redraw)
         = get_widgets_to_redraw(state_tree);
-    if !modals_to_redraw.is_empty() {
+    if !modals_to_redraw.is_empty() ||
+        (!widgets_to_redraw.is_empty() && !root_widget.state.open_modals.is_empty()) {
         force_redraw = true;
     }
     if !force_redraw {

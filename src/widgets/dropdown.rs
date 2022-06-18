@@ -76,10 +76,7 @@ impl EzObject for Dropdown {
                 .expect("Dropdown widget must have at least one option").to_string(); // todo move to validation
         }
         // Create a bordered label representing currently active value
-        let fg_color = if state.selected {state.get_color_config().selection_foreground }
-        else {state.get_color_config().foreground };
-        let bg_color = if state.selected {state.get_color_config().selection_background }
-        else {state.get_color_config().background };
+        let (fg_color, bg_color) = state.get_context_colors();
         let mut text = active.chars().rev().collect::<String>();
         let mut contents = Vec::new();
 

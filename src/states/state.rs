@@ -1,5 +1,6 @@
 //! # Widget state:
 //! A module containing the base structs and traits for widget states.
+use crossterm::style::Color;
 use crate::states::canvas_state::{CanvasState};
 use crate::states::label_state::{LabelState};
 use crate::states::button_state::{ButtonState};
@@ -9,9 +10,11 @@ use crate::states::definitions::{AutoScale, BorderConfig, ColorConfig, Coordinat
                                  Size, SizeHint, VerticalAlignment, VerticalPositionHint};
 use crate::states::dropdown_state::{DropdownState, DroppedDownMenuState};
 use crate::states::layout_state::LayoutState;
+use crate::states::progress_bar_state::ProgressBarState;
 use crate::states::radio_button_state::{RadioButtonState};
 use crate::states::slider_state::SliderState;
 use crate::states::text_input_state::{TextInputState};
+use crate::widgets::progress_bar::ProgressBar;
 
 
 /// Widget states are used to keep track of dynamic run time information of widgets, such as the
@@ -31,7 +34,8 @@ pub enum EzState {
     DroppedDownMenu(DroppedDownMenuState),
     RadioButton(RadioButtonState),
     TextInput(TextInputState),
-    Slider(SliderState)
+    Slider(SliderState),
+    ProgressBar(ProgressBarState)
 }
 impl EzState {
 
@@ -49,6 +53,7 @@ impl EzState {
             EzState::TextInput(i) => i,
             EzState::Canvas(i) => i,
             EzState::Slider(i) => i,
+            EzState::ProgressBar(i) => i,
         }
     }
 
@@ -66,6 +71,7 @@ impl EzState {
             EzState::TextInput(i) => i,
             EzState::Canvas(i) => i,
             EzState::Slider(i) => i,
+            EzState::ProgressBar(i) => i,
         }
     }
 
@@ -127,6 +133,18 @@ impl EzState {
     /// Cast this state as a mutable Slider widget state ref, you must be sure you have one.
     pub fn as_slider_mut(&mut self) -> &mut SliderState {
         if let EzState::Slider(i) = self { i }
+        else { panic!("wrong state.") }
+    }
+
+    /// Cast this state as a Progress bar widget state ref, you must be sure you have one.
+    pub fn as_progress_bar(&self) -> &ProgressBarState {
+        if let EzState::ProgressBar(i) = self { i }
+        else { panic!("wrong state.") }
+    }
+
+    /// Cast this state as a mutable Progress bar widget state ref, you must be sure you have one.
+    pub fn as_progress_bar_mut(&mut self) -> &mut ProgressBarState {
+        if let EzState::ProgressBar(i) = self { i }
         else { panic!("wrong state.") }
     }
 
@@ -412,6 +430,23 @@ pub trait GenericState {
     /// Get a mut ref to the [ColorConfig] abject that will be used to draw this widget
     fn get_colors_config_mut(&mut self) -> &mut ColorConfig;
 
+    /// Convenience function. Get a Foreground and Background color depending on the state of
+    /// the widget (e.g. disabled, selected, etc.).
+    fn get_context_colors(&self) -> (Color, Color) {
+
+        let fg_color =
+            if self.get_disabled() {self.get_color_config().disabled_foreground }
+            else if self.get_selected() {self.get_color_config().selection_foreground }
+            else {self.get_color_config().foreground };
+
+        let bg_color =
+            if self.get_disabled() {self.get_color_config().disabled_background }
+            else if self.get_selected() {self.get_color_config().selection_background }
+            else {self.get_color_config().background };
+
+        (fg_color, bg_color)
+    }
+
     /// Get the top left and bottom right corners of a widget in (X, Y) coordinate tuples.
     fn get_box(&self) -> (Coordinates, Coordinates) {
         let top_left = self.get_absolute_position();
@@ -456,6 +491,14 @@ pub trait GenericState {
     /// Returns a bool representing whether this widget can be select by keyboard or mouse. E.g.
     /// labels cannot be selected, but checkboxes can.
     fn is_selectable(&self) -> bool { false }
+
+    /// Set the disabled field of a widget. Only implemented by interactive widgets (i.e. widgets
+    /// that are selectable).
+    fn set_disabled(&mut self, disabled: bool) { }
+
+    /// Get the disabled field of a widget. Only implemented by interactive widgets (i.e. widgets
+    /// that are selectable).
+    fn get_disabled(&self) -> bool { false }
 
     /// Get the order in which this widget should be selected, represented by a usize number. E.g.
     /// if there is a '1' widget, a '2' widget, and this widget is '3', calling 'select_next_widget'

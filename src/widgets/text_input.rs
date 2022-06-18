@@ -71,12 +71,7 @@ impl EzObject for TextInput {
 
         let state = state_tree
             .get_mut(&self.get_full_path()).unwrap().as_text_input_mut();
-        let fg_color =
-            if state.get_selected() {state.get_color_config().selection_foreground }
-            else {state.get_color_config().foreground };
-        let bg_color =
-            if state.get_selected() {state.get_color_config().selection_background }
-            else {state.get_color_config().background };
+        let (fg_color, bg_color) = state.get_context_colors();
         let mut text = state.get_text();
         if text.len() > state.get_size().width - 1 {
             let remains = text.len() - state.get_view_start();

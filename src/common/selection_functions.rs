@@ -101,7 +101,7 @@ pub fn find_next_selection(current_selection: usize, state_tree: &common::defini
     for (path, state) in state_tree  {
         if !path.starts_with(path_prefix) { continue };
         let generic_state = state.as_generic();
-        if generic_state.is_selectable() {
+        if generic_state.is_selectable() && !generic_state.get_disabled() {
             if let Some(i) = next_order {
                 if generic_state.get_selection_order() > 0 &&
                     generic_state.get_selection_order() > current_selection &&
@@ -178,7 +178,7 @@ pub fn find_previous_selection(current_selection: usize,
     for (path, state) in state_tree  {
         if !path.starts_with(path_prefix) { continue }
         let generic_state = state.as_generic();
-        if generic_state.is_selectable() {
+        if generic_state.is_selectable() && !generic_state.get_disabled() {
             if let Some(i) = previous_order {
                 if generic_state.get_selection_order() > 0 &&
                     generic_state.get_selection_order() < current_selection &&
@@ -220,6 +220,7 @@ pub fn get_widget_by_position<'a>(pos: states::definitions::Coordinates,
     let mut results = Vec::new();
     for (widget_path, state) in state_tree {
         if !widget_path.starts_with(&path_prefix) || widget_path == "/root" ||
+            state.as_generic().get_disabled() ||
             common::widget_functions::widget_is_hidden(widget_path.clone(),  state_tree) {
             continue
         }

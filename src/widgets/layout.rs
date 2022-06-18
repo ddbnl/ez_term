@@ -831,12 +831,12 @@ impl Layout {
                     if selection == i.path { own_colors.selection_foreground }
                     else if active_tab.rsplit_once('/').unwrap().1 == child_state.text {
                         own_colors.active_foreground
-                    } else { own_colors.foreground };
+                    } else { own_colors.tab_foreground };
                 child_state.colors.background =
                     if selection == i.path { own_colors.selection_background }
                     else if active_tab.rsplit_once('/').unwrap().1 == child_state.text {
                         own_colors.active_background
-                    } else { own_colors.background };
+                    } else { own_colors.tab_background };
 
                 child_state.set_size_hint(SizeHint::new(None, None));
                 child_state.set_auto_scale(AutoScale::new(true, true));
@@ -1286,8 +1286,7 @@ impl Layout {
         &self, state_tree: &mut StateTree, mut contents: PixelMap) -> PixelMap {
 
         let state = state_tree.get(&self.get_full_path()).unwrap().as_layout();
-        let fg_color = if state.selected {state.get_color_config().selection_foreground}
-        else {state.get_color_config().foreground};
+        let (fg_color, _) = state.get_context_colors();
         let bg_color = state.get_color_config().background;
 
         let (scrollbar_size, scrollbar_pos) = self.get_horizontal_scrollbar_parameters(
@@ -1310,8 +1309,7 @@ impl Layout {
 
         let mut scrollbar = Vec::new();
         let state = state_tree.get(&self.get_full_path()).unwrap().as_layout();
-        let fg_color = if state.selected {state.get_color_config().selection_foreground}
-        else {state.get_color_config().foreground};
+        let (fg_color, _) = state.get_context_colors();
         let bg_color = state.get_color_config().background;
 
         let (scrollbar_size, scrollbar_pos) = self.get_vertical_scrollbar_parameters(

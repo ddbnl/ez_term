@@ -52,6 +52,12 @@ fn main() {
         states::definitions::CallbackConfig::from_on_value_change(
             Box::new(test_slider_on_value_change)));
 
+    // Set a slider on value callback
+    scheduler.update_callback_config(
+        "/root/main_screen/left_box/bottom_box/small_box_2/progress_bar_section_box/progress_button".to_string(),
+        states::definitions::CallbackConfig::from_on_press(
+            Box::new(progress_bar_button)));
+
     // Set a radio button group on value callback
     scheduler.update_callback_config(
         "/root/main_screen/left_box/bottom_box/small_box_2/radio_section_box/radio_box/radio1".to_string(),
@@ -332,5 +338,40 @@ fn test_popup_button_on_press(context: EzContext) -> bool {
     context.scheduler.update_callback_config(
         format!("{}/dismiss_button", popup_path),
         states::definitions::CallbackConfig::from_on_press(Box::new(dismiss_delay)));
+    false
+}
+
+
+// As an example we will change a label after a button is pressed.
+fn progress_bar_button(context: EzContext) -> bool {
+
+    // We disable the progress bar button first so it cannot be pressed twice.
+    context.state_tree.get_mut(&context.widget_path).unwrap().as_generic_mut()
+        .set_disabled(true);
+    // We reset the progress of the progress bar to 0.
+    let progress_bar_state = context.state_tree.get_mut(
+        "/root/main_screen/left_box/bottom_box/small_box_2/progress_bar_section_box/progress_bar")
+        .unwrap().as_progress_bar_mut();
+    progress_bar_state.set_value(0.0);
+    // Now we will schedule a function that increments the progress bar by 0.1 (10%) each second
+    let button_path = context.widget_path.clone();
+    let increment =
+        move |context: EzContext| {
+            let progress_bar_state = context.state_tree.get_mut(
+                "/root/main_screen/left_box/bottom_box/small_box_2/progress_bar_section_box/progress_bar")
+                .unwrap().as_progress_bar_mut();
+            if progress_bar_state.value < 0.9 {
+                progress_bar_state.set_value(progress_bar_state.get_value() + 1.0/10.0);
+            } else {
+                progress_bar_state.set_value(1.0);
+                context.state_tree.get_mut(&button_path).unwrap().as_generic_mut()
+                    .set_disabled(false);
+                return false
+            }
+            true
+        };
+
+    context.scheduler.schedule_interval("/root/main_screen/left_box/bottom_box/small_box_2/progress_bar_section_box/progress_button".to_string(),
+                                        Box::new(increment), Duration::from_secs(1));
     false
 }

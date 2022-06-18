@@ -4,21 +4,12 @@ use crate::states::definitions::{AutoScale, BorderConfig, ColorConfig, Coordinat
 use crate::states::state::GenericState;
 
 
-/// [State] implementation for [Button].
+/// [State] implementation for [ProgressBar].
 #[derive(Clone)]
-pub struct SliderState {
+pub struct ProgressBarState {
 
     /// Current value of the slider
-    pub value: isize,
-
-    /// Low boundary of the slider
-    pub minimum: isize,
-
-    /// Upper boundary of the slider
-    pub maximum: isize,
-
-    /// Amount to change value by when moved one step
-    pub step: usize,
+    pub value: f64,
 
     /// Position of this widget relative to its' parent [Layout]
     pub position: Coordinates,
@@ -56,9 +47,6 @@ pub struct SliderState {
     /// Object containing colors to be used by this widget in different situations
     pub colors: ColorConfig,
 
-    /// Bool representing whether widget is disabled, i.e. cannot be interacted with
-    pub disabled: bool,
-
     /// Global order number in which this widget will be selection when user presses down/up keys
     pub selection_order: usize,
 
@@ -70,14 +58,11 @@ pub struct SliderState {
     /// that fall within this widget must be redrawn, call [EzObject.redraw] instead.
     pub force_redraw: bool,
 }
-impl Default for SliderState {
+impl Default for ProgressBarState {
     fn default() -> Self {
 
-       SliderState {
-           value: 0,
-           minimum: 0,
-           maximum: 100,
-           step: 1,
+       ProgressBarState {
+           value: 0.0,
            position: Coordinates::default(),
            absolute_position: Coordinates::default(),
            size: Size::default(),
@@ -87,7 +72,6 @@ impl Default for SliderState {
            padding: Padding::default(),
            halign: HorizontalAlignment::Left,
            valign: VerticalAlignment::Top,
-           disabled: false,
            selected: false,
            selection_order: 0,
            border_config: BorderConfig::default(),
@@ -97,7 +81,7 @@ impl Default for SliderState {
        }
     }
 }
-impl GenericState for SliderState {
+impl GenericState for ProgressBarState {
 
     fn set_changed(&mut self, changed: bool) { self.changed = changed }
 
@@ -185,13 +169,6 @@ impl GenericState for SliderState {
 
     fn is_selectable(&self) -> bool { true }
 
-    fn set_disabled(&mut self, disabled: bool) {
-        if self.disabled != disabled { self.changed = true }
-        self.disabled = disabled
-    }
-
-    fn get_disabled(&self) -> bool { self.disabled }
-
     fn get_selection_order(&self) -> usize { self.selection_order }
 
     fn set_selection_order(&mut self, order: usize) {
@@ -213,43 +190,22 @@ impl GenericState for SliderState {
 
     fn get_selected(&self) -> bool { self.selected }
 }
-impl SliderState {
+impl ProgressBarState {
 
-    pub fn set_value(&mut self, value: isize) {
+    /// Set value of the progress bar. Must be a number between 0 and 1.
+    pub fn set_value(&mut self, value: f64) {
+        if value < 0.0 || value > 1.0 {panic!("Progress bar value must be between 0 and 1")}
         if self.value != value { self.changed = true }
         self.value = value;
-        self.validate();
     }
 
-    pub fn get_value(&self) -> isize { self.value }
+    pub fn get_value(&self) -> f64 { self.value }
 
-    pub fn set_minimum(&mut self, minimum: isize) {
-        if self.minimum != minimum { self.changed = true }
-        self.minimum = minimum;
-        self.validate();
-    }
-    pub fn get_minimum(&self) -> isize { self.minimum }
-
-    pub fn set_maximum(&mut self, maximum: isize) {
-        if self.maximum != maximum { self.changed = true }
-        self.maximum = maximum;
-        self.validate();
-    }
-
-    pub fn get_maximum(&self) -> isize { self.maximum }
-
-    pub fn set_step(&mut self, step: usize) {
-        if self.step != step { self.changed = true }
-        self.step = step;
-        self.validate();
-    }
-
-    pub fn get_step(&self) -> usize { self.step }
-
-    pub fn validate(&self) {
-        if self.minimum >= self.maximum {panic!("Slider minimum must be lower than maximum")}
-        if self.minimum % self.step as isize != 0 {panic!("Slider minimum must be a multiple of step")}
-        if self.maximum % self.step as isize!= 0 {panic!("Slider maximum must be a multiple of step")}
-        if self.value % self.step as isize != 0 {panic!("Slider value must be a multiple of step")}
+    /// Convenience func. Set the progress bar based on two numbers: progress and total. For
+    /// example when tracking progress of copying files, pass the number of copied files as
+    /// 'progress' and the total number of files as 'total'. These values will be normalized to a
+    /// number between 0 and 1 and passed to [set_value].
+    pub fn set_value_from_progress(&mut self, progress: usize, total: usize) {
+        self.set_value(progress as f64 / total as f64)
     }
 }
