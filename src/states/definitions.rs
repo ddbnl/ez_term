@@ -1,10 +1,12 @@
 use crossterm::event::KeyCode;
 use crossterm::style::Color;
 use crate::common;
+use crate::property::UsizeProperty;
+use crate::scheduler::Scheduler;
 
 
 /// Used with Box mode [Layout], determines whether widgets are placed below or above each other.
-#[derive(Clone, PartialEq)]
+#[derive(Clone, PartialEq, Debug)]
 pub enum LayoutOrientation {
     Horizontal,
     Vertical
@@ -12,7 +14,7 @@ pub enum LayoutOrientation {
 
 
 /// Different modes determining how widgets are placed in a [Layout].
-#[derive(Clone, PartialEq)]
+#[derive(Clone, PartialEq, Debug)]
 pub enum LayoutMode {
 
     /// # Box mode:
@@ -88,16 +90,20 @@ impl Size {
 }
 
 
-
 /// Convenience wrapper around an XY tuple.
-#[derive(PartialEq, Copy, Clone, Default, Debug)]
-pub struct Coordinates {
-    pub x: usize,
-    pub y: usize,
+#[derive(PartialEq, Clone, Debug)]
+pub struct StateCoordinates {
+    pub x: UsizeProperty,
+    pub y: UsizeProperty,
 }
-impl Coordinates {
-    pub fn new(x: usize, y: usize) -> Self {
-        Coordinates{x, y}
+impl StateCoordinates {
+    pub fn new(x: usize, y: usize, name: String, scheduler: &mut Scheduler) -> Self {
+
+        let x_property =
+            scheduler.new_usize_property(format!("{}/x", name.clone()), x);
+        let y_property =
+            scheduler.new_usize_property(format!("{}/y", name.clone()), y);
+        StateCoordinates{x: x_property, y: y_property}
     }
 }
 
@@ -361,10 +367,10 @@ pub struct ColorConfig {
     /// The [Pixel.background_color] to use for this widgets' content when flashed
     pub flash_background: Color,
 
-    /// The [Pixel.foreground_color] to use for tab headers if [fill] is true
+    /// The [Pixel.foreground_color] to use for tab headers
     pub tab_foreground: Color,
 
-    /// The [Pixel.background_color] to use for tab headers if [fill] is true
+    /// The [Pixel.background_color] to use for tab headers
     pub tab_background: Color,
 
     /// The [Pixel.foreground_color] to use for filler pixels if [fill] is true

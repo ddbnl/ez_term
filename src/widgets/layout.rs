@@ -2,21 +2,22 @@
 //! Module implementing the Layout struct.
 use std::collections::HashMap;
 use crossterm::event::{Event, KeyCode};
-use crate::ez_parser;
+use crate::parser;
 use crate::common;
-use crate::common::definitions::{CallbackTree, EzContext, PixelMap, StateTree, ViewTree, WidgetTree};
+use crate::common::definitions::{CallbackTree, EzContext, PixelMap, StateTree, ViewTree, WidgetTree,
+                                 Coordinates};
 use crate::widgets::widget::{Pixel, EzObject, EzObjects};
 use crate::states::layout_state::LayoutState;
 use crate::states::state::{EzState, GenericState};
-use crate::states;
 use crate::scheduler::Scheduler;
-use crate::states::definitions::{AutoScale, CallbackConfig, ColorConfig, Coordinates, LayoutMode, Size, SizeHint};
+use crate::states::definitions::{AutoScale, CallbackConfig, ColorConfig, LayoutMode, Size, SizeHint,
+                                 LayoutOrientation};
 use crate::widgets::button::Button;
 
 
 /// A layout is where widgets live. They implements methods for hardcoding widget placement or
 /// placing them automatically in various ways.
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Layout {
 
     /// ID of the layout, used to construct [path]
@@ -36,14 +37,14 @@ pub struct Layout {
 }
 
 
-impl Default for Layout {
-    fn default() -> Self {
+impl Layout {
+    pub fn new(id: String, path: String, scheduler: &mut Scheduler) -> Self {
         Layout {
-            id: "".to_string(),
-            path: String::new(),
+            id,
+            path: path.clone(),
             children: Vec::new(),
             child_lookup: HashMap::new(),
-            state: LayoutState::default(),
+            state: LayoutState::new(path, scheduler),
         }
     }
 }
@@ -51,10 +52,11 @@ impl Default for Layout {
 
 impl EzObject for Layout {
 
-    fn load_ez_parameter(&mut self, parameter_name: String, parameter_value: String) {
+    fn load_ez_parameter(&mut self, parameter_name: String, parameter_value: String,
+                         scheduler: &mut Scheduler) {
 
-        let consumed = ez_parser::load_common_parameters(
-            &parameter_name, parameter_value.clone(),Box::new(self));
+        let consumed = parser::load_common_parameters(
+            &parameter_name, parameter_value.clone(),Box::new(self), scheduler);
         if consumed { return }
         match parameter_name.as_str() {
             "mode" => {
@@ -69,21 +71,21 @@ impl EzObject for Layout {
             "orientation" => {
                 match parameter_value.trim() {
                     "horizontal" =>
-                        self.state.orientation = states::definitions::LayoutOrientation::Horizontal,
+                        self.state.orientation = LayoutOrientation::Horizontal,
                     "vertical" =>
-                        self.state.orientation = states::definitions::LayoutOrientation::Vertical,
+                        self.state.orientation = LayoutOrientation::Vertical,
                     _ => panic!("Invalid parameter value for orientation {}",
                                        parameter_value)
                 }
             },
-            "scroll" => ez_parser::load_full_enable_scrolling_parameter(
+            "scroll" => parser::load_full_enable_scrolling_parameter(
                 parameter_value.trim(), &mut self.state.scrolling_config),
             "scroll_x" => self.state.scrolling_config.enable_x =
-                ez_parser::load_bool_parameter(parameter_value.trim()),
+                parser::load_bool_parameter(parameter_value.trim()),
             "scroll_y" => self.state.scrolling_config.enable_y =
-                ez_parser::load_bool_parameter(parameter_value.trim()),
+                parser::load_bool_parameter(parameter_value.trim()),
             "fill" =>
-                self.state.fill = ez_parser::load_bool_parameter(parameter_value.trim()),
+                self.state.fill = parser::load_bool_parameter(parameter_value.trim()),
             "filler_symbol" =>
                 self.state.set_filler_symbol(parameter_value.trim().to_string()),
             _ => panic!("Invalid parameter name for layout {}", parameter_name)
@@ -110,11 +112,11 @@ impl EzObject for Layout {
         match mode {
             LayoutMode::Box => {
                 match orientation {
-                    states::definitions::LayoutOrientation::Horizontal => {
+                    LayoutOrientation::Horizontal => {
                         merged_content =
                             self.get_box_mode_horizontal_orientation_contents(state_tree);
                     },
-                    states::definitions::LayoutOrientation::Vertical => {
+                    LayoutOrientation::Vertical => {
                         merged_content =
                             self.get_box_mode_vertical_orientation_contents(state_tree);
                     },
@@ -266,10 +268,13 @@ impl EzObject for Layout {
 }
 
 impl Layout {
+
     /// Initialize an instance of a Layout with the passed config parsed by [ez_parser]
-    pub fn from_config(config: Vec<String>) -> Self {
-        let mut obj = Layout::default();
-        obj.load_ez_config(config).unwrap();
+    pub fn from_config(config: Vec<String>, id: String, path: String, scheduler: &mut Scheduler)
+                       -> Self {
+
+        let mut obj = Layout::new(id, path, scheduler);
+        obj.load_ez_config(config, scheduler).unwrap();
         obj
     }
 
@@ -314,8 +319,9 @@ impl Layout {
         common::widget_functions::reposition_with_pos_hint(
             parent_size.width, parent_size.height,
             state.as_generic_mut());
-        let pos = state.as_generic().get_position();
-        state.as_generic_mut().set_absolute_position(pos);
+        let x = state.as_generic().get_position().x.get();
+        let y = state.as_generic().get_position().y.get();
+        state.as_generic_mut().set_absolute_position(Coordinates::new(x, y));
 
         //Get contents
         let modal_content;
@@ -335,7 +341,8 @@ impl Layout {
         let start_pos = state.get_position();
         for x in 0..modal_content.len() {
             for y in 0..modal_content[x].len() {
-                let write_pos = Coordinates::new(start_pos.x + x, start_pos.y + y);
+                let write_pos = Coordinates::new(start_pos.x.get() + x,
+                                                            start_pos.y.get() + y);
                 if write_pos.x <= parent_size.width && write_pos.y <= parent_size.height {
                     contents[write_pos.x][write_pos.y] = modal_content[x][y].clone();
                 }
@@ -403,9 +410,9 @@ impl Layout {
             let child_pos = state.get_position();
             for width in 0..child_content.len() {
                 for height in 0..child_content[width].len() {
-                    if child_pos.x + width <= content.len()
-                        && child_pos.y + height <= content[child_pos.x + width].len() {
-                        content[child_pos.x + width][child_pos.y + height] =
+                    if child_pos.x.get() + width <= content.len()
+                        && child_pos.y.get() + height <= content[child_pos.x.get() + width].len() {
+                        content[child_pos.x.get() + width][child_pos.y.get() + height] =
                             child_content[width][height].clone();
                     }
                 }
@@ -476,7 +483,7 @@ impl Layout {
             let generic_child = child.as_ez_object();
             let state = state_tree.get(&generic_child.get_full_path())
                 .unwrap().as_generic();
-            if let states::definitions::LayoutOrientation::Horizontal = own_orientation {
+            if let LayoutOrientation::Horizontal = own_orientation {
                 if let Some(size_hint_x) = state.get_size_hint().x
                 {
                     if size_hint_x != 1.0 || state.get_auto_scale().width ||
@@ -489,7 +496,7 @@ impl Layout {
             } else {
                 all_default_size_hint_x = false;
             }
-            if let states::definitions::LayoutOrientation::Vertical = own_orientation {
+            if let LayoutOrientation::Vertical = own_orientation {
                 if let Some(size_hint_y) = state.get_size_hint().y {
                     if size_hint_y != 1.0 || state.get_auto_scale().height ||
                         state.get_auto_scale().width || state.get_size().height > 0 {
@@ -521,7 +528,7 @@ impl Layout {
                     state_tree.get_mut(&i.get_full_path()).unwrap().as_generic_mut();
                 let pos = child_state.get_position();
                 let mut new_absolute_position = Coordinates::new(
-                    absolute_position.x + pos.x, absolute_position.y + pos.y);
+                    absolute_position.x + pos.x.get(), absolute_position.y + pos.y.get());
                 if scrolling.is_scrolling_x && size.width > 0 {
                     new_absolute_position.x -= scrolling.view_start_x % size.width;
                 }
@@ -535,7 +542,7 @@ impl Layout {
                     &child.as_ez_object().get_full_path()).unwrap().as_generic_mut();
                 let pos = child_state.get_position();
                 let new_absolute_position = Coordinates::new(
-                    absolute_position.x + pos.x, absolute_position.y + pos.y);
+                    absolute_position.x + pos.x.get(), absolute_position.y + pos.y.get());
                 child_state.set_absolute_position(new_absolute_position);
             }
         }
@@ -575,9 +582,9 @@ impl Layout {
 
         if self.state.mode == LayoutMode::Tabbed {
             if let EzObjects::Layout(_) = child.clone() {
-                let mut tab_header = Button::default();
-                tab_header.id = format!("{}_tab_header", id);
-                tab_header.path = format!("{}/{}", parent_path, tab_header.id.clone());
+                let new_id = format!("{}_tab_header", id.clone());
+                let new_path = format!("{}/{}", parent_path, new_id.clone());
+                let mut tab_header = Button::new(new_id, new_path, scheduler);
                 tab_header.state.size_hint = SizeHint::new(None, None);
                 tab_header.state.text = id;
 
@@ -818,7 +825,8 @@ impl Layout {
                     .get_mut(&child.as_ez_object().get_full_path()).unwrap().as_generic_mut();
                 child_state.set_effective_height(if own_size.height >=3 {own_size.height - 3} else {0});
                 child_state.set_effective_width(if own_size.width >= 1 {own_size.width - 1} else {0});
-                child_state.set_position(Coordinates::new(0, 3));
+                child_state.get_position_mut().x.set(0);
+                child_state.get_position_mut().y.set(3);
                 child_state.set_absolute_position(Coordinates::new(
                     own_pos.x, own_pos.y + 3));
                 tab_content = i.get_contents(state_tree);
@@ -885,8 +893,8 @@ impl Layout {
                 if let EzObjects::Button(button) = child {
                     let state = state_tree
                         .get_mut(&button.path).unwrap().as_button_mut();
-                    state.set_x(if state.get_position().x >= difference
-                    { state.get_position().x - difference } else { 0 });
+                    state.set_x(if state.get_position().x.get() >= difference
+                    { state.get_position().x.get() - difference } else { 0 });
                     state.set_absolute_position(Coordinates::new(
                         if state.get_absolute_position().x >= difference
                         { state.get_absolute_position().x - difference } else { 0 },
@@ -965,7 +973,8 @@ impl Layout {
                 state.get_size_mut().height = own_size.height;
             }
 
-            state.set_position(position);
+            state.set_x(position.x);
+            state.set_y(position.y);
             let child_content = generic_child.get_contents(state_tree);
             if child_content.is_empty() { continue }  // handle empty widget
             let state = state_tree.get_mut(&generic_child.get_full_path())
@@ -1060,7 +1069,8 @@ impl Layout {
                 child_state.get_size_mut().height = height_left;
             }
 
-            child_state.set_position(position);
+            child_state.set_x(position.x);
+            child_state.set_y(position.y);
             let child_content = generic_child.get_contents(state_tree);
             let state = state_tree.get_mut(&generic_child.get_full_path())
                 .unwrap().as_generic_mut(); // re-borrow
@@ -1108,7 +1118,7 @@ impl Layout {
                 new, state.get_vertical_alignment(), parent_size.height,
                 parent_colors.foreground,
                 parent_colors.background);
-            state.set_y(state.get_position().y + offset);
+            state.set_y(state.get_position().y.get() + offset);
         }
 
         for x in 0..new.len() {
@@ -1132,7 +1142,7 @@ impl Layout {
                 new, state.get_horizontal_alignment(), parent_size.width,
                 parent_colors.foreground,
                 parent_colors.background);
-            state.set_x(state.get_position().x + offset);
+            state.set_x(state.get_position().x.get() + offset);
         }
 
         let write_width = if !state.get_size().infinite_width { parent_size.width }

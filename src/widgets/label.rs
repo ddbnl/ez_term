@@ -5,9 +5,10 @@ use crate::common;
 use crate::widgets::widget::{Pixel, EzObject};
 use crate::states::label_state::LabelState;
 use crate::states::state::{EzState, GenericState};
-use crate::ez_parser;
+use crate::parser;
+use crate::scheduler::Scheduler;
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Label {
 
     /// ID of the widget, used to construct [path]
@@ -23,13 +24,13 @@ pub struct Label {
     pub state: LabelState,
 }
 
-impl Default for Label {
-    fn default() -> Self {
+impl Label {
+    pub fn new(id: String, path: String, scheduler: &mut Scheduler) -> Self {
         Label {
-            id: "".to_string(),
-            path: String::new(),
+            id,
+            path: path.clone(),
             from_file: None,
-            state: LabelState::default(),
+            state: LabelState::new(path, scheduler),
         }
     }
 }
@@ -37,10 +38,11 @@ impl Default for Label {
 
 impl EzObject for Label {
 
-    fn load_ez_parameter(&mut self, parameter_name: String, mut parameter_value: String) {
+    fn load_ez_parameter(&mut self, parameter_name: String, mut parameter_value: String,
+                         scheduler: &mut Scheduler) {
 
-        let consumed = ez_parser::load_common_parameters(
-            &parameter_name, parameter_value.clone(),Box::new(self));
+        let consumed = parser::load_common_parameters(
+            &parameter_name, parameter_value.clone(),Box::new(self), scheduler);
         if consumed { return }
         match parameter_name.as_str() {
             "text" => {
@@ -152,9 +154,12 @@ impl EzObject for Label {
 impl Label {
 
     /// Initialize an instance of this object using the passed config coming from [ez_parser]
-    pub fn from_config(config: Vec<String>) -> Self {
-        let mut obj = Label::default();
-        obj.load_ez_config(config).unwrap();
+
+    pub fn from_config(config: Vec<String>, id: String, path: String, scheduler: &mut Scheduler)
+                       -> Self {
+
+        let mut obj = Label::new(id, path, scheduler);
+        obj.load_ez_config(config, scheduler).unwrap();
         obj
     }
 }

@@ -1,27 +1,30 @@
-use crate::states::definitions::{AutoScale, BorderConfig, ColorConfig, Coordinates,
-                                 HorizontalAlignment, Padding, PosHint, Size, SizeHint,
+use crate::scheduler::Scheduler;
+use crate::common::definitions::Coordinates;
+use crate::property::{UsizeProperty};
+use crate::states::definitions::{AutoScale, BorderConfig, ColorConfig, HorizontalAlignment,
+                                 Padding, PosHint, Size, SizeHint, StateCoordinates,
                                  VerticalAlignment};
 use crate::states::state::GenericState;
 
 
 /// [State] implementation for [Button].
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct SliderState {
 
     /// Current value of the slider
-    pub value: isize,
+    pub value: UsizeProperty,
 
     /// Low boundary of the slider
-    pub minimum: isize,
+    pub minimum: usize,
 
     /// Upper boundary of the slider
-    pub maximum: isize,
+    pub maximum: usize,
 
     /// Amount to change value by when moved one step
     pub step: usize,
 
     /// Position of this widget relative to its' parent [Layout]
-    pub position: Coordinates,
+    pub position: StateCoordinates,
 
     /// Absolute position of this layout on screen. Automatically propagated, do not set manually
     pub absolute_position: Coordinates,
@@ -70,15 +73,16 @@ pub struct SliderState {
     /// that fall within this widget must be redrawn, call [EzObject.redraw] instead.
     pub force_redraw: bool,
 }
-impl Default for SliderState {
-    fn default() -> Self {
+impl SliderState {
+
+    pub fn new(path: String, scheduler: &mut Scheduler) -> Self {
 
        SliderState {
-           value: 0,
+           value: scheduler.new_usize_property(format!("{}/value", path.clone()), 0),
            minimum: 0,
            maximum: 100,
            step: 1,
-           position: Coordinates::default(),
+           position: StateCoordinates::new(0, 0, path, scheduler),
            absolute_position: Coordinates::default(),
            size: Size::default(),
            size_hint: SizeHint::default(),
@@ -130,9 +134,12 @@ impl GenericState for SliderState {
 
     fn get_size_mut(&mut self) -> &mut Size { &mut self.size }
 
-    fn set_position(&mut self, position: Coordinates) { self.position = position; }
+    fn get_position(&self) -> &StateCoordinates { &self.position }
 
-    fn get_position(&self) -> Coordinates { self.position }
+    fn get_position_mut(&mut self) -> &mut StateCoordinates {
+        self.changed = true;
+        &mut self.position
+    }
 
     fn set_absolute_position(&mut self, pos: Coordinates) { self.absolute_position = pos }
 
@@ -215,28 +222,28 @@ impl GenericState for SliderState {
 }
 impl SliderState {
 
-    pub fn set_value(&mut self, value: isize) {
-        if self.value != value { self.changed = true }
-        self.value = value;
+    pub fn set_value(&mut self, value: usize) {
+        if self.value.get() != value { self.changed = true }
+        self.value.set(value);
         self.validate();
     }
 
-    pub fn get_value(&self) -> isize { self.value }
+    pub fn get_value(&self) -> usize { self.value.get() }
 
-    pub fn set_minimum(&mut self, minimum: isize) {
+    pub fn set_minimum(&mut self, minimum: usize) {
         if self.minimum != minimum { self.changed = true }
         self.minimum = minimum;
         self.validate();
     }
-    pub fn get_minimum(&self) -> isize { self.minimum }
+    pub fn get_minimum(&self) -> usize { self.minimum }
 
-    pub fn set_maximum(&mut self, maximum: isize) {
+    pub fn set_maximum(&mut self, maximum: usize) {
         if self.maximum != maximum { self.changed = true }
         self.maximum = maximum;
         self.validate();
     }
 
-    pub fn get_maximum(&self) -> isize { self.maximum }
+    pub fn get_maximum(&self) -> usize { self.maximum }
 
     pub fn set_step(&mut self, step: usize) {
         if self.step != step { self.changed = true }
@@ -248,8 +255,8 @@ impl SliderState {
 
     pub fn validate(&self) {
         if self.minimum >= self.maximum {panic!("Slider minimum must be lower than maximum")}
-        if self.minimum % self.step as isize != 0 {panic!("Slider minimum must be a multiple of step")}
-        if self.maximum % self.step as isize!= 0 {panic!("Slider maximum must be a multiple of step")}
-        if self.value % self.step as isize != 0 {panic!("Slider value must be a multiple of step")}
+        if self.minimum % self.step as usize != 0 {panic!("Slider minimum must be a multiple of step")}
+        if self.maximum % self.step as usize!= 0 {panic!("Slider maximum must be a multiple of step")}
+        if self.value.get() % self.step as usize != 0 {panic!("Slider value must be a multiple of step")}
     }
 }

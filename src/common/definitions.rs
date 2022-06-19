@@ -1,10 +1,11 @@
 use std::collections::HashMap;
 use crossterm::event::KeyCode;
 use crossterm::style::StyledContent;
-use crate::{scheduler, states};
+use crate::scheduler;
 use crate::widgets::widget::{Pixel, EzObjects};
+use crate::states::definitions::CallbackConfig;
 use crate::states::state::{EzState};
-use crate::ez_parser::EzWidgetDefinition;
+use crate::parser::EzWidgetDefinition;
 
 
 /// # Convenience types
@@ -44,7 +45,7 @@ pub type StateTree = HashMap<String, EzState>;
 /// of a widget that is not in its' State. Widgets are represented by the EzWidget enum, but
 /// can be cast to the generic UxObject or IsWidget trait. If you are sure of the type of widget
 /// you are dealing with it can also be cast to specific widget types.
-pub type CallbackTree = HashMap<String, states::definitions::CallbackConfig>;
+pub type CallbackTree = HashMap<String, CallbackConfig>;
 
 
 /// ## Widget tree:
@@ -64,14 +65,14 @@ pub type KeyboardCallbackFunction = Box<dyn FnMut(EzContext, KeyCode) -> bool >;
 /// ## Mouse callback function:
 /// This is used for binding mouse event callbacks to widgets, meaning that any callback functions
 /// user makes should use this signature.
-pub type MouseCallbackFunction = Box<dyn FnMut(EzContext, states::definitions::Coordinates) -> bool>;
+pub type MouseCallbackFunction = Box<dyn FnMut(EzContext, Coordinates) -> bool>;
 
 
 /// ## Optional mouse callback function:
 /// This is used for callbacks that may or may not have been initiated by mouse. 'on_select' uses
 /// this for example, because a widget may have been selected by mouse, or maybe by keyboard.
 pub type OptionalMouseCallbackFunction = Box<dyn FnMut(
-    EzContext, Option<states::definitions::Coordinates>) -> bool>;
+    EzContext, Option<Coordinates>) -> bool>;
 
 
 /// ## Generic Ez function:
@@ -110,5 +111,24 @@ impl<'a, 'b , 'c, 'd> EzContext<'a, 'b , 'c, 'd> {
     pub fn new(widget_path: String, view_tree: &'a mut ViewTree, state_tree: &'b mut StateTree,
                widget_tree: &'c WidgetTree, scheduler: &'d mut scheduler::Scheduler) -> Self {
         EzContext { widget_path, view_tree, state_tree, widget_tree, scheduler }
+    }
+}
+
+
+/// Convenience wrapper around an XY tuple.
+#[derive(PartialEq, Clone, Copy, Debug)]
+pub struct Coordinates {
+    pub x: usize,
+    pub y: usize,
+}
+impl Coordinates {
+    pub fn new(x: usize, y: usize) -> Self {
+        Coordinates{x, y}
+    }
+}
+impl Default for Coordinates {
+
+    fn default() -> Self {
+        Coordinates{x: 0, y: 0}
     }
 }

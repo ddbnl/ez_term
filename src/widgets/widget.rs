@@ -4,8 +4,8 @@
 use crossterm::style::{Color, StyledContent, Stylize};
 use std::io::{Error};
 use crossterm::event::Event;
-use crate::{common, states};
-use crate::common::definitions::{CallbackTree, StateTree, ViewTree, WidgetTree};
+use crate::common;
+use crate::common::definitions::{CallbackTree, StateTree, ViewTree, WidgetTree, Coordinates};
 use crate::scheduler::Scheduler;
 use crate::states::state::{EzState, GenericState};
 use crate::widgets::layout::{Layout};
@@ -24,7 +24,7 @@ use crate::widgets::text_input::{TextInput};
 /// widget, so this enum gathers widgets and layouts in one place, as they do have methods in
 /// common (e.g. both have positions, sizes, etc.). To access common methods, cast this enum
 /// into a EzObject (trait for Layouts+Widgets) or EzWidget (Widgets only).
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum EzObjects {
     Layout(Layout),
     Label(Label),
@@ -216,20 +216,22 @@ pub trait EzObject {
 
     /// Accepts config lines from the ez_parser module and prepares them to be loaded by
     /// load_ez_parameter below.
-    fn load_ez_config(&mut self, config: Vec<String>) -> Result<(), Error> {
+    fn load_ez_config(&mut self, config: Vec<String>, scheduler: &mut Scheduler) -> Result<(), Error> {
         for line in config {
             let (parameter_name, parameter_value) = line.split_once(':')
                 .unwrap_or_else(|| panic!("Config parameter must contain a \":\", \
                 e.g. \"parameter: value\". This does not contain one: \"{}\"", line));
             self.load_ez_parameter(parameter_name.to_string(),
-                                   parameter_value.to_string());
+                                   parameter_value.to_string(),
+                                    scheduler);
         }
         Ok(())
     }
 
     /// Load parameters for an object. Overloaded in each Widget/Layout module to load parameters
     /// specific to the respective widget definition.
-    fn load_ez_parameter(&mut self, parameter_name: String, parameter_value: String);
+    fn load_ez_parameter(&mut self, parameter_name: String, parameter_value: String,
+                         scheduler: &mut Scheduler);
 
     /// Set ID of the widget. IDs are used to create widgets paths. E.g.
     /// "/root_layout/sub_layout/widget_1".
@@ -321,7 +323,7 @@ pub trait EzObject {
     /// call the callback.
     fn on_left_mouse_click(&self, view_tree: &mut ViewTree, state_tree: &mut StateTree,
                            widget_tree: &WidgetTree, callback_tree: &mut CallbackTree,
-                           scheduler: &mut Scheduler, mouse_pos: states::definitions::Coordinates)
+                           scheduler: &mut Scheduler, mouse_pos: Coordinates)
         -> bool {
 
         let mut consumed = false;
@@ -357,7 +359,7 @@ pub trait EzObject {
     /// the callback.
     fn on_right_mouse_click(&self, view_tree: &mut ViewTree, state_tree: &mut StateTree,
                             widget_tree: &WidgetTree, callback_tree: &mut CallbackTree,
-                            scheduler: &mut Scheduler, mouse_pos: states::definitions::Coordinates)
+                            scheduler: &mut Scheduler, mouse_pos: Coordinates)
         -> bool {
 
         if let Some(ref mut i) = callback_tree
@@ -389,7 +391,7 @@ pub trait EzObject {
     /// the callback.
     fn on_select(&self, view_tree: &mut ViewTree, state_tree: &mut StateTree,
                  widget_tree: &WidgetTree, callback_tree: &mut CallbackTree,
-                 scheduler: &mut Scheduler, mouse_pos: Option<states::definitions::Coordinates>)
+                 scheduler: &mut Scheduler, mouse_pos: Option<Coordinates>)
         -> bool {
 
         if let Some(ref mut i) = callback_tree
@@ -427,7 +429,7 @@ pub trait EzObject {
 
 /// Struct representing a single X,Y position on the screen. It has a symbol, colors, and other
 /// properties governing how the position will look on screen.
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Pixel {
 
     /// Symbol drawn on screen.

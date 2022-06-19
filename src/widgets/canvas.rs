@@ -8,9 +8,10 @@ use crate::states::canvas_state::CanvasState;
 use crate::states::state::{EzState, GenericState};
 use crate::common;
 use unicode_segmentation::UnicodeSegmentation;
-use crate::ez_parser;
+use crate::parser;
+use crate::scheduler::Scheduler;
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Canvas {
     /// ID of the widget, used to construct [path]
     pub id: String,
@@ -29,26 +30,27 @@ pub struct Canvas {
 }
 
 
-impl Default for Canvas {
+impl Canvas {
 
-    fn default() -> Self {
+    pub fn new(id: String, path: String, scheduler: &mut Scheduler) -> Self {
 
         Canvas {
-            id: "".to_string(),
-            path: String::new(),
+            id,
+            path: path.clone(),
             from_file: None,
             contents: Vec::new(),
-            state: CanvasState::default(),
+            state: CanvasState::new(path, scheduler),
         }
     }
 }
 
 
 impl EzObject for Canvas {
-    fn load_ez_parameter(&mut self, parameter_name: String, parameter_value: String) {
+    fn load_ez_parameter(&mut self, parameter_name: String, parameter_value: String,
+                         scheduler: &mut Scheduler) {
 
-        let consumed = ez_parser::load_common_parameters(
-            &parameter_name, parameter_value.clone(),Box::new(self));
+        let consumed = parser::load_common_parameters(
+            &parameter_name, parameter_value.clone(),Box::new(self), scheduler);
         if consumed { return }
         match parameter_name.as_str() {
             "from_file" => self.from_file = Some(parameter_value.trim().to_string()),
@@ -148,9 +150,11 @@ impl EzObject for Canvas {
 impl Canvas {
 
     /// Load this widget from a config vector coming from [ez_parser]
-    pub fn from_config(config: Vec<String>) -> Self {
-        let mut obj = Canvas::default();
-        obj.load_ez_config(config).unwrap();
+    pub fn from_config(config: Vec<String>, id: String, path: String, scheduler: &mut Scheduler)
+                       -> Self {
+
+        let mut obj = Canvas::new(id, path, scheduler);
+        obj.load_ez_config(config, scheduler).unwrap();
         obj
     }
 }

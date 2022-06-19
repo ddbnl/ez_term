@@ -1,20 +1,21 @@
 //! # Widget state:
 //! A module containing the base structs and traits for widget states.
 use crossterm::style::Color;
+use crate::common::definitions::Coordinates;
 use crate::states::canvas_state::{CanvasState};
 use crate::states::label_state::{LabelState};
 use crate::states::button_state::{ButtonState};
 use crate::states::checkbox_state::{CheckboxState};
-use crate::states::definitions::{AutoScale, BorderConfig, ColorConfig, Coordinates,
+use crate::states::definitions::{AutoScale, BorderConfig, ColorConfig,
                                  HorizontalAlignment, HorizontalPositionHint, Padding, PosHint,
-                                 Size, SizeHint, VerticalAlignment, VerticalPositionHint};
+                                 Size, SizeHint, StateCoordinates, VerticalAlignment,
+                                 VerticalPositionHint};
 use crate::states::dropdown_state::{DropdownState, DroppedDownMenuState};
 use crate::states::layout_state::LayoutState;
 use crate::states::progress_bar_state::ProgressBarState;
 use crate::states::radio_button_state::{RadioButtonState};
 use crate::states::slider_state::SliderState;
 use crate::states::text_input_state::{TextInputState};
-use crate::widgets::progress_bar::ProgressBar;
 
 
 /// Widget states are used to keep track of dynamic run time information of widgets, such as the
@@ -23,7 +24,7 @@ use crate::widgets::progress_bar::ProgressBar;
 /// mutable ref to the widget itself. Every frame the StateTree is compared to each widget to see
 /// which widget has changed so it can be redrawn. The specific state struct for each widget type
 /// is defined its' own module.
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum EzState {
     Layout(LayoutState),
     Label(LabelState),
@@ -304,13 +305,13 @@ pub trait GenericState {
         let width_result: isize = size_copy.width as isize
             -if self.get_border_config().enabled {2} else {0}
             -self.get_padding().left as isize - self.get_padding().right as isize;
-        let width = if width_result < 0 {0} else { width_result as usize};
+        let width = if width_result < 0 {0} else { width_result };
         let height_result: isize = size_copy.height as isize
             -if self.get_border_config().enabled {2} else {0}
             -self.get_padding().top as isize - self.get_padding().bottom as isize;
-        let height = if height_result < 0 {0} else { height_result as usize};
-        size_copy.width = width;
-        size_copy.height = height;
+        let height = if height_result < 0 {0} else { height_result };
+        size_copy.width = width as usize;
+        size_copy.height = height as usize;
         size_copy
     }
 
@@ -330,25 +331,33 @@ pub trait GenericState {
             +self.get_padding().top + self.get_padding().bottom
     }
 
-    /// Hard code position relative to parent, only works in float layout mode
-    fn set_position(&mut self, pos: Coordinates);
-
-    /// Set the x coordinate relative to parent, only works in float layout mode
-    fn set_x(&mut self, x: usize) { self.set_position(Coordinates::new(x, self.get_position().y)) }
-
-    /// Set the x coordinate relative to parent, only works in float layout mode
-    fn set_y(&mut self, y: usize) { self.set_position(Coordinates::new(self.get_position().x, y)) }
-
     /// Get position relative to parent
-    fn get_position(&self) -> Coordinates;
+    fn get_position(&self) -> &StateCoordinates;
+
+    /// Get mut position relative to parent
+    fn get_position_mut(&mut self) -> &mut StateCoordinates;
+
+    /// Set x coordinate of [Position]
+    fn set_x(&mut self, x: usize) {
+        if x != self.get_position().x.get() {
+            self.get_position_mut().x.set(x);
+        }
+    }
+
+    /// Set y coordinate of [Position]
+    fn set_y(&mut self, y: usize) {
+        if y != self.get_position().y.get() {
+            self.get_position_mut().y.set(y);
+        }
+    }
 
     /// Get position where the actual content of this widget starts relative to parent, taking out
     /// e.g. borders, padding, etc.
     fn get_effective_position(&self) -> Coordinates {
         Coordinates::new(
-            self.get_position().x +if self.get_border_config().enabled {1}
+            self.get_position().x.get() +if self.get_border_config().enabled {1}
             else {0} + self.get_padding().left,
-            self.get_position().y +if self.get_border_config().enabled {1}
+            self.get_position().y.get() +if self.get_border_config().enabled {1}
             else {0} + self.get_padding().top)
     }
 

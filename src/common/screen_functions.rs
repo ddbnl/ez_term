@@ -5,23 +5,23 @@ use crossterm::{QueueableCommand, cursor, ExecutableCommand};
 use std::io::{stdout, Write};
 use std::collections::HashMap;
 use crate::common;
-use crate::common::definitions::{StateTree, ViewTree};
+use crate::common::definitions::{StateTree, ViewTree, Coordinates};
 use crate::widgets::layout::Layout;
-use crate::states;
+use crate::states::definitions::CallbackConfig;
 use crate::widgets::widget::{Pixel, EzObject};
 
 
 /// Write content to a [ViewTree]. Only writes differences. By writing to a view tree first and then
 /// only writing the [ViewTree] to screen at the end of a frame cycle, we avoid unnecessary
 /// expensive screen writing operations.
-pub fn write_to_view_tree(base_position: states::definitions::Coordinates,
+pub fn write_to_view_tree(base_position: Coordinates,
                           content: common::definitions::PixelMap,
                           view_tree: &mut common::definitions::ViewTree) {
 
     for x in 0..content.len() {
         for y in 0..content[x].len() {
             let write_pos =
-                states::definitions::Coordinates::new(base_position.x + x, base_position.y + y);
+                Coordinates::new(base_position.x + x, base_position.y + y);
             if write_pos.x < view_tree.len() && write_pos.y < view_tree[write_pos.x].len() {
                 view_tree[write_pos.x][write_pos.y] = content[x][y].get_pixel().clone();
             }
@@ -183,10 +183,10 @@ pub fn initialize_callback_tree(root_layout: &Layout) -> common::definitions::Ca
 
     let mut callback_tree = HashMap::new();
     for (child_path, _child) in root_layout.get_widgets_recursive() {
-        callback_tree.insert(child_path, states::definitions::CallbackConfig::default());
+        callback_tree.insert(child_path, CallbackConfig::default());
     }
     callback_tree.insert(root_layout.get_full_path(),
-                         states::definitions::CallbackConfig::default());
+                         CallbackConfig::default());
     callback_tree
 }
 

@@ -9,11 +9,10 @@ use crossterm::{ExecutableCommand, execute, Result, cursor::{Hide, Show},
                         EnableMouseCapture, Event, KeyCode, KeyEvent},
                 terminal::{disable_raw_mode, enable_raw_mode, self}, QueueableCommand};
 use crate::common;
-use crate::common::definitions::{CallbackTree, StateTree, ViewTree, WidgetTree};
+use crate::common::definitions::{CallbackTree, StateTree, ViewTree, WidgetTree, Coordinates};
 use crate::widgets::layout::Layout;
 use crate::widgets::widget::{EzObject};
 use crate::scheduler::{Scheduler};
-use crate::states;
 use crate::widgets::widget;
 
 
@@ -76,7 +75,7 @@ fn initialize_widgets(root_widget: &mut Layout) -> (ViewTree, StateTree) {
         all_content.len(),all_content[0].len());
     let mut view_tree = old_view_tree.clone();
     common::screen_functions::write_to_view_tree(
-        states::definitions::Coordinates::new(0, 0), all_content, &mut view_tree);
+        Coordinates::new(0, 0), all_content, &mut view_tree);
     common::screen_functions::write_to_screen(&old_view_tree, &view_tree);
     (view_tree, state_tree)
 
@@ -114,7 +113,7 @@ fn run_loop(mut root_widget: Layout, mut callback_tree: CallbackTree, mut schedu
 
         let widget_tree = root_widget.get_widget_tree();
         // Now we check for and deal with a possible event
-        if poll(Duration::from_millis(16))? {
+        if poll(Duration::from_millis(32))? {
 
             // Get the event; it can only be consumed once
             let mut consumed = false;
@@ -134,6 +133,7 @@ fn run_loop(mut root_widget: Layout, mut callback_tree: CallbackTree, mut schedu
                                 event = spam_event.unwrap();
                             }
                         } else {
+                            event = spam_event.unwrap();
                             break
                         }
                     }
@@ -197,12 +197,13 @@ fn run_loop(mut root_widget: Layout, mut callback_tree: CallbackTree, mut schedu
             }
 
         }
-        if last_update.elapsed() < Duration::from_millis(16) { continue }
+        if last_update.elapsed() < Duration::from_millis(32) { continue }
         {
             let widget_tree = root_widget.get_widget_tree();
             scheduler.update_callback_configs(&mut callback_tree);
             scheduler.run_tasks(
                 &mut view_tree, &mut state_tree, &widget_tree, &mut callback_tree);
+            scheduler.update_properties(&mut state_tree);
         }
         root_widget.state = state_tree.get("/root").unwrap().as_layout().clone();
         common::screen_functions::clean_trees(
@@ -216,7 +217,7 @@ fn run_loop(mut root_widget: Layout, mut callback_tree: CallbackTree, mut schedu
         if forced_redraw {
             let contents = root_widget.get_contents(&mut state_tree);
             common::screen_functions::write_to_view_tree(
-                states::definitions::Coordinates::new(0, 0), contents,
+                Coordinates::new(0, 0), contents,
                 &mut view_tree);
         }
         common::screen_functions::write_to_screen(&old_view_tree, &view_tree);
@@ -326,7 +327,7 @@ fn handle_mouse_event(event: MouseEvent, view_tree: &mut ViewTree, state_tree: &
                       scheduler: &mut Scheduler) -> bool {
 
     if let MouseEventKind::Down(button) = event.kind {
-        let mouse_position = states::definitions::Coordinates::new(
+        let mouse_position = Coordinates::new(
             event.column as usize,event.row as usize);
         for widget in common::selection_functions::get_widget_by_position(
             mouse_position, widget_tree, state_tree) {
@@ -334,7 +335,7 @@ fn handle_mouse_event(event: MouseEvent, view_tree: &mut ViewTree, state_tree: &
             let abs = state_tree.get(&widget.get_full_path()).unwrap()
                 .as_generic()
                 .get_absolute_position();
-            let relative_position = states::definitions::Coordinates::new(
+            let relative_position = Coordinates::new(
                 mouse_position.x - abs.x, mouse_position.y - abs.y);
             let consumed = match button {
                 MouseButton::Left => {
@@ -381,7 +382,7 @@ fn handle_resize(state_tree: &mut StateTree, root_widget: &mut Layout,
     stdout().queue(terminal::Clear(terminal::ClearType::All)).unwrap();
     let mut view_tree = old_view_tree.clone();
     common::screen_functions::write_to_view_tree(
-        states::definitions::Coordinates::new(0, 0), contents,
+        Coordinates::new(0, 0), contents,
         &mut view_tree);
     common::screen_functions::write_to_screen(&old_view_tree, &view_tree);
     old_view_tree

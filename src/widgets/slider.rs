@@ -1,17 +1,16 @@
 //! A widget that displays text non-interactively.
 use std::cmp::min;
-use std::io::Error;
 use crossterm::event::{Event, KeyCode};
 use crate::states::state::{EzState, GenericState};
 use crate::common;
-use crate::common::definitions::{CallbackTree, EzContext, PixelMap, StateTree, ViewTree, WidgetTree};
+use crate::common::definitions::{CallbackTree, EzContext, PixelMap, StateTree, ViewTree, WidgetTree,
+                                 Coordinates};
 use crate::widgets::widget::{Pixel, EzObject};
-use crate::ez_parser;
+use crate::parser;
 use crate::scheduler::Scheduler;
-use crate::states::definitions::Coordinates;
 use crate::states::slider_state::SliderState;
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Slider {
 
     /// ID of the widget, used to construct [path]
@@ -24,12 +23,12 @@ pub struct Slider {
     pub state: SliderState,
 }
 
-impl Default for Slider {
-    fn default() -> Self {
+impl Slider {
+    fn new(id: String, path: String, scheduler: &mut Scheduler) -> Self {
         Slider {
-            id: "".to_string(),
-            path: String::new(),
-            state: SliderState::default(),
+            id,
+            path: path.clone(),
+            state: SliderState::new(path, scheduler),
         }
     }
 }
@@ -37,9 +36,10 @@ impl Default for Slider {
 
 impl EzObject for Slider {
 
-    fn load_ez_parameter(&mut self, parameter_name: String, parameter_value: String) {
-        let consumed = ez_parser::load_common_parameters(
-            &parameter_name, parameter_value.clone(), Box::new(self));
+    fn load_ez_parameter(&mut self, parameter_name: String, parameter_value: String,
+                         scheduler: &mut Scheduler) {
+        let consumed = parser::load_common_parameters(
+            &parameter_name, parameter_value.clone(), Box::new(self), scheduler);
         if consumed { return }
         match parameter_name.as_str() {
             "value" => self.state.set_value(parameter_value.trim().parse().unwrap()),
@@ -68,14 +68,14 @@ impl EzObject for Slider {
             .as_slider_mut();
         state.size.height = 1;
         if state.auto_scale.width {
-            state.set_effective_width(((state.maximum - state.minimum) / state.step as isize)
+            state.set_effective_width(((state.maximum - state.minimum) / state.step as usize)
                 as usize + 1);
         }
 
         let mut contents = PixelMap::new();
         let value_pos =
             ((state.get_effective_size().width - 1) as f64 *
-            ((state.value - state.minimum) as f64 / (state.maximum - state.minimum) as f64))
+            ((state.value.get() - state.minimum) as f64 / (state.maximum - state.minimum) as f64))
                 as usize;
         for x in 0..state.get_effective_size().width {
             let fg_color =
@@ -123,8 +123,8 @@ impl EzObject for Slider {
         let state = state_tree.get_mut(&self.path).unwrap().as_slider_mut();
         let ratio = ((state.maximum - state.minimum) as f64
             / state.get_effective_size().width as f64);
-        let mut value = (ratio * mouse_pos.x as f64) as isize + state.minimum;
-        value -= (value % state.step as isize);
+        let mut value = (ratio * mouse_pos.x as f64) as usize + state.minimum;
+        value -= (value % state.step as usize);
         value = min(value, state.maximum);
         state.set_value(value);
 
@@ -139,9 +139,11 @@ impl EzObject for Slider {
 impl Slider {
 
     /// Initialize an instance of this object using the passed config coming from [ez_parser]
-    pub fn from_config(config: Vec<String>) -> Self {
-        let mut obj = Slider::default();
-        obj.load_ez_config(config).unwrap();
+    pub fn from_config(config: Vec<String>, id: String, path: String, scheduler: &mut Scheduler)
+                       -> Self {
+
+        let mut obj = Slider::new(id, path, scheduler);
+        obj.load_ez_config(config, scheduler).unwrap();
         obj
     }
 
@@ -149,8 +151,8 @@ impl Slider {
                    widget_tree: &WidgetTree, callback_tree: &mut CallbackTree,
                    scheduler: &mut Scheduler) {
         let state = state_tree.get_mut(&self.path).unwrap().as_slider_mut();
-        if state.value == state.minimum { return }
-        state.set_value(state.get_value() - state.get_step() as isize);
+        if state.value.get() == state.minimum { return }
+        state.set_value(state.get_value() - state.get_step() as usize);
         if let Some(ref mut i ) = callback_tree
             .get_mut(&self.get_full_path()).unwrap().on_value_change {
             i(EzContext::new(self.get_full_path(),
@@ -162,8 +164,8 @@ impl Slider {
                    scheduler: &mut Scheduler) {
 
         let state = state_tree.get_mut(&self.path).unwrap().as_slider_mut();
-        if state.value == state.maximum { return }
-        state.set_value(state.get_value() + state.get_step() as isize);
+        if state.value.get() == state.maximum { return }
+        state.set_value(state.get_value() + state.get_step() as usize);
         if let Some(ref mut i ) = callback_tree
             .get_mut(&self.get_full_path()).unwrap().on_value_change {
             i(EzContext::new(self.get_full_path(),

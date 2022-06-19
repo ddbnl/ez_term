@@ -1,7 +1,8 @@
 //! # Common:
 //! A module containing common static functions used by other modules, as well as common types.
 use crate::scheduler::Scheduler;
-use crate::{common, states};
+use common::definitions::Coordinates;
+use crate::{common};
 use crate::widgets::widget::{EzObject};
 
 
@@ -206,7 +207,7 @@ pub fn find_previous_selection(current_selection: usize,
 
 /// Find a widget by a screen position coordinate. Used e.g. by mouse event handlers. If a modal
 /// if active only the modal is searched.
-pub fn get_widget_by_position<'a>(pos: states::definitions::Coordinates,
+pub fn get_widget_by_position<'a>(pos: Coordinates,
                                   widget_tree: &'a common::definitions::WidgetTree,
                                   state_tree: &common::definitions::StateTree)
     -> Vec<&'a dyn EzObject> {

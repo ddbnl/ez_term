@@ -1,10 +1,11 @@
 use crossterm::style::{Color};
 use crate::common;
-use crate::common::definitions::StateTree;
+use crate::common::definitions::{StateTree};
+use crate::states::definitions::{CallbackConfig, LayoutMode, HorizontalPositionHint,
+                                 VerticalPositionHint, Padding, BorderConfig, VerticalAlignment,
+                                 HorizontalAlignment};
 use crate::scheduler::Scheduler;
 use crate::states::state::{EzState, GenericState};
-use crate::states;
-use crate::states::definitions::LayoutMode;
 use crate::widgets::widget::{EzObjects, Pixel};
 
 
@@ -15,13 +16,13 @@ pub fn open_popup(template: String, state_tree: &mut StateTree,
         .open_popup(template, scheduler);
     state_tree.extend(sub_tree);
     scheduler.set_callback_config(path.clone(),
-                                  states::definitions::CallbackConfig::default());
+                                  CallbackConfig::default());
     let modal = state_tree.get("/root").unwrap().as_layout()
         .open_modals.first().unwrap();
     if let EzObjects::Layout(ref i) = modal {
         for sub_widget in i.get_widgets_recursive().values() {
             scheduler.set_callback_config(sub_widget.as_ez_object().get_full_path(),
-                                          states::definitions::CallbackConfig::default());
+                                          CallbackConfig::default());
         }
     }
     path
@@ -53,32 +54,32 @@ pub fn reposition_with_pos_hint(parent_width: usize, parent_height: usize,
     // Set x by pos_hint if any
     if let Some((keyword, fraction)) = child_state.get_pos_hint().x {
         let initial_pos = match keyword {
-            states::definitions::HorizontalPositionHint::Left => 0,
-            states::definitions::HorizontalPositionHint::Right => parent_width - child_state.get_size().width,
-            states::definitions::HorizontalPositionHint::Center =>
+            HorizontalPositionHint::Left => 0,
+            HorizontalPositionHint::Right => parent_width - child_state.get_size().width,
+            HorizontalPositionHint::Center =>
                 (parent_width as f64 / 2.0).round() as usize -
                     (child_state.get_size().width as f64 / 2.0).round() as usize,
         };
         let x = (initial_pos as f64 * fraction).round() as usize;
-        child_state.set_x(x);
+        child_state.get_position_mut().x.set(x);
     }
     // Set y by pos hint if any
     if let Some((keyword, fraction)) = child_state.get_pos_hint().y {
         let initial_pos = match keyword {
-            states::definitions::VerticalPositionHint::Top => 0,
-            states::definitions::VerticalPositionHint::Bottom => parent_height - child_state.get_size().height,
-            states::definitions::VerticalPositionHint::Middle =>
+            VerticalPositionHint::Top => 0,
+            VerticalPositionHint::Bottom => parent_height - child_state.get_size().height,
+            VerticalPositionHint::Middle =>
                 (parent_height as f64 / 2.0).round() as usize -
                     (child_state.get_size().height as f64 / 2.0).round() as usize,
         };
         let y = (initial_pos as f64 * fraction).round() as usize;
-        child_state.set_y(y);
+        child_state.get_position_mut().y.set(y);
     }
 }
 
 
 /// Add a border around a PixelMap.
-pub fn add_border(mut content: common::definitions::PixelMap, config: &states::definitions::BorderConfig) -> common::definitions::PixelMap {
+pub fn add_border(mut content: common::definitions::PixelMap, config: &BorderConfig) -> common::definitions::PixelMap {
     if content.is_empty() { return content }
     // Create border elements
     let horizontal_border = Pixel::new(config.horizontal_symbol.clone(),
@@ -126,7 +127,7 @@ pub fn add_border(mut content: common::definitions::PixelMap, config: &states::d
 
 
 /// Add padding around a PixelMap.
-pub fn add_padding(mut content: common::definitions::PixelMap, padding: &states::definitions::Padding, bg_color: Color, fg_color: Color)
+pub fn add_padding(mut content: common::definitions::PixelMap, padding: &Padding, bg_color: Color, fg_color: Color)
                    -> common::definitions::PixelMap {
 
     if content.is_empty() {
@@ -174,7 +175,7 @@ pub fn add_padding(mut content: common::definitions::PixelMap, padding: &states:
 /// .XXX.
 ///
 /// With offset 1.
-pub fn align_content_horizontally(mut content: common::definitions::PixelMap, halign: states::definitions::HorizontalAlignment,
+pub fn align_content_horizontally(mut content: common::definitions::PixelMap, halign: HorizontalAlignment,
                                   total_width: usize, fg_color: Color, bg_color: Color)
                                   -> (common::definitions::PixelMap, usize) {
 
@@ -184,11 +185,11 @@ pub fn align_content_horizontally(mut content: common::definitions::PixelMap, ha
     for i in 0..total_width - content.len() {
         match halign {
             // Widgets are aligned left by default
-            states::definitions::HorizontalAlignment::Left => {
+            HorizontalAlignment::Left => {
 
             },
             // We align right by filling out empty space from the left
-            states::definitions::HorizontalAlignment::Right => {
+            HorizontalAlignment::Right => {
                 content.insert(0, Vec::new());
                 offset += 1;
                 for _ in 0..content.last().unwrap().len() {
@@ -196,7 +197,7 @@ pub fn align_content_horizontally(mut content: common::definitions::PixelMap, ha
                 }
             },
             // We align in the center by filling out empty space alternating left and right
-            states::definitions::HorizontalAlignment::Center => {
+            HorizontalAlignment::Center => {
                 if i % 2 == 0 {
                     content.push(Vec::new());
                     for _ in 0..content[0].len() {
@@ -229,7 +230,7 @@ pub fn align_content_horizontally(mut content: common::definitions::PixelMap, ha
 /// ````
 /// With offset 1.
 pub fn align_content_vertically(mut content: common::definitions::PixelMap,
-                                valign: states::definitions::VerticalAlignment,
+                                valign: VerticalAlignment,
                                 total_height: usize, fg_color: Color, bg_color: Color)
                                 -> (common::definitions::PixelMap, usize){
 
@@ -241,17 +242,17 @@ pub fn align_content_vertically(mut content: common::definitions::PixelMap,
         for j in 0..total_height - x.len() {
             match valign {
                 // Widgets are aligned to top by default.
-                states::definitions::VerticalAlignment::Top => {
+                VerticalAlignment::Top => {
                 },
                 // We align bottom by filling out empty space to the top
-                states::definitions::VerticalAlignment::Bottom => {
+                VerticalAlignment::Bottom => {
                     x.insert(0, empty_pixel.clone());
                     if i == 0 {
                         offset += 1;
                     }
                 },
                 // We align in the middle by filling out empty space alternating top and bottom
-                states::definitions::VerticalAlignment::Middle => {
+                VerticalAlignment::Middle => {
                     if j % 2 == 0 {
                         x.push(empty_pixel.clone());
                     } else {

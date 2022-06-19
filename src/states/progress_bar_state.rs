@@ -1,18 +1,23 @@
-use crate::states::definitions::{AutoScale, BorderConfig, ColorConfig, Coordinates,
+use crate::scheduler::Scheduler;
+use crate::common::definitions::Coordinates;
+use crate::states::definitions::{AutoScale, BorderConfig, ColorConfig, StateCoordinates,
                                  HorizontalAlignment, Padding, PosHint, Size, SizeHint,
                                  VerticalAlignment};
 use crate::states::state::GenericState;
 
 
 /// [State] implementation for [ProgressBar].
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct ProgressBarState {
 
+    /// Max value of the slider (i.e. when it's finished)
+    pub max: usize,
+
     /// Current value of the slider
-    pub value: f64,
+    pub value: usize,
 
     /// Position of this widget relative to its' parent [Layout]
-    pub position: Coordinates,
+    pub position: StateCoordinates,
 
     /// Absolute position of this layout on screen. Automatically propagated, do not set manually
     pub absolute_position: Coordinates,
@@ -58,12 +63,14 @@ pub struct ProgressBarState {
     /// that fall within this widget must be redrawn, call [EzObject.redraw] instead.
     pub force_redraw: bool,
 }
-impl Default for ProgressBarState {
-    fn default() -> Self {
+impl ProgressBarState {
+
+    pub fn new(path: String, scheduler: &mut Scheduler) -> Self {
 
        ProgressBarState {
-           value: 0.0,
-           position: Coordinates::default(),
+           max: 100,
+           value: 0,
+           position: StateCoordinates::new(0, 0, path, scheduler),
            absolute_position: Coordinates::default(),
            size: Size::default(),
            size_hint: SizeHint::default(),
@@ -114,9 +121,12 @@ impl GenericState for ProgressBarState {
 
     fn get_size_mut(&mut self) -> &mut Size { &mut self.size }
 
-    fn set_position(&mut self, position: Coordinates) { self.position = position; }
+    fn get_position(&self) -> &StateCoordinates { &self.position }
 
-    fn get_position(&self) -> Coordinates { self.position }
+    fn get_position_mut(&mut self) -> &mut StateCoordinates {
+        self.changed = true;
+        &mut self.position
+    }
 
     fn set_absolute_position(&mut self, pos: Coordinates) { self.absolute_position = pos }
 
@@ -192,20 +202,29 @@ impl GenericState for ProgressBarState {
 }
 impl ProgressBarState {
 
-    /// Set value of the progress bar. Must be a number between 0 and 1.
-    pub fn set_value(&mut self, value: f64) {
-        if value < 0.0 || value > 1.0 {panic!("Progress bar value must be between 0 and 1")}
+    pub fn set_value(&mut self, mut value: usize) {
+        value = if value > self.max {self.max} else { value };
         if self.value != value { self.changed = true }
         self.value = value;
     }
 
-    pub fn get_value(&self) -> f64 { self.value }
+    pub fn get_value(&self) -> usize { self.value }
+
+    pub fn set_max_value(&mut self, mut max_value: usize) {
+        if self.value > max_value {
+            self.set_value(max_value)
+        }
+        if self.max != max_value { self.changed = true }
+        self.max = max_value;
+    }
+
+    pub fn get_max_value(&self) -> usize { self.max }
 
     /// Convenience func. Set the progress bar based on two numbers: progress and total. For
     /// example when tracking progress of copying files, pass the number of copied files as
     /// 'progress' and the total number of files as 'total'. These values will be normalized to a
     /// number between 0 and 1 and passed to [set_value].
-    pub fn set_value_from_progress(&mut self, progress: usize, total: usize) {
-        self.set_value(progress as f64 / total as f64)
+    pub fn get_normalized_value(&mut self) -> f64 {
+        self.value as f64 / self.max as f64
     }
 }

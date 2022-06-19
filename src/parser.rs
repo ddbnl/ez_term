@@ -9,6 +9,10 @@ use crossterm::style::{Color};
 use std::str::FromStr;
 use crossterm::terminal::size;
 use unicode_segmentation::UnicodeSegmentation;
+use crate::common::definitions::Coordinates;
+use crate::states::definitions::{HorizontalAlignment, VerticalAlignment, AutoScale, Size,
+                                 SizeHint, Padding, ScrollingConfig, PosHint,
+                                 HorizontalPositionHint, VerticalPositionHint};
 use crate::widgets::layout::{Layout};
 use crate::widgets::canvas::Canvas;
 use crate::widgets::label::Label;
@@ -18,12 +22,11 @@ use crate::widgets::checkbox::Checkbox;
 use crate::widgets::text_input::TextInput;
 use crate::widgets::dropdown::Dropdown;
 use crate::widgets::widget::{EzObjects, EzObject};
-use crate::{states};
-use crate::common::definitions::Templates;
+use crate::common::definitions::{StateTree, Templates};
 use crate::scheduler::Scheduler;
-use crate::states::state::{EzState, GenericState};
 use crate::widgets::progress_bar::ProgressBar;
 use crate::widgets::slider::Slider;
+use crate::states::state::GenericState;
 
 
 /// Load a file path into a root Layout. Return the root widget and a new scheduler. Both will
@@ -100,14 +103,14 @@ impl EzWidgetDefinition {
         let (config, mut sub_widgets, _) =
             parse_level(self.content.clone(), self.indentation_offset, self.line_offset)
                 .unwrap();
-        let mut initialized = Layout::default();
-        initialized.set_id("root".to_string());
-        initialized.set_full_path("/root".to_string());
+        let mut initialized = Layout::new("root".to_string(), "/root".to_string(),
+                                                  scheduler);
         for line in config {
             let (parameter_name, parameter_value) = line.split_once(':')
                 .unwrap();
             initialized.load_ez_parameter(parameter_name.to_string(),
-                                          parameter_value.to_string());
+                                          parameter_value.to_string(),
+                                          scheduler);
         }
         for (i, sub_widget) in sub_widgets.iter_mut().enumerate() {
             let initialized_sub_widget = sub_widget.parse(
@@ -152,20 +155,14 @@ impl EzWidgetDefinition {
             }
             config = merged_config;
         }
-        let mut initialized = self.initialize(config, templates, scheduler,
+        let initialized = self.initialize(config, templates, scheduler,
                                           parent_path.clone(), order).unwrap();
-        let id=
-            if initialized.as_ez_object().get_id().is_empty() {
-                let auto_id = order.to_string();
-                initialized.as_ez_object_mut().set_id(auto_id.clone());
-                auto_id
-            } else { initialized.as_ez_object().get_id() };
-        let path = format!("{}/{}", parent_path, id);
-        initialized.as_ez_object_mut().set_full_path(path.clone());
+        let parent_path = initialized.as_ez_object().get_full_path();
+
         if let EzObjects::Layout(mut obj) = initialized {
             for (i, sub_widget) in sub_widgets.iter_mut().enumerate() {
                 let initialized_sub_widget = sub_widget.parse(
-                    templates, scheduler,path.clone(), i, None);
+                    templates, scheduler, parent_path.clone(),i, None);
 
                 obj.add_child(initialized_sub_widget, scheduler);
             }
@@ -186,17 +183,25 @@ impl EzWidgetDefinition {
                                                     order, Some(config));
             Ok(object)
         } else {
+            let mut id = String::new();
+            for line in config.iter() {
+                if line.trim().to_lowercase().starts_with("id:") {
+                    id = line.trim().split_once(':').unwrap().1.to_string();
+                }
+            }
+            if id.is_empty() { id = order.to_string() };
+            let path = format!("{}/{}", parent_path, id.trim());
             match self.type_name.as_str() {
-                "Layout" => Ok(EzObjects::Layout(Layout::from_config(config))),
-                "Canvas" => Ok(EzObjects::CanvasWidget(Canvas::from_config(config))),
-                "Label" => Ok(EzObjects::Label(Label::from_config(config))),
-                "Button" => Ok(EzObjects::Button(Button::from_config(config))),
-                "CheckBox" => Ok(EzObjects::Checkbox(Checkbox::from_config(config))),
-                "RadioButton" => Ok(EzObjects::RadioButton(RadioButton::from_config(config))),
-                "TextInput" => Ok(EzObjects::TextInput(TextInput::from_config(config))),
-                "Dropdown" => Ok(EzObjects::Dropdown(Dropdown::from_config(config))),
-                "Slider" => Ok(EzObjects::Slider(Slider::from_config(config))),
-                "ProgressBar" => Ok(EzObjects::ProgressBar(ProgressBar::from_config(config))),
+                "Layout" => Ok(EzObjects::Layout(Layout::from_config(config, id, path,  scheduler))),
+                "Canvas" => Ok(EzObjects::CanvasWidget(Canvas::from_config(config, id, path,  scheduler))),
+                "Label" => Ok(EzObjects::Label(Label::from_config(config, id, path,  scheduler))),
+                "Button" => Ok(EzObjects::Button(Button::from_config(config, id, path, scheduler))),
+                "CheckBox" => Ok(EzObjects::Checkbox(Checkbox::from_config(config, id, path,  scheduler))),
+                "RadioButton" => Ok(EzObjects::RadioButton(RadioButton::from_config(config, id, path,  scheduler))),
+                "TextInput" => Ok(EzObjects::TextInput(TextInput::from_config(config, id, path,  scheduler))),
+                "Dropdown" => Ok(EzObjects::Dropdown(Dropdown::from_config(config, id, path,  scheduler))),
+                "Slider" => Ok(EzObjects::Slider(Slider::from_config(config, id, path,  scheduler))),
+                "ProgressBar" => Ok(EzObjects::ProgressBar(ProgressBar::from_config(config, id, path,  scheduler))),
                 _ => Err(Error::new(ErrorKind::InvalidData,
                                     format!("Invalid widget type {}", self.type_name)))
             }
@@ -357,21 +362,21 @@ pub fn load_text_parameter(mut value: &str) -> String {
 
 /// Convenience function used by widgets to load a size parameter defined in an .ez file
 /// Looks like size: 20, 10
-pub fn load_size_parameter(value: &str) -> states::definitions::Size {
+pub fn load_size_parameter(value: &str) -> Size {
 
     let (width_str, height_str) = value.split_once(',').unwrap();
     let width = width_str.trim().parse().unwrap_or_else(
         |_| panic!("Could not parse width of this position: {}", width_str));
     let height = height_str.trim().parse().unwrap_or_else(
         |_| panic!("Could not parse height of this position: {}", height_str));
-    states::definitions::Size::new(width, height)
+    Size::new(width, height)
 }
 
 
 /// Convenience function used by widgets to load a full auto_scale parameter defined in an .ez file
 /// Looks like "auto_scale: true, false"
 pub fn load_full_enable_scrolling_parameter(
-    value: &str, scrolling_config: &mut states::definitions::ScrollingConfig) {
+    value: &str, scrolling_config: &mut ScrollingConfig) {
 
     let (x_str, y_str) = value.split_once(',').unwrap();
     let x = load_bool_parameter(x_str.trim());
@@ -383,18 +388,18 @@ pub fn load_full_enable_scrolling_parameter(
 
 /// Convenience function used by widgets to load a full auto_scale parameter defined in an .ez file
 /// Looks like "auto_scale: true, false"
-pub fn load_full_auto_scale_parameter(value: &str) -> states::definitions::AutoScale {
+pub fn load_full_auto_scale_parameter(value: &str) -> AutoScale {
 
     let (width_str, height_str) = value.split_once(',').unwrap();
     let width = load_bool_parameter(width_str.trim());
     let height = load_bool_parameter(height_str.trim());
-    states::definitions::AutoScale::new(width, height)
+    AutoScale::new(width, height)
 }
 
 
 /// Convenience function used by widgets to load a full padding parameter defined in an .ez file
 /// Looks like "padding: 2, 2, 2, 2"
-pub fn load_full_padding_parameter(value: &str) -> states::definitions::Padding {
+pub fn load_full_padding_parameter(value: &str) -> Padding {
 
     let strings: Vec<&str> = value.split(',').collect();
     if strings.len() != 4 {
@@ -415,40 +420,40 @@ pub fn load_full_padding_parameter(value: &str) -> states::definitions::Padding 
     let bottom = strings[1].trim().parse().unwrap();
     let left = strings[2].trim().parse().unwrap();
     let right = strings[3].trim().parse().unwrap();
-    states::definitions::Padding::new(top, bottom, left, right)
+    Padding::new(top, bottom, left, right)
 }
 
 
 /// Convenience function used by widgets to load an x padding parameter defined in an .ez file
 /// Looks like "padding_x: 2, 2"
-pub fn load_padding_x_parameter(value: &str) -> states::definitions::Padding {
+pub fn load_padding_x_parameter(value: &str) -> Padding {
 
     let (left_str, right_str) = value.split_once(',').unwrap();
     let left = left_str.trim().parse().unwrap();
     let right = right_str.trim().parse().unwrap();
-    states::definitions::Padding::new(0, 0, left, right)
+    Padding::new(0, 0, left, right)
 }
 
 
 /// Convenience function used by widgets to load a y padding parameter defined in an .ez file
 /// Looks like "padding_y: 2, 2"
-pub fn load_padding_y_parameter(value: &str) -> states::definitions::Padding {
+pub fn load_padding_y_parameter(value: &str) -> Padding {
 
     let (top_str, bottom_str) = value.split_once(',').unwrap();
     let top = top_str.trim().parse().unwrap();
     let bottom = bottom_str.trim().parse().unwrap();
-    states::definitions::Padding::new(top, bottom, 0, 0)
+    Padding::new(top, bottom, 0, 0)
 }
 
 
 /// Convenience function use by widgets to load a size_hint parameter defined in a .ez file.
 /// Looks like "0.33, 0.33" or "1/3, 1/3"
-pub fn load_full_size_hint_parameter(value: &str) -> states::definitions::SizeHint {
+pub fn load_full_size_hint_parameter(value: &str) -> SizeHint {
 
     let (x_str, y_str) = value.split_once(',').unwrap();
     let x = load_size_hint_parameter(x_str.trim());
     let y = load_size_hint_parameter(y_str.trim());
-    states::definitions::SizeHint::new(x, y)
+    SizeHint::new(x, y)
 }
 
 
@@ -484,31 +489,31 @@ pub fn load_size_hint_parameter(value: &str) -> Option<f64> {
 
 /// Convenience function used by widgets to load a pos parameter defined in an .ez file
 /// Looks like pos: 20, 10
-pub fn load_pos_parameter(value: &str) -> states::definitions::Coordinates {
+pub fn load_pos_parameter(value: &str) -> Coordinates {
 
     let (x_str, y_str) = value.split_once(',').unwrap();
     let x = x_str.to_string().parse().unwrap_or_else(
         |_| panic!("Could not parse x coordinate of this position: {}", value));
     let y = y_str.to_string().parse().unwrap_or_else(
         |_| panic!("Could not parse y coordinate of this position: {}", value));
-    states::definitions::Coordinates::new(x, y)
+    Coordinates::new(x, y)
 }
 
 
 /// Convenience function use by widgets to load a full pos_hint tuple parameter defined in a .ez
 /// file. Looks like: "pos_hint: center_x, bottom: 0.9"
-pub fn load_full_pos_hint_parameter(value: &str) -> states::definitions::PosHint {
+pub fn load_full_pos_hint_parameter(value: &str) -> PosHint {
 
     let (x_str, y_str) = value.split_once(',').unwrap();
     let x = load_pos_hint_x_parameter(x_str);
     let y = load_pos_hint_y_parameter(y_str);
-    states::definitions::PosHint::new(x, y)
+    PosHint::new(x, y)
 }
 
 
 /// Convenience function use by widgets to load a pos_hint parameter defined in a .ez file.
 /// Looks like "pos_hint_x: right: 0.9"
-pub fn load_pos_hint_x_parameter(value: &str) -> Option<(states::definitions::HorizontalPositionHint, f64)> {
+pub fn load_pos_hint_x_parameter(value: &str) -> Option<(HorizontalPositionHint, f64)> {
 
     let to_parse = value.trim();
     // Pos hint can be None
@@ -527,9 +532,9 @@ pub fn load_pos_hint_x_parameter(value: &str) -> Option<(states::definitions::Ho
         fraction = 1.0;  // Default fraction
     }
     let pos = match keyword {
-        "left" => states::definitions::HorizontalPositionHint::Left,
-        "right" => states::definitions::HorizontalPositionHint::Right,
-        "center" => states::definitions::HorizontalPositionHint::Center,
+        "left" => HorizontalPositionHint::Left,
+        "right" => HorizontalPositionHint::Right,
+        "center" => HorizontalPositionHint::Center,
         _ => panic!("This value is not allowed for pos_hint_x: {}. Use left/right/center",
                       value)
     };
@@ -540,7 +545,7 @@ pub fn load_pos_hint_x_parameter(value: &str) -> Option<(states::definitions::Ho
 /// Convenience function use by widgets to load a pos_hint_y parameter defined in a .ez file
 /// Looks like "pos_hint_y: bottom: 0.9"
 pub fn load_pos_hint_y_parameter(value: &str)
-    -> Option<(states::definitions::VerticalPositionHint, f64)> {
+    -> Option<(VerticalPositionHint, f64)> {
 
     let to_parse = value.trim();
     // Pos hint can be None
@@ -559,9 +564,9 @@ pub fn load_pos_hint_y_parameter(value: &str)
         fraction= 1.0;  // Default fraction
     }
     let pos = match keyword {
-        "top" => states::definitions::VerticalPositionHint::Top,
-        "bottom" => states::definitions::VerticalPositionHint::Bottom,
-        "middle" => states::definitions::VerticalPositionHint::Middle,
+        "top" => VerticalPositionHint::Top,
+        "bottom" => VerticalPositionHint::Bottom,
+        "middle" => VerticalPositionHint::Middle,
         _ => panic!("This value is not allowed for pos_hint_y: {}. Use top/bottom/middle",
                       value)
     };
@@ -571,37 +576,74 @@ pub fn load_pos_hint_y_parameter(value: &str)
 
 /// Convenience function use by widgets to load a horizontal alignment defined in a .ez file.
 /// Looks like: "left"
-pub fn load_halign_parameter(value: &str) -> states::definitions::HorizontalAlignment {
+pub fn load_halign_parameter(value: &str) -> HorizontalAlignment {
 
-    if value.to_lowercase() == "left" { states::definitions::HorizontalAlignment::Left }
-    else if value.to_lowercase() == "right" { states::definitions::HorizontalAlignment::Right }
-    else if value.to_lowercase() == "center" { states::definitions::HorizontalAlignment::Center }
+    if value.to_lowercase() == "left" { HorizontalAlignment::Left }
+    else if value.to_lowercase() == "right" { HorizontalAlignment::Right }
+    else if value.to_lowercase() == "center" { HorizontalAlignment::Center }
     else { panic!("halign parameter must be left/right/center: {}", value) }
 }
 
 
 /// Convenience function use by widgets to load a vertical alignment defined in a .ez file
 /// Looks like: "bottom"
-pub fn load_valign_parameter(value: &str) -> states::definitions::VerticalAlignment {
+pub fn load_valign_parameter(value: &str) -> VerticalAlignment {
 
-    if value.to_lowercase() == "top" { states::definitions::VerticalAlignment::Top }
-    else if value.to_lowercase() == "bottom" { states::definitions::VerticalAlignment::Bottom }
-    else if value.to_lowercase() == "middle" { states::definitions::VerticalAlignment::Middle }
+    if value.to_lowercase() == "top" { VerticalAlignment::Top }
+    else if value.to_lowercase() == "bottom" { VerticalAlignment::Bottom }
+    else if value.to_lowercase() == "middle" { VerticalAlignment::Middle }
     else { panic!("valign parameter must be left/right/center: {}", value) }
+}
+
+
+pub fn load_int_parameter(mut value: &str, scheduler: &mut Scheduler, path: String,
+                          update_func: Box<dyn FnMut(&mut StateTree, usize)>) -> usize {
+
+    if value.starts_with("parent.") {
+        let mut new_path = path;
+        loop {
+            let (parent, path) = value.split_once("parent.").unwrap();
+            value = path;
+            new_path = new_path.rsplit_once('/').unwrap().0.to_string();
+            if parent.is_empty() {
+                new_path = format!("{}/{}", new_path, value.replace('.', "/"));
+                break
+            }
+        }
+        scheduler.subscribe_to_usize_callback(new_path, update_func);
+        0
+    } else if value.starts_with("properties.") {
+        let new_path = value.strip_prefix("properties.").unwrap();
+        scheduler.subscribe_to_usize_callback(new_path.to_string(), update_func);
+        0
+    } else {
+        value.trim().parse().unwrap()
+    }
 }
 
 
 /// Load a parameter common to all [EzObjects]. Returns a bool representing whether the parameter
 /// was consumed. If not consumed it should be a parameter specific to a widget.
 pub fn load_common_parameters(parameter_name: &str, parameter_value: String,
-                              mut obj: Box<&mut dyn EzObject>) -> bool {
+                              mut obj: Box<&mut dyn EzObject>, scheduler: &mut Scheduler) -> bool {
 
+    let path = obj.get_full_path().clone();
     let mut state = obj.get_state_mut();
     match parameter_name {
         "id" => obj.set_id(parameter_value.trim().to_string()),
-        "x" => state.set_x(parameter_value.trim().parse().unwrap()),
+        "x" => {
+            state.set_x(load_int_parameter(parameter_value.trim(), scheduler, path.clone(),
+                                           Box::new(move |state_tree: &mut StateTree, val: usize| {
+                                               state_tree.get_mut(&path.clone())
+                                                   .unwrap().as_generic_mut().set_x(val);
+                                           })))
+        },
         "y" => state.set_y(parameter_value.trim().parse().unwrap()),
-        "pos" => state.set_position(load_pos_parameter(parameter_value.trim())),
+        "pos" => {
+            let coordinates = load_pos_parameter(parameter_value.trim());
+            state.set_x(coordinates.x);
+            state.set_y(coordinates.y);
+        },
         "size_hint" => state.set_size_hint(
             load_full_size_hint_parameter(parameter_value.trim())),
         "size_hint_x" => state.set_size_hint_x(

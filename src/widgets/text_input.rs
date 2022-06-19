@@ -3,16 +3,16 @@
 //! and on_keyboard_enter callbacks.
 use std::time::Duration;
 use crossterm::event::{Event, KeyCode};
-use crate::ez_parser;
+use crate::parser;
 use crate::states::text_input_state::TextInputState;
 use crate::states::state::{EzState, GenericState};
 use crate::widgets::widget::{Pixel, EzObject, EzObjects};
 use crate::common;
 use crate::common::definitions::{CallbackTree, EzContext, PixelMap, StateTree, ViewTree, WidgetTree};
 use crate::scheduler::Scheduler;
-use crate::states::definitions::Coordinates;
+use crate::common::definitions::Coordinates;
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct TextInput {
 
     /// ID of the widget, used to construct [path]
@@ -26,12 +26,12 @@ pub struct TextInput {
 
 }
 
-impl Default for TextInput {
-    fn default() -> Self {
+impl TextInput {
+    fn new(id: String, path: String, scheduler: &mut Scheduler) -> Self {
         TextInput {
-            id: "".to_string(),
-            path: String::new(),
-            state: TextInputState::default(),
+            id,
+            path: path.clone(),
+            state: TextInputState::new(path, scheduler),
         }
     }
 }
@@ -39,10 +39,11 @@ impl Default for TextInput {
 
 impl EzObject for TextInput {
 
-    fn load_ez_parameter(&mut self, parameter_name: String, mut parameter_value: String) {
+    fn load_ez_parameter(&mut self, parameter_name: String, mut parameter_value: String,
+                         scheduler: &mut Scheduler) {
 
-        let consumed = ez_parser::load_common_parameters(
-            &parameter_name, parameter_value.clone(),Box::new(self));
+        let consumed = parser::load_common_parameters(
+            &parameter_name, parameter_value.clone(),Box::new(self), scheduler);
         if consumed { return }
         match parameter_name.as_str() {
             "max_length" => self.state.set_max_length(parameter_value.trim().parse().unwrap()),
@@ -218,7 +219,7 @@ impl EzObject for TextInput {
             // If text fills the widget move to end of widget. If not, move to end of text.
             let target_x = if state.text.len() > (state.get_effective_size().width - 1)
             { state.get_effective_size().width - 1 } else { state.text.len() };
-            target_pos = Coordinates::new(target_x, state.get_position().y);
+            target_pos = Coordinates::new(target_x, state.get_position().y.value);
             start_cursor_blink(target_pos, state, scheduler,
                                self.get_full_path());
         }
@@ -277,9 +278,11 @@ pub fn handle_char(state: &mut TextInputState, char: char) {
 impl TextInput {
 
     /// Initialize an instance of this object using the passed config coming from [ez_parser]
-    pub fn from_config(config: Vec<String>) -> Self {
-        let mut obj = TextInput::default();
-        obj.load_ez_config(config).unwrap();
+    pub fn from_config(config: Vec<String>, id: String, path: String, scheduler: &mut Scheduler)
+                       -> Self {
+
+        let mut obj = TextInput::new(id, path, scheduler);
+        obj.load_ez_config(config, scheduler).unwrap();
         obj
     }
 }

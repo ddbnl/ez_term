@@ -5,10 +5,10 @@ use crate::common::definitions::{CallbackTree, StateTree, ViewTree, WidgetTree};
 use crate::widgets::widget::{Pixel, EzObject};
 use crate::states::checkbox_state::CheckboxState;
 use crate::states::state::{EzState, GenericState};
-use crate::ez_parser;
+use crate::parser;
 use crate::scheduler::Scheduler;
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Checkbox {
 
     /// ID of the widget, used to construct [path]
@@ -27,14 +27,15 @@ pub struct Checkbox {
     pub state: CheckboxState,
 }
 
-impl Default for Checkbox {
-    fn default() -> Self {
+impl Checkbox {
+    pub fn new(id: String, path: String, scheduler: &mut Scheduler) -> Self {
+
         Checkbox {
-            id: "".to_string(),
-            path: String::new(),
+            id,
+            path: path.clone(),
             active_symbol: 'X',
             inactive_symbol: ' ',
-            state: CheckboxState::default(),
+            state: CheckboxState::new(path, scheduler),
         }
     }
 }
@@ -42,14 +43,15 @@ impl Default for Checkbox {
 
 impl EzObject for Checkbox {
 
-    fn load_ez_parameter(&mut self, parameter_name: String, parameter_value: String) {
+    fn load_ez_parameter(&mut self, parameter_name: String, parameter_value: String,
+                         scheduler: &mut Scheduler) {
 
-        let consumed = ez_parser::load_common_parameters(
-            &parameter_name, parameter_value.clone(),Box::new(self));
+        let consumed = parser::load_common_parameters(
+            &parameter_name, parameter_value.clone(),Box::new(self), scheduler);
         if consumed { return }
         match parameter_name.as_str() {
             "active" =>
-                self.state.active = ez_parser::load_bool_parameter(parameter_value.trim()),
+                self.state.active = parser::load_bool_parameter(parameter_value.trim()),
             "active_symbol" => self.active_symbol = parameter_value.chars().last().unwrap(),
             "inactive_symbol" => self.inactive_symbol = parameter_value.chars().last().unwrap(),
             _ => panic!("Invalid parameter name for check box {}", parameter_name)
@@ -109,9 +111,11 @@ impl EzObject for Checkbox {
 impl Checkbox {
 
     /// Initialize an instance of this object using the passed config coming from [ez_parser]
-    pub fn from_config(config: Vec<String>) -> Self {
-        let mut obj = Checkbox::default();
-        obj.load_ez_config(config).unwrap();
+    pub fn from_config(config: Vec<String>, id: String, path: String, scheduler: &mut Scheduler)
+                       -> Self {
+
+        let mut obj = Checkbox::new(id, path, scheduler);
+        obj.load_ez_config(config, scheduler).unwrap();
         obj
     }
 

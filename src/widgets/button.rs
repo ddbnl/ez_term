@@ -1,14 +1,14 @@
 //! A widget that displays text non-interactively.
 use std::time::Duration;
 use crate::states::state::{EzState, GenericState};
+use crate::states::definitions::{HorizontalAlignment, VerticalAlignment};
 use crate::states::button_state::ButtonState;
-use crate::states;
 use crate::common;
 use crate::widgets::widget::{Pixel, EzObject};
-use crate::ez_parser;
+use crate::parser;
 use crate::scheduler::Scheduler;
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Button {
 
     /// ID of the widget, used to construct [path]
@@ -21,12 +21,13 @@ pub struct Button {
     pub state: ButtonState,
 }
 
-impl Default for Button {
-    fn default() -> Self {
+impl Button {
+
+    pub fn new(id: String, path: String, scheduler: &mut Scheduler) -> Self {
         Button {
-            id: "".to_string(),
-            path: String::new(),
-            state: ButtonState::default(),
+            id,
+            path: path.clone(),
+            state: ButtonState::new(path, scheduler),
         }
     }
 }
@@ -34,14 +35,16 @@ impl Default for Button {
 
 impl EzObject for Button {
 
-    fn load_ez_parameter(&mut self, parameter_name: String, parameter_value: String) {
+    fn load_ez_parameter(&mut self, parameter_name: String, parameter_value: String,
+                         scheduler: &mut Scheduler) {
         
-        let consumed = ez_parser::load_common_parameters(
-            &parameter_name, parameter_value.clone(),Box::new(self));
+        let consumed = parser::load_common_parameters(
+            &parameter_name, parameter_value.clone(),Box::new(self),
+            scheduler);
         if consumed { return }
         match parameter_name.as_str() {
             "text" => self.state.set_text(
-                ez_parser::load_text_parameter(parameter_value.as_str())),
+                parser::load_text_parameter(parameter_value.as_str())),
             _ => panic!("Invalid parameter name for button {}", parameter_name)
         }
     }
@@ -99,10 +102,10 @@ impl EzObject for Button {
             state.set_effective_height(contents[0].len());
         }
         (contents, _) = common::widget_functions::align_content_horizontally(
-            contents,states::definitions::HorizontalAlignment::Center,
+            contents,HorizontalAlignment::Center,
             state.get_effective_size().width, fg_color, bg_color);
         (contents, _) = common::widget_functions::align_content_vertically(
-            contents,states::definitions::VerticalAlignment::Middle,
+            contents,VerticalAlignment::Middle,
             state.get_effective_size().height, fg_color, bg_color);
         contents = common::widget_functions::add_border(
             contents, state.get_border_config());
@@ -139,9 +142,10 @@ impl EzObject for Button {
 impl Button {
 
     /// Initialize an instance of this object using the passed config coming from [ez_parser]
-    pub fn from_config(config: Vec<String>) -> Self {
-        let mut obj = Button::default();
-        obj.load_ez_config(config).unwrap();
+    pub fn from_config(config: Vec<String>, id: String, path: String, scheduler: &mut Scheduler)
+        -> Self {
+        let mut obj = Button::new(id, path, scheduler);
+        obj.load_ez_config(config, scheduler).unwrap();
         obj.state.border_config.enabled = true;
         obj
     }

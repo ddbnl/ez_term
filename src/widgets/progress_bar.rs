@@ -3,10 +3,11 @@ use crate::states::state::{EzState, GenericState};
 use crate::common;
 use crate::common::definitions::{PixelMap, StateTree};
 use crate::widgets::widget::{Pixel, EzObject};
-use crate::ez_parser;
+use crate::parser;
+use crate::scheduler::Scheduler;
 use crate::states::progress_bar_state::ProgressBarState;
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct ProgressBar {
 
     /// ID of the widget, used to construct [path]
@@ -19,12 +20,12 @@ pub struct ProgressBar {
     pub state: ProgressBarState,
 }
 
-impl Default for ProgressBar {
-    fn default() -> Self {
+impl ProgressBar {
+    fn new(id: String, path: String, scheduler: &mut Scheduler) -> Self {
         ProgressBar {
-            id: "".to_string(),
-            path: String::new(),
-            state: ProgressBarState::default(),
+            id,
+            path: path.clone(),
+            state: ProgressBarState::new(path, scheduler),
         }
     }
 }
@@ -32,12 +33,14 @@ impl Default for ProgressBar {
 
 impl EzObject for ProgressBar {
 
-    fn load_ez_parameter(&mut self, parameter_name: String, parameter_value: String) {
-        let consumed = ez_parser::load_common_parameters(
-            &parameter_name, parameter_value.clone(), Box::new(self));
+    fn load_ez_parameter(&mut self, parameter_name: String, parameter_value: String,
+                         scheduler: &mut Scheduler) {
+        let consumed = parser::load_common_parameters(
+            &parameter_name, parameter_value.clone(), Box::new(self), scheduler);
         if consumed { return }
         match parameter_name.as_str() {
             "value" => self.state.set_value(parameter_value.trim().parse().unwrap()),
+            "max" => self.state.set_value(parameter_value.trim().parse().unwrap()),
             _ => panic!("Invalid parameter name for progress bar {}", parameter_name)
         }
     }
@@ -60,19 +63,16 @@ impl EzObject for ProgressBar {
             .as_progress_bar_mut();
         state.size.height = 1;
 
-        let fg_color = if state.selected {state.get_color_config().selection_foreground }
-            else {state.get_color_config().foreground };
-        let bg_color = if state.selected {state.get_color_config().selection_background }
-            else {state.get_color_config().background };
-
         let mut contents = PixelMap::new();
-        let value_pos = ((state.get_effective_size().width - 1) as f64 * state.value)
-            as usize;
+
+        let value_pos = ((state.get_effective_size().width - 1) as f64 *
+            state.get_normalized_value()) as usize;
 
         for x in 0..state.get_effective_size().width {
             let symbol = if value_pos != 0 && x <= value_pos { "█" } else {"░"};
-            contents.push(vec!(Pixel::new(symbol.to_string(), fg_color,
-                                     bg_color)));
+            contents.push(vec!(Pixel::new(symbol.to_string(),
+                                          state.get_color_config().foreground,
+                                     state.get_color_config().background)));
         }
         if state.get_border_config().enabled {
             contents = common::widget_functions::add_border(
@@ -91,9 +91,11 @@ impl EzObject for ProgressBar {
 impl ProgressBar {
 
     /// Initialize an instance of this object using the passed config coming from [ez_parser]
-    pub fn from_config(config: Vec<String>) -> Self {
-        let mut obj = ProgressBar::default();
-        obj.load_ez_config(config).unwrap();
+    pub fn from_config(config: Vec<String>, id: String, path: String, scheduler: &mut Scheduler)
+                       -> Self {
+
+        let mut obj = ProgressBar::new(id, path, scheduler);
+        obj.load_ez_config(config, scheduler).unwrap();
         obj
     }
 }

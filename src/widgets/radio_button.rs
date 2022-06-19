@@ -8,11 +8,11 @@ use crate::common::definitions::{CallbackTree, StateTree, ViewTree, WidgetTree};
 use crate::states::radio_button_state::RadioButtonState;
 use crate::states::state::{EzState, GenericState};
 use crate::widgets::widget::{Pixel, EzObject};
-use crate::ez_parser;
+use crate::parser;
 use crate::scheduler::Scheduler;
 
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct RadioButton {
 
     /// ID of the widget, used to construct [path]
@@ -31,14 +31,14 @@ pub struct RadioButton {
     pub state: RadioButtonState,
 }
 
-impl Default for RadioButton {
-    fn default() -> Self {
+impl RadioButton {
+    fn new(id: String, path: String, scheduler: &mut Scheduler) -> Self {
         RadioButton {
-            id: "".to_string(),
-            path: String::new(),
+            id,
+            path: path.clone(),
             active_symbol: 'X',
             inactive_symbol: ' ',
-            state: RadioButtonState::default(),
+            state: RadioButtonState::new(path, scheduler),
         }
     }
 }
@@ -46,10 +46,11 @@ impl Default for RadioButton {
 
 impl EzObject for RadioButton {
 
-    fn load_ez_parameter(&mut self, parameter_name: String, parameter_value: String) {
+    fn load_ez_parameter(&mut self, parameter_name: String, parameter_value: String,
+                         scheduler: &mut Scheduler) {
 
-        let consumed = ez_parser::load_common_parameters(
-            &parameter_name, parameter_value.clone(),Box::new(self));
+        let consumed = parser::load_common_parameters(
+            &parameter_name, parameter_value.clone(),Box::new(self), scheduler);
         if consumed { return }
         match parameter_name.as_str() {
             "group" => {
@@ -58,7 +59,7 @@ impl EzObject for RadioButton {
                 self.state.group = group.to_string();
             },
             "active" =>
-                self.state.active = ez_parser::load_bool_parameter(parameter_value.trim()),
+                self.state.active = parser::load_bool_parameter(parameter_value.trim()),
             "active_symbol" => self.active_symbol = parameter_value.chars().last().unwrap(),
             "inactive_symbol" => self.inactive_symbol = parameter_value.chars().last().unwrap(),
             _ => panic!("Invalid parameter name for radio button {}", parameter_name)
@@ -120,9 +121,11 @@ impl EzObject for RadioButton {
 impl RadioButton {
 
     /// Initialize an instance of this object using the passed config coming from [ez_parser]
-    pub fn from_config(config: Vec<String>) -> Self {
-        let mut obj = RadioButton::default();
-        obj.load_ez_config(config).unwrap();
+    pub fn from_config(config: Vec<String>, id: String, path: String, scheduler: &mut Scheduler)
+                       -> Self {
+
+        let mut obj = RadioButton::new(id, path, scheduler);
+        obj.load_ez_config(config, scheduler).unwrap();
         obj
     }
 

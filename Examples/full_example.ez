@@ -5,100 +5,9 @@
 // A UI must always start with a Layout as the root widget. The root widget ID is always "root"
 - Layout:
     mode: screen
-    - Layout:
-        id: menu_screen
-        mode: float
-        - Layout:
-            id: menu_box
-            mode: box
-            orientation: vertical
-            border: true
-            auto_scale: true, true
-            pos_hint: center, middle
-            - Button:
-                id: start_button
-                text: Start demo
-                auto_scale: true, true
-                halign: center
-                selection_order: 1
-            - Button:
-                id: quit_button
-                text: Quit
-                auto_scale: true, true
-                halign: center
-                selection_order: 2
+    - MenuScreen:
+    - MainScreen:
 
-    - Layout:
-        id: main_screen
-        mode: box
-        orientation: horizontal
-        - Layout:
-            id: left_box
-            mode: box
-            size_hint_x: 4/5
-            orientation: vertical
-            - Layout:
-                id: canvas_box
-                mode: box
-                orientation: vertical
-                auto_scale: true, true
-                - Canvas:
-                    id: canvas
-                    auto_scale: true, true
-                    from_file: ./Examples/example_art.txt
-                    halign: center
-            - Layout:
-                id: bottom_box
-                mode: box
-                orientation: horizontal
-                - InputShowcaseBox:
-                    id: small_box_1
-                - ButtonsShowcaseBox:
-                    id: small_box_2
-                - DropdownShowcaseBox:
-                    id: small_box_3
-        - Layout:
-            id: tabbed_box
-            mode: tabbed
-            size_hint_x: 1/5
-            border: True
-            selection_order: 50
-            tab_fg_color: yellow
-            tab_bg_color: red
-            - Layout:
-                id: Tab 1
-                mode: box
-                orientation: horizontal
-                scroll_y: true
-                selection_order: 55
-                selection_fg_color: red
-                - Label:
-                    size_hint_y: none
-                    from_file: ./Examples/dummy.txt
-            - Layout:
-                id: Tab 2
-                mode: box
-                orientation: vertical
-                - Label:
-                    text: This is a label on a second tab.
-            - Layout:
-                id: Tab 3
-                mode: box
-                orientation: vertical
-                - Label:
-                    text: This is a label on a third tab.
-            - Layout:
-                id: Tab 4
-                mode: box
-                orientation: vertical
-                - Label:
-                    text: This is a label on a fourth tab.
-            - Layout:
-                id: Tab 5
-                mode: box
-                orientation: vertical
-                - Label:
-                    text: This is a label on a fifth tab.
 
 
 // The first templates we define are basic layouts and widgets that we use multiple times. They're basically
@@ -141,6 +50,109 @@
 // out the config file and make it more readable by splitting it into logical sections. In other words, creating a
 // template can be useful even if it is used only once. We are also creating templates based on other templates;
 // this is possible and often a good idea.
+
+- <MenuScreen@Layout>:
+    id: menu_screen
+    mode: float
+    - Layout:
+        id: menu_box
+        mode: box
+        orientation: vertical
+        border: true
+        auto_scale: true, true
+        pos_hint: center, middle
+        - Button:
+            id: start_button
+            text: Start demo
+            auto_scale: true, true
+            halign: center
+            selection_order: 1
+        - Button:
+            id: quit_button
+            text: Quit
+            auto_scale: true, true
+            halign: center
+            selection_order: 2
+
+
+- <MainScreen@Layout>:
+    id: main_screen
+    mode: box
+    orientation: horizontal
+    - Layout:
+        id: left_box
+        mode: box
+        size_hint_x: 4/5
+        orientation: vertical
+        - CanvasShowcase:
+        - Layout:
+            id: bottom_box
+            mode: box
+            orientation: horizontal
+            - InputShowcaseBox:
+                id: small_box_1
+            - ButtonsShowcaseBox:
+                id: small_box_2
+            - DropdownShowcaseBox:
+                id: small_box_3
+    - TabsShowcase:
+
+
+- <CanvasShowcase@Layout>:
+    id: canvas_box
+    mode: box
+    orientation: vertical
+    auto_scale: true, true
+    halign: center
+    - Canvas:
+        id: canvas
+        auto_scale: true, true
+        from_file: ./Examples/example_art.txt
+
+
+- <TabsShowcase@Layout>:
+    id: tabbed_box
+    mode: tabbed
+    size_hint_x: 1/5
+    border: True
+    selection_order: 50
+    tab_fg_color: yellow
+    tab_bg_color: red
+    - Layout:
+        id: Tab 1
+        mode: box
+        orientation: horizontal
+        scroll_y: true
+        selection_order: 55
+        selection_fg_color: red
+        - Label:
+            size_hint_y: none
+            from_file: ./Examples/dummy.txt
+    - Layout:
+        id: Tab 2
+        mode: box
+        orientation: vertical
+        - Label:
+            text: This is a label on a second tab.
+    - Layout:
+        id: Tab 3
+        mode: box
+        orientation: vertical
+        - Label:
+            text: This is a label on a third tab.
+    - Layout:
+        id: Tab 4
+        mode: box
+        orientation: vertical
+        - Label:
+            text: This is a label on a fourth tab.
+    - Layout:
+        id: Tab 5
+        mode: box
+        orientation: vertical
+        - Label:
+            text: This is a label on a fifth tab.
+
 
 - <InputShowcaseBox@OneThirdBox>:
     selection_order: 1
@@ -277,21 +289,31 @@
         text: This is a slider, it allows choosing a value between a minimum and a maximum in steps:
         auto_scale_height: true
         padding: 1, 1, 1, 1
-    - Label:
-        id: slider_label
-        text: 10
-        auto_scale_height: true
-        auto_scale_width: true
-        padding_x: 1, 1
-        fg_color: yellow
-    - Slider:
-        id: slider
-        selection_order: 17
-        value: 10
-        minimum: 0
-        maximum: 20
-        padding_x: 1, 1
-        auto_scale_width: true
+    - Layout:
+        id: slider_float
+        mode: float
+        size_hint_y: none
+        height: 5
+        border: true
+        - Label:
+            id: slider_label
+            text: 10
+            auto_scale_height: true
+            auto_scale_width: true
+            pos_hint: None, None
+            x: parent.slider.value
+            y: 0
+            fg_color: yellow
+        - Slider:
+            id: slider
+            selection_order: 17
+            value: 10
+            pos_hint: None, None
+            x: 0
+            y: 1
+            minimum: 0
+            maximum: 20
+            auto_scale_width: true
 
 
 - <ProgressBarShowcase@CyanScalingBox>:
@@ -308,6 +330,8 @@
         fg_color: yellow
     - ProgressBar:
         id: progress_bar
+        max: 100
+        value: 0
         border: true
 
 
