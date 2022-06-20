@@ -131,6 +131,7 @@ impl EzObject for Dropdown {
                 state.get_absolute_position().x, state.get_absolute_position().y,
                 format!("{}/position", modal_path), scheduler);
         let new_modal_state = DroppedDownMenuState {
+            path: modal_path.clone(),
             size: Size::new(
                 state.get_size().width, state.total_options() + 2),
             auto_scale: AutoScale::new(false, false),
@@ -154,9 +155,10 @@ impl EzObject for Dropdown {
             path: modal_path.clone(),
             state: new_modal_state,
         };
-        let root_state = state_tree.get_mut("/root").unwrap();
-        let (_, extra_state_tree) = root_state.as_layout_mut()
+        let root_state = state_tree.get_mut("/root").unwrap().as_layout_mut();
+        let (_, extra_state_tree) = root_state
             .open_modal(widget::EzObjects::DroppedDownMenu(new_modal));
+        root_state.update(scheduler);
         state_tree.extend(extra_state_tree);
         true
     }
@@ -324,10 +326,12 @@ impl DroppedDownMenu {
             .get_dropped_down_options()[selected].clone();
         let parent = state_tree.get(&self.get_full_path()).unwrap()
             .as_dropped_down_menu().parent_path.clone();
-        state_tree.get_mut(&parent).unwrap()
-            .as_dropdown_mut().set_choice(choice);
-        state_tree
-            .get_mut("/root").unwrap().as_layout_mut().dismiss_modal();
+        let state = state_tree.get_mut(&parent).unwrap().as_dropdown_mut();
+        state.set_choice(choice);
+        state.update(scheduler);
+        let state = state_tree.get_mut("/root").unwrap().as_layout_mut();
+        state.dismiss_modal();
+        state.update(scheduler);
         if let Some(ref mut i) = callback_tree
             .get_mut(&parent).unwrap().on_value_change {
             let context = common::definitions::EzContext::new(parent,
@@ -371,9 +375,12 @@ impl DroppedDownMenu {
             if clicked_row != 0 && clicked_row <= state.get_effective_size().height {
                 let choice = state.get_dropped_down_options()[clicked_row - 1]
                     .clone();
-                state_tree.get_mut(&parent).unwrap()
-                    .as_dropdown_mut().set_choice(choice);
-                state_tree.get_mut("/root").unwrap().as_layout_mut().dismiss_modal();
+                let state = state_tree.get_mut(&parent).unwrap().as_dropdown_mut();
+                state.set_choice(choice);
+                state.update(scheduler);
+                let state = state_tree.get_mut("/root").unwrap().as_layout_mut();
+                state.dismiss_modal();
+                state.update(scheduler);
                 if let Some(ref mut i) = callback_tree
                     .get_mut(&parent).unwrap().on_value_change {
                     let context = common::definitions::EzContext::new(
@@ -382,7 +389,9 @@ impl DroppedDownMenu {
                 }
             }
         } else {
-            state_tree.get_mut("/root").unwrap().as_layout_mut().dismiss_modal();
+            let state = state_tree.get_mut("/root").unwrap().as_layout_mut();
+            state.dismiss_modal();
+            state.update(scheduler);
         }
     }
 

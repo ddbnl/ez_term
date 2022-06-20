@@ -9,6 +9,9 @@ use crate::states::state::GenericState;
 #[derive(Clone, Debug)]
 pub struct CheckboxState {
 
+    /// Path to the widget to which this state belongs
+    pub path: String,
+
     /// Bool representing whether this widget is currently active (i.e. checkbox is checked)
     pub active: bool,
 
@@ -67,6 +70,7 @@ impl CheckboxState {
     pub fn new(path: String, scheduler: &mut Scheduler) -> Self {
     
        CheckboxState {
+           path: path.clone(),
            position: StateCoordinates::new(0, 0, path ,scheduler),
            absolute_position: Coordinates::default(),
            size: Size::new(5, 1),
@@ -89,9 +93,9 @@ impl CheckboxState {
 }
 impl GenericState for CheckboxState {
 
-    fn set_changed(&mut self, changed: bool) { self.changed = changed }
-
-    fn get_changed(&self) -> bool { self.changed }
+    fn get_path(&self) -> &String {
+        &self.path
+    }
 
     fn set_size_hint(&mut self, _size_hint: SizeHint) { }
 
@@ -196,13 +200,6 @@ impl GenericState for CheckboxState {
         if self.selection_order != order { self.changed = true };
         self.selection_order = order;
     }
-
-    fn set_force_redraw(&mut self, redraw: bool) {
-        self.force_redraw = redraw;
-        self.changed = true;
-    }
-
-    fn get_force_redraw(&self) -> bool { self.force_redraw }
 
     fn set_selected(&mut self, state: bool) {
         if self.selected != state { self.changed = true }

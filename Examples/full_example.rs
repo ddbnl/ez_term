@@ -24,6 +24,7 @@ fn main() {
                 let root_state = context.state_tree.get_mut("/root")
                     .unwrap().as_layout_mut();
                 root_state.set_active_screen("main_screen".to_string());
+                root_state.update(context.scheduler);
                 false
             } )));
 
@@ -120,8 +121,9 @@ fn main() {
             }
             neon = (neon.0, neon.1, neon.2 + 2);
         }
-        context.state_tree.get_mut(&context.widget_path).unwrap().as_canvas_mut()
-            .get_colors_config_mut().foreground = color;
+        let state = context.state_tree.get_mut(&context.widget_path).unwrap().as_canvas_mut();
+        state.get_colors_config_mut().foreground = color;
+        state.update(context.scheduler);
         true
     };
 
@@ -321,7 +323,9 @@ fn test_popup_button_on_press(context: ez_term::EzContext) -> bool {
     // a delay. We will bind the delaying function to the dismiss button.
     let dismiss =
         move |context: ez_term::EzContext| {
-            context.state_tree.get_mut("/root").unwrap().as_layout_mut().dismiss_modal();
+            let state = context.state_tree.get_mut("/root").unwrap().as_layout_mut();
+            state.dismiss_modal();
+            state.update(context.scheduler);
             false
         };
     let path_clone = popup_path.clone();
@@ -343,13 +347,16 @@ fn test_popup_button_on_press(context: ez_term::EzContext) -> bool {
 fn progress_bar_button(context: ez_term::EzContext) -> bool {
 
     // We disable the progress bar button first so it cannot be pressed twice.
-    context.state_tree.get_mut(&context.widget_path).unwrap().as_generic_mut()
-        .set_disabled(true);
+    let state = context.state_tree.get_mut(&context.widget_path).unwrap().as_generic_mut();
+    state.set_disabled(true);
+    state.update(context.scheduler);
     let progress_button_path = "/root/main_screen/left_box/bottom_box/small_box_2/progress_bar_section_box/progress_button".to_string();
     context.scheduler.schedule_threaded(Box::new(progress_example_app),
         Some(Box::new(move |context: ez_term::EzContext| {
-            context.state_tree.get_mut(&progress_button_path).unwrap().as_generic_mut()
-                .set_disabled(false);
+            let state = context.state_tree.get_mut(&progress_button_path)
+                .unwrap().as_generic_mut();
+            state.set_disabled(false);
+            state.update(context.scheduler);
             true
         })));
     false

@@ -5,11 +5,12 @@ use std::fmt::{Debug, Formatter};
 use std::fs::File;
 use std::io::prelude::*;
 use std::io::{Error, ErrorKind};
+use std::ops::Shl;
 use crossterm::style::{Color};
 use std::str::FromStr;
 use crossterm::terminal::size;
 use unicode_segmentation::UnicodeSegmentation;
-use crate::common::definitions::Coordinates;
+use crate::common::definitions::{Coordinates, EzPropertyUpdater};
 use crate::states::definitions::{HorizontalAlignment, VerticalAlignment, AutoScale, Size,
                                  SizeHint, Padding, ScrollingConfig, PosHint,
                                  HorizontalPositionHint, VerticalPositionHint};
@@ -597,7 +598,7 @@ pub fn load_valign_parameter(value: &str) -> VerticalAlignment {
 
 
 pub fn load_int_parameter(mut value: &str, scheduler: &mut Scheduler, path: String,
-                          update_func: Box<dyn FnMut(&mut StateTree, usize)>) -> usize {
+                          update_func: EzPropertyUpdater) -> usize {
 
     if value.starts_with("parent.") {
         let mut new_path = path;
@@ -632,11 +633,14 @@ pub fn load_common_parameters(parameter_name: &str, parameter_value: String,
     match parameter_name {
         "id" => obj.set_id(parameter_value.trim().to_string()),
         "x" => {
-            state.set_x(load_int_parameter(parameter_value.trim(), scheduler, path.clone(),
-                                           Box::new(move |state_tree: &mut StateTree, val: usize| {
-                                               state_tree.get_mut(&path.clone())
-                                                   .unwrap().as_generic_mut().set_x(val);
-                                           })))
+            state.set_x(load_int_parameter(
+                parameter_value.trim(), scheduler, path.clone(),
+                Box::new(move |state_tree: &mut StateTree, val: usize| {
+                    let state = state_tree.get_mut(&path.clone())
+                        .unwrap().as_generic_mut();
+                    state.set_x(val);
+                    path.clone()
+                })))
         },
         "y" => state.set_y(parameter_value.trim().parse().unwrap()),
         "pos" => {

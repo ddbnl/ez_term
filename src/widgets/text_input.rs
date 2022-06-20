@@ -142,7 +142,7 @@ impl EzObject for TextInput {
         let current_text = state.text.clone();
         if let Event::Key(key) = event {
             if key.code == KeyCode::Backspace {
-                handle_backspace(state);
+                handle_backspace(state, scheduler);
                 if state.text != current_text {
                     if let Some(ref mut i ) = callback_tree
                         .get_mut(&self.get_full_path()).unwrap().on_value_change {
@@ -153,7 +153,7 @@ impl EzObject for TextInput {
                 return true
             }
             if key.code == KeyCode::Delete {
-                handle_delete(state);
+                handle_delete(state, scheduler);
                 if state.text != current_text {
                     if let Some(ref mut i ) = callback_tree
                         .get_mut(&self.get_full_path()).unwrap().on_value_change {
@@ -165,15 +165,15 @@ impl EzObject for TextInput {
                 return true
             }
             if key.code == KeyCode::Left {
-                handle_left(state);
+                handle_left(state, scheduler);
                 return true
             }
             if key.code == KeyCode::Right {
-                handle_right(state);
+                handle_right(state, scheduler);
                 return true
             }
             if let KeyCode::Char(c) = key.code {
-                handle_char(state, c);
+                handle_char(state, c, scheduler);
                 if state.text != current_text {
                     if let Some(ref mut i ) = callback_tree
                         .get_mut(&self.get_full_path()).unwrap().on_value_change {
@@ -190,7 +190,7 @@ impl EzObject for TextInput {
     fn on_left_mouse_click(&self, _view_tree: &mut ViewTree, _state_tree: &mut StateTree,
                            _widget_tree: &WidgetTree, _callback_tree: &mut CallbackTree,
                            _scheduler: &mut Scheduler, _mouse_pos: Coordinates) -> bool {
-        // Return true to consume left click event. On_select will handle the rest.a
+        // Return true to consume left click event. On_select will handle the rest.
         true
     }
 
@@ -201,6 +201,7 @@ impl EzObject for TextInput {
         let state = state_tree.get_mut(
             &self.get_full_path()).unwrap().as_text_input_mut();
         state.set_selected(true);
+        state.update(scheduler);
         // Handle blinking of cursor
         let mut target_pos;
         // Handle this widget being selected from mouse, follow user click position
@@ -208,8 +209,7 @@ impl EzObject for TextInput {
             target_pos = Coordinates::new(pos.x, pos.y);
             if pos.x > state.text.len() { target_pos.x = state.text.len() };
             if !state.active_blink_task {
-                start_cursor_blink(target_pos, state, scheduler,
-                                   self.get_full_path());
+                start_cursor_blink(target_pos, state, scheduler,self.get_full_path());
             } else {
                 state.set_cursor_pos(target_pos);
                 state.set_blink_switch(true);
@@ -239,7 +239,7 @@ impl EzObject for TextInput {
 
 /// Handle a char button press by user. insert the char at the cursor and move the cursor and/or
 /// view where necessary.
-pub fn handle_char(state: &mut TextInputState, char: char) {
+pub fn handle_char(state: &mut TextInputState, char: char, scheduler: &mut Scheduler) {
 
     if state.get_text().len() >= state.get_max_length() {
         return
@@ -248,11 +248,16 @@ pub fn handle_char(state: &mut TextInputState, char: char) {
     let mut text;
 
     // Text still fits in widget, add char as normal
-    if state.get_text().len() < (state.get_effective_size().width) {
+    if state.get_text().len() < state.get_effective_size().width {
         text = state.get_text();
         text = format!("{}{}{}", text[0..cursor_pos.x as usize].to_string(), char,
                        text[(cursor_pos.x) as usize..text.len()].to_string());
         state.set_text(text);
+        if state.cursor_pos.x < state.get_effective_size().width - 1 {
+            state.cursor_pos.x += 1;
+        } else {
+            state.view_start += 1;
+        }
     }
     // Text does not fit in widget, add char to view
     else {
@@ -264,14 +269,12 @@ pub fn handle_char(state: &mut TextInputState, char: char) {
                             view_text[(cursor_pos.x) as usize..view_text.len()].to_string());
         let new_text = format!("{}{}{}", pre_view_text, view_text, post_view_text);
         state.set_text(new_text);
+        if state.cursor_pos.x < state.get_effective_size().width - 1 {
+        } else {
+            state.view_start += 2;
+        }
     }
-
-    if state.get_text().len() < (state.get_effective_size().width){
-        state.set_cursor_x(state.get_cursor_pos().x + 1);
-    } else {
-        state.set_view_start(state.get_view_start() + 1);
-    }
-
+    state.update(scheduler);
 }
 
 
@@ -296,6 +299,7 @@ fn start_cursor_blink(target_pos: Coordinates, state: &mut TextInputState,
 
     state.set_cursor_pos(target_pos);
     state.set_active_blink_task(true);
+    state.update(scheduler);
     let mut counter = 3;
     let blink_func = move | context: EzContext | {
         let state = context.state_tree.get_mut(&context.widget_path).unwrap()
@@ -303,11 +307,13 @@ fn start_cursor_blink(target_pos: Coordinates, state: &mut TextInputState,
         if !state.selected {
             state.set_blink_switch(false);
             state.set_active_blink_task(false);
+            state.update(context.scheduler);
             return false
         };
         if counter >= 3 {
             counter = 0;
             state.set_blink_switch(!state.get_blink_switch());
+            state.update(context.scheduler);
         } else {
             counter += 1;
         }
@@ -335,7 +341,7 @@ pub fn get_view_parts(text: String, view_start: usize, widget_with: usize) -> (S
 
 /// Handle a right arrow button press by user. Move cursor to the right or move the
 /// view if the cursor was at the edge of the widget.
-pub fn handle_right(state: &mut TextInputState) {
+pub fn handle_right(state: &mut TextInputState, scheduler: &mut Scheduler) {
 
     let cursor_pos = state.get_cursor_pos();
     // Text does not fit in widget, advance view
@@ -356,11 +362,12 @@ pub fn handle_right(state: &mut TextInputState) {
     else if cursor_pos.x < state.get_text().len() {
         state.set_cursor_x(state.get_cursor_pos().x + 1);
     }
+    state.update(scheduler);
 }
 
 /// Handle a left arrow button press by user. Move cursor to the left or move the
 /// view if the cursor was at the edge of the widget.
-pub fn handle_left(state: &mut TextInputState) {
+pub fn handle_left(state: &mut TextInputState, scheduler: &mut Scheduler) {
 
     let cursor_pos = state.get_cursor_pos();
 
@@ -378,11 +385,12 @@ pub fn handle_left(state: &mut TextInputState) {
     } else if cursor_pos.x > 0 {
         state.set_cursor_x(state.get_cursor_pos().x - 1);
     }
+    state.update(scheduler);
 }
 
 /// Handle a delete button press by user. Delete character to the right of the widget. Move the
 /// view as necessary.
-pub fn handle_delete(state: &mut TextInputState) {
+pub fn handle_delete(state: &mut TextInputState, scheduler: &mut Scheduler) {
 
     let cursor_pos = state.get_cursor_pos();
     // Check if text does not fit in widget, then we have to delete on a view
@@ -427,11 +435,12 @@ pub fn handle_delete(state: &mut TextInputState) {
                        text[(cursor_pos.x + 1) as usize..text.len()].to_string());
         state.set_text(text);
     }
+    state.update(scheduler);
 }
 
 /// Handle a backspace button press by user. Delete character to the left of the widget. Move the
 /// cursor and/or view as necessary.
-pub fn handle_backspace(state: &mut TextInputState) {
+pub fn handle_backspace(state: &mut TextInputState, scheduler: &mut Scheduler) {
     let cursor_pos = state.get_cursor_pos();
     let mut text = state.get_text();
 
@@ -483,4 +492,5 @@ pub fn handle_backspace(state: &mut TextInputState) {
         state.set_text(text);
         state.set_cursor_x(state.get_cursor_pos().x - 1);
     }
+    state.update(scheduler);
 }

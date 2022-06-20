@@ -1,13 +1,16 @@
+use crossterm::style::Color;
 use crate::scheduler::Scheduler;
 use crate::common::definitions::Coordinates;
-use crate::states::definitions::{StateCoordinates, SizeHint, PosHint, Size, AutoScale, Padding,
-                                 HorizontalAlignment, VerticalAlignment, BorderConfig, ColorConfig};
+use crate::states::definitions::{StateCoordinates, SizeHint, PosHint, Size, AutoScale, Padding, HorizontalAlignment, VerticalAlignment, BorderConfig, ColorConfig, HorizontalPositionHint, VerticalPositionHint};
 use crate::states::state::GenericState;
 
 
 /// [State] implementation for [Button].
 #[derive(Clone, Debug)]
 pub struct ButtonState {
+
+    /// Path to the widget to which this state belongs
+    pub path: String,
 
     /// Text currently being displayed by the label
     pub text: String,
@@ -70,6 +73,7 @@ impl ButtonState {
     pub fn new(path: String, scheduler: &mut Scheduler) -> Self {
 
        ButtonState {
+           path: path.clone(),
            position: StateCoordinates::new(0, 0, path, scheduler),
            absolute_position: Coordinates::default(),
            size: Size::default(),
@@ -93,9 +97,9 @@ impl ButtonState {
 }
 impl GenericState for ButtonState {
 
-    fn set_changed(&mut self, changed: bool) { self.changed = changed }
-
-    fn get_changed(&self) -> bool { self.changed }
+    fn get_path(&self) -> &String {
+       &self.path
+    }
 
     fn set_size_hint(&mut self, size_hint: SizeHint) {
         if self.size_hint != size_hint { self.changed = true }
@@ -195,13 +199,6 @@ impl GenericState for ButtonState {
         if self.selection_order != order { self.changed = true };
         self.selection_order = order;
     }
-
-    fn set_force_redraw(&mut self, redraw: bool) {
-        self.force_redraw = redraw;
-        self.changed = true;
-    }
-
-    fn get_force_redraw(&self) -> bool { self.force_redraw }
 
     fn set_selected(&mut self, state: bool) {
         if self.selected != state { self.changed = true }

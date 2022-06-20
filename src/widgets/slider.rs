@@ -127,6 +127,7 @@ impl EzObject for Slider {
         value -= (value % state.step as usize);
         value = min(value, state.maximum);
         state.set_value(value);
+        state.update(scheduler);
 
         if let Some(ref mut i ) = callback_tree
             .get_mut(&self.get_full_path()).unwrap().on_value_change {
@@ -153,6 +154,7 @@ impl Slider {
         let state = state_tree.get_mut(&self.path).unwrap().as_slider_mut();
         if state.value.get() == state.minimum { return }
         state.set_value(state.get_value() - state.get_step() as usize);
+        state.update(scheduler);
         if let Some(ref mut i ) = callback_tree
             .get_mut(&self.get_full_path()).unwrap().on_value_change {
             i(EzContext::new(self.get_full_path(),
@@ -166,6 +168,7 @@ impl Slider {
         let state = state_tree.get_mut(&self.path).unwrap().as_slider_mut();
         if state.value.get() == state.maximum { return }
         state.set_value(state.get_value() + state.get_step() as usize);
+        state.update(scheduler);
         if let Some(ref mut i ) = callback_tree
             .get_mut(&self.get_full_path()).unwrap().on_value_change {
             i(EzContext::new(self.get_full_path(),

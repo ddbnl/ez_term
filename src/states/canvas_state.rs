@@ -9,6 +9,9 @@ use crate::states::state::GenericState;
 #[derive(Clone, Debug)]
 pub struct CanvasState {
 
+    /// Path to the widget to which this state belongs
+    pub path: String,
+
     /// Position of this widget relative to its' parent [Layout]
     pub position: StateCoordinates,
 
@@ -55,6 +58,7 @@ impl CanvasState {
     pub fn new(path: String, scheduler: &mut Scheduler) -> Self {
 
         CanvasState{
+            path: path.clone(),
             position: StateCoordinates::new(0, 0, path, scheduler),
             absolute_position: Coordinates::default(),
             pos_hint: PosHint::default(),
@@ -73,9 +77,9 @@ impl CanvasState {
 }
 impl GenericState for CanvasState {
 
-    fn set_changed(&mut self, changed: bool) { self.changed = changed }
-
-    fn get_changed(&self) -> bool { self.changed }
+    fn get_path(&self) -> &String {
+        &self.path
+    }
 
     fn set_size_hint(&mut self, size_hint: SizeHint) {
         if self.size_hint != size_hint { self.changed = true }
@@ -162,12 +166,4 @@ impl GenericState for CanvasState {
         self.changed = true;
         &mut self.colors
     }
-
-    fn set_force_redraw(&mut self, redraw: bool) {
-        self.force_redraw = redraw;
-        self.changed = true;
-    }
-
-    fn get_force_redraw(&self) -> bool { self.force_redraw }
-
 }

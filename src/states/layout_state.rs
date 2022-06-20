@@ -13,6 +13,9 @@ use crate::widgets::widget::EzObjects;
 #[derive(Clone, Debug)]
 pub struct LayoutState {
 
+    /// Path to the widget to which this state belongs
+    pub path: String,
+
     /// Position of this widget relative to its' parent [Layout]
     pub position: StateCoordinates,
 
@@ -105,6 +108,7 @@ impl LayoutState {
     pub fn new(path: String, scheduler: &mut Scheduler) -> Self {
 
         LayoutState {
+            path: path.clone(),
             position: StateCoordinates::new(0, 0, path, scheduler),
             absolute_position: Coordinates::default(),
             size_hint: SizeHint::default(),
@@ -137,9 +141,9 @@ impl LayoutState {
 }
 impl GenericState for LayoutState {
 
-    fn set_changed(&mut self, changed: bool) { self.changed = changed }
-
-    fn get_changed(&self) -> bool { self.changed }
+    fn get_path(&self) -> &String {
+        &self.path
+    }
 
     fn set_size_hint(&mut self, size_hint: SizeHint) { self.size_hint = size_hint; }
 
@@ -273,13 +277,6 @@ impl GenericState for LayoutState {
         if self.selection_order != order { self.changed = true };
         self.selection_order = order;
     }
-
-    fn set_force_redraw(&mut self, redraw: bool) {
-        self.force_redraw = redraw;
-        self.changed = true;
-    }
-
-    fn get_force_redraw(&self) -> bool { self.force_redraw }
 
     fn set_selected(&mut self, state: bool) {
         if self.selected != state { self.changed = true }

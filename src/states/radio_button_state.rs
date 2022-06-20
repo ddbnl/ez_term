@@ -10,6 +10,9 @@ use crate::states::state::GenericState;
 #[derive(Clone, Debug)]
 pub struct RadioButtonState {
 
+    /// Path to the widget to which this state belongs
+    pub path: String,
+
     /// Group this radio button belongs to. Set the same group value for a number of radio buttons
     /// to make them mutually exclusive.
     pub group: String,
@@ -72,6 +75,7 @@ impl RadioButtonState {
     pub fn new(path: String, scheduler: &mut Scheduler) -> Self {
 
        RadioButtonState {
+           path: path.clone(),
            group: String::new(),
            position: StateCoordinates::new(0, 0, path, scheduler),
            absolute_position: Coordinates::default(),
@@ -95,9 +99,9 @@ impl RadioButtonState {
 }
 impl GenericState for RadioButtonState {
 
-    fn set_changed(&mut self, changed: bool) { self.changed = changed }
-
-    fn get_changed(&self) -> bool { self.changed }
+    fn get_path(&self) -> &String {
+        &self.path
+    }
 
     fn set_size_hint(&mut self, size_hint: SizeHint) {
         if self.size_hint != size_hint { self.changed = true }
@@ -205,13 +209,6 @@ impl GenericState for RadioButtonState {
         if self.selection_order != order { self.changed = true };
         self.selection_order = order;
     }
-
-    fn set_force_redraw(&mut self, redraw: bool) {
-        self.force_redraw = redraw;
-        self.changed = true;
-    }
-
-    fn get_force_redraw(&self) -> bool { self.force_redraw }
 
     fn set_selected(&mut self, state: bool) {
         if self.selected != state { self.changed = true }

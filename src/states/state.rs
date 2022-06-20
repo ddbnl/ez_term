@@ -2,6 +2,7 @@
 //! A module containing the base structs and traits for widget states.
 use crossterm::style::Color;
 use crate::common::definitions::Coordinates;
+use crate::scheduler::Scheduler;
 use crate::states::canvas_state::{CanvasState};
 use crate::states::label_state::{LabelState};
 use crate::states::button_state::{ButtonState};
@@ -214,26 +215,23 @@ impl EzState {
 /// State trait which contains methods for managing fields common to all widget states.
 pub trait GenericState {
 
-    /// Set to true whenever state changes to redraw widget next frame
-    fn set_changed(&mut self, changed: bool);
-
-    /// Widget is redrawn next frame if this returns true
-    fn get_changed(&self) -> bool;
+    fn get_path(&self) -> &String;
 
     /// Set to None for passing an absolute width, or to a value between 0 and 1 to
     /// automatically scale width based on parent width
-    fn set_size_hint(&mut self, _size_hint: SizeHint) {}
+    fn set_size_hint(&mut self, _size_hint: SizeHint) { }
 
     /// Set to None for passing an absolute width, or to a value between 0 and 1 to
     /// automatically scale width based on parent width
     fn set_size_hint_x(&mut self, size_hint: Option<f64>) {
-        self.set_size_hint(SizeHint::new(size_hint, self.get_size_hint().y))
+        self.set_size_hint(SizeHint::new(size_hint, self.get_size_hint().y));
     }
 
     /// Set to None for passing an absolute height, or to a value between 0 and 1 to
     /// automatically scale width based on parent height
     fn set_size_hint_y(&mut self, size_hint: Option<f64>) {
-        self.set_size_hint(SizeHint::new(self.get_size_hint().x, size_hint))
+
+        self.set_size_hint(SizeHint::new(self.get_size_hint().x, size_hint));
     }
 
     /// If not None automatically scaled width based on parent width
@@ -244,7 +242,7 @@ pub trait GenericState {
     /// ("center_x", 0.9)
     /// When positioning the widget, "center_x" will be replaced with the middle x coordinate of
     /// parent Layout, and multiplied with the float.
-    fn set_pos_hint(&mut self, _pos_hint: PosHint) {}
+    fn set_pos_hint(&mut self, _pos_hint: PosHint) { }
 
     /// Set to None to allow hardcoded or default positions. Set a pos hint to position relative
     /// to parent. A pos hint is a string and a float e.g:
@@ -252,7 +250,7 @@ pub trait GenericState {
     /// When positioning the widget, "center_x" will be replaced with the middle x coordinate of
     /// parent Layout, and multiplied with the float.
     fn set_pos_hint_x(&mut self, pos_hint: Option<(HorizontalPositionHint, f64)>) {
-        self.set_pos_hint(PosHint::new(pos_hint, self.get_pos_hint().y))
+        self.set_pos_hint(PosHint::new(pos_hint, self.get_pos_hint().y));
     }
 
     /// Set to None to allow hardcoded or default positions. Set a pos hint to position relative
@@ -261,7 +259,7 @@ pub trait GenericState {
     /// When positioning the widget, "top" will be replaced with the y coordinate of the top of the
     /// parent Layout, and multiplied by the float.
     fn set_pos_hint_y(&mut self, pos_hint: Option<(VerticalPositionHint, f64)>) {
-        self.set_pos_hint(PosHint::new(self.get_pos_hint().x, pos_hint))
+        self.set_pos_hint(PosHint::new(self.get_pos_hint().x, pos_hint));
     }
 
     /// If none widget uses hardcoded or default positions. If a pos hint the widget will be
@@ -318,9 +316,10 @@ pub trait GenericState {
     /// Set the how much width you want the actual content inside this widget to have. Width for
     /// e.g. border and padding will be added to this automatically.
     fn set_effective_width(&mut self, width: usize) {
+
         self.get_size_mut().width = width
             +if self.get_border_config().enabled {2} else {0}
-            +self.get_padding().left + self.get_padding().right
+            +self.get_padding().left + self.get_padding().right;
     }
 
     /// Set the how much height you want the actual content inside this widget to have. Height for
@@ -328,7 +327,7 @@ pub trait GenericState {
     fn set_effective_height(&mut self, height: usize) {
         self.get_size_mut().height = height
             +if self.get_border_config().enabled {2} else {0}
-            +self.get_padding().top + self.get_padding().bottom
+            +self.get_padding().top + self.get_padding().bottom;
     }
 
     /// Get position relative to parent
@@ -401,25 +400,25 @@ pub trait GenericState {
     /// Set height of top padding
     fn set_padding_top(&mut self, padding: usize) {
         let current = self.get_padding().clone();
-        self.set_padding(Padding::new(padding, current.bottom, current.left, current.right))
+        self.set_padding(Padding::new(padding, current.bottom, current.left, current.right));
     }
 
     /// Set height of bottom padding
     fn set_padding_bottom(&mut self, padding: usize) {
         let current = self.get_padding().clone();
-        self.set_padding(Padding::new(current.top, padding, current.left, current.right))
+        self.set_padding(Padding::new(current.top, padding, current.left, current.right));
     }
 
     /// Set width of left padding
     fn set_padding_left(&mut self, padding: usize) {
         let current = self.get_padding().clone();
-        self.set_padding(Padding::new(current.top, current.bottom, padding, current.right))
+        self.set_padding(Padding::new(current.top, current.bottom, padding, current.right));
     }
 
     /// Set width of right padding
     fn set_padding_right(&mut self, padding: usize) {
         let current = self.get_padding().clone();
-        self.set_padding(Padding::new(current.top, current.bottom, current.left, padding))
+        self.set_padding(Padding::new(current.top, current.bottom, current.left, padding));
     }
 
     /// Pas a [BorderConfig] abject that will be used to draw the border if enabled
@@ -522,12 +521,15 @@ pub trait GenericState {
     /// Set to true to force redraw the entire screen. The screen is still diffed before redrawing
     /// so this can be called efficiently. Nevertheless you want to call [set_changed] to redraw
     /// only the specific widget in most cases.
-    fn set_force_redraw(&mut self, state: bool);
+    fn set_force_redraw(&mut self, scheduler: &mut Scheduler) {
+        scheduler.force_redraw();
+    }
 
-    /// Redraws the entire screen if set to true.
-    fn get_force_redraw(&self) -> bool;
-
-    fn set_selected(&mut self, _state: bool) { }
+    fn set_selected(&mut self, _state: bool) {}
 
     fn get_selected(&self) -> bool { false }
+
+    fn update(&self, scheduler: &mut Scheduler)  {
+        scheduler.update_widget(self.get_path().to_string())
+    }
 }

@@ -10,6 +10,9 @@ use crate::states::state::GenericState;
 #[derive(Clone, Debug)]
 pub struct ProgressBarState {
 
+    /// Path to the widget to which this state belongs
+    pub path: String,
+
     /// Max value of the slider (i.e. when it's finished)
     pub max: usize,
 
@@ -68,6 +71,7 @@ impl ProgressBarState {
     pub fn new(path: String, scheduler: &mut Scheduler) -> Self {
 
        ProgressBarState {
+           path: path.clone(),
            max: 100,
            value: 0,
            position: StateCoordinates::new(0, 0, path, scheduler),
@@ -90,9 +94,9 @@ impl ProgressBarState {
 }
 impl GenericState for ProgressBarState {
 
-    fn set_changed(&mut self, changed: bool) { self.changed = changed }
-
-    fn get_changed(&self) -> bool { self.changed }
+    fn get_path(&self) -> &String {
+        &self.path
+    }
 
     fn set_size_hint(&mut self, size_hint: SizeHint) {
         if self.size_hint != size_hint { self.changed = true }
@@ -185,13 +189,6 @@ impl GenericState for ProgressBarState {
         if self.selection_order != order { self.changed = true };
         self.selection_order = order;
     }
-
-    fn set_force_redraw(&mut self, redraw: bool) {
-        self.force_redraw = redraw;
-        self.changed = true;
-    }
-
-    fn get_force_redraw(&self) -> bool { self.force_redraw }
 
     fn set_selected(&mut self, state: bool) {
         if self.selected != state { self.changed = true }

@@ -1,22 +1,21 @@
-use std::collections::HashMap;
-use std::sync::mpsc::Receiver;
 use std::time::{Duration, Instant};
 use crate::{CallbackConfig, EzContext, run};
-use crate::common;
-use crate::common::definitions::{CallbackTree, GenericEzTask, StateTree, ViewTree, WidgetTree};
+use crate::common::definitions::{CallbackTree, GenericEzTask, StateTree, ViewTree, WidgetTree,
+                                 EzThread, EzProperties, EzPropertySubscribers, EzPropertyUpdater};
 use crate::property::{UsizeProperty};
 
-type Properties = HashMap<String, (UsizeProperty, Receiver<usize>)>;
 
 #[derive(Default)]
 pub struct Scheduler {
     tasks: Vec<Task>,
-    threads_to_start: Vec<(Box<dyn FnOnce(Vec<UsizeProperty>) + Send>, Option<GenericEzTask>)>,
+    pub widgets_to_update: Vec<String>,
+    pub force_redraw: bool,
+    threads_to_start: EzThread,
     thread_handles: Vec<(std::thread::JoinHandle<()>, Option<GenericEzTask>)>,
     new_callback_configs: Vec<(String, CallbackConfig)>,
     updated_callback_configs: Vec<(String, CallbackConfig)>,
-    usize_properties: Properties,
-    usize_property_subscribers: HashMap<String, Vec<Box<dyn FnMut(&mut StateTree, usize)>>>,
+    usize_properties: EzProperties,
+    usize_property_subscribers: EzPropertySubscribers,
 }
 
 
@@ -109,7 +108,6 @@ impl Scheduler {
                     remaining_tasks.push(task);
                 }
             }
-
         }
         self.tasks = remaining_tasks;
     }
@@ -154,34 +152,37 @@ impl Scheduler {
 
     pub fn update_properties(&mut self, state_tree: &mut StateTree) {
 
+        let mut to_update = Vec::new();
         for (name, update_funcs) in
                 self.usize_property_subscribers.iter_mut() {
             let (_, receiver) = self.usize_properties.get(name).unwrap();
             if let Ok(new) = receiver.try_recv() {
                 for update_func in update_funcs {
-                    update_func(state_tree, new)
+                    to_update.push(update_func(state_tree, new));
                 }
             }
         }
+        self.widgets_to_update.extend(to_update);
     }
 
-    pub fn subscribe_to_usize_callback(&mut self, name: String,
-                                       update_func: Box<dyn FnMut(&mut StateTree, usize)>) {
+    pub fn subscribe_to_usize_callback(&mut self, name: String, update_func: EzPropertyUpdater) {
 
         if !self.usize_property_subscribers.contains_key(&name) {
             self.usize_property_subscribers.insert(name.clone(), Vec::new());
         }
         self.usize_property_subscribers.get_mut(&name).unwrap().push(update_func);
     }
+
+    pub fn update_widget(&mut self, path: String) { self.widgets_to_update.push(path); }
+
+    pub fn force_redraw(&mut self) { self.force_redraw = true; }
 }
 
 impl Task {
 
-    pub fn new(widget: String, func: common::definitions::GenericEzTask, recurring: bool,
+    pub fn new(widget: String, func: GenericEzTask, recurring: bool,
                interval: Duration, last_execution: Option<Instant>)
-        -> Self {
-        Task { widget, func, recurring, interval, canceled: false, last_execution }
-    }
+        -> Self { Task { widget, func, recurring, interval, canceled: false, last_execution } }
 
     pub fn cancel(&mut self) { self.canceled = true; }
 

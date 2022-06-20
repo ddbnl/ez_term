@@ -42,12 +42,16 @@ impl EzObject for ProgressBar {
         match parameter_name.as_str() {
             "value" => {
                 let path = self.path.clone();
-                self.state.set_value(load_int_parameter(
-                    parameter_value.trim(), scheduler, self.path.clone(),
-                    Box::new(move |state_tree: &mut StateTree, val: usize| {
-                        state_tree.get_mut(&path)
-                            .unwrap().as_progress_bar_mut().set_value(val);
-                    })))
+                self.state.set_value(
+                    load_int_parameter(
+                        parameter_value.trim(), scheduler,
+                        self.path.clone(),
+                        Box::new(move |state_tree: &mut StateTree, val: usize| {
+                            let state = state_tree.get_mut(&path)
+                                .unwrap().as_progress_bar_mut();
+                            state.set_value(val);
+                            path.clone()
+                        })))
             },
             "max" => self.state.set_value(parameter_value.trim().parse().unwrap()),
             _ => panic!("Invalid parameter name for progress bar {}", parameter_name)

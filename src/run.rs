@@ -111,7 +111,6 @@ fn run_loop(mut root_widget: Layout, mut callback_tree: CallbackTree, mut schedu
     let mut track_mouse_pos = false;
     loop {
 
-        let widget_tree = root_widget.get_widget_tree();
         // Now we check for and deal with a possible event
         if poll(Duration::from_millis(32))? {
 
@@ -147,6 +146,7 @@ fn run_loop(mut root_widget: Layout, mut callback_tree: CallbackTree, mut schedu
                 }
             }
 
+            let widget_tree = root_widget.get_widget_tree();
             // Modals get top priority in consuming events
             if !consumed {
                 consumed = handle_modal_event(
@@ -190,7 +190,7 @@ fn run_loop(mut root_widget: Layout, mut callback_tree: CallbackTree, mut schedu
                         current_size.width != width as usize {
                         view_tree = handle_resize(
                             &mut state_tree, &mut root_widget,
-                            width as usize, height as usize);
+                            width as usize, height as usize, &mut scheduler);
                         continue
                     }
                 }
@@ -215,7 +215,8 @@ fn run_loop(mut root_widget: Layout, mut callback_tree: CallbackTree, mut schedu
         // forced redraw was issued by a widget we'll perform one.
         let old_view_tree = view_tree.clone();
         let forced_redraw = common::screen_functions::redraw_changed_widgets(
-            &mut view_tree, &mut state_tree,  &mut root_widget);
+            &mut view_tree, &mut state_tree,  &mut root_widget,
+            &mut scheduler.widgets_to_update, scheduler.force_redraw);
         if forced_redraw {
             let contents = root_widget.get_contents(&mut state_tree);
             common::screen_functions::write_to_view_tree(
@@ -223,6 +224,7 @@ fn run_loop(mut root_widget: Layout, mut callback_tree: CallbackTree, mut schedu
                 &mut view_tree);
         }
         common::screen_functions::write_to_screen(&old_view_tree, &view_tree);
+        scheduler.force_redraw = false;
 
         track_mouse_pos = !root_widget.state.open_modals.is_empty();
     }
@@ -370,11 +372,13 @@ fn handle_mouse_event(event: MouseEvent, view_tree: &mut ViewTree, state_tree: &
 /// Handle a resize event by setting the size of the root widget to the new window size, updating
 /// the sizes/positions of all children and generating a new view tree of the right size.
 fn handle_resize(state_tree: &mut StateTree, root_widget: &mut Layout,
-                 new_width: usize, new_height: usize) -> ViewTree{
+                 new_width: usize, new_height: usize, scheduler: &mut Scheduler) -> ViewTree{
+
     let state = state_tree.get_mut(&root_widget.path).unwrap()
         .as_generic_mut();
     state.get_size_mut().width = new_width as usize;
     state.get_size_mut().height = new_height as usize;
+    state.update(scheduler);
     let old_view_tree = common::screen_functions::initialize_view_tree(
         new_width, new_height);
     root_widget.set_child_sizes(state_tree);

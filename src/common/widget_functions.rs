@@ -12,19 +12,19 @@ use crate::widgets::widget::{EzObjects, Pixel};
 pub fn open_popup(template: String, state_tree: &mut StateTree,
                   scheduler: &mut Scheduler) -> String {
     
-    let (path, sub_tree) = state_tree.get_mut("/root").unwrap().as_layout_mut()
-        .open_popup(template, scheduler);
-    state_tree.extend(sub_tree);
+    let state = state_tree.get_mut("/root").unwrap().as_layout_mut();
+    state.update(scheduler);
+    let (path, sub_tree) = state.open_popup(template, scheduler);
     scheduler.set_callback_config(path.clone(),
                                   CallbackConfig::default());
-    let modal = state_tree.get("/root").unwrap().as_layout()
-        .open_modals.first().unwrap();
+    let modal = state.open_modals.first().unwrap();
     if let EzObjects::Layout(ref i) = modal {
         for sub_widget in i.get_widgets_recursive().values() {
             scheduler.set_callback_config(sub_widget.as_ez_object().get_full_path(),
                                           CallbackConfig::default());
         }
     }
+    state_tree.extend(sub_tree);
     path
 }
 

@@ -159,29 +159,29 @@ impl EzObject for Layout {
 
     fn handle_event(&self, event: Event, _view_tree: &mut ViewTree, state_tree: &mut StateTree,
                     _widget_tree: &WidgetTree, _callback_tree: &mut CallbackTree,
-                    _scheduler: &mut Scheduler) -> bool {
+                    scheduler: &mut Scheduler) -> bool {
 
         let state = state_tree.get_mut(&self.get_full_path())
             .unwrap().as_layout_mut();
         if let Event::Key(key) = event {
             if key.code == KeyCode::PageUp {
-                self.handle_scroll_up(state);
+                self.handle_scroll_up(state, scheduler);
                 return true
             } else if key.code == KeyCode::PageDown {
-                self.handle_scroll_down(state);
+                self.handle_scroll_down(state, scheduler);
                 return true
             } else if key.code == KeyCode::Left {
                 if state.get_mode() == &LayoutMode::Tabbed {
-                    self.handle_tab_left(state_tree);
+                    self.handle_tab_left(state_tree, scheduler);
                 } else {
-                    self.handle_scroll_left(state);
+                    self.handle_scroll_left(state, scheduler);
                 }
                 return true
             } else if key.code == KeyCode::Right {
                 if state.get_mode() == &LayoutMode::Tabbed {
-                    self.handle_tab_right(state_tree);
+                    self.handle_tab_right(state_tree, scheduler);
                 } else {
-                    self.handle_scroll_right(state);
+                    self.handle_scroll_right(state, scheduler);
                 }
                 return true
             }
@@ -191,11 +191,12 @@ impl EzObject for Layout {
 
     fn on_keyboard_enter(&self, _view_tree: &mut ViewTree, state_tree: &mut StateTree,
                          _widget_tree: &WidgetTree, _callback_tree: &mut CallbackTree,
-                         _scheduler: &mut Scheduler) -> bool {
+                         scheduler: &mut Scheduler) -> bool {
         let state = state_tree.get_mut(&self.path).unwrap().as_layout_mut();
         if !state.selected_tab_header.is_empty() {
             state.set_active_tab(state.get_selected_tab_header()
                 .strip_suffix("_tab_header").unwrap().to_string());
+            state.update(scheduler);
             return true
         }
         false
@@ -203,23 +204,24 @@ impl EzObject for Layout {
 
     fn on_left_mouse_click(&self, _view_tree: &mut ViewTree, state_tree: &mut StateTree,
                            _widget_tree: &WidgetTree, _callback_tree: &mut CallbackTree,
-                           _scheduler: &mut Scheduler, mouse_pos: Coordinates) -> bool {
+                           scheduler: &mut Scheduler, mouse_pos: Coordinates) -> bool {
 
         let state = state_tree.get_mut(&self.path).unwrap().as_layout_mut();
 
         if state.scrolling_config.is_scrolling_x &&
-            mouse_pos.y == state.get_effective_size().height + 1{
+            mouse_pos.y == state.get_effective_size().height + 1 {
 
-            let (scrollbar_size, scrollbar_pos) = self.get_horizontal_scrollbar_parameters(
+            let (scrollbar_size, scrollbar_pos) =
+                self.get_horizontal_scrollbar_parameters(
                 state.get_scrolling_config().original_width,
                 state.get_effective_size().width,
                 state.get_scrolling_config().view_start_x);
 
             if mouse_pos.x < scrollbar_pos {
-                self.handle_scroll_left(state);
+                self.handle_scroll_left(state, scheduler);
                 return true
             } else if mouse_pos.x > scrollbar_pos + scrollbar_size {
-                self.handle_scroll_right(state);
+                self.handle_scroll_right(state, scheduler);
                 return true
             }
         }
@@ -233,10 +235,10 @@ impl EzObject for Layout {
                 state.get_scrolling_config().view_start_y);
 
             if mouse_pos.y < scrollbar_pos {
-                self.handle_scroll_up(state);
+                self.handle_scroll_up(state, scheduler);
                 return true
             } else if mouse_pos.y > scrollbar_pos + scrollbar_size {
-                self.handle_scroll_down(state);
+                self.handle_scroll_down(state, scheduler);
                 return true
             }
         }
@@ -245,12 +247,13 @@ impl EzObject for Layout {
 
     fn on_select(&self, _view_tree: &mut ViewTree, state_tree: &mut StateTree,
                  _widget_tree: &WidgetTree, _callback_tree: &mut CallbackTree,
-                 _scheduler: &mut Scheduler, _mouse_pos: Option<Coordinates>) -> bool {
+                 scheduler: &mut Scheduler, _mouse_pos: Option<Coordinates>) -> bool {
 
         for child in self.children.iter() {
             if let EzObjects::Button(i) = child {
-                state_tree.get_mut(&self.path).unwrap().as_layout_mut()
-                    .selected_tab_header = i.path.clone();
+                let state = state_tree.get_mut(&self.path).unwrap().as_layout_mut();
+                state.selected_tab_header = i.path.clone();
+                state.update(scheduler);
                 return true
             }
         }
@@ -259,10 +262,11 @@ impl EzObject for Layout {
 
     fn on_deselect(&self, _view_tree: &mut ViewTree, state_tree: &mut StateTree,
                  _widget_tree: &WidgetTree, _callback_tree: &mut CallbackTree,
-                 _scheduler: &mut Scheduler) -> bool {
+                 scheduler: &mut Scheduler) -> bool {
 
-        state_tree.get_mut(&self.path).unwrap().as_layout_mut()
-            .selected_tab_header.clear();
+        let state = state_tree.get_mut(&self.path).unwrap().as_layout_mut();
+        state.selected_tab_header.clear();
+        state.update(scheduler);
         true
     }
 }
@@ -280,6 +284,7 @@ impl Layout {
 
     /// Scale size down to the size of the actual content of the layout.
     fn auto_scale_to_content(&self, state_tree: &mut StateTree, contents: PixelMap) -> PixelMap {
+
         let state = state_tree.get_mut(&self.get_full_path()).unwrap()
             .as_layout_mut();
         // If user wants to autoscale width we set width to length of content
@@ -423,6 +428,7 @@ impl Layout {
 
     /// Set the sizes of children that use size_hint(s) using own proportions.
     pub fn set_child_sizes(&self, state_tree: &mut StateTree) {
+
         let own_state = state_tree.get_mut(&self.get_full_path())
             .unwrap().as_layout();
         let own_width = own_state.get_effective_size().width;
@@ -764,17 +770,19 @@ impl Layout {
 // Tabbed mode implementations
 impl Layout {
 
-    fn handle_tab_left(&self, state_tree: &mut StateTree) {
+    fn handle_tab_left(&self, state_tree: &mut StateTree, scheduler: &mut Scheduler) {
 
         let mut next_button = false;
         for child in self.children.iter().rev() {
             if let EzObjects::Button(ref widget) = child {
                 if next_button {
-                    state_tree.get_mut(&self.path)
-                        .unwrap().as_layout_mut().set_selected_tab_header(widget.path.clone());
+                    let state = state_tree.get_mut(&self.path)
+                        .unwrap().as_layout_mut();
+                    state.set_selected_tab_header(widget.path.clone());
+                    state.update(scheduler);
                     return
                 } else if state_tree
-                    .get_mut(&self.path).unwrap().as_layout_mut().selected_tab_header ==
+                    .get(&self.path).unwrap().as_layout().selected_tab_header ==
                     widget.path {
                     next_button = true;
                 }
@@ -782,17 +790,19 @@ impl Layout {
         }
     }
 
-    fn handle_tab_right(&self, state_tree: &mut StateTree) {
+    fn handle_tab_right(&self, state_tree: &mut StateTree, scheduler: &mut Scheduler) {
 
         let mut next_button = false;
         for child in self.children.iter() {
             if let EzObjects::Button(ref widget) = child {
                 if next_button {
-                    state_tree.get_mut(&self.path)
-                        .unwrap().as_layout_mut().set_selected_tab_header(widget.path.clone());
+                    let state = state_tree.get_mut(&self.path)
+                        .unwrap().as_layout_mut();
+                    state.set_selected_tab_header(widget.path.clone());
+                    state.update(scheduler);
                     return
                 } else if state_tree
-                    .get_mut(&self.path).unwrap().as_layout_mut().selected_tab_header ==
+                    .get(&self.path).unwrap().as_layout().selected_tab_header ==
                     widget.path {
                     next_button = true;
                 }
@@ -1171,7 +1181,7 @@ impl Layout {
 impl Layout {
 
     /// Handle command by user to scroll down by increasing the scroll_view of y
-    fn handle_scroll_down(&self, state: &mut LayoutState) {
+    fn handle_scroll_down(&self, state: &mut LayoutState, scheduler: &mut Scheduler) {
 
         if !state.get_scrolling_config().enable_y { return }
         let scroll_chunk = (state.get_effective_size().height as f32 * 0.75) as usize;
@@ -1187,10 +1197,11 @@ impl Layout {
             new_view_start = state.get_scrolling_config().view_start_y + scroll_chunk;
         }
         state.get_scrolling_config_mut().view_start_y = new_view_start;
+        state.update(scheduler)
     }
 
     /// Handle command by user to scroll down by decreasing the scroll_view of y
-    fn handle_scroll_up(&self, state: &mut LayoutState) {
+    fn handle_scroll_up(&self, state: &mut LayoutState, scheduler: &mut Scheduler) {
 
         if !state.get_scrolling_config().enable_y { return }
         let scroll_chunk = (state.get_effective_size().height as f32 * 0.75) as usize;
@@ -1204,10 +1215,11 @@ impl Layout {
             new_view_start = state.get_scrolling_config().view_start_y - scroll_chunk;
         }
         state.get_scrolling_config_mut().view_start_y = new_view_start;
+        state.update(scheduler)
     }
 
     /// Handle command by user to scroll down by increasing the scroll_view of x
-    fn handle_scroll_right(&self, state: &mut LayoutState) {
+    fn handle_scroll_right(&self, state: &mut LayoutState, scheduler: &mut Scheduler) {
 
         if !state.get_scrolling_config().enable_x { return }
         let scroll_chunk = (state.get_effective_size().width as f32 * 0.75) as usize;
@@ -1222,10 +1234,11 @@ impl Layout {
             new_view_start = state.get_scrolling_config().view_start_x + scroll_chunk;
         }
         state.get_scrolling_config_mut().view_start_x = new_view_start;
+        state.update(scheduler);
     }
 
     /// Handle command by user to scroll down by decreasing the scroll_view of x
-    fn handle_scroll_left(&self, state: &mut LayoutState) {
+    fn handle_scroll_left(&self, state: &mut LayoutState, scheduler: &mut Scheduler) {
 
         if !state.get_scrolling_config().enable_x { return }
         let scroll_chunk = (state.get_effective_size().width as f32 * 0.75) as usize;
@@ -1239,6 +1252,7 @@ impl Layout {
             new_view_start = state.get_scrolling_config().view_start_x - scroll_chunk;
         }
         state.get_scrolling_config_mut().view_start_x = new_view_start;
+        state.update(scheduler);
     }
 
     /// Create a horizontal scrollbox out of this layout if its contents width exceed its own width

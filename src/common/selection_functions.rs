@@ -42,7 +42,9 @@ pub fn deselect_selected_widget(view_tree: &mut common::definitions::ViewTree,
 
     let selected_widget = get_selected_widget(widget_tree, state_tree);
     if let Some(i) = selected_widget {
-        state_tree.get_mut(&i.get_full_path()).unwrap().as_generic_mut().set_selected(false);
+        let state = state_tree.get_mut(&i.get_full_path()).unwrap().as_generic_mut();
+        state.set_selected(false);
+        state.update(scheduler);
         i.on_deselect(view_tree, state_tree, widget_tree, callback_tree, scheduler);
     }
 }
@@ -66,26 +68,33 @@ pub fn select_next(view_tree: &mut common::definitions::ViewTree,
 
     let current_selection = get_selected_widget(widget_tree, state_tree);
     let mut current_order = if let Some(i) = current_selection {
-        state_tree.get_mut(&i.get_full_path()).unwrap().as_generic_mut().set_selected(false);
+        let state = state_tree.get_mut(&i.get_full_path()).unwrap().as_generic_mut();
+        state.set_selected(false);
+        state.update(scheduler);
+        let order = state.get_selection_order();
         i.on_deselect(view_tree, state_tree, widget_tree, callback_tree, scheduler);
-        state_tree.get_mut(&i.get_full_path()).unwrap().as_generic_mut().get_selection_order()
+        order
     } else {
         0
     };
     let result = find_next_selection(
         current_order, state_tree, &path_prefix);
     if let Some( next_widget) = result {
-        state_tree.get_mut(&next_widget).unwrap().as_generic_mut().set_selected(true);
         widget_tree.get(&next_widget).unwrap().as_ez_object().on_select(
             view_tree,state_tree, widget_tree, callback_tree,scheduler, None);
+        let state = state_tree.get_mut(&next_widget).unwrap().as_generic_mut();
+        state.set_selected(true);
+        state.update(scheduler);
     } else  {
         current_order = 0;
         let result = find_next_selection(
             current_order, state_tree, &path_prefix);
         if let Some( next_widget) = result {
-            state_tree.get_mut(&next_widget).unwrap().as_generic_mut().set_selected(true);
             widget_tree.get(&next_widget).unwrap().as_ez_object().on_select(
                 view_tree,state_tree, widget_tree, callback_tree,scheduler, None);
+            let state = state_tree.get_mut(&next_widget).unwrap().as_generic_mut();
+            state.set_selected(true);
+            state.update(scheduler);
         }
     }
 }
@@ -143,16 +152,22 @@ pub fn select_previous(view_tree: &mut common::definitions::ViewTree, state_tree
 
     let current_selection = get_selected_widget(widget_tree, state_tree);
     let mut current_order = if let Some(i) = current_selection {
-        state_tree.get_mut(&i.get_full_path()).unwrap().as_generic_mut().set_selected(false);
+        let state = state_tree.get_mut(&i.get_full_path()).unwrap().as_generic_mut();
+        state.set_selected(false);
+        state.update(scheduler);
+        let order = state.get_selection_order();
         i.on_deselect(view_tree, state_tree, widget_tree, callback_tree, scheduler);
-        state_tree.get_mut(&i.get_full_path()).unwrap().as_generic().get_selection_order()
+        order
     } else {
         0
     };
     let result = find_previous_selection(
         current_order, state_tree, &path_prefix);
     if let Some( previous_widget) = result {
-        state_tree.get_mut(&previous_widget).unwrap().as_generic_mut().set_selected(true);
+        let state = state_tree.get_mut(&previous_widget).unwrap()
+            .as_generic_mut();
+        state.set_selected(true);
+        state.update(scheduler);
         widget_tree.get(&previous_widget).unwrap().as_ez_object().on_select(
             view_tree,state_tree, widget_tree, callback_tree,scheduler, None);
     } else {
@@ -160,7 +175,9 @@ pub fn select_previous(view_tree: &mut common::definitions::ViewTree, state_tree
         let result = find_previous_selection(
             current_order, state_tree, &path_prefix);
         if let Some( previous_widget) = result {
-            state_tree.get_mut(&previous_widget).unwrap().as_generic_mut().set_selected(true);
+            let state = state_tree.get_mut(&previous_widget).unwrap().as_generic_mut();
+            state.set_selected(true);
+            state.update(scheduler);
             widget_tree.get(&previous_widget).unwrap().as_ez_object().on_select(
                 view_tree,state_tree, widget_tree, callback_tree,scheduler, None);
         }

@@ -10,6 +10,9 @@ use crate::states;
 #[derive(Clone, Debug)]
 pub struct DropdownState {
 
+    /// Path to the widget to which this state belongs
+    pub path: String,
+
     /// Position of this widget relative to its' parent [Layout]
     pub position: StateCoordinates,
 
@@ -76,6 +79,7 @@ pub struct DropdownState {
 impl DropdownState {
     pub fn new(path: String, scheduler: &mut Scheduler) -> Self {
        DropdownState {
+           path: path.clone(),
            position: StateCoordinates::new(0, 0, path, scheduler),
            absolute_position: Coordinates::default(),
            size_hint: SizeHint::default(),
@@ -101,9 +105,9 @@ impl DropdownState {
 }
 impl GenericState for DropdownState {
 
-    fn set_changed(&mut self, changed: bool) { self.changed = changed }
-
-    fn get_changed(&self) -> bool { self.changed }
+    fn get_path(&self) -> &String {
+        &self.path
+    }
 
     fn set_size_hint(&mut self, size_hint: SizeHint) {
         if self.size_hint != size_hint { self.changed = true }
@@ -202,13 +206,6 @@ impl GenericState for DropdownState {
         self.selection_order = order;
     }
 
-    fn set_force_redraw(&mut self, redraw: bool) {
-        self.force_redraw = redraw;
-        self.changed = true;
-    }
-
-    fn get_force_redraw(&self) -> bool { self.force_redraw }
-
     fn set_selected(&mut self, state: bool) {
         if self.selected != state { self.changed = true }
         self.selected = state;
@@ -252,6 +249,9 @@ impl DropdownState {
 /// [State] implementation.
 #[derive(Clone, Debug)]
 pub struct DroppedDownMenuState {
+
+    /// Path to the widget to which this state belongs
+    pub path: String,
 
     /// Widget path of the [Dropdown] that spawned this menu.
     pub parent_path: String,
@@ -307,6 +307,7 @@ impl DroppedDownMenuState {
     pub fn new(path: String, scheduler: &mut Scheduler) -> Self {
 
         DroppedDownMenuState {
+            path: path.clone(),
             parent_path: String::new(),
             position: StateCoordinates::new(0, 0, path, scheduler),
             absolute_position: Coordinates::default(),
@@ -328,9 +329,9 @@ impl DroppedDownMenuState {
 }
 impl GenericState for DroppedDownMenuState {
 
-    fn set_changed(&mut self, changed: bool) { self.changed = changed }
-
-    fn get_changed(&self) -> bool { self.changed }
+    fn get_path(&self) -> &String {
+        &self.path
+    }
 
     fn set_size_hint(&mut self, size_hint: SizeHint) {
         if self.size_hint != size_hint { self.changed = true }
@@ -411,13 +412,6 @@ impl GenericState for DroppedDownMenuState {
         self.changed = true;
         &mut self.colors
     }
-
-    fn set_force_redraw(&mut self, redraw: bool) {
-        self.force_redraw = redraw;
-        self.changed = true;
-    }
-
-    fn get_force_redraw(&self) -> bool { self.force_redraw }
 }
 
 impl DroppedDownMenuState {

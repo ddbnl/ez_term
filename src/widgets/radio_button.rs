@@ -147,6 +147,7 @@ impl RadioButton {
             .as_radio_button_mut();
         if !state.active {
             state.set_active(true);
+            state.update(scheduler);
             if let Some(ref mut i) = callback_tree
                 .get_mut(&self.get_full_path()).unwrap().on_value_change {
                 let context = common::definitions::EzContext::new(

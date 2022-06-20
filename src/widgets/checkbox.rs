@@ -126,6 +126,7 @@ impl Checkbox {
         let state = state_tree.get_mut(&self.get_full_path())
             .unwrap().as_checkbox_mut();
         state.set_active(!state.get_active());
+        state.update(scheduler);
         if let Some(ref mut i) = callback_tree
             .get_mut(&self.get_full_path()).unwrap().on_value_change {
             i(common::definitions::EzContext::new(self.get_full_path().clone(), view_tree,

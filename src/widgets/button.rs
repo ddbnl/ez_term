@@ -153,13 +153,16 @@ impl Button {
     pub fn handle_on_press(&self, state_tree: &mut common::definitions::StateTree,
                            scheduler: &mut Scheduler) {
 
-        state_tree.get_mut(&self.get_full_path()).unwrap().as_button_mut()
-            .set_flashing(true);
+        let state = state_tree.get_mut(&self.get_full_path()).unwrap().as_button_mut();
+        state.set_flashing(true);
+        state.update(scheduler);
         let scheduled_func =
             | context: common::definitions::EzContext | {
                 if !context.state_tree.contains_key(&context.widget_path) { return false }
-                context.state_tree.get_mut(&context.widget_path).unwrap().as_button_mut()
-                    .set_flashing(false);
+                let state = context.state_tree.get_mut(&context.widget_path)
+                    .unwrap().as_button_mut();
+                state.set_flashing(false);
+                state.update(context.scheduler);
                 true
             };
         scheduler.schedule_once(self.get_full_path().clone(),

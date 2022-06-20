@@ -11,6 +11,9 @@ use crate::states::state::GenericState;
 #[derive(Clone, Debug)]
 pub struct SliderState {
 
+    /// Path to the widget to which this state belongs
+    pub path: String,
+
     /// Current value of the slider
     pub value: UsizeProperty,
 
@@ -78,6 +81,7 @@ impl SliderState {
     pub fn new(path: String, scheduler: &mut Scheduler) -> Self {
 
        SliderState {
+           path: path.clone(),
            value: scheduler.new_usize_property(format!("{}/value", path.clone()), 0),
            minimum: 0,
            maximum: 100,
@@ -103,9 +107,9 @@ impl SliderState {
 }
 impl GenericState for SliderState {
 
-    fn set_changed(&mut self, changed: bool) { self.changed = changed }
-
-    fn get_changed(&self) -> bool { self.changed }
+    fn get_path(&self) -> &String {
+        &self.path
+    }
 
     fn set_size_hint(&mut self, size_hint: SizeHint) {
         if self.size_hint != size_hint { self.changed = true }
@@ -205,13 +209,6 @@ impl GenericState for SliderState {
         if self.selection_order != order { self.changed = true };
         self.selection_order = order;
     }
-
-    fn set_force_redraw(&mut self, redraw: bool) {
-        self.force_redraw = redraw;
-        self.changed = true;
-    }
-
-    fn get_force_redraw(&self) -> bool { self.force_redraw }
 
     fn set_selected(&mut self, state: bool) {
         if self.selected != state { self.changed = true }

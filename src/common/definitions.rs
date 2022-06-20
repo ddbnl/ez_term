@@ -1,11 +1,13 @@
 use std::collections::HashMap;
+use std::sync::mpsc::Receiver;
 use crossterm::event::KeyCode;
 use crossterm::style::StyledContent;
-use crate::scheduler;
+use crate::{scheduler, UsizeProperty};
 use crate::widgets::widget::{Pixel, EzObjects};
 use crate::states::definitions::CallbackConfig;
 use crate::states::state::{EzState};
 use crate::parser::EzWidgetDefinition;
+use crate::scheduler::Scheduler;
 
 
 /// # Convenience types
@@ -85,6 +87,12 @@ pub type GenericEzFunction = Box<dyn FnMut(EzContext) -> bool>;
 /// Scheduled task implementation. Using FnMut allows users to capture variables in their scheduled
 /// funcs.
 pub type GenericEzTask = Box<dyn FnMut(EzContext) -> bool>;
+
+
+pub type EzProperties = HashMap<String, (UsizeProperty, Receiver<usize>)>;
+pub type EzPropertyUpdater = Box<dyn FnMut(&mut StateTree, usize) -> String>;
+pub type EzPropertySubscribers = HashMap<String, Vec<EzPropertyUpdater>>;
+pub type EzThread = Vec<(Box<dyn FnOnce(Vec<UsizeProperty>) + Send>, Option<GenericEzTask>)>;
 
 
 /// ## Ez Context:
