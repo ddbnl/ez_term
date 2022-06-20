@@ -1,6 +1,6 @@
 use std::time::Duration;
 use crossterm::style::Color;
-use ez_term::{self, GenericState, EzObject};
+use ez_term::{self, GenericState, EzObject, EzContext};
 
 
 fn main() {
@@ -49,6 +49,7 @@ fn main() {
             Box::new(test_slider_on_value_change)));
 
     // Set a slider on value callback
+    let _ = scheduler.new_usize_property("progress_property".to_string(), 0);
     scheduler.update_callback_config(
         "/root/main_screen/left_box/bottom_box/small_box_2/progress_bar_section_box/progress_button".to_string(),
         ez_term::CallbackConfig::from_on_press(
@@ -344,38 +345,30 @@ fn progress_bar_button(context: ez_term::EzContext) -> bool {
     // We disable the progress bar button first so it cannot be pressed twice.
     context.state_tree.get_mut(&context.widget_path).unwrap().as_generic_mut()
         .set_disabled(true);
-    // We reset the progress of the progress bar to 0.
-    let progress_bar_state = context.state_tree.get_mut(
-        "/root/main_screen/left_box/bottom_box/small_box_2/progress_bar_section_box/progress_bar")
-        .unwrap().as_progress_bar_mut();
-    progress_bar_state.set_value(0);
-    // Now we will schedule a function that increments the progress bar by 0.1 (10%) each second
-    let button_path = context.widget_path.clone();
-    let increment =
-        move |context: ez_term::EzContext| {
-            let progress_bar_state = context.state_tree.get_mut(
-                "/root/main_screen/left_box/bottom_box/small_box_2/progress_bar_section_box/progress_bar")
-                .unwrap().as_progress_bar_mut();
-            if progress_bar_state.value < 90 {
-                progress_bar_state.set_value(progress_bar_state.get_value() + 10);
-            } else {
-                progress_bar_state.set_value(100);
-                context.state_tree.get_mut(&button_path).unwrap().as_generic_mut()
-                    .set_disabled(false);
-                return false
-            }
+    let progress_button_path = "/root/main_screen/left_box/bottom_box/small_box_2/progress_bar_section_box/progress_button".to_string();
+    context.scheduler.schedule_threaded(Box::new(progress_example_app),
+        Some(Box::new(move |context: ez_term::EzContext| {
+            context.state_tree.get_mut(&progress_button_path).unwrap().as_generic_mut()
+                .set_disabled(false);
             true
-        };
-
-    context.scheduler.schedule_interval("/root/main_screen/left_box/bottom_box/small_box_2/progress_bar_section_box/progress_button".to_string(),
-                                        Box::new(increment), Duration::from_secs(1));
+        })));
     false
 }
 
 
-fn progress_example_app(context: ez_term::EzContext) {
+fn progress_example_app(properties: Vec<ez_term::UsizeProperty>) {
 
-    for x in 0..10 {
+    let mut value_property = None;
+    for mut property in properties {
+        if property.name == "progress_property" {
+            value_property = Some(property);
+        }
+    }
+    if value_property == None { panic!("SHEIS")}
+    for x in 1..6 {
+        if let Some(ref mut i) = value_property {
+            i.set(x*20);
+        }
         std::thread::sleep(Duration::from_secs(1))
     };
 }

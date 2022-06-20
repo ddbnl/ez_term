@@ -331,7 +331,7 @@
     - ProgressBar:
         id: progress_bar
         max: 100
-        value: 0
+        value: properties.progress_property
         border: true
 
 

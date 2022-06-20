@@ -4,6 +4,7 @@ use crate::common;
 use crate::common::definitions::{PixelMap, StateTree};
 use crate::widgets::widget::{Pixel, EzObject};
 use crate::parser;
+use crate::parser::load_int_parameter;
 use crate::scheduler::Scheduler;
 use crate::states::progress_bar_state::ProgressBarState;
 
@@ -39,7 +40,15 @@ impl EzObject for ProgressBar {
             &parameter_name, parameter_value.clone(), Box::new(self), scheduler);
         if consumed { return }
         match parameter_name.as_str() {
-            "value" => self.state.set_value(parameter_value.trim().parse().unwrap()),
+            "value" => {
+                let path = self.path.clone();
+                self.state.set_value(load_int_parameter(
+                    parameter_value.trim(), scheduler, self.path.clone(),
+                    Box::new(move |state_tree: &mut StateTree, val: usize| {
+                        state_tree.get_mut(&path)
+                            .unwrap().as_progress_bar_mut().set_value(val);
+                    })))
+            },
             "max" => self.state.set_value(parameter_value.trim().parse().unwrap()),
             _ => panic!("Invalid parameter name for progress bar {}", parameter_name)
         }

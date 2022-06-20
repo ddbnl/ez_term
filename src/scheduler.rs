@@ -3,24 +3,26 @@ use std::sync::mpsc::Receiver;
 use std::time::{Duration, Instant};
 use crate::{CallbackConfig, EzContext, run};
 use crate::common;
-use crate::common::definitions::{CallbackTree, StateTree, ViewTree, WidgetTree};
-use crate::property::{IsizeProperty, UsizeProperty};
-use crate::widgets::text_input::handle_backspace;
+use crate::common::definitions::{CallbackTree, GenericEzTask, StateTree, ViewTree, WidgetTree};
+use crate::property::{UsizeProperty};
 
+type Properties = HashMap<String, (UsizeProperty, Receiver<usize>)>;
 
 #[derive(Default)]
 pub struct Scheduler {
     tasks: Vec<Task>,
+    threads_to_start: Vec<(Box<dyn FnOnce(Vec<UsizeProperty>) + Send>, Option<GenericEzTask>)>,
+    thread_handles: Vec<(std::thread::JoinHandle<()>, Option<GenericEzTask>)>,
     new_callback_configs: Vec<(String, CallbackConfig)>,
     updated_callback_configs: Vec<(String, CallbackConfig)>,
-    usize_properties: HashMap<String, (UsizeProperty, Receiver<usize>)>,
+    usize_properties: Properties,
     usize_property_subscribers: HashMap<String, Vec<Box<dyn FnMut(&mut StateTree, usize)>>>,
 }
 
 
 pub struct Task {
     pub widget: String,
-    pub func: common::definitions::GenericEzTask,
+    pub func: GenericEzTask,
     pub recurring: bool,
     pub canceled: bool,
     pub interval: Duration,
@@ -30,19 +32,54 @@ pub struct Task {
 
 impl Scheduler {
 
-    pub fn schedule_once(&mut self, widget: String, func: common::definitions::GenericEzTask,
+    pub fn schedule_once(&mut self, widget: String, func: GenericEzTask,
                          after: Duration) {
         let task = Task::new(widget, func, false, after,
                              Some(Instant::now()));
         self.tasks.push(task);
     }
 
-    pub fn schedule_interval(&mut self, widget: String,  func: common::definitions::GenericEzTask,
+    pub fn schedule_interval(&mut self, widget: String,  func: GenericEzTask,
                              interval: Duration)
         -> &mut Task {
         let task = Task::new(widget, func, true, interval, None);
         self.tasks.push(task);
         self.tasks.last_mut().unwrap()
+    }
+
+    pub fn schedule_threaded(&mut self, threaded_func: Box<dyn FnOnce(Vec<UsizeProperty>) + Send>,
+                             on_finish: Option<GenericEzTask>) {
+        self.threads_to_start.push((threaded_func, on_finish));
+    }
+
+    pub fn update_threads(&mut self, view_tree: &mut ViewTree, state_tree: &mut StateTree,
+                          widget_tree: &WidgetTree, _callback_tree: &mut CallbackTree) {
+
+        while !self.threads_to_start.is_empty() {
+            let (thread_func, on_finish) = self.threads_to_start.pop().unwrap();
+            let mut properties = Vec::new();
+            for (property, _) in  self.usize_properties.values() {
+                properties.push(property.clone());
+            }
+            let handle: std::thread::JoinHandle<()> = std::thread::spawn(move || thread_func(properties));
+            self.thread_handles.push((handle, on_finish))
+        }
+        let mut finished = Vec::new();
+        for (i, (handle, _)) in self.thread_handles.iter_mut().enumerate() {
+            if handle.is_finished() {
+                finished.push(i);
+
+            }
+        }
+        for i in finished {
+            let (handle, on_finish) = self.thread_handles.remove(i);
+            if let Some(mut func) = on_finish {
+                let context = EzContext::new(String::new(), view_tree,
+                                             state_tree, widget_tree, self);
+                func(context);
+            }
+            handle.join();
+        }
     }
 
     pub fn run_tasks(&mut self, view_tree: &mut ViewTree, state_tree: &mut StateTree,
@@ -105,9 +142,7 @@ impl Scheduler {
         }
     }
 
-    pub fn exit(&self) {
-        run::stop();
-    }
+    pub fn exit(&self) { run::stop(); }
 
     pub fn new_usize_property(&mut self, name: String, value: usize) -> UsizeProperty {
 
