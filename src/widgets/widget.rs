@@ -371,6 +371,38 @@ pub trait EzObject {
         false
     }
 
+    /// Called on an object when it is mouse scrolled up. This default implementation only calls the
+    /// appropriate callback. Objects can overwrite this function but must remember to also call
+    /// the callback.
+    fn on_scroll_up(&self, view_tree: &mut ViewTree, state_tree: &mut StateTree,
+                            widget_tree: &WidgetTree, callback_tree: &mut CallbackTree,
+                            scheduler: &mut Scheduler)
+                            -> bool {
+
+        if let Some(ref mut i) = callback_tree
+            .get_mut(&self.get_full_path()).unwrap().on_scroll_up {
+            return i(common::definitions::EzContext::new(
+                self.get_full_path(), view_tree, state_tree, widget_tree, scheduler))
+        }
+        false
+    }
+
+    /// Called on an object when it is mouse scrolled down. This default implementation only calls
+    /// the appropriate callback. Objects can overwrite this function but must remember to also call
+    /// the callback.
+    fn on_scroll_down(&self, view_tree: &mut ViewTree, state_tree: &mut StateTree,
+                    widget_tree: &WidgetTree, callback_tree: &mut CallbackTree,
+                    scheduler: &mut Scheduler)
+                    -> bool {
+
+        if let Some(ref mut i) = callback_tree
+            .get_mut(&self.get_full_path()).unwrap().on_scroll_down {
+            return i(common::definitions::EzContext::new(
+                self.get_full_path(), view_tree, state_tree, widget_tree, scheduler))
+        }
+        false
+    }
+
     /// Called on an object when its' value changes. This default implementation only calls the
     /// appropriate callback. Objects can overwrite this function but must remember to also call
     /// the callback.

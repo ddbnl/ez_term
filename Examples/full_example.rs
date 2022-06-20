@@ -187,6 +187,7 @@ fn test_slider_on_value_change(context: ez_term::EzContext) -> bool {
         .as_label_mut();
     label_state.set_text(text);
     label_state.get_colors_config_mut().foreground = color;
+    label_state.update(context.scheduler);
     false
 }
 

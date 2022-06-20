@@ -1,7 +1,8 @@
 //! # Layout
 //! Module implementing the Layout struct.
 use std::collections::HashMap;
-use crossterm::event::{Event, KeyCode};
+use std::io::Error;
+use crossterm::event::{Event, KeyCode, MouseEventKind};
 use crate::parser;
 use crate::common;
 use crate::common::definitions::{CallbackTree, EzContext, PixelMap, StateTree, ViewTree, WidgetTree,
@@ -185,6 +186,30 @@ impl EzObject for Layout {
                 }
                 return true
             }
+        }
+        false
+    }
+
+    fn on_scroll_up(&self, view_tree: &mut ViewTree, state_tree: &mut StateTree,
+                    widget_tree: &WidgetTree, callback_tree: &mut CallbackTree,
+                    scheduler: &mut Scheduler) -> bool {
+
+        let state = state_tree.get_mut(&self.path).unwrap().as_layout_mut();
+        if state.scrolling_config.is_scrolling_y || state.scrolling_config.is_scrolling_x {
+            self.handle_scroll_up(state, scheduler);
+            return true
+        }
+        return false
+    }
+
+    fn on_scroll_down(&self, view_tree: &mut ViewTree, state_tree: &mut StateTree,
+                      widget_tree: &WidgetTree, callback_tree: &mut CallbackTree,
+                      scheduler: &mut Scheduler) -> bool {
+
+        let state = state_tree.get_mut(&self.path).unwrap().as_layout_mut();
+        if state.scrolling_config.is_scrolling_y || state.scrolling_config.is_scrolling_x {
+            self.handle_scroll_down(state, scheduler);
+            return true
         }
         false
     }
@@ -595,10 +620,11 @@ impl Layout {
                 tab_header.state.text = id;
 
                 let tab_on_click = move |context: EzContext| {
-                    context.state_tree
+                    let state = context.state_tree
                         .get_mut(&parent_path)
-                        .unwrap().as_layout_mut()
-                        .set_active_tab(path.clone());
+                        .unwrap().as_layout_mut();
+                    state.set_active_tab(path.clone());
+                    state.update(context.scheduler);
                     true
                 };
                 let callback_config = CallbackConfig::from_on_press(

@@ -7,7 +7,6 @@ use crate::widgets::widget::{Pixel, EzObjects};
 use crate::states::definitions::CallbackConfig;
 use crate::states::state::{EzState};
 use crate::parser::EzWidgetDefinition;
-use crate::scheduler::Scheduler;
 
 
 /// # Convenience types
@@ -73,8 +72,7 @@ pub type MouseCallbackFunction = Box<dyn FnMut(EzContext, Coordinates) -> bool>;
 /// ## Optional mouse callback function:
 /// This is used for callbacks that may or may not have been initiated by mouse. 'on_select' uses
 /// this for example, because a widget may have been selected by mouse, or maybe by keyboard.
-pub type OptionalMouseCallbackFunction = Box<dyn FnMut(
-    EzContext, Option<Coordinates>) -> bool>;
+pub type OptionalMouseCallbackFunction = Box<dyn FnMut(EzContext, Option<Coordinates>) -> bool>;
 
 
 /// ## Generic Ez function:

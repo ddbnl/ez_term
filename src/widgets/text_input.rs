@@ -1,6 +1,7 @@
 //! # Text input Widget
 //! A widget implementing a field in which the user can input characters. Supports on_value_change
 //! and on_keyboard_enter callbacks.
+use std::cmp::min;
 use std::time::Duration;
 use crossterm::event::{Event, KeyCode};
 use crate::parser;
@@ -74,11 +75,11 @@ impl EzObject for TextInput {
             .get_mut(&self.get_full_path()).unwrap().as_text_input_mut();
         let (fg_color, bg_color) = state.get_context_colors();
         let mut text = state.get_text();
-        if text.len() > state.get_size().width - 1 {
+        if text.len() > state.get_effective_size().width - 1 {
             let remains = text.len() - state.get_view_start();
             let view_end =
-                if remains > (state.get_size().width - 1) {
-                    state.get_view_start() + (state.get_size().width - 1)
+                if remains > (state.get_effective_size().width - 1) {
+                    state.get_view_start() + (state.get_effective_size().width - 1)
                 } else {
                     text.len()
                 };
@@ -248,7 +249,7 @@ pub fn handle_char(state: &mut TextInputState, char: char, scheduler: &mut Sched
     let mut text;
 
     // Text still fits in widget, add char as normal
-    if state.get_text().len() < state.get_effective_size().width {
+    if state.get_text().len() < state.get_effective_size().width - 1 {
         text = state.get_text();
         text = format!("{}{}{}", text[0..cursor_pos.x as usize].to_string(), char,
                        text[(cursor_pos.x) as usize..text.len()].to_string());
@@ -264,13 +265,19 @@ pub fn handle_char(state: &mut TextInputState, char: char, scheduler: &mut Sched
         let (pre_view_text, mut view_text, post_view_text) =
             get_view_parts(state.get_text(), state.get_view_start(),
                            state.get_effective_size().width);
-        view_text = format!("{}{}{}",
-                            view_text[0..cursor_pos.x as usize].to_string(), char,
-                            view_text[(cursor_pos.x) as usize..view_text.len()].to_string());
+        if cursor_pos.x < state.get_effective_size().width - 1 {
+            view_text = format!("{}{}{}",
+                                view_text[0..min(cursor_pos.x, view_text.len()) as usize].to_string(), char,
+                                view_text[min(cursor_pos.x as usize, view_text.len())..view_text.len()].to_string());
+        } else {
+            view_text = format!("{}{}", view_text, char);
+        }
         let new_text = format!("{}{}{}", pre_view_text, view_text, post_view_text);
         state.set_text(new_text);
         if state.cursor_pos.x < state.get_effective_size().width - 1 {
+            state.cursor_pos.x += 1;
         } else {
+            state.cursor_pos.x -= 1;
             state.view_start += 2;
         }
     }

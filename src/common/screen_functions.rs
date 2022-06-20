@@ -79,6 +79,7 @@ pub fn redraw_widgets(paths: &mut Vec<String>, view_tree: &mut ViewTree,
 
     'outer: while !paths.is_empty() {
         let mut widget_path= paths.pop().unwrap();
+        widget_path = widget_path.rsplit_once('/').unwrap().0.to_string();
         if widget_path.is_empty() || widget_path == root_widget.path {
             root_widget.redraw(view_tree, state_tree);
         } else {

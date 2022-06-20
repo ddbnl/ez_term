@@ -208,8 +208,6 @@ fn run_loop(mut root_widget: Layout, mut callback_tree: CallbackTree, mut schedu
             scheduler.update_properties(&mut state_tree);
         }
         root_widget.state = state_tree.get("/root").unwrap().as_layout().clone();
-        common::screen_functions::clean_trees(
-            &mut root_widget, &mut state_tree, &mut callback_tree);
 
         // Update the state tree for each widget, redrawing any that changed. If a global
         // forced redraw was issued by a widget we'll perform one.
@@ -226,6 +224,8 @@ fn run_loop(mut root_widget: Layout, mut callback_tree: CallbackTree, mut schedu
         common::screen_functions::write_to_screen(&old_view_tree, &view_tree);
         scheduler.force_redraw = false;
 
+        common::screen_functions::clean_trees(
+            &mut root_widget, &mut state_tree, &mut callback_tree);
         track_mouse_pos = !root_widget.state.open_modals.is_empty();
     }
 }
@@ -363,6 +363,23 @@ fn handle_mouse_event(event: MouseEvent, view_tree: &mut ViewTree, state_tree: &
                 _ => { false }
             };
             if consumed { return true }
+        }
+    } else if let MouseEventKind::ScrollUp = event.kind {
+        let mouse_position = Coordinates::new(event.column as usize,event.row as usize);
+        for widget in common::selection_functions::get_widget_by_position(
+            mouse_position, widget_tree, state_tree) {
+            let consumed = widget.on_scroll_up(view_tree, state_tree, widget_tree, callback_tree,
+                                       scheduler);
+            if consumed { return consumed }
+        }
+    } else if let MouseEventKind::ScrollDown = event.kind {
+        let mouse_position = Coordinates::new(
+        event.column as usize,event.row as usize);
+        for widget in common::selection_functions::get_widget_by_position(
+            mouse_position, widget_tree, state_tree) {
+            let consumed = widget.on_scroll_down(view_tree, state_tree, widget_tree, callback_tree,
+                                       scheduler);
+            if consumed { return consumed }
         }
     }
     false

@@ -173,6 +173,12 @@ pub struct CallbackConfig {
     /// Function to call when this widget is right clicked
     pub on_right_mouse_click: Option<common::definitions::MouseCallbackFunction>,
 
+    /// Function to call when this widget is scrolled up
+    pub on_scroll_up: Option<common::definitions::GenericEzFunction>,
+
+    /// Function to call when this widget is scrolled down
+    pub on_scroll_down: Option<common::definitions::GenericEzFunction>,
+
     /// Function to call when the value of an object changes
     pub on_value_change: Option<common::definitions::GenericEzFunction>,
 
@@ -222,6 +228,18 @@ impl CallbackConfig {
         obj
     }
 
+    pub fn from_on_scroll_up(func: common::definitions::GenericEzFunction) -> Self {
+        let mut obj = CallbackConfig::default();
+        obj.on_scroll_up = Some(func);
+        obj
+    }
+
+    pub fn from_on_scroll_down(func: common::definitions::GenericEzFunction) -> Self {
+        let mut obj = CallbackConfig::default();
+        obj.on_scroll_down = Some(func);
+        obj
+    }
+
     pub fn from_on_value_change(func: common::definitions::GenericEzFunction) -> Self {
         let mut obj = CallbackConfig::default();
         obj.on_value_change = Some(func);
@@ -236,19 +254,23 @@ impl CallbackConfig {
 
     pub fn update_from(&mut self, other: CallbackConfig)  {
         if let None = other.on_value_change {}
-        else { self.on_value_change = other.on_value_change};
+            else { self.on_value_change = other.on_value_change};
         if let None = other.on_deselect {}
-        else { self.on_deselect = other.on_deselect};
+            else { self.on_deselect = other.on_deselect};
         if let None = other.on_select {}
-        else { self.on_select = other.on_select};
+            else { self.on_select = other.on_select};
         if let None = other.on_press {}
-        else { self.on_press = other.on_press};
+            else { self.on_press = other.on_press};
         if let None = other.on_left_mouse_click {}
-        else { self.on_left_mouse_click = other.on_left_mouse_click};
+            else { self.on_left_mouse_click = other.on_left_mouse_click};
         if let None = other.on_right_mouse_click {}
-        else { self.on_right_mouse_click = other.on_right_mouse_click};
+            else { self.on_right_mouse_click = other.on_right_mouse_click};
+        if let None = other.on_scroll_up {}
+            else { self.on_scroll_up = other.on_scroll_up};
+        if let None = other.on_scroll_down {}
+            else { self.on_scroll_down = other.on_scroll_down};
         if let None = other.on_keyboard_enter {}
-        else { self.on_keyboard_enter = other.on_keyboard_enter};
+            else { self.on_keyboard_enter = other.on_keyboard_enter};
         self.keymap.extend(other.keymap);
     }
 

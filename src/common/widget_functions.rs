@@ -15,6 +15,8 @@ pub fn open_popup(template: String, state_tree: &mut StateTree,
     let state = state_tree.get_mut("/root").unwrap().as_layout_mut();
     state.update(scheduler);
     let (path, sub_tree) = state.open_popup(template, scheduler);
+    state_tree.extend(sub_tree);
+    let state = state_tree.get_mut("/root").unwrap().as_layout_mut();
     scheduler.set_callback_config(path.clone(),
                                   CallbackConfig::default());
     let modal = state.open_modals.first().unwrap();
@@ -24,7 +26,6 @@ pub fn open_popup(template: String, state_tree: &mut StateTree,
                                           CallbackConfig::default());
         }
     }
-    state_tree.extend(sub_tree);
     path
 }
 
@@ -444,11 +445,11 @@ pub fn is_in_view(path: String, state_tree: &StateTree) -> bool {
 
 pub fn widget_is_hidden(widget_path: String, state_tree: &StateTree) -> bool {
 
+    if widget_path.starts_with("/modal") { return false }
     let mut check_parent =
         widget_path.rsplit_once('/').unwrap().0.to_string();
     let mut check_child = widget_path.clone();
     loop {
-        if check_parent == "/modal" { break }
         let parent_state = state_tree.get(&check_parent).unwrap().as_layout();
         if parent_state.mode == LayoutMode::Screen &&
             parent_state.active_screen != check_child.rsplit_once('/').unwrap().1 {

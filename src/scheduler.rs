@@ -173,7 +173,15 @@ impl Scheduler {
         self.usize_property_subscribers.get_mut(&name).unwrap().push(update_func);
     }
 
-    pub fn update_widget(&mut self, path: String) { self.widgets_to_update.push(path); }
+    pub fn update_widget(&mut self, path: String) {
+        if path.starts_with("/modal") {
+            self.force_redraw = true;
+            return
+        }
+        if !self.widgets_to_update.contains(&path) {
+            self.widgets_to_update.push(path);
+        }
+    }
 
     pub fn force_redraw(&mut self) { self.force_redraw = true; }
 }
