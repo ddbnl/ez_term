@@ -17,9 +17,10 @@ pub struct Scheduler {
     thread_handles: Vec<(std::thread::JoinHandle<()>, Option<GenericEzTask>)>,
     new_callback_configs: Vec<(String, CallbackConfig)>,
     updated_callback_configs: Vec<(String, CallbackConfig)>,
-    properties: HashMap<String, EzProperties>,
+    pub properties: HashMap<String, EzProperties>,
     property_receivers: HashMap<String, Receiver<EzValues>>,
     property_subscribers: HashMap<String, Vec<EzPropertyUpdater>>,
+    property_callbacks: HashMap<String, Vec<Box<dyn FnMut(EzContext)>>>,
 }
 
 
@@ -175,9 +176,11 @@ impl Scheduler {
         property
     }
 
-    pub fn update_properties(&mut self, state_tree: &mut StateTree) {
+    pub fn update_properties(&mut self, view_tree: &mut ViewTree, state_tree: &mut StateTree,
+                             widget_tree: &WidgetTree, callback_tree: &mut CallbackTree) {
 
         let mut to_update = Vec::new();
+        let mut to_callback = Vec::new();
 
         for (name, update_funcs) in
                 self.property_subscribers.iter_mut() {
@@ -188,8 +191,20 @@ impl Scheduler {
                 new_val = Some(new);
             }
             if let Some(val) = new_val {
+                to_callback.push(name.clone());
                 for update_func in update_funcs {
                     to_update.push(update_func(state_tree, val.clone()));
+                }
+            }
+        }
+        for name in to_callback {
+            if callback_tree.contains_key(&name) {
+                let context =
+                    EzContext::new(name.clone(), view_tree, state_tree,
+                                   widget_tree,self);
+                if let Some(ref mut callback) =
+                        callback_tree.get_mut(&name).unwrap().on_value_change {
+                    callback(context);
                 }
             }
         }
@@ -215,6 +230,13 @@ impl Scheduler {
     }
 
     pub fn force_redraw(&mut self) { self.force_redraw = true; }
+
+    pub fn bind_ez_property_callback(&mut self, name: String, callback: Box<dyn FnMut(EzContext)>) {
+
+        let callbacks =
+            self.property_callbacks.entry(name).or_insert(Vec::new());
+        callbacks.push(callback);
+    }
 }
 
 impl Task {

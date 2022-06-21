@@ -6,6 +6,7 @@ use std::io::{stdout, Write};
 use std::collections::HashMap;
 use crate::common;
 use crate::common::definitions::{StateTree, ViewTree, Coordinates};
+use crate::scheduler::Scheduler;
 use crate::widgets::layout::Layout;
 use crate::states::definitions::CallbackConfig;
 use crate::widgets::widget::{Pixel, EzObject};
@@ -147,7 +148,7 @@ pub fn initialize_callback_tree(root_layout: &Layout) -> common::definitions::Ca
 /// Clean up orphaned states and callback configs in their respective trees. E.g. for when a
 /// modal closes.
 pub fn clean_trees(root_widget: &mut Layout, state_tree: &mut common::definitions::StateTree,
-                   callback_tree: &mut common::definitions::CallbackTree) {
+                   callback_tree: &mut common::definitions::CallbackTree, scheduler: &mut Scheduler) {
 
     let widget_tree = root_widget.get_widget_tree();
     let state_paths: Vec<String> = state_tree.keys().into_iter().cloned().collect();
@@ -158,7 +159,7 @@ pub fn clean_trees(root_widget: &mut Layout, state_tree: &mut common::definition
     }
     let callback_paths: Vec<String> = callback_tree.keys().into_iter().cloned().collect();
     for path in callback_paths {
-        if path != "/root" && !widget_tree.contains_key(&path) {
+        if path != "/root" && !widget_tree.contains_key(&path) && !scheduler.properties.contains_key(&path) {
             callback_tree.remove(&path);
         }
     }

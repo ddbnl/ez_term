@@ -205,7 +205,8 @@ fn run_loop(mut root_widget: Layout, mut callback_tree: CallbackTree, mut schedu
             scheduler.run_tasks(
                 &mut view_tree, &mut state_tree, &widget_tree, &mut callback_tree);
             scheduler.update_threads(&mut view_tree, &mut state_tree, &widget_tree);
-            scheduler.update_properties(&mut state_tree);
+            scheduler.update_properties(&mut view_tree, &mut state_tree, &widget_tree,
+                                        &mut callback_tree);
         }
         root_widget.state = state_tree.get("/root").unwrap().as_layout().clone();
 
@@ -225,7 +226,7 @@ fn run_loop(mut root_widget: Layout, mut callback_tree: CallbackTree, mut schedu
         scheduler.force_redraw = false;
 
         common::screen_functions::clean_trees(
-            &mut root_widget, &mut state_tree, &mut callback_tree);
+            &mut root_widget, &mut state_tree, &mut callback_tree, &mut scheduler);
         track_mouse_pos = !root_widget.state.open_modals.is_empty();
     }
 }

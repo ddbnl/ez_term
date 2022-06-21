@@ -1,6 +1,9 @@
 use std::cmp::Ordering;
 use std::ops::{Add, Sub};
 use std::sync::mpsc::{Sender, Receiver, channel};
+use crate::common::definitions::{CallbackTree, GenericEzFunction};
+use crate::{CallbackConfig, EzContext};
+use crate::scheduler::Scheduler;
 
 
 #[derive(Clone, Debug)]
@@ -68,11 +71,26 @@ impl EzProperties {
 }
 
 
+pub trait EzProperty {
+
+    fn bind(&self, callback: GenericEzFunction, scheduler: &mut Scheduler) {
+
+        let config = CallbackConfig::from_on_value_change(callback);
+        scheduler.set_callback_config(self.get_name().to_string(), config);
+    }
+
+    fn get_name(&self) -> &String;
+}
+
+
 #[derive(Clone, Debug)]
 pub struct UsizeProperty {
     pub name: String,
     pub value: usize,
     tx: Sender<EzValues>,
+}
+impl EzProperty for UsizeProperty {
+    fn get_name(&self) -> &String { &self.name }
 }
 impl UsizeProperty {
 
@@ -134,6 +152,9 @@ pub struct StringProperty {
     pub name: String,
     pub value: String,
     tx: Sender<EzValues>,
+}
+impl EzProperty for StringProperty {
+    fn get_name(&self) -> &String { &self.name }
 }
 impl StringProperty {
 

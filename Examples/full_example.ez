@@ -328,6 +328,11 @@
         selection_order: 18
         bg_color: red
         fg_color: yellow
+    - Label:
+        id: progress_label
+        text: 0%
+        auto_scale: True, True
+        halign: center
     - ProgressBar:
         id: progress_bar
         max: 100

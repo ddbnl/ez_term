@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::time::Duration;
 use crossterm::style::Color;
-use ez_term::{self, GenericState, EzObject, EzContext};
+use ez_term::{self, GenericState, EzObject, EzContext, EzProperty};
 
 
 fn main() {
@@ -51,7 +51,17 @@ fn main() {
             Box::new(test_slider_on_value_change)));
 
     // Set a slider on value callback
-    let _ = scheduler.new_usize_property("progress_property".to_string(), 0);
+    let value_property = scheduler.new_usize_property("progress_property".to_string(), 0);
+    let value_property_callback = |context: EzContext| {
+        let val = context.state_tree.get("/root/main_screen/left_box/bottom_box/small_box_2/progress_bar_section_box/progress_bar")
+            .unwrap().as_progress_bar().value.clone();
+        let state = context.state_tree.get_mut("/root/main_screen/left_box/bottom_box/small_box_2/progress_bar_section_box/progress_label")
+            .unwrap().as_label_mut();
+        state.text.set(format!("{}%", val.to_string()));
+        state.update(context.scheduler);
+        true
+    };
+    value_property.bind(Box::new(value_property_callback), &mut scheduler);
     scheduler.update_callback_config(
         "/root/main_screen/left_box/bottom_box/small_box_2/progress_bar_section_box/progress_button".to_string(),
         ez_term::CallbackConfig::from_on_press(

@@ -15,4 +15,4 @@ pub use crate::parser::load_ez_ui;
 pub use crate::common::widget_functions::open_popup;
 pub use crate::states::state::GenericState;
 pub use crate::widgets::widget::EzObject;
-pub use crate::property::EzProperties;
+pub use crate::property::{EzProperties, EzProperty};
