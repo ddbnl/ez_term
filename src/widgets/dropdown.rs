@@ -4,8 +4,8 @@
 //! values for the user to select.
 use crossterm::event::{Event, KeyCode, MouseButton, MouseEventKind};
 use crate::common;
-use crate::common::definitions::Coordinates;
-use crate::states::definitions::{Size, AutoScale, SizeHint, Padding, PosHint, StateCoordinates};
+use crate::common::definitions::{CallbackTree, Coordinates, StateTree, ViewTree, WidgetTree};
+use crate::states::definitions::{StateSize, AutoScale, SizeHint, Padding, PosHint, StateCoordinates};
 use crate::states::dropdown_state::{DropdownState, DroppedDownMenuState};
 use crate::states::state::{EzState, GenericState};
 use crate::widgets::widget::{self, EzObject};
@@ -94,7 +94,7 @@ impl EzObject for Dropdown {
         let mut text = active.chars().rev().collect::<String>();
         let mut contents = Vec::new();
 
-        let write_width = if state.get_effective_size().infinite_width { text.len() }
+        let write_width = if state.get_size().infinite_width { text.len() }
                                 else {state.get_effective_size().width };
 
         for _ in 0..write_width {
@@ -116,10 +116,8 @@ impl EzObject for Dropdown {
 
 
     /// Called when the widgets is not dropped down and enter/left mouse click occurs on it.
-    fn on_press(&self, _view_tree: &mut common::definitions::ViewTree,
-                state_tree: &mut common::definitions::StateTree,
-                _widget_tree: &common::definitions::WidgetTree,
-                _callback_tree: &mut common::definitions::CallbackTree,
+    fn on_press(&self, _view_tree: &mut ViewTree, state_tree: &mut StateTree,
+                _widget_tree: &WidgetTree, _callback_tree: &mut CallbackTree,
                 scheduler: &mut Scheduler) -> bool {
 
         let state = state_tree.get(&self.get_full_path()).unwrap()
@@ -132,14 +130,16 @@ impl EzObject for Dropdown {
                 format!("{}/position", modal_path), scheduler);
         let new_modal_state = DroppedDownMenuState {
             path: modal_path.clone(),
-            size: Size::new(
-                state.get_size().width, state.total_options() + 2),
+            size: StateSize::new(
+                state.get_size().width.value, state.total_options() + 2,
+                modal_path.clone(), scheduler),
             auto_scale: AutoScale::new(false, false),
             options: state.get_options(),
             allow_none: state.allow_none,
             size_hint: SizeHint::new(None, None),
             position,
-            padding: Padding::new(0, 0, 0, 0),
+            padding: Padding::new(0, 0, 0, 0, modal_path.clone(),
+                                  scheduler),
             absolute_position: state.get_absolute_position(),
             pos_hint: PosHint::new(None, None),
             dropped_down_selected_row: 1,
@@ -372,7 +372,7 @@ impl DroppedDownMenu {
         if state.collides(pos) {
             let clicked_row = pos.y - state.absolute_position.y;
             // Check if not click on border
-            if clicked_row != 0 && clicked_row <= state.get_effective_size().height {
+            if clicked_row != 0 && clicked_row <= state.get_effective_size().height - 2 {
                 let choice = state.get_dropped_down_options()[clicked_row - 1]
                     .clone();
                 let state = state_tree.get_mut(&parent).unwrap().as_dropdown_mut();

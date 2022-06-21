@@ -37,13 +37,13 @@ pub fn resize_with_size_hint(state: &mut EzState, parent_width: usize, parent_he
     if let Some(size_hint_x) = mut_state.get_size_hint().x {
         let raw_child_size = parent_width as f64 * size_hint_x;
         let child_size = raw_child_size.round() as usize;
-        mut_state.get_size_mut().width = child_size;
+        mut_state.get_size_mut().width.set(child_size);
     }
 
     if let Some(size_hint_y) = mut_state.get_size_hint().y {
         let raw_child_size = parent_height as f64 * size_hint_y;
         let child_size = raw_child_size.round() as usize;
-        mut_state.get_size_mut().height = child_size;
+        mut_state.get_size_mut().height.set(child_size);
     }
 }
 
@@ -56,10 +56,10 @@ pub fn reposition_with_pos_hint(parent_width: usize, parent_height: usize,
     if let Some((keyword, fraction)) = child_state.get_pos_hint().x {
         let initial_pos = match keyword {
             HorizontalPositionHint::Left => 0,
-            HorizontalPositionHint::Right => parent_width - child_state.get_size().width,
+            HorizontalPositionHint::Right => parent_width - child_state.get_size().width.value,
             HorizontalPositionHint::Center =>
                 (parent_width as f64 / 2.0).round() as usize -
-                    (child_state.get_size().width as f64 / 2.0).round() as usize,
+                    (child_state.get_size().width.value as f64 / 2.0).round() as usize,
         };
         let x = (initial_pos as f64 * fraction).round() as usize;
         child_state.get_position_mut().x.set(x);
@@ -68,10 +68,10 @@ pub fn reposition_with_pos_hint(parent_width: usize, parent_height: usize,
     if let Some((keyword, fraction)) = child_state.get_pos_hint().y {
         let initial_pos = match keyword {
             VerticalPositionHint::Top => 0,
-            VerticalPositionHint::Bottom => parent_height - child_state.get_size().height,
+            VerticalPositionHint::Bottom => parent_height - child_state.get_size().height.value,
             VerticalPositionHint::Middle =>
                 (parent_height as f64 / 2.0).round() as usize -
-                    (child_state.get_size().height as f64 / 2.0).round() as usize,
+                    (child_state.get_size().height.value as f64 / 2.0).round() as usize,
         };
         let y = (initial_pos as f64 * fraction).round() as usize;
         child_state.get_position_mut().y.set(y);
@@ -142,22 +142,22 @@ pub fn add_padding(mut content: common::definitions::PixelMap, padding: &Padding
     for _ in 0..content[0].len() {
         vertical_padding.push(padding_pixel.clone());
     }
-    for _ in 0..padding.left {
+    for _ in 0..padding.left.value {
         content.insert(0, vertical_padding.clone());
     }
-    for _ in 0..padding.right {
+    for _ in 0..padding.right.value {
         content.push(vertical_padding.clone());
     }
     if padding.top != 0 {
         for x in content.iter_mut() {
-            for _ in 0..padding.top {
+            for _ in 0..padding.top.value {
                 x.insert(0, padding_pixel.clone());
             }
         }
     }
     if padding.bottom != 0 {
         for x in content.iter_mut() {
-            for _ in 0..padding.bottom {
+            for _ in 0..padding.bottom.value {
                 x.push(padding_pixel.clone());
             }
         }
@@ -411,9 +411,9 @@ pub fn is_in_view(path: String, state_tree: &StateTree) -> bool {
         // If there's no visible height and width then we're not scrolling. Simply check if obj is
         // inside of the root window.
         if (visible_width == None &&
-            state.as_generic().get_effective_absolute_position().x > window_size.width) ||
+            state.as_generic().get_effective_absolute_position().x > window_size.width.value) ||
             (visible_height == None &&
-                state.as_generic().get_effective_absolute_position().y > window_size.height) {
+                state.as_generic().get_effective_absolute_position().y > window_size.height.value) {
             return false
         }
 

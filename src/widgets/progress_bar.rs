@@ -74,7 +74,7 @@ impl EzObject for ProgressBar {
 
         let state = state_tree.get_mut(&self.get_full_path()).unwrap()
             .as_progress_bar_mut();
-        state.size.height = 1;
+        state.size.height.set(1);
 
         let mut contents = PixelMap::new();
 

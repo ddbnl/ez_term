@@ -1,7 +1,8 @@
-use crossterm::style::Color;
 use crate::scheduler::Scheduler;
 use crate::common::definitions::Coordinates;
-use crate::states::definitions::{StateCoordinates, SizeHint, PosHint, Size, AutoScale, Padding, HorizontalAlignment, VerticalAlignment, BorderConfig, ColorConfig, HorizontalPositionHint, VerticalPositionHint};
+use crate::states::definitions::{StateCoordinates, SizeHint, PosHint, StateSize, AutoScale, Padding,
+                                 HorizontalAlignment, VerticalAlignment, BorderConfig, ColorConfig,
+                                 HorizontalPositionHint, VerticalPositionHint};
 use crate::states::state::GenericState;
 
 
@@ -28,7 +29,7 @@ pub struct ButtonState {
     pub pos_hint: PosHint,
 
     /// size of this widget
-    pub size: Size,
+    pub size: StateSize,
 
     /// Automatically adjust size of widget to content
     pub auto_scale: AutoScale,
@@ -74,13 +75,13 @@ impl ButtonState {
 
        ButtonState {
            path: path.clone(),
-           position: StateCoordinates::new(0, 0, path, scheduler),
+           position: StateCoordinates::new(0, 0, path.clone(), scheduler),
            absolute_position: Coordinates::default(),
-           size: Size::default(),
+           size: StateSize::new(0, 0, path.clone(), scheduler),
            size_hint: SizeHint::default(),
            pos_hint: PosHint::default(),
            auto_scale: AutoScale::default(),
-           padding: Padding::default(),
+           padding: Padding::new(0, 0, 0, 0, path, scheduler),
            halign: HorizontalAlignment::Left,
            valign: VerticalAlignment::Top,
            text: String::new(),
@@ -97,9 +98,7 @@ impl ButtonState {
 }
 impl GenericState for ButtonState {
 
-    fn get_path(&self) -> &String {
-       &self.path
-    }
+    fn get_path(&self) -> &String { &self.path }
 
     fn set_size_hint(&mut self, size_hint: SizeHint) {
         if self.size_hint != size_hint { self.changed = true }
@@ -122,11 +121,9 @@ impl GenericState for ButtonState {
 
     fn get_auto_scale(&self) -> &AutoScale { &self.auto_scale }
 
-    fn set_size(&mut self, size: Size) { self.size = size; }
+    fn get_size(&self) -> &StateSize { &self.size }
 
-    fn get_size(&self) -> &Size { &self.size }
-
-    fn get_size_mut(&mut self) -> &mut Size { &mut self.size }
+    fn get_size_mut(&mut self) -> &mut StateSize { &mut self.size }
 
     fn get_position(&self) -> &StateCoordinates { &self.position }
 
@@ -153,12 +150,9 @@ impl GenericState for ButtonState {
 
     fn get_vertical_alignment(&self) -> VerticalAlignment { self.valign }
 
-    fn set_padding(&mut self, padding: Padding) {
-        if self.padding != padding { self.changed = true }
-        self.padding = padding;
-    }
-
     fn get_padding(&self) -> &Padding { &self.padding }
+
+    fn get_padding_mut(&mut self) -> &mut Padding { &mut self.padding }
 
     fn set_border_config(&mut self, config: BorderConfig) {
         if self.border_config != config { self.changed = true }

@@ -74,9 +74,9 @@ impl EzObject for Canvas {
     /// [height] and [width] as this widget and pass it here.
     fn set_contents(&mut self, contents: common::definitions::PixelMap) {
        let mut valid_contents = Vec::new();
-       for x in 0..self.state.get_size().width as usize {
+       for x in 0..self.state.get_size().width.value as usize {
            valid_contents.push(Vec::new());
-           for y in 0..self.state.get_size().height as usize {
+           for y in 0..self.state.get_size().height.value as usize {
                valid_contents[x].push(contents[x][y].clone())
            }
        }

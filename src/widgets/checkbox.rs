@@ -1,7 +1,7 @@
 //! # Checkbox Widget
 //! Widget which is either on or off and implements an on_value_change callback.
 use crate::common;
-use crate::common::definitions::{CallbackTree, StateTree, ViewTree, WidgetTree};
+use crate::common::definitions::{CallbackTree, PixelMap, StateTree, ViewTree, WidgetTree};
 use crate::widgets::widget::{Pixel, EzObject};
 use crate::states::checkbox_state::CheckboxState;
 use crate::states::state::{EzState, GenericState};
@@ -70,9 +70,12 @@ impl EzObject for Checkbox {
 
     fn get_state_mut(&mut self) -> Box<&mut dyn GenericState>{ Box::new(&mut self.state) }
 
-    fn get_contents(&self, state_tree: &mut common::definitions::StateTree) -> common::definitions::PixelMap {
+    fn get_contents(&self, state_tree: &mut StateTree) -> PixelMap {
 
-        let state = state_tree.get(&self.get_full_path()).unwrap().as_checkbox();
+        let state = state_tree.get_mut(&self.get_full_path())
+            .unwrap().as_checkbox_mut();
+        state.set_width(5);
+        state.set_height(1);
         let active_symbol = { if state.active {self.active_symbol}
                               else {self.inactive_symbol} };
 
@@ -93,8 +96,7 @@ impl EzObject for Checkbox {
             contents = common::widget_functions::add_border(
                 contents, state.get_border_config());
         }
-        let parent_colors = state_tree.get(self.get_full_path()
-            .rsplit_once('/').unwrap().0).unwrap().as_generic().get_color_config();
+        let parent_colors = state.get_color_config();
         contents = common::widget_functions::add_padding(
             contents, state.get_padding(),parent_colors.background,
             parent_colors.foreground);

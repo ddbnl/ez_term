@@ -122,19 +122,21 @@ impl<'a, 'b , 'c, 'd> EzContext<'a, 'b , 'c, 'd> {
 
 
 /// Convenience wrapper around an XY tuple.
-#[derive(PartialEq, Clone, Copy, Debug)]
+#[derive(PartialEq, Clone, Copy, Debug, Default)]
 pub struct Coordinates {
     pub x: usize,
     pub y: usize,
 }
 impl Coordinates {
-    pub fn new(x: usize, y: usize) -> Self {
-        Coordinates{x, y}
-    }
+    pub fn new(x: usize, y: usize) -> Self { Coordinates{x, y} }
 }
-impl Default for Coordinates {
 
-    fn default() -> Self {
-        Coordinates{x: 0, y: 0}
-    }
+
+#[derive(PartialEq, Clone, Copy, Debug, Default)]
+pub struct Size {
+    pub width: usize,
+    pub height: usize,
+}
+impl Size {
+    pub fn new(width: usize, height: usize) -> Self { Size{width, height} }
 }

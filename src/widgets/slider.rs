@@ -66,7 +66,7 @@ impl EzObject for Slider {
 
         let state = state_tree.get_mut(&self.get_full_path()).unwrap()
             .as_slider_mut();
-        state.size.height = 1;
+        state.size.height.set(1);
         if state.auto_scale.width {
             state.set_effective_width(((state.maximum - state.minimum) / state.step as usize)
                 as usize + 1);

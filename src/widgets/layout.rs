@@ -11,8 +11,7 @@ use crate::widgets::widget::{Pixel, EzObject, EzObjects};
 use crate::states::layout_state::LayoutState;
 use crate::states::state::{EzState, GenericState};
 use crate::scheduler::Scheduler;
-use crate::states::definitions::{AutoScale, CallbackConfig, ColorConfig, LayoutMode, Size, SizeHint,
-                                 LayoutOrientation};
+use crate::states::definitions::{AutoScale, CallbackConfig, ColorConfig, LayoutMode, StateSize, SizeHint, LayoutOrientation, ScrollingConfig};
 use crate::widgets::button::Button;
 
 
@@ -166,23 +165,23 @@ impl EzObject for Layout {
             .unwrap().as_layout_mut();
         if let Event::Key(key) = event {
             if key.code == KeyCode::PageUp {
-                self.handle_scroll_up(state, scheduler);
+                self.handle_scroll_up(state_tree, scheduler);
                 return true
             } else if key.code == KeyCode::PageDown {
-                self.handle_scroll_down(state, scheduler);
+                self.handle_scroll_down(state_tree, scheduler);
                 return true
             } else if key.code == KeyCode::Left {
                 if state.get_mode() == &LayoutMode::Tabbed {
                     self.handle_tab_left(state_tree, scheduler);
                 } else {
-                    self.handle_scroll_left(state, scheduler);
+                    self.handle_scroll_left(state_tree, scheduler);
                 }
                 return true
             } else if key.code == KeyCode::Right {
                 if state.get_mode() == &LayoutMode::Tabbed {
                     self.handle_tab_right(state_tree, scheduler);
                 } else {
-                    self.handle_scroll_right(state, scheduler);
+                    self.handle_scroll_right(state_tree, scheduler);
                 }
                 return true
             }
@@ -196,7 +195,7 @@ impl EzObject for Layout {
 
         let state = state_tree.get_mut(&self.path).unwrap().as_layout_mut();
         if state.scrolling_config.is_scrolling_y || state.scrolling_config.is_scrolling_x {
-            self.handle_scroll_up(state, scheduler);
+            self.handle_scroll_up(state_tree, scheduler);
             return true
         }
         return false
@@ -208,7 +207,7 @@ impl EzObject for Layout {
 
         let state = state_tree.get_mut(&self.path).unwrap().as_layout_mut();
         if state.scrolling_config.is_scrolling_y || state.scrolling_config.is_scrolling_x {
-            self.handle_scroll_down(state, scheduler);
+            self.handle_scroll_down(state_tree, scheduler);
             return true
         }
         false
@@ -243,16 +242,16 @@ impl EzObject for Layout {
                 state.get_scrolling_config().view_start_x);
 
             if mouse_pos.x < scrollbar_pos {
-                self.handle_scroll_left(state, scheduler);
+                self.handle_scroll_left(state_tree, scheduler);
                 return true
             } else if mouse_pos.x > scrollbar_pos + scrollbar_size {
-                self.handle_scroll_right(state, scheduler);
+                self.handle_scroll_right(state_tree, scheduler);
                 return true
             }
         }
 
         if state.scrolling_config.is_scrolling_y &&
-            mouse_pos.x == state.get_size().width - 1 {
+            mouse_pos.x == state.get_size().width.value - 1 {
 
             let (scrollbar_size, scrollbar_pos) = self.get_vertical_scrollbar_parameters(
                 state.get_scrolling_config().original_height,
@@ -260,10 +259,10 @@ impl EzObject for Layout {
                 state.get_scrolling_config().view_start_y);
 
             if mouse_pos.y < scrollbar_pos {
-                self.handle_scroll_up(state, scheduler);
+                self.handle_scroll_up(state_tree, scheduler);
                 return true
             } else if mouse_pos.y > scrollbar_pos + scrollbar_size {
-                self.handle_scroll_down(state, scheduler);
+                self.handle_scroll_down(state_tree, scheduler);
                 return true
             }
         }
@@ -344,10 +343,10 @@ impl Layout {
             .get_modals().first().unwrap().clone();
         let state = state_tree
             .get_mut(&modal.as_ez_object().get_full_path()).unwrap();
-        common::widget_functions::resize_with_size_hint(state, parent_size.width,
-                                                        parent_size.height);
+        common::widget_functions::resize_with_size_hint(state, parent_size.width.value,
+                                                        parent_size.height.value);
         common::widget_functions::reposition_with_pos_hint(
-            parent_size.width, parent_size.height,
+            parent_size.width.value, parent_size.height.value,
             state.as_generic_mut());
         let x = state.as_generic().get_position().x.get();
         let y = state.as_generic().get_position().y.get();
@@ -373,7 +372,8 @@ impl Layout {
             for y in 0..modal_content[x].len() {
                 let write_pos = Coordinates::new(start_pos.x.get() + x,
                                                             start_pos.y.get() + y);
-                if write_pos.x <= parent_size.width && write_pos.y <= parent_size.height {
+                if write_pos.x < parent_size.width.value &&
+                    write_pos.y < parent_size.height.value {
                     contents[write_pos.x][write_pos.y] = modal_content[x][y].clone();
                 }
             }
@@ -418,18 +418,18 @@ impl Layout {
             // If autoscaling is enabled set child size to max width. It is then expected to scale
             // itself according to its' content
             if state.get_auto_scale().width {
-                state.get_size_mut().width = own_width
+                state.get_size_mut().width.set(own_width)
             }
             if state.get_auto_scale().height {
-                state.get_size_mut().height = own_height
+                state.get_size_mut().height.set(own_height)
             }
             // Scale down child to remaining size in the case that the child is too large, rather
             // panicking.
             if state.get_size().height > own_height {
-                state.get_size_mut().height = own_height;
+                state.get_size_mut().height.set(own_height);
             }
             if state.get_size().width > own_width {
-                state.get_size_mut().width = own_width;
+                state.get_size_mut().width.set(own_width);
             }
 
             let child_content = generic_child.get_contents(state_tree);
@@ -547,6 +547,7 @@ impl Layout {
     /// set their [absolute_position]. Then calls this method on children, thus recursively setting
     /// [absolute_position] for all children. Use on root layout to propagate all absolute positions.
     pub fn propagate_absolute_positions(&self, state_tree: &mut StateTree) {
+
         let absolute_position = state_tree.get(&self.path).unwrap().as_generic()
             .get_effective_absolute_position();
         let size = state_tree.get(&self.path).unwrap().as_layout()
@@ -560,23 +561,43 @@ impl Layout {
                 let pos = child_state.get_position();
                 let mut new_absolute_position = Coordinates::new(
                     absolute_position.x + pos.x.get(), absolute_position.y + pos.y.get());
-                if scrolling.is_scrolling_x && size.width > 0 {
-                    new_absolute_position.x -= scrolling.view_start_x % size.width;
-                }
-                if scrolling.is_scrolling_y && size.height > 0 {
-                    new_absolute_position.y -= scrolling.view_start_y % size.height;
-                }
+                new_absolute_position = self.offset_scrolled_absolute_position(
+                    new_absolute_position, &scrolling, &size);
                 child_state.set_absolute_position(new_absolute_position);
                 i.propagate_absolute_positions(state_tree);
             } else {
                 let child_state = state_tree.get_mut(
                     &child.as_ez_object().get_full_path()).unwrap().as_generic_mut();
                 let pos = child_state.get_position();
-                let new_absolute_position = Coordinates::new(
+                let mut new_absolute_position = Coordinates::new(
                     absolute_position.x + pos.x.get(), absolute_position.y + pos.y.get());
+                new_absolute_position = self.offset_scrolled_absolute_position(
+                    new_absolute_position, &scrolling, &size);
                 child_state.set_absolute_position(new_absolute_position);
             }
         }
+    }
+
+    /// Adjust an absolute position based on scrolling config and size of the parent layout.
+    pub fn offset_scrolled_absolute_position(&self, mut absolute_position: Coordinates,
+                                             scrolling: &ScrollingConfig, size: &StateSize)
+                                             -> Coordinates {
+
+        if scrolling.is_scrolling_x && size.width > 0 {
+            let offset = ((scrolling.view_start_x / size.width.value) * size.width.value) +
+                (scrolling.view_start_x % size.width.value);
+            if offset <= absolute_position.x {
+                absolute_position.x -= offset;
+            }
+        }
+        if scrolling.is_scrolling_y && size.height > 0 {
+            let offset = ((scrolling.view_start_y / size.height.value) * size.height.value) +
+                (scrolling.view_start_y % size.height.value);
+            if offset <= absolute_position.y {
+                absolute_position.y -= offset;
+            }
+        }
+        absolute_position
     }
 
     /// Takes full [path] of this layout and adds the [id] of children to create and set
@@ -840,7 +861,8 @@ impl Layout {
 
         if self.children.is_empty() { return PixelMap::new() }
         let state = state_tree.get_mut(&self.path).unwrap().as_layout_mut();
-        let own_size = state.get_effective_size();
+        let own_size = state.get_size().clone();
+        let own_effective_size = state.get_effective_size();
         let own_pos = state.get_effective_absolute_position();
         let own_colors = state.colors.clone();
         let selection = state.selected_tab_header.clone();
@@ -859,8 +881,10 @@ impl Layout {
                 if i.get_full_path() != active_tab { continue }
                 let child_state = state_tree
                     .get_mut(&child.as_ez_object().get_full_path()).unwrap().as_generic_mut();
-                child_state.set_effective_height(if own_size.height >=3 {own_size.height - 3} else {0});
-                child_state.set_effective_width(if own_size.width >= 1 {own_size.width - 1} else {0});
+                child_state.set_effective_height(
+                    if own_effective_size.height >= 3 { own_effective_size.height - 3} else {0});
+                child_state.set_effective_width(
+                    if own_effective_size.width >= 1 { own_effective_size.width - 1} else {0});
                 child_state.get_position_mut().x.set(0);
                 child_state.get_position_mut().y.set(3);
                 child_state.set_absolute_position(Coordinates::new(
@@ -884,17 +908,23 @@ impl Layout {
 
                 child_state.set_size_hint(SizeHint::new(None, None));
                 child_state.set_auto_scale(AutoScale::new(true, true));
-                child_state.set_effective_width(own_size.width);
+                child_state.set_effective_width(own_effective_size.width);
                 child_state.set_effective_height(1);
                 child_state.set_x(pos_x);
                 child_state.set_y(0);
                 let content = i.get_contents(state_tree);
                 let child_state = state_tree
                     .get_mut(&child.as_ez_object().get_full_path()).unwrap().as_button_mut();
-                child_state.size = Size::new(child_state.text.len() + 2, 3);
+                let new_width = child_state.text.len() + 2;
+                child_state.get_size_mut().width.set(new_width);
+                child_state.get_size_mut().height.set(3);
+                let mut custom_size = own_effective_size.clone();
+                custom_size.width -= 1;
+                custom_size.height = 3;
                 button_content = self.merge_horizontal_contents(
                     button_content, content,
-                    Size::new(own_size.width - 1,3),own_colors.clone(),
+                    custom_size.height, own_size.infinite_height,
+                    own_colors.clone(),
                     child_state);
                 child_state.set_absolute_position(
                     Coordinates::new(own_pos.x + pos_x, own_pos.y + 1));
@@ -902,7 +932,7 @@ impl Layout {
                 if (!selection.is_empty() && selection == i.path) || (selection.is_empty() &&
                     active_tab == i.path.strip_suffix("_tab_header").unwrap()) {
                     selected_pos_x = pos_x;
-                    selected_width = child_state.size.width;
+                    selected_width = child_state.size.width.value;
                 }
 
                 pos_x = button_content.len();
@@ -912,10 +942,10 @@ impl Layout {
         let fill_pixel = Pixel::new(" ".to_string(),
                                     own_colors.foreground,
                                     own_colors.background);
-        if own_size.width < button_content.len()  {
+        if own_effective_size.width < button_content.len()  {
             let mut difference;
-            if own_size.width <= selected_pos_x + selected_width {
-                difference = (selected_pos_x + selected_width) - own_size.width;
+            if own_effective_size.width <= selected_pos_x + selected_width {
+                difference = (selected_pos_x + selected_width) - own_effective_size.width;
                 if button_content.len() - difference > 3 {
                     difference += 3;
                 }
@@ -938,10 +968,10 @@ impl Layout {
                 }
             }
         }
-        if button_content.len() > own_size.width {
-            button_content = button_content[..own_size.width].to_vec();
+        if button_content.len() > own_effective_size.width {
+            button_content = button_content[..own_effective_size.width].to_vec();
         }
-        while button_content.len() < own_size.width {
+        while button_content.len() < own_effective_size.width {
             let row =  vec!(fill_pixel.clone(), fill_pixel.clone(), fill_pixel.clone());
             button_content.push(row);
         }
@@ -950,7 +980,8 @@ impl Layout {
         self.merge_vertical_contents(
             button_content,
             tab_content,
-            own_size.clone(), own_colors.clone(), state)
+            own_effective_size.width, own_size.infinite_width,
+            own_colors.clone(), state)
     }
 }
 
@@ -962,14 +993,12 @@ impl Layout {
     /// own [height] for each.
     fn get_box_mode_horizontal_orientation_contents(&self, state_tree: &mut StateTree) -> PixelMap {
 
-        let own_size = state_tree.get_mut(&self.get_full_path())
-            .unwrap().as_layout().get_effective_size();
-        let own_scaling = state_tree.get_mut(&self.get_full_path())
-            .unwrap().as_layout().get_auto_scale().clone();
-        let own_colors = state_tree.get_mut(&self.get_full_path())
-            .unwrap().as_layout().get_color_config().clone();
-        let own_scrolling = state_tree.get_mut(&self.get_full_path())
-            .unwrap().as_layout().get_scrolling_config().clone();
+        let state = state_tree.get_mut(&self.get_full_path()).unwrap().as_layout();
+        let own_effective_size = state.get_effective_size();
+        let own_size = state.get_size().clone();
+        let own_scaling = state.get_auto_scale().clone();
+        let own_colors = state.get_color_config().clone();
+        let own_scrolling = state.get_scrolling_config().clone();
 
         let mut position = Coordinates::new(0, 0);
         let mut content_list = Vec::new();
@@ -988,25 +1017,25 @@ impl Layout {
 
             let width_left =
                 if !own_scrolling.enable_x && !own_size.infinite_width &&
-                    !state.get_size().infinite_width && own_size.width >= position.x
-                    {own_size.width - position.x} else {0};
+                    !state.get_size().infinite_width && own_effective_size.width >= position.x
+                    {own_effective_size.width - position.x} else {0};
             // If autoscaling is enabled set child size to max width. It is then expected to scale
             // itself according to its' content
             if state.get_auto_scale().width {
-                state.get_size_mut().width = width_left
+                state.get_size_mut().width.set(width_left)
             }
             if state.get_auto_scale().height {
-                state.get_size_mut().height = own_size.height
+                state.get_size_mut().height.set(own_effective_size.height)
             }
             // Scale down child to remaining size in the case that the child is too large, rather
             // panicking.
             if !own_scrolling.enable_x && !own_size.infinite_width &&
                 state.get_size().width > width_left {
-                state.get_size_mut().width = width_left;
+                state.get_size_mut().width.set(width_left);
             }
             if !own_scrolling.enable_y && !own_size.infinite_height &&
-                state.get_size().height > own_size.height {
-                state.get_size_mut().height = own_size.height;
+                state.get_size().height > own_effective_size.height {
+                state.get_size_mut().height.set(own_effective_size.height);
             }
 
             state.set_x(position.x);
@@ -1016,10 +1045,10 @@ impl Layout {
             let state = state_tree.get_mut(&generic_child.get_full_path())
                 .unwrap().as_generic_mut(); // re-borrow
             if state.get_size().infinite_width {
-                state.get_size_mut().width = child_content.len()
+                state.get_size_mut().width.set(child_content.len())
             }
             if state.get_size().infinite_height {
-                state.get_size_mut().height = child_content[0].len()
+                state.get_size_mut().height.set(child_content[0].len())
             }
 
             position.x += child_content.len();
@@ -1035,13 +1064,14 @@ impl Layout {
                     |child| child.iter().map(|x| x.len()).max().unwrap())
                     .max().unwrap());
         }
-        let own_size = state_tree.get_mut(&self.get_full_path())
+        let own_effective_size = state_tree.get_mut(&self.get_full_path())
             .unwrap().as_layout().get_effective_size();
         let mut merged_content = PixelMap::new();
         for (i, content) in content_list.into_iter().enumerate() {
             merged_content = self.merge_horizontal_contents(
                 merged_content, content,
-                own_size, own_colors.clone(),
+                own_effective_size.height, own_size.infinite_height,
+                own_colors.clone(),
                 state_tree.get_mut(&self.children.get(i).unwrap().as_ez_object()
                     .get_full_path()).unwrap().as_generic_mut());
         }
@@ -1053,14 +1083,13 @@ impl Layout {
     fn get_box_mode_vertical_orientation_contents(&self, state_tree: &mut StateTree) -> PixelMap {
 
         // Some clones as we will need to borrow from state tree again later
-        let own_size = state_tree.get_mut(&self.get_full_path())
-            .unwrap().as_layout().get_effective_size();
-        let own_scaling = state_tree.get_mut(&self.get_full_path())
-            .unwrap().as_layout().get_auto_scale().clone();
-        let own_colors = state_tree.get_mut(&self.get_full_path())
-            .unwrap().as_layout().get_color_config().clone();
-        let own_scrolling = state_tree.get_mut(&self.get_full_path())
-            .unwrap().as_layout().get_scrolling_config().clone();
+
+        let state = state_tree.get_mut(&self.get_full_path()).unwrap().as_layout();
+        let own_effective_size = state.get_effective_size();
+        let own_size = state.get_size().clone();
+        let own_scaling = state.get_auto_scale().clone();
+        let own_colors = state.get_color_config().clone();
+        let own_scrolling = state.get_scrolling_config().clone();
 
         let mut position = Coordinates::new(0, 0);
         let mut content_list = Vec::new();
@@ -1082,27 +1111,27 @@ impl Layout {
             // as we use [Size.infinite_height]
             let height_left =
                 if !own_scrolling.enable_y && !own_size.infinite_height &&
-                    own_size.height >= position.y && !child_state.get_size().infinite_height
-                {own_size.height - position.y } else { 0 };
+                    own_effective_size.height >= position.y && !child_state.get_size().infinite_height
+                {own_effective_size.height - position.y } else { 0 };
             // If autoscaling is enabled set child size to max width. It is then expected to scale
             // itself according to its' content
             if child_state.get_auto_scale().width {
-                child_state.get_size_mut().width = own_size.width
+                child_state.get_size_mut().width.set(own_effective_size.width)
             }
             if child_state.get_auto_scale().height {
-                child_state.get_size_mut().height = height_left
+                child_state.get_size_mut().height.set(height_left)
             }
             // Scale down child to remaining size in the case that the child is too large, rather
             // panicking.
             if !own_scrolling.enable_x && !own_size.infinite_width &&
                 !child_state.get_size().infinite_width &&
-                child_state.get_size().width > own_size.width {
-                child_state.get_size_mut().width = own_size.width;
+                child_state.get_size().width > own_effective_size.width {
+                child_state.get_size_mut().width.set(own_effective_size.width);
             }
             if !own_scrolling.enable_y && !own_size.infinite_height &&
                 !child_state.get_size().infinite_height &&
                 child_state.get_size().height > height_left {
-                child_state.get_size_mut().height = height_left;
+                child_state.get_size_mut().height.set(height_left);
             }
 
             child_state.set_x(position.x);
@@ -1111,10 +1140,10 @@ impl Layout {
             let state = state_tree.get_mut(&generic_child.get_full_path())
                 .unwrap().as_generic_mut(); // re-borrow
             if state.get_size().infinite_width {
-                state.get_size_mut().width = child_content.len()
+                state.get_size_mut().width.set(child_content.len())
             }
             if state.get_size().infinite_height {
-                state.get_size_mut().height = child_content[0].len()
+                state.get_size_mut().height.set(child_content[0].len())
             }
             position.y += if !child_content.is_empty() {child_content[0].len()} else {0};
             content_list.push(child_content);
@@ -1129,13 +1158,14 @@ impl Layout {
                     |child| child.iter().map(|x| x.len()).max().unwrap())
                     .max().unwrap());
         }
-        let own_size = state_tree.get_mut(&self.get_full_path())
+        let own_effective_size = state_tree.get_mut(&self.get_full_path())
             .unwrap().as_layout().get_effective_size();
         let mut merged_content = PixelMap::new();
         for (i, content) in content_list.into_iter().enumerate() {
             merged_content = self.merge_vertical_contents(
                 merged_content, content,
-                own_size, own_colors.clone(),
+                own_effective_size.width, own_size.infinite_width,
+                own_colors.clone(),
                 state_tree.get_mut(&self.children.get(i).unwrap().as_ez_object()
                     .get_full_path()).unwrap().as_generic_mut());
         }
@@ -1144,14 +1174,14 @@ impl Layout {
 
     /// Take a [PixelMap] and merge it horizontally with another [PixelMap]
     pub fn merge_horizontal_contents(&self, mut merged_content: PixelMap, mut new: PixelMap,
-                                     parent_size: Size,
+                                     parent_height: usize, parent_infinite_height: bool,
                                      parent_colors: ColorConfig, state: &mut dyn GenericState)
-        -> PixelMap {
+                                     -> PixelMap {
 
-        if !parent_size.infinite_height && parent_size.height > new[0].len() {
+        if !parent_infinite_height && parent_height > new[0].len() {
             let offset;
             (new, offset) = common::widget_functions::align_content_vertically(
-                new, state.get_vertical_alignment(), parent_size.height,
+                new, state.get_vertical_alignment(), parent_height,
                 parent_colors.foreground,
                 parent_colors.background);
             state.set_y(state.get_position().y.get() + offset);
@@ -1164,24 +1194,25 @@ impl Layout {
     }
 
     /// Take a [PixelMap] and merge it vertically with another [PixelMap]
-    pub fn merge_vertical_contents(&self, mut merged_content: PixelMap, mut new: PixelMap,
-                                   parent_size: Size, parent_colors: ColorConfig,
-                                   state: &mut dyn GenericState) -> PixelMap {
+    pub fn merge_vertical_contents(
+        &self, mut merged_content: PixelMap, mut new: PixelMap, parent_width: usize,
+        parent_infinite_width: bool, parent_colors: ColorConfig, state: &mut dyn GenericState)
+        -> PixelMap {
 
         if new.is_empty() {
             return merged_content
         }
 
         let offset;
-        if parent_size.width > new.len() && !parent_size.infinite_width {
+        if parent_width > new.len() && !parent_infinite_width {
             (new, offset) = common::widget_functions::align_content_horizontally(
-                new, state.get_horizontal_alignment(), parent_size.width,
+                new, state.get_horizontal_alignment(), parent_width,
                 parent_colors.foreground,
                 parent_colors.background);
             state.set_x(state.get_position().x.get() + offset);
         }
 
-        let write_width = if !state.get_size().infinite_width { parent_size.width }
+        let write_width = if !state.get_size().infinite_width { parent_width }
                               else { new.len() };
         for x in 0..write_width {
             for y in 0..new[0].len() {
@@ -1207,8 +1238,9 @@ impl Layout {
 impl Layout {
 
     /// Handle command by user to scroll down by increasing the scroll_view of y
-    fn handle_scroll_down(&self, state: &mut LayoutState, scheduler: &mut Scheduler) {
+    fn handle_scroll_down(&self, state_tree: &mut StateTree, scheduler: &mut Scheduler) {
 
+        let state = state_tree.get_mut(&self.path).unwrap().as_layout_mut();
         if !state.get_scrolling_config().enable_y { return }
         let scroll_chunk = (state.get_effective_size().height as f32 * 0.75) as usize;
         let new_view_start;
@@ -1223,12 +1255,14 @@ impl Layout {
             new_view_start = state.get_scrolling_config().view_start_y + scroll_chunk;
         }
         state.get_scrolling_config_mut().view_start_y = new_view_start;
-        state.update(scheduler)
+        state.update(scheduler);
+        self.propagate_absolute_positions(state_tree);
     }
 
     /// Handle command by user to scroll down by decreasing the scroll_view of y
-    fn handle_scroll_up(&self, state: &mut LayoutState, scheduler: &mut Scheduler) {
+    fn handle_scroll_up(&self, state_tree: &mut StateTree, scheduler: &mut Scheduler) {
 
+        let state = state_tree.get_mut(&self.path).unwrap().as_layout_mut();
         if !state.get_scrolling_config().enable_y { return }
         let scroll_chunk = (state.get_effective_size().height as f32 * 0.75) as usize;
         let new_view_start;
@@ -1241,12 +1275,14 @@ impl Layout {
             new_view_start = state.get_scrolling_config().view_start_y - scroll_chunk;
         }
         state.get_scrolling_config_mut().view_start_y = new_view_start;
-        state.update(scheduler)
+        state.update(scheduler);
+        self.propagate_absolute_positions(state_tree);
     }
 
     /// Handle command by user to scroll down by increasing the scroll_view of x
-    fn handle_scroll_right(&self, state: &mut LayoutState, scheduler: &mut Scheduler) {
+    fn handle_scroll_right(&self, state_tree: &mut StateTree, scheduler: &mut Scheduler) {
 
+        let state = state_tree.get_mut(&self.path).unwrap().as_layout_mut();
         if !state.get_scrolling_config().enable_x { return }
         let scroll_chunk = (state.get_effective_size().width as f32 * 0.75) as usize;
         let new_view_start;
@@ -1261,11 +1297,13 @@ impl Layout {
         }
         state.get_scrolling_config_mut().view_start_x = new_view_start;
         state.update(scheduler);
+        self.propagate_absolute_positions(state_tree);
     }
 
     /// Handle command by user to scroll down by decreasing the scroll_view of x
-    fn handle_scroll_left(&self, state: &mut LayoutState, scheduler: &mut Scheduler) {
+    fn handle_scroll_left(&self, state_tree: &mut StateTree, scheduler: &mut Scheduler) {
 
+        let state = state_tree.get_mut(&self.path).unwrap().as_layout_mut();
         if !state.get_scrolling_config().enable_x { return }
         let scroll_chunk = (state.get_effective_size().width as f32 * 0.75) as usize;
         let new_view_start;
@@ -1279,6 +1317,7 @@ impl Layout {
         }
         state.get_scrolling_config_mut().view_start_x = new_view_start;
         state.update(scheduler);
+        self.propagate_absolute_positions(state_tree);
     }
 
     /// Create a horizontal scrollbox out of this layout if its contents width exceed its own width

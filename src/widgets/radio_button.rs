@@ -81,7 +81,9 @@ impl EzObject for RadioButton {
     fn get_contents(&self, state_tree: &mut StateTree) -> common::definitions::PixelMap {
 
         let state = state_tree
-            .get_mut(&self.get_full_path()).unwrap().as_radio_button();
+            .get_mut(&self.get_full_path()).unwrap().as_radio_button_mut();
+        state.set_width(5);
+        state.set_height(1);
         let active_symbol = { if state.active {self.active_symbol}
                                     else {self.inactive_symbol} };
         let (fg_color, bg_color) = state.get_context_colors();

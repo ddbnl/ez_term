@@ -77,16 +77,27 @@ pub enum VerticalPositionHint {
 
 
 /// Convenience wrapper around a size tuple.
-#[derive(PartialEq, Copy, Clone, Default, Debug)]
-pub struct Size {
-    pub width: usize,
-    pub height: usize,
+#[derive(PartialEq, Clone, Debug)]
+pub struct StateSize {
+    pub width: UsizeProperty,
+    pub height: UsizeProperty,
     pub infinite_width: bool,
     pub infinite_height: bool,
 }
-impl Size {
-    pub fn new(width: usize, height: usize) -> Self { Size{width, height,
-        infinite_width: false, infinite_height: false} }
+impl StateSize {
+    pub fn new(width: usize, height: usize, name: String, scheduler: &mut Scheduler) -> Self {
+
+        let width_property = scheduler.new_usize_property(
+            format!("{}/width", name), width);
+        let height_property = scheduler.new_usize_property(
+            format!("{}/height", name), height);
+        StateSize {
+            width: width_property,
+            height: height_property,
+            infinite_width: false,
+            infinite_height: false
+        }
+    }
 }
 
 
@@ -103,7 +114,10 @@ impl StateCoordinates {
             scheduler.new_usize_property(format!("{}/x", name.clone()), x);
         let y_property =
             scheduler.new_usize_property(format!("{}/y", name.clone()), y);
-        StateCoordinates{x: x_property, y: y_property}
+        StateCoordinates{
+            x: x_property,
+            y: y_property
+        }
     }
 }
 
@@ -429,15 +443,31 @@ impl Default for ColorConfig {
 }
 
 
-#[derive(PartialEq, Clone, Copy, Default, Debug)]
+#[derive(PartialEq, Clone, Debug)]
 pub struct Padding {
-    pub top: usize,
-    pub bottom: usize,
-    pub left: usize,
-    pub right: usize,
+    pub top: UsizeProperty,
+    pub bottom: UsizeProperty,
+    pub left: UsizeProperty,
+    pub right: UsizeProperty,
 }
 impl Padding {
-    pub fn new(top: usize, bottom: usize, left: usize, right: usize) -> Padding{
-        Padding { top, bottom, left, right }
+    pub fn new(top: usize, bottom: usize, left: usize, right: usize, name: String,
+               scheduler: &mut Scheduler) -> Padding{
+
+
+        let top_property = scheduler.new_usize_property(
+            format!("{}/padding_top", name), top);
+        let bottom_property = scheduler.new_usize_property(
+            format!("{}/padding_bottom", name), bottom);
+        let left_property = scheduler.new_usize_property(
+            format!("{}/padding_left", name), left);
+        let right_property = scheduler.new_usize_property(
+            format!("{}/padding_right", name), right);
+        Padding {
+            top: top_property,
+            bottom: bottom_property,
+            left: left_property,
+            right: right_property,
+        }
     }
 }

@@ -13,6 +13,7 @@ use crate::common::definitions::{CallbackTree, StateTree, ViewTree, WidgetTree, 
 use crate::widgets::layout::Layout;
 use crate::widgets::widget::{EzObject};
 use crate::scheduler::{Scheduler};
+use crate::states::state::EzState;
 use crate::widgets::widget;
 
 
@@ -391,11 +392,16 @@ fn handle_mouse_event(event: MouseEvent, view_tree: &mut ViewTree, state_tree: &
 fn handle_resize(state_tree: &mut StateTree, root_widget: &mut Layout,
                  new_width: usize, new_height: usize, scheduler: &mut Scheduler) -> ViewTree{
 
+    for state in state_tree.values_mut() {
+        if let EzState::Layout(i) = state {
+            state.as_layout_mut().scrolling_config.view_start_x = 0;
+            state.as_layout_mut().scrolling_config.view_start_y = 0;
+        }
+    }
     let state = state_tree.get_mut(&root_widget.path).unwrap()
         .as_generic_mut();
-    state.get_size_mut().width = new_width as usize;
-    state.get_size_mut().height = new_height as usize;
-    state.update(scheduler);
+    state.get_size_mut().width.set(new_width as usize);
+    state.get_size_mut().height.set(new_height as usize);
     let old_view_tree = common::screen_functions::initialize_view_tree(
         new_width, new_height);
     root_widget.set_child_sizes(state_tree);

@@ -1,7 +1,7 @@
 //! # Widget state:
 //! A module containing the base structs and traits for widget states.
 use crossterm::style::Color;
-use crate::common::definitions::Coordinates;
+use crate::common::definitions::{Coordinates, Size};
 use crate::scheduler::Scheduler;
 use crate::states::canvas_state::{CanvasState};
 use crate::states::label_state::{LabelState};
@@ -9,7 +9,7 @@ use crate::states::button_state::{ButtonState};
 use crate::states::checkbox_state::{CheckboxState};
 use crate::states::definitions::{AutoScale, BorderConfig, ColorConfig,
                                  HorizontalAlignment, HorizontalPositionHint, Padding, PosHint,
-                                 Size, SizeHint, StateCoordinates, VerticalAlignment,
+                                 StateSize, SizeHint, StateCoordinates, VerticalAlignment,
                                  VerticalPositionHint};
 use crate::states::dropdown_state::{DropdownState, DroppedDownMenuState};
 use crate::states::layout_state::LayoutState;
@@ -286,48 +286,51 @@ pub trait GenericState {
         self.set_auto_scale(AutoScale::new(self.get_auto_scale().width, auto_scale));
     }
 
-    /// Hard code size, only does something when size_hint is off
-    fn set_size(&mut self, size: Size);
-
     /// Get current [Size] of this object
-    fn get_size(&self) -> &Size;
+    fn get_size(&self) -> &StateSize;
 
     /// Get mutable current [Size] of this object
-    fn get_size_mut(&mut self) -> &mut Size;
+    fn get_size_mut(&mut self) -> &mut StateSize;
+
+    fn set_width(&mut self, width: usize) {
+        self.get_size_mut().width.set(width)
+    }
+
+    fn set_height(&mut self, height: usize) {
+        self.get_size_mut().height.set(height)
+    }
 
     /// Get the effective amount of width and height within this object, taking off e.g. borders,
     /// padding, etc.
     fn get_effective_size(&self) -> Size {
 
-        let mut size_copy = self.get_size().clone();
-        let width_result: isize = size_copy.width as isize
+        let width_result: isize = self.get_size().width.value as isize
             -if self.get_border_config().enabled {2} else {0}
-            -self.get_padding().left as isize - self.get_padding().right as isize;
+            -self.get_padding().left.value as isize - self.get_padding().right.value as isize;
         let width = if width_result < 0 {0} else { width_result };
-        let height_result: isize = size_copy.height as isize
+        let height_result: isize = self.get_size().height.value as isize
             -if self.get_border_config().enabled {2} else {0}
-            -self.get_padding().top as isize - self.get_padding().bottom as isize;
+            -self.get_padding().top.value as isize - self.get_padding().bottom.value as isize;
         let height = if height_result < 0 {0} else { height_result };
-        size_copy.width = width as usize;
-        size_copy.height = height as usize;
-        size_copy
+        Size::new(width as usize, height as usize)
     }
 
     /// Set the how much width you want the actual content inside this widget to have. Width for
     /// e.g. border and padding will be added to this automatically.
     fn set_effective_width(&mut self, width: usize) {
 
-        self.get_size_mut().width = width
-            +if self.get_border_config().enabled {2} else {0}
-            +self.get_padding().left + self.get_padding().right;
+        let offset = if self.get_border_config().enabled {2} else {0}
+            + self.get_padding().left.value + self.get_padding().right.value;
+        self.get_size_mut().width.set(width + offset);
     }
 
     /// Set the how much height you want the actual content inside this widget to have. Height for
     /// e.g. border and padding will be added to this automatically.
     fn set_effective_height(&mut self, height: usize) {
-        self.get_size_mut().height = height
-            +if self.get_border_config().enabled {2} else {0}
-            +self.get_padding().top + self.get_padding().bottom;
+
+        let offset = if self.get_border_config().enabled {2} else {0}
+            + self.get_padding().top.value + self.get_padding().bottom.value;
+        self.get_size_mut().height.set(height + offset);
     }
 
     /// Get position relative to parent
@@ -355,9 +358,9 @@ pub trait GenericState {
     fn get_effective_position(&self) -> Coordinates {
         Coordinates::new(
             self.get_position().x.get() +if self.get_border_config().enabled {1}
-            else {0} + self.get_padding().left,
+            else {0} + self.get_padding().left.value,
             self.get_position().y.get() +if self.get_border_config().enabled {1}
-            else {0} + self.get_padding().top)
+            else {0} + self.get_padding().top.value)
     }
 
     /// Set the absolute position of a widget, i.e. the position on screen rather than within its'
@@ -374,9 +377,9 @@ pub trait GenericState {
     fn get_effective_absolute_position(&self) -> Coordinates {
         Coordinates::new(
          self.get_absolute_position().x +if self.get_border_config().enabled {1} else {0}
-             + self.get_padding().left,
+             + self.get_padding().left.value,
          self.get_absolute_position().y +if self.get_border_config().enabled {1} else {0}
-             + self.get_padding().top)
+             + self.get_padding().top.value)
     }
 
     /// Set [HorizontalAlignment] of this widget.
@@ -391,36 +394,27 @@ pub trait GenericState {
     /// Get [VerticalAlignment] of this widget
     fn get_vertical_alignment(&self) -> VerticalAlignment;
 
-    /// Set [padding]
-    fn set_padding(&mut self, padding: Padding);
-
     /// Get [padding]
     fn get_padding(&self) -> &Padding;
 
-    /// Set height of top padding
+    /// Get [padding]
+    fn get_padding_mut(&mut self) -> &mut Padding;
+
     fn set_padding_top(&mut self, padding: usize) {
-        let current = self.get_padding().clone();
-        self.set_padding(Padding::new(padding, current.bottom, current.left, current.right));
+        self.get_padding_mut().top.set(padding)
     }
 
-    /// Set height of bottom padding
     fn set_padding_bottom(&mut self, padding: usize) {
-        let current = self.get_padding().clone();
-        self.set_padding(Padding::new(current.top, padding, current.left, current.right));
+        self.get_padding_mut().bottom.set(padding)
     }
 
-    /// Set width of left padding
     fn set_padding_left(&mut self, padding: usize) {
-        let current = self.get_padding().clone();
-        self.set_padding(Padding::new(current.top, current.bottom, padding, current.right));
+        self.get_padding_mut().left.set(padding)
     }
 
-    /// Set width of right padding
     fn set_padding_right(&mut self, padding: usize) {
-        let current = self.get_padding().clone();
-        self.set_padding(Padding::new(current.top, current.bottom, current.left, padding));
+        self.get_padding_mut().right.set(padding)
     }
-
     /// Pas a [BorderConfig] abject that will be used to draw the border if enabled
     fn set_border_config(&mut self, config: BorderConfig);
 
@@ -459,7 +453,8 @@ pub trait GenericState {
     fn get_box(&self) -> (Coordinates, Coordinates) {
         let top_left = self.get_absolute_position();
         let bottom_right = Coordinates::new(
-            top_left.x + self.get_size().width, top_left.y + self.get_size().height);
+            top_left.x + self.get_size().width.value,
+            top_left.y + self.get_size().height.value);
         (top_left, bottom_right)
     }
 
@@ -490,8 +485,8 @@ pub trait GenericState {
     fn collides(&self, pos: Coordinates) -> bool {
         let starting_pos = self.get_effective_absolute_position();
         let end_pos = Coordinates::new(
-            starting_pos.x + self.get_size().width - 1,
-             starting_pos.y + self.get_size().height - 1);
+            starting_pos.x + self.get_size().width.value - 1,
+             starting_pos.y + self.get_size().height.value - 1);
         pos.x >= starting_pos.x && pos.x <= end_pos.x &&
             pos.y >= starting_pos.y && pos.y <= end_pos.y
     }

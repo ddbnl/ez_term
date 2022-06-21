@@ -5,13 +5,12 @@ use std::fmt::{Debug, Formatter};
 use std::fs::File;
 use std::io::prelude::*;
 use std::io::{Error, ErrorKind};
-use std::ops::Shl;
 use crossterm::style::{Color};
 use std::str::FromStr;
 use crossterm::terminal::size;
 use unicode_segmentation::UnicodeSegmentation;
 use crate::common::definitions::{Coordinates, EzPropertyUpdater};
-use crate::states::definitions::{HorizontalAlignment, VerticalAlignment, AutoScale, Size,
+use crate::states::definitions::{HorizontalAlignment, VerticalAlignment, AutoScale, StateSize,
                                  SizeHint, Padding, ScrollingConfig, PosHint,
                                  HorizontalPositionHint, VerticalPositionHint};
 use crate::widgets::layout::{Layout};
@@ -120,11 +119,11 @@ impl EzWidgetDefinition {
             initialized.add_child(initialized_sub_widget, scheduler);
         }
         let terminal_size = size().unwrap();
-        if initialized.state.get_size().width == 0  {
-            initialized.state.get_size_mut().width = terminal_size.0 as usize;
+        if initialized.state.get_size().width.get() == 0  {
+            initialized.state.get_size_mut().width.set(terminal_size.0 as usize);
         }
-        if initialized.state.get_size().height == 0 {
-            initialized.state.get_size_mut().height = terminal_size.1 as usize;
+        if initialized.state.get_size().height.get() == 0 {
+            initialized.state.get_size_mut().height.set(terminal_size.1 as usize);
         }
         initialized.state.templates = templates;
         initialized
@@ -361,19 +360,6 @@ pub fn load_text_parameter(mut value: &str) -> String {
 }
 
 
-/// Convenience function used by widgets to load a size parameter defined in an .ez file
-/// Looks like size: 20, 10
-pub fn load_size_parameter(value: &str) -> Size {
-
-    let (width_str, height_str) = value.split_once(',').unwrap();
-    let width = width_str.trim().parse().unwrap_or_else(
-        |_| panic!("Could not parse width of this position: {}", width_str));
-    let height = height_str.trim().parse().unwrap_or_else(
-        |_| panic!("Could not parse height of this position: {}", height_str));
-    Size::new(width, height)
-}
-
-
 /// Convenience function used by widgets to load a full auto_scale parameter defined in an .ez file
 /// Looks like "auto_scale: true, false"
 pub fn load_full_enable_scrolling_parameter(
@@ -395,55 +381,6 @@ pub fn load_full_auto_scale_parameter(value: &str) -> AutoScale {
     let width = load_bool_parameter(width_str.trim());
     let height = load_bool_parameter(height_str.trim());
     AutoScale::new(width, height)
-}
-
-
-/// Convenience function used by widgets to load a full padding parameter defined in an .ez file
-/// Looks like "padding: 2, 2, 2, 2"
-pub fn load_full_padding_parameter(value: &str) -> Padding {
-
-    let strings: Vec<&str> = value.split(',').collect();
-    if strings.len() != 4 {
-        if strings.len() == 1 {
-            panic!("Padding parameter must have four values, e.g.: \"2, 2, 2, 2\". You used one \
-            value; perhaps you meant to use \"padding_top\", \"padding_bottom\",\
-            \"padding_left\" or \"padding_right\"?.")
-
-        } else if strings.len() == 2 {
-            panic!("Padding parameter must have four values, e.g.: \"2, 2, 2, 2\". You used two \
-            values; perhaps you meant to use \"padding_x\" or \"padding_y\"?.")
-        }
-        else {
-            panic!("Padding parameter must have four values, e.g.: \"2, 2, 2, 2\".")
-        }
-    }
-    let top = strings[0].trim().parse().unwrap();
-    let bottom = strings[1].trim().parse().unwrap();
-    let left = strings[2].trim().parse().unwrap();
-    let right = strings[3].trim().parse().unwrap();
-    Padding::new(top, bottom, left, right)
-}
-
-
-/// Convenience function used by widgets to load an x padding parameter defined in an .ez file
-/// Looks like "padding_x: 2, 2"
-pub fn load_padding_x_parameter(value: &str) -> Padding {
-
-    let (left_str, right_str) = value.split_once(',').unwrap();
-    let left = left_str.trim().parse().unwrap();
-    let right = right_str.trim().parse().unwrap();
-    Padding::new(0, 0, left, right)
-}
-
-
-/// Convenience function used by widgets to load a y padding parameter defined in an .ez file
-/// Looks like "padding_y: 2, 2"
-pub fn load_padding_y_parameter(value: &str) -> Padding {
-
-    let (top_str, bottom_str) = value.split_once(',').unwrap();
-    let top = top_str.trim().parse().unwrap();
-    let bottom = bottom_str.trim().parse().unwrap();
-    Padding::new(top, bottom, 0, 0)
 }
 
 
@@ -485,19 +422,6 @@ pub fn load_size_hint_parameter(value: &str) -> Option<f64> {
             |_| panic!("Could not parse this size hint number: {}", value));
         Some(size_hint)
     }
-}
-
-
-/// Convenience function used by widgets to load a pos parameter defined in an .ez file
-/// Looks like pos: 20, 10
-pub fn load_pos_parameter(value: &str) -> Coordinates {
-
-    let (x_str, y_str) = value.split_once(',').unwrap();
-    let x = x_str.to_string().parse().unwrap_or_else(
-        |_| panic!("Could not parse x coordinate of this position: {}", value));
-    let y = y_str.to_string().parse().unwrap_or_else(
-        |_| panic!("Could not parse y coordinate of this position: {}", value));
-    Coordinates::new(x, y)
 }
 
 
@@ -622,7 +546,109 @@ pub fn load_int_parameter(mut value: &str, scheduler: &mut Scheduler, path: Stri
     }
 }
 
+pub fn load_x_parameter(state: &mut Box<&mut dyn GenericState>, parameter_value: String,
+                        scheduler: &mut Scheduler, path: String) {
 
+    state.set_x(load_int_parameter(
+        parameter_value.trim(), scheduler, path.clone(),
+        Box::new(move |state_tree: &mut StateTree, val: usize| {
+            let state = state_tree.get_mut(&path.clone())
+                .unwrap().as_generic_mut();
+            state.set_x(val);
+            path.clone()
+        })))
+}
+
+pub fn load_y_parameter(state: &mut Box<&mut dyn GenericState>, parameter_value: String,
+                        scheduler: &mut Scheduler, path: String) {
+
+    state.set_y(load_int_parameter(
+        parameter_value.trim(), scheduler, path.clone(),
+        Box::new(move |state_tree: &mut StateTree, val: usize| {
+            let state = state_tree.get_mut(&path.clone())
+                .unwrap().as_generic_mut();
+            state.set_y(val);
+            path.clone()
+        })))
+}
+
+pub fn load_width_parameter(state: &mut Box<&mut dyn GenericState>, parameter_value: String,
+                            scheduler: &mut Scheduler, path: String) {
+
+    state.set_width(load_int_parameter(
+        parameter_value.trim(), scheduler, path.clone(),
+        Box::new(move |state_tree: &mut StateTree, val: usize| {
+            let state = state_tree.get_mut(&path.clone())
+                .unwrap().as_generic_mut();
+            state.set_width(val);
+            path.clone()
+        })))
+}
+
+pub fn load_height_parameter(state: &mut Box<&mut dyn GenericState>, parameter_value: String,
+                            scheduler: &mut Scheduler, path: String) {
+
+    state.set_height(load_int_parameter(
+        parameter_value.trim(), scheduler, path.clone(),
+        Box::new(move |state_tree: &mut StateTree, val: usize| {
+            let state = state_tree.get_mut(&path.clone())
+                .unwrap().as_generic_mut();
+            state.set_height(val);
+            path.clone()
+        })))
+}
+
+pub fn load_padding_top_parameter(state: &mut Box<&mut dyn GenericState>, parameter_value: String,
+                             scheduler: &mut Scheduler, path: String) {
+
+    state.set_padding_top(load_int_parameter(
+        parameter_value.trim(), scheduler, path.clone(),
+        Box::new(move |state_tree: &mut StateTree, val: usize| {
+            let state = state_tree.get_mut(&path.clone())
+                .unwrap().as_generic_mut();
+            state.set_padding_top(val);
+            path.clone()
+        })))
+}
+
+pub fn load_padding_bottom_parameter(state: &mut Box<&mut dyn GenericState>, parameter_value: String,
+                                  scheduler: &mut Scheduler, path: String) {
+
+    state.set_padding_bottom(load_int_parameter(
+        parameter_value.trim(), scheduler, path.clone(),
+        Box::new(move |state_tree: &mut StateTree, val: usize| {
+            let state = state_tree.get_mut(&path.clone())
+                .unwrap().as_generic_mut();
+            state.set_padding_bottom(val);
+            path.clone()
+        })))
+}
+
+pub fn load_padding_left_parameter(state: &mut Box<&mut dyn GenericState>, parameter_value: String,
+                                  scheduler: &mut Scheduler, path: String) {
+
+    state.set_padding_left(load_int_parameter(
+        parameter_value.trim(), scheduler, path.clone(),
+        Box::new(move |state_tree: &mut StateTree, val: usize| {
+            let state = state_tree.get_mut(&path.clone())
+                .unwrap().as_generic_mut();
+            state.set_padding_left(val);
+            path.clone()
+        })))
+}
+
+pub fn load_padding_right_parameter(state: &mut Box<&mut dyn GenericState>, parameter_value: String,
+                                  scheduler: &mut Scheduler, path: String) {
+
+    state.set_padding_right(load_int_parameter(
+        parameter_value.trim(), scheduler, path.clone(),
+        Box::new(move |state_tree: &mut StateTree, val: usize| {
+            let state = state_tree.get_mut(&path.clone())
+                .unwrap().as_generic_mut();
+            state.set_padding_right(val);
+            path.clone()
+        })))
+}
 /// Load a parameter common to all [EzObjects]. Returns a bool representing whether the parameter
 /// was consumed. If not consumed it should be a parameter specific to a widget.
 pub fn load_common_parameters(parameter_name: &str, parameter_value: String,
@@ -632,21 +658,12 @@ pub fn load_common_parameters(parameter_name: &str, parameter_value: String,
     let mut state = obj.get_state_mut();
     match parameter_name {
         "id" => obj.set_id(parameter_value.trim().to_string()),
-        "x" => {
-            state.set_x(load_int_parameter(
-                parameter_value.trim(), scheduler, path.clone(),
-                Box::new(move |state_tree: &mut StateTree, val: usize| {
-                    let state = state_tree.get_mut(&path.clone())
-                        .unwrap().as_generic_mut();
-                    state.set_x(val);
-                    path.clone()
-                })))
-        },
-        "y" => state.set_y(parameter_value.trim().parse().unwrap()),
+        "x" => load_x_parameter(&mut state, parameter_value, scheduler, path),
+        "y" => load_y_parameter(&mut state, parameter_value, scheduler, path),
         "pos" => {
-            let coordinates = load_pos_parameter(parameter_value.trim());
-            state.set_x(coordinates.x);
-            state.set_y(coordinates.y);
+            let (x,y) = parameter_value.trim().split_once(',').unwrap();
+            load_x_parameter(&mut state, x.to_string(), scheduler, path.clone());
+            load_y_parameter(&mut state, y.to_string(), scheduler, path);
         },
         "size_hint" => state.set_size_hint(
             load_full_size_hint_parameter(parameter_value.trim())),
@@ -654,9 +671,14 @@ pub fn load_common_parameters(parameter_name: &str, parameter_value: String,
             load_size_hint_parameter(parameter_value.trim())),
         "size_hint_y" => state.set_size_hint_y(
             load_size_hint_parameter(parameter_value.trim())),
-        "size" => state.set_size(load_size_parameter(parameter_value.trim())),
-        "width" => state.get_size_mut().width = parameter_value.trim().parse().unwrap(),
-        "height" => state.get_size_mut().height = parameter_value.trim().parse().unwrap(),
+        "size" => {
+            let (width, height) = parameter_value.trim().split_once(',').unwrap();
+            load_width_parameter(&mut state, width.to_string(), scheduler,
+                                 path.clone());
+            load_height_parameter(&mut state, height.to_string(), scheduler, path);
+        },
+        "width" => load_width_parameter(&mut state, parameter_value, scheduler, path),
+        "height" => load_height_parameter(&mut state, parameter_value, scheduler, path),
         "pos_hint" => state.set_pos_hint(load_full_pos_hint_parameter(parameter_value.trim())),
         "pos_hint_x" => state.set_pos_hint_x(
             load_pos_hint_x_parameter(parameter_value.trim())),
@@ -668,12 +690,34 @@ pub fn load_common_parameters(parameter_name: &str, parameter_value: String,
             state.set_auto_scale_width(load_bool_parameter(parameter_value.trim())),
         "auto_scale_height" =>
             state.set_auto_scale_height(load_bool_parameter(parameter_value.trim())),
-        "padding" => state.set_padding(load_full_padding_parameter(parameter_value.trim())),
+        "padding" => {
+            let padding_params: Vec<&str> = parameter_value.trim().split(',').collect();
+            load_padding_top_parameter(&mut state, padding_params[0].to_string(),
+                                       scheduler,path.clone());
+            load_padding_bottom_parameter(&mut state, padding_params[1].to_string(),
+                                       scheduler,path.clone());
+            load_padding_left_parameter(&mut state, padding_params[2].to_string(),
+                                       scheduler,path.clone());
+            load_padding_right_parameter(&mut state, padding_params[3].to_string(),
+                                       scheduler,path);
+        },
         "disabled" => state.set_disabled(load_bool_parameter(parameter_value.trim())),
         "selection_order" => { state.set_selection_order(
             load_selection_order_parameter(parameter_value.as_str())) },
-        "padding_x" => state.set_padding(load_padding_x_parameter(parameter_value.trim())),
-        "padding_y" => state.set_padding(load_padding_y_parameter(parameter_value.trim())),
+        "padding_x" => {
+            let (left, right) = parameter_value.split_once(',').unwrap();
+            load_padding_left_parameter(&mut state, left.to_string(),
+                                        scheduler,path.clone());
+            load_padding_right_parameter(&mut state, right.to_string(),
+                                         scheduler,path);
+        },
+        "padding_y" => {
+            let (top, bottom) = parameter_value.split_once(',').unwrap();
+            load_padding_left_parameter(&mut state, top.to_string(),
+                                        scheduler,path.clone());
+            load_padding_right_parameter(&mut state, bottom.to_string(),
+                                         scheduler,path);
+        },
         "padding_top" => state.set_padding_top(parameter_value.trim().parse().unwrap()),
         "padding_bottom" => state.set_padding_bottom(parameter_value.trim().parse().unwrap()),
         "padding_left" => state.set_padding_left(parameter_value.trim().parse().unwrap()),

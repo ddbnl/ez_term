@@ -1,6 +1,6 @@
 use std::collections::HashMap;
-use crate::common::definitions::Coordinates;
-use crate::states::definitions::{StateCoordinates, SizeHint, PosHint, Size, AutoScale, Padding,
+use crate::common::definitions::{Coordinates, Size};
+use crate::states::definitions::{StateCoordinates, SizeHint, PosHint, StateSize, AutoScale, Padding,
                                  HorizontalAlignment, VerticalAlignment, BorderConfig, ColorConfig,
                                  LayoutMode, LayoutOrientation, ScrollingConfig};
 use crate::common;
@@ -29,7 +29,7 @@ pub struct LayoutState {
     pub pos_hint: PosHint,
 
     /// size of this widget
-    pub size: Size,
+    pub size: StateSize,
 
     /// Automatically adjust size of widget to content
     pub auto_scale: AutoScale,
@@ -109,15 +109,15 @@ impl LayoutState {
 
         LayoutState {
             path: path.clone(),
-            position: StateCoordinates::new(0, 0, path, scheduler),
+            position: StateCoordinates::new(0, 0, path.clone(), scheduler),
             absolute_position: Coordinates::default(),
             size_hint: SizeHint::default(),
             pos_hint: PosHint::default(),
-            size: Size::default(),
+            size: StateSize::new(0, 0, path.clone(), scheduler),
             auto_scale: AutoScale::default(),
             orientation: LayoutOrientation::Horizontal,
             mode: LayoutMode::Box,
-            padding: Padding::default(),
+            padding: Padding::new(0, 0, 0, 0, path, scheduler),
             halign: HorizontalAlignment::Left,
             valign: VerticalAlignment::Top,
             active_screen: String::new(),
@@ -163,46 +163,42 @@ impl GenericState for LayoutState {
 
     fn get_auto_scale(&self) -> &AutoScale { &self.auto_scale }
 
-    fn set_size(&mut self, size: Size) { self.size = size; }
+    fn get_size(&self) -> &StateSize { &self.size  }
 
-    fn get_size(&self) -> &Size { &self.size  }
-
-    fn get_size_mut(&mut self) -> &mut Size { &mut self.size }
+    fn get_size_mut(&mut self) -> &mut StateSize { &mut self.size }
 
     fn get_effective_size(&self) -> Size {
 
-        let mut size_copy = self.get_size().clone();
-        let width_result: isize = size_copy.width as isize
+        let width_result: isize = self.size.width.value as isize
             -if self.get_border_config().enabled {2} else {0}
             -if self.scrolling_config.enable_y {1} else {0}
-            -self.get_padding().left as isize - self.get_padding().right as isize;
+            -self.get_padding().left.value as isize - self.get_padding().right.value as isize;
         let width = if width_result < 0 {0} else { width_result};
-        let height_result: isize = size_copy.height as isize
+        let height_result: isize = self.size.height.value as isize
             -if self.get_border_config().enabled {2} else {0}
             -if self.scrolling_config.enable_x {1} else {0}
-            -self.get_padding().top as isize - self.get_padding().bottom as isize;
+            -self.get_padding().top.value as isize - self.get_padding().bottom.value as isize;
         let height = if height_result < 0 {0} else { height_result};
-        size_copy.width = width as usize;
-        size_copy.height = height as usize;
-        size_copy
+        Size::new(width as usize, height as usize)
     }
 
     /// Set the how much width you want the actual content inside this widget to have. Width for
     /// e.g. border and padding will be added to this automatically.
     fn set_effective_width(&mut self, width: usize) {
-        self.get_size_mut().width = width
-            +if self.get_border_config().enabled {2} else {0}
-            +if self.scrolling_config.enable_y {1} else {0}
-            +self.get_padding().left + self.get_padding().right
+        let offset = if self.get_border_config().enabled {2} else {0}
+            + if self.scrolling_config.enable_y {1} else {0}
+            + self.get_padding().left.value + self.get_padding().right.value;
+        self.get_size_mut().width.set(width + offset);
     }
 
     /// Set the how much height you want the actual content inside this widget to have. Height for
     /// e.g. border and padding will be added to this automatically.
     fn set_effective_height(&mut self, height: usize) {
-        self.get_size_mut().height = height
-            +if self.get_border_config().enabled {2} else {0}
-            +if self.scrolling_config.enable_x {1} else {0}
-            +self.get_padding().top + self.get_padding().bottom
+
+        let offset = if self.get_border_config().enabled {2} else {0}
+            + if self.scrolling_config.enable_x {1} else {0}
+            + self.get_padding().top.value + self.get_padding().bottom.value;
+        self.get_size_mut().height.set(height + offset);
     }
 
     fn get_position(&self) -> &StateCoordinates { &self.position }
@@ -230,12 +226,9 @@ impl GenericState for LayoutState {
 
     fn get_vertical_alignment(&self) -> VerticalAlignment { self.valign }
 
-    fn set_padding(&mut self, padding: Padding) {
-        if self.padding != padding { self.changed = true }
-        self.padding = padding;
-    }
-
     fn get_padding(&self) -> &Padding { &self.padding }
+
+    fn get_padding_mut(&mut self) -> &mut Padding { &mut self.padding }
 
     fn set_border_config(&mut self, config: BorderConfig) {
         if self.border_config != config { self.changed = true }

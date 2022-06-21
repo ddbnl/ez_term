@@ -244,6 +244,7 @@ pub fn get_widget_by_position<'a>(pos: Coordinates,
         }
         if state.as_generic().collides(pos) {
             results.push(widget_tree.get(widget_path).unwrap().as_ez_object());
+        } else {
         }
     }
     results

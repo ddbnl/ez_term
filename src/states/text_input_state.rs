@@ -1,7 +1,7 @@
 use crate::states;
 use crate::common::definitions::Coordinates;
 use crate::scheduler::Scheduler;
-use crate::states::definitions::{StateCoordinates, SizeHint, PosHint, Size, AutoScale, Padding,
+use crate::states::definitions::{StateCoordinates, SizeHint, PosHint, StateSize, AutoScale, Padding,
                                  HorizontalAlignment, VerticalAlignment, BorderConfig, ColorConfig};
 use crate::states::state::GenericState;
 
@@ -23,7 +23,7 @@ pub struct TextInputState {
     pub absolute_position: Coordinates,
 
     /// size of this widget
-    pub size: Size,
+    pub size: StateSize,
 
     /// Relative height/width of this widget to parent layout
     pub size_hint: SizeHint,
@@ -88,15 +88,15 @@ impl TextInputState {
 
         TextInputState {
             path: path.clone(),
-            position: StateCoordinates::new(0, 0, path, scheduler),
+            position: StateCoordinates::new(0, 0, path.clone(), scheduler),
             absolute_position: Coordinates::default(),
+            size: StateSize::new(0, 0, path.clone(), scheduler),
             size_hint: SizeHint::default(),
             auto_scale: AutoScale::default(),
             pos_hint: PosHint::default(),
-            padding: Padding::default(),
+            padding: Padding::new(0, 0, 0, 0, path, scheduler),
             halign: HorizontalAlignment::Left,
             valign: VerticalAlignment::Top,
-            size: Size::default(),
             cursor_pos: Coordinates::default(),
             active_blink_task: false,
             blink_switch: false,
@@ -142,11 +142,9 @@ impl GenericState for TextInputState {
 
     fn get_auto_scale(&self) -> &AutoScale { &self.auto_scale }
 
-    fn set_size(&mut self, size: Size) { self.size = size; }
+    fn get_size(&self) -> &StateSize { &self.size  }
 
-    fn get_size(&self) -> &Size { &self.size  }
-
-    fn get_size_mut(&mut self) -> &mut Size { &mut self.size }
+    fn get_size_mut(&mut self) -> &mut StateSize { &mut self.size }
 
     fn get_position(&self) -> &StateCoordinates { &self.position }
 
@@ -173,12 +171,9 @@ impl GenericState for TextInputState {
 
     fn get_vertical_alignment(&self) -> VerticalAlignment { self.valign }
 
-    fn set_padding(&mut self, padding: Padding) {
-        if self.padding != padding { self.changed = true }
-        self.padding = padding;
-    }
-
     fn get_padding(&self) -> &Padding { &self.padding }
+
+    fn get_padding_mut(&mut self) -> &mut Padding { &mut self.padding }
 
     fn set_border_config(&mut self, config: BorderConfig) {
         if self.border_config != config { self.changed = true }
