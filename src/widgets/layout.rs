@@ -332,6 +332,7 @@ impl Layout {
     /// Overwrite a PixelMap of current own content with the content of the active modal. Modals
     /// overlap all content.
     fn get_modal_contents(&self, state_tree: &mut StateTree, mut contents: PixelMap) -> PixelMap {
+
         if state_tree.get(&self.get_full_path()).unwrap().as_layout().get_modals().is_empty() {
             return contents
         }
@@ -638,7 +639,7 @@ impl Layout {
                 let new_path = format!("{}/{}", parent_path, new_id.clone());
                 let mut tab_header = Button::new(new_id, new_path, scheduler);
                 tab_header.state.size_hint = SizeHint::new(None, None);
-                tab_header.state.text = id;
+                tab_header.state.text.set(id);
 
                 let tab_on_click = move |context: EzContext| {
                     let state = context.state_tree
@@ -897,12 +898,12 @@ impl Layout {
 
                 child_state.colors.foreground =
                     if selection == i.path { own_colors.selection_foreground }
-                    else if active_tab.rsplit_once('/').unwrap().1 == child_state.text {
+                    else if active_tab.rsplit_once('/').unwrap().1 == child_state.text.value {
                         own_colors.active_foreground
                     } else { own_colors.tab_foreground };
                 child_state.colors.background =
                     if selection == i.path { own_colors.selection_background }
-                    else if active_tab.rsplit_once('/').unwrap().1 == child_state.text {
+                    else if active_tab.rsplit_once('/').unwrap().1 == child_state.text.value {
                         own_colors.active_background
                     } else { own_colors.tab_background };
 
@@ -915,7 +916,7 @@ impl Layout {
                 let content = i.get_contents(state_tree);
                 let child_state = state_tree
                     .get_mut(&child.as_ez_object().get_full_path()).unwrap().as_button_mut();
-                let new_width = child_state.text.len() + 2;
+                let new_width = child_state.text.value.len() + 2;
                 child_state.get_size_mut().width.set(new_width);
                 child_state.get_size_mut().height.set(3);
                 let mut custom_size = own_effective_size.clone();

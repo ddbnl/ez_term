@@ -2,10 +2,12 @@
 use std::fs::File;
 use std::io::prelude::*;
 use crate::common;
+use crate::common::definitions::StateTree;
 use crate::widgets::widget::{Pixel, EzObject};
 use crate::states::label_state::LabelState;
 use crate::states::state::{EzState, GenericState};
 use crate::parser;
+use crate::parser::load_ez_string_parameter;
 use crate::scheduler::Scheduler;
 
 #[derive(Clone, Debug)]
@@ -46,10 +48,15 @@ impl EzObject for Label {
         if consumed { return }
         match parameter_name.as_str() {
             "text" => {
-                if parameter_value.starts_with(' ') {
-                    parameter_value = parameter_value.strip_prefix(' ').unwrap().to_string();
-                }
-                self.state.text = parameter_value
+                let path = self.path.clone();
+                self.state.text.set(load_ez_string_parameter(
+                    parameter_value.trim(), scheduler, path.clone(),
+                    Box::new(move |state_tree: &mut StateTree, val: String| {
+                        let state = state_tree.get_mut(&path)
+                            .unwrap().as_label_mut();
+                        state.text.set(val);
+                        path.clone()
+                    })))
             },
             "from_file" => self.from_file = Some(parameter_value.trim().to_string()),
             _ => panic!("Invalid parameter name for label {}", parameter_name)
@@ -81,7 +88,7 @@ impl EzObject for Label {
             file.read_to_string(&mut text).expect("Unable to read file");
         // or take text from widget state
         } else {
-            text = state.text.clone();
+            text = state.text.value.clone();
         }
 
 

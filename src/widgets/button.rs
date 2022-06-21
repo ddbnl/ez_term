@@ -4,8 +4,10 @@ use crate::states::state::{EzState, GenericState};
 use crate::states::definitions::{HorizontalAlignment, VerticalAlignment};
 use crate::states::button_state::ButtonState;
 use crate::common;
+use crate::common::definitions::StateTree;
 use crate::widgets::widget::{Pixel, EzObject};
 use crate::parser;
+use crate::parser::load_ez_string_parameter;
 use crate::scheduler::Scheduler;
 
 #[derive(Clone, Debug)]
@@ -43,8 +45,17 @@ impl EzObject for Button {
             scheduler);
         if consumed { return }
         match parameter_name.as_str() {
-            "text" => self.state.set_text(
-                parser::load_text_parameter(parameter_value.as_str())),
+            "text" => {
+                let path = self.path.clone();
+                self.state.text.set(load_ez_string_parameter(
+                    parameter_value.trim(), scheduler, path.clone(),
+                    Box::new(move |state_tree: &mut StateTree, val: String| {
+                        let state = state_tree.get_mut(&path)
+                            .unwrap().as_button_mut();
+                        state.text.set(val);
+                        path.clone()
+                    })))
+            },
             _ => panic!("Invalid parameter name for button {}", parameter_name)
         }
     }
@@ -72,7 +83,7 @@ impl EzObject for Button {
                                 state.get_color_config().flash_background)}
             else { state.get_context_colors() };
 
-        let text = state.text.clone();
+        let text = state.text.value.clone();
 
         let write_width = if state.get_size().infinite_width ||
             state.get_auto_scale().width { text.len() + 1 }

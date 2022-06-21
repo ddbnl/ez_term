@@ -82,11 +82,6 @@ fn main() {
         ez_term::CallbackConfig::from_on_press(
             Box::new(test_popup_button_on_press)));
 
-    // Set a text input on value change callback
-    scheduler.update_callback_config(
-        "/root/main_screen/left_box/bottom_box/small_box_1/input_3_box/input_3".to_string(),
-        ez_term::CallbackConfig::from_on_value_change(
-            Box::new(test_text_input_on_value_change)));
     // Set a text input on keyboard enter
     scheduler.update_callback_config(
         "/root/main_screen/left_box/bottom_box/small_box_1/input_3_box/input_3".to_string(),
@@ -156,7 +151,7 @@ fn test_checkbox_on_value_change(context: ez_term::EzContext) -> bool {
         .get_mut("/root/main_screen/left_box/bottom_box/small_box_2/checkbox_section_box/checkbox_box/checkbox_label")
         .unwrap()
         .as_label_mut();
-    label_state.set_text(text.to_string());
+    label_state.get_text_mut().set(text.to_string());
     label_state.get_colors_config_mut().foreground = color;
     false
 }
@@ -185,7 +180,7 @@ fn test_slider_on_value_change(context: ez_term::EzContext) -> bool {
         .get_mut("/root/main_screen/left_box/bottom_box/small_box_2/slider_section_box/slider_float/slider_label")
         .unwrap()
         .as_label_mut();
-    label_state.set_text(text);
+    label_state.get_text_mut().set(text);
     label_state.get_colors_config_mut().foreground = color;
     label_state.update(context.scheduler);
     false
@@ -220,7 +215,7 @@ fn test_radio_button_on_value_change(context: ez_term::EzContext) -> bool {
         .get_mut("/root/main_screen/left_box/bottom_box/small_box_2/radio_section_box/radio_box/radio_label")
         .unwrap()
         .as_label_mut();
-    label_state.set_text(name);
+    label_state.get_text_mut().set(name);
     label_state.get_colors_config_mut().foreground = color;
     false
 }
@@ -241,35 +236,14 @@ fn test_dropdown_on_value_change(context: ez_term::EzContext) -> bool {
     context.state_tree
         .get_mut("/root/main_screen/left_box/bottom_box/small_box_3/dropdown_section_box/dropdown_box/dropdown_label")
         .unwrap()
-        .as_label_mut().set_text(value);
-    false
-}
-
-
-// As an example we will change the label below a text input to mirror any typed text.
-fn test_text_input_on_value_change(context: ez_term::EzContext) -> bool {
-
-    // First we get the widget state object of the widget that changed value, using the 'widget_path'
-    // parameter as a key. The state contains the current value. Then we cast the generic widget
-    // state as a TextInputState, so we can access all its fields.
-    let value = context.state_tree
-        .get(&context.widget_path)
-        .unwrap()
-        .as_text_input()
-        .get_text();
-    // Next we will retrieve a label widget and change the 'text' field of its' state. This will
-    // cause the text to change on the next frame.
-    context.state_tree
-        .get_mut("/root/main_screen/left_box/bottom_box/small_box_1/input_3_box/input_3_label")
-        .unwrap()
-        .as_label_mut().set_text(value);
+        .as_label_mut().get_text_mut().set(value);
     false
 }
 
 
 // As an example we will change the label below a text input to add 'confirmed' to its' text after
 // an enter on the text input. We will also deselect the widget.
-fn test_text_input_on_keyboard_enter(context: ez_term::EzContext) -> bool {
+fn test_text_input_on_keyboard_enter(context: EzContext) -> bool {
 
     // First we get the widget state object of the widget that changed value, using the 'widget_path'
     // parameter as a key. The state contains the current value. Then we cast the generic widget
@@ -278,7 +252,7 @@ fn test_text_input_on_keyboard_enter(context: ez_term::EzContext) -> bool {
         .get_mut(&context.widget_path)
         .unwrap()
         .as_text_input_mut();
-    let value = text_input_state.get_text();
+    let value = text_input_state.get_text().value.clone();
     // Now we will set the selected field of the text input state to false. This will deselect the
     // widget on the next frame.
     text_input_state.set_selected(false);
@@ -287,7 +261,7 @@ fn test_text_input_on_keyboard_enter(context: ez_term::EzContext) -> bool {
     context.state_tree
         .get_mut("/root/main_screen/left_box/bottom_box/small_box_1/input_3_box/input_3_label")
         .unwrap()
-        .as_label_mut().set_text(format!("{} CONFIRMED", value));
+        .as_label_mut().get_text_mut().set(format!("{} CONFIRMED", value));
     false
 }
 
@@ -302,9 +276,10 @@ fn test_on_button_press(context: ez_term::EzContext) -> bool {
         .unwrap()
         .as_label_mut();
     let number: usize =
-        label_state.get_text().split_once(':').unwrap().1.trim().split_once("times")
+        label_state.get_text().value.split_once(':')
+            .unwrap().1.trim().split_once("times")
             .unwrap().0.trim().parse().unwrap();
-    label_state.set_text(format!("Clicked: {} times", number + 1));
+    label_state.get_text_mut().set(format!("Clicked: {} times", number + 1));
     false
 }
 

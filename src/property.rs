@@ -1,6 +1,5 @@
 use std::cmp::Ordering;
 use std::ops::{Add, Sub};
-use std::process::Output;
 use std::sync::mpsc::{Sender, Receiver, channel};
 
 #[derive(Clone, Debug)]
@@ -60,5 +59,45 @@ impl Sub<usize> for UsizeProperty {
     type Output = usize;
     fn sub(self, rhs: usize) -> Self::Output {
         self.value - rhs
+    }
+}
+
+
+#[derive(Clone, Debug)]
+pub struct StringProperty {
+    pub name: String,
+    pub value: String,
+    tx: Sender<String>,
+}
+impl StringProperty {
+
+    pub fn new(name: String, value: String) -> (Self, Receiver<String>) {
+
+        let (tx, rx): (Sender<String>, Receiver<String>) = channel();
+        let property = StringProperty {
+            name,
+            value,
+            tx
+        };
+        (property, rx)
+    }
+
+    pub fn get(&self) -> &String { &self.value }
+
+    pub fn set(&mut self, new: String) {
+        if new != self.value {
+            self.value = new.clone();
+            self.tx.send(new).unwrap();
+        }
+    }
+}
+impl PartialEq for StringProperty {
+    fn eq(&self, other: &Self) -> bool {
+        self.value == other.value
+    }
+}
+impl PartialEq<String> for StringProperty {
+    fn eq(&self, other: &String) -> bool {
+        &self.value == other
     }
 }

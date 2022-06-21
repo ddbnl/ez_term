@@ -7,6 +7,7 @@ use crate::widgets::widget::{Pixel, EzObjects};
 use crate::states::definitions::CallbackConfig;
 use crate::states::state::{EzState};
 use crate::parser::EzWidgetDefinition;
+use crate::property::StringProperty;
 
 
 /// # Convenience types
@@ -87,9 +88,14 @@ pub type GenericEzFunction = Box<dyn FnMut(EzContext) -> bool>;
 pub type GenericEzTask = Box<dyn FnMut(EzContext) -> bool>;
 
 
-pub type EzProperties = HashMap<String, (UsizeProperty, Receiver<usize>)>;
-pub type EzPropertyUpdater = Box<dyn FnMut(&mut StateTree, usize) -> String>;
-pub type EzPropertySubscribers = HashMap<String, Vec<EzPropertyUpdater>>;
+pub type EzUsizeProperties = HashMap<String, (UsizeProperty, Receiver<usize>)>;
+pub type EzUsizePropertyUpdater = Box<dyn FnMut(&mut StateTree, usize) -> String>;
+pub type EzUsizePropertySubscribers = HashMap<String, Vec<EzUsizePropertyUpdater>>;
+
+pub type EzStringProperties = HashMap<String, (StringProperty, Receiver<String>)>;
+pub type EzStringPropertyUpdater = Box<dyn FnMut(&mut StateTree, String) -> String>;
+pub type EzStringPropertySubscribers = HashMap<String, Vec<EzStringPropertyUpdater>>;
+
 pub type EzThread = Vec<(Box<dyn FnOnce(Vec<UsizeProperty>) + Send>, Option<GenericEzTask>)>;
 
 

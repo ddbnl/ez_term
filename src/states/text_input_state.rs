@@ -1,5 +1,6 @@
 use crate::states;
 use crate::common::definitions::Coordinates;
+use crate::property::StringProperty;
 use crate::scheduler::Scheduler;
 use crate::states::definitions::{StateCoordinates, SizeHint, PosHint, StateSize, AutoScale, Padding,
                                  HorizontalAlignment, VerticalAlignment, BorderConfig, ColorConfig};
@@ -14,7 +15,7 @@ pub struct TextInputState {
     pub path: String,
 
     /// Text currently being displayed by the text input
-    pub text: String,
+    pub text: StringProperty,
 
     /// Position of this widget relative to its' parent [Layout]
     pub position: StateCoordinates,
@@ -94,7 +95,7 @@ impl TextInputState {
             size_hint: SizeHint::default(),
             auto_scale: AutoScale::default(),
             pos_hint: PosHint::default(),
-            padding: Padding::new(0, 0, 0, 0, path, scheduler),
+            padding: Padding::new(0, 0, 0, 0, path.clone(), scheduler),
             halign: HorizontalAlignment::Left,
             valign: VerticalAlignment::Top,
             cursor_pos: Coordinates::default(),
@@ -104,7 +105,8 @@ impl TextInputState {
             disabled: false,
             selected: false,
             selection_order: 0,
-            text: String::new(),
+            text: scheduler.new_string_property(format!("{}/text", path.clone()),
+                                                String::new()),
             max_length: 10000,
             border_config: BorderConfig::default(),
             colors: ColorConfig::default(),
@@ -225,12 +227,9 @@ impl GenericState for TextInputState {
 }
 impl TextInputState {
 
-    pub fn set_text(&mut self, text: String) {
-        if self.text != text { self.changed = true }
-        self.text = text;
-    }
+    pub fn get_text(&self) -> &StringProperty { &self.text }
 
-    pub fn get_text(&self) -> String { self.text.clone() }
+    pub fn get_text_mut(&mut self) -> &mut StringProperty { &mut self.text }
 
     pub fn set_cursor_pos(&mut self, cursor_pos: Coordinates) {
         if self.cursor_pos != cursor_pos { self.changed = true }

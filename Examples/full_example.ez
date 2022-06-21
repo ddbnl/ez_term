@@ -209,7 +209,7 @@
         padding: 1, 1, 1, 1
     - Label:
         id: input_3_label
-        text: Mirror text
+        text: parent.input_3.text
         padding_left: 1
         auto_scale_height: true
 

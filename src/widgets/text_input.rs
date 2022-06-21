@@ -12,6 +12,7 @@ use crate::common;
 use crate::common::definitions::{CallbackTree, EzContext, PixelMap, StateTree, ViewTree, WidgetTree};
 use crate::scheduler::Scheduler;
 use crate::common::definitions::Coordinates;
+use crate::parser::load_ez_string_parameter;
 
 #[derive(Clone, Debug)]
 pub struct TextInput {
@@ -49,11 +50,16 @@ impl EzObject for TextInput {
         match parameter_name.as_str() {
             "max_length" => self.state.set_max_length(parameter_value.trim().parse().unwrap()),
             "text" => {
-                if parameter_value.starts_with(' ') {
-                    parameter_value = parameter_value.strip_prefix(' ').unwrap().to_string();
-                }
-                self.state.set_text(parameter_value)
-            },
+                let path = self.path.clone();
+                self.state.text.set(load_ez_string_parameter(
+                    parameter_value.trim(), scheduler, path.clone(),
+                    Box::new(move |state_tree: &mut StateTree, val: String| {
+                        let state = state_tree.get_mut(&path)
+                            .unwrap().as_text_input_mut();
+                        state.text.set(val);
+                        path.clone()
+                    })))
+            }
             _ => panic!("Invalid parameter name for text input {}", parameter_name)
         }
     }
@@ -74,7 +80,7 @@ impl EzObject for TextInput {
         let state = state_tree
             .get_mut(&self.get_full_path()).unwrap().as_text_input_mut();
         let (fg_color, bg_color) = state.get_context_colors();
-        let mut text = state.get_text();
+        let mut text = state.get_text().value.clone();
         if text.len() > state.get_effective_size().width - 1 {
             let remains = text.len() - state.get_view_start();
             let view_end =
@@ -208,7 +214,7 @@ impl EzObject for TextInput {
         // Handle this widget being selected from mouse, follow user click position
         if let Some(pos) = mouse_pos {
             target_pos = Coordinates::new(pos.x, pos.y);
-            if pos.x > state.text.len() { target_pos.x = state.text.len() };
+            if pos.x > state.text.value.len() { target_pos.x = state.text.value.len() };
             if !state.active_blink_task {
                 start_cursor_blink(target_pos, state, scheduler,self.get_full_path());
             } else {
@@ -218,8 +224,8 @@ impl EzObject for TextInput {
             // Handle this widget being selected from keyboard. We choose the position.
         } else {
             // If text fills the widget move to end of widget. If not, move to end of text.
-            let target_x = if state.text.len() > (state.get_effective_size().width - 1)
-            { state.get_effective_size().width - 1 } else { state.text.len() };
+            let target_x = if state.text.value.len() > (state.get_effective_size().width - 1)
+            { state.get_effective_size().width - 1 } else { state.text.value.len() };
             target_pos = Coordinates::new(target_x, state.get_position().y.value);
             start_cursor_blink(target_pos, state, scheduler,
                                self.get_full_path());
@@ -242,18 +248,18 @@ impl EzObject for TextInput {
 /// view where necessary.
 pub fn handle_char(state: &mut TextInputState, char: char, scheduler: &mut Scheduler) {
 
-    if state.get_text().len() >= state.get_max_length() {
+    if state.get_text().value.len() >= state.get_max_length() {
         return
     }
     let cursor_pos = state.get_cursor_pos();
     let mut text;
 
     // Text still fits in widget, add char as normal
-    if state.get_text().len() < state.get_effective_size().width - 1 {
-        text = state.get_text();
+    if state.get_text().value.len() < state.get_effective_size().width - 1 {
+        text = state.get_text().value.clone();
         text = format!("{}{}{}", text[0..cursor_pos.x as usize].to_string(), char,
                        text[(cursor_pos.x) as usize..text.len()].to_string());
-        state.set_text(text);
+        state.get_text_mut().set(text);
         if state.cursor_pos.x < state.get_effective_size().width - 1 {
             state.cursor_pos.x += 1;
         } else {
@@ -263,7 +269,7 @@ pub fn handle_char(state: &mut TextInputState, char: char, scheduler: &mut Sched
     // Text does not fit in widget, add char to view
     else {
         let (pre_view_text, mut view_text, post_view_text) =
-            get_view_parts(state.get_text(), state.get_view_start(),
+            get_view_parts(state.get_text().value.clone(), state.get_view_start(),
                            state.get_effective_size().width);
         if cursor_pos.x < state.get_effective_size().width - 1 {
             view_text = format!("{}{}{}",
@@ -273,7 +279,7 @@ pub fn handle_char(state: &mut TextInputState, char: char, scheduler: &mut Sched
             view_text = format!("{}{}", view_text, char);
         }
         let new_text = format!("{}{}{}", pre_view_text, view_text, post_view_text);
-        state.set_text(new_text);
+        state.get_text_mut().set(new_text);
         if state.cursor_pos.x < state.get_effective_size().width - 1 {
             state.cursor_pos.x += 1;
         } else {
@@ -352,21 +358,22 @@ pub fn handle_right(state: &mut TextInputState, scheduler: &mut Scheduler) {
 
     let cursor_pos = state.get_cursor_pos();
     // Text does not fit in widget, advance view
-    if state.get_text().len() > state.get_effective_size().width - 1 &&
+    let text = state.get_text().value.clone();
+    if text.len() > state.get_effective_size().width - 1 &&
         cursor_pos.x >= state.get_effective_size().width - 2 &&
-        state.get_text().len() - state.get_view_start() > (state.get_effective_size().width - 1) {
-        if state.get_text().len() - state.get_view_start() - state.get_effective_size().width >= 4 {
+        text.len() - state.get_view_start() > (state.get_effective_size().width - 1) {
+        if text.len() - state.get_view_start() - state.get_effective_size().width >= 4 {
             state.set_view_start(state.get_view_start() + 4);
             state.set_cursor_x(state.get_cursor_pos().x - 3);
         } else {
-            state.set_view_start(state.get_text().len() - state.get_effective_size().width + 1);
+            state.set_view_start(text.len() - state.get_effective_size().width + 1);
             state.set_cursor_x(state.get_cursor_pos().x - 1);
         }
         // Text does not fit in widget but can't move further
-    } else if state.get_text().len() > state.get_effective_size().width - 1 &&
+    } else if text.len() > state.get_effective_size().width - 1 &&
         cursor_pos.x == state.get_effective_size().width - 1 {} // Max view, nothing to do
     // Text fits in widget, handle normally
-    else if cursor_pos.x < state.get_text().len() {
+    else if cursor_pos.x < text.len() {
         state.set_cursor_x(state.get_cursor_pos().x + 1);
     }
     state.update(scheduler);
@@ -379,7 +386,7 @@ pub fn handle_left(state: &mut TextInputState, scheduler: &mut Scheduler) {
     let cursor_pos = state.get_cursor_pos();
 
     // Text does not fit in widget and cursor at 0, move view to left if not at 0 already
-    if state.get_text().len() > state.get_effective_size().width - 1 &&
+    if state.get_text().value.len() > state.get_effective_size().width - 1 &&
         cursor_pos.x <= 1 && state.get_view_start() > 0 {
         if state.get_view_start() >= 4 {
             state.set_view_start(state.get_view_start() - 4 );
@@ -401,10 +408,10 @@ pub fn handle_delete(state: &mut TextInputState, scheduler: &mut Scheduler) {
 
     let cursor_pos = state.get_cursor_pos();
     // Check if text does not fit in widget, then we have to delete on a view
-    if state.get_text().len() > state.get_effective_size().width - 1 {
+    if state.get_text().value.len() > state.get_effective_size().width - 1 {
         // Get the view on the string, as well pre- and post to reconstruct it later
         let (pre_view_text, mut view_text, mut post_view_text) =
-            get_view_parts(state.get_text(), state.get_view_start(),
+            get_view_parts(state.get_text().value.clone(), state.get_view_start(),
                            state.get_effective_size().width);
 
         if cursor_pos.x == state.get_effective_size().width - 1 && post_view_text.is_empty() {
@@ -427,20 +434,20 @@ pub fn handle_delete(state: &mut TextInputState, scheduler: &mut Scheduler) {
         }
 
         // Reconstruct text with backspace view
-        state.set_text(format!("{}{}{}", pre_view_text, view_text, post_view_text));
+        state.get_text_mut().set(format!("{}{}{}", pre_view_text, view_text, post_view_text));
         // If we're viewing the start of a string then delete should move the view
         // forward if it's not already at the end
     }
     // Check if text fits in widget, then delete text as normal
     else {
         // Check if cursor is ahead of text, i.e. nothing to delete
-        if cursor_pos.x == state.get_text().len() {
+        if cursor_pos.x == state.get_text().value.len() {
             return
         }
-        let mut text = state.get_text();
+        let mut text = state.get_text().value.clone();
         text = format!("{}{}", text[0..cursor_pos.x as usize].to_string(),
                        text[(cursor_pos.x + 1) as usize..text.len()].to_string());
-        state.set_text(text);
+        state.get_text_mut().set(text);
     }
     state.update(scheduler);
 }
@@ -449,16 +456,16 @@ pub fn handle_delete(state: &mut TextInputState, scheduler: &mut Scheduler) {
 /// cursor and/or view as necessary.
 pub fn handle_backspace(state: &mut TextInputState, scheduler: &mut Scheduler) {
     let cursor_pos = state.get_cursor_pos();
-    let mut text = state.get_text();
+    let mut text = state.get_text().value.clone();
 
     // Check if text does not fit in widget, then we have to backspace on a view
-    if state.get_text().len() > state.get_effective_size().width - 1 {
+    if state.get_text().value.len() > state.get_effective_size().width - 1 {
         // Check if cursor is at start of text, i.e. nothing to backspace
         if cursor_pos.x == 0 && state.get_view_start() == 0 {
             return
         }
         let (mut pre_view_text, mut view_text, post_view_text) =
-            get_view_parts(state.get_text(), state.get_view_start(),
+            get_view_parts(state.get_text().value.clone(), state.get_view_start(),
                            state.get_effective_size().width);
         // Perform backspace on the text view
         if cursor_pos.x == 0 {
@@ -471,7 +478,7 @@ pub fn handle_backspace(state: &mut TextInputState, scheduler: &mut Scheduler) {
                                 view_text[cursor_pos.x as usize..view_text.len()].to_string());
         }
         // Reconstruct text with backspace view
-        state.set_text(format!("{}{}{}", pre_view_text, view_text, post_view_text));
+        state.get_text_mut().set(format!("{}{}{}", pre_view_text, view_text, post_view_text));
 
         // Backspace should move the view back if it's not already at the start
         if state.view_start > 1 && post_view_text.is_empty() {
@@ -496,7 +503,7 @@ pub fn handle_backspace(state: &mut TextInputState, scheduler: &mut Scheduler) {
         // Perform backspace on text
         text = format!("{}{}", text[0..(cursor_pos.x - 1) as usize].to_string(),
                        text[cursor_pos.x as usize..text.len()].to_string());
-        state.set_text(text);
+        state.get_text_mut().set(text);
         state.set_cursor_x(state.get_cursor_pos().x - 1);
     }
     state.update(scheduler);

@@ -4,7 +4,7 @@ use crate::common;
 use crate::common::definitions::{PixelMap, StateTree};
 use crate::widgets::widget::{Pixel, EzObject};
 use crate::parser;
-use crate::parser::load_int_parameter;
+use crate::parser::load_ez_int_parameter;
 use crate::scheduler::Scheduler;
 use crate::states::progress_bar_state::ProgressBarState;
 
@@ -43,7 +43,7 @@ impl EzObject for ProgressBar {
             "value" => {
                 let path = self.path.clone();
                 self.state.set_value(
-                    load_int_parameter(
+                    load_ez_int_parameter(
                         parameter_value.trim(), scheduler,
                         self.path.clone(),
                         Box::new(move |state_tree: &mut StateTree, val: usize| {
