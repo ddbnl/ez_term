@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::time::Duration;
 use crossterm::style::Color;
 use ez_term::{self, GenericState, EzObject, EzContext};
@@ -328,7 +329,7 @@ fn progress_bar_button(context: ez_term::EzContext) -> bool {
     state.update(context.scheduler);
     let progress_button_path = "/root/main_screen/left_box/bottom_box/small_box_2/progress_bar_section_box/progress_button".to_string();
     context.scheduler.schedule_threaded(Box::new(progress_example_app),
-        Some(Box::new(move |context: ez_term::EzContext| {
+        Some(Box::new(move |context: EzContext| {
             let state = context.state_tree.get_mut(&progress_button_path)
                 .unwrap().as_generic_mut();
             state.set_disabled(false);
@@ -339,19 +340,11 @@ fn progress_bar_button(context: ez_term::EzContext) -> bool {
 }
 
 
-fn progress_example_app(properties: Vec<ez_term::UsizeProperty>) {
+fn progress_example_app(mut properties: HashMap<String, ez_term::EzProperties>) {
 
-    let mut value_property = None;
-    for mut property in properties {
-        if property.name == "progress_property" {
-            value_property = Some(property);
-        }
-    }
-    if value_property == None { panic!("SHEIS")}
+    let value_property = properties.get_mut("progress_property").unwrap();
     for x in 1..6 {
-        if let Some(ref mut i) = value_property {
-            i.set(x*20);
-        }
+        value_property.as_usize_mut().set(x*20);
         std::thread::sleep(Duration::from_secs(1))
     };
 }

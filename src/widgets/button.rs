@@ -8,6 +8,7 @@ use crate::common::definitions::StateTree;
 use crate::widgets::widget::{Pixel, EzObject};
 use crate::parser;
 use crate::parser::load_ez_string_parameter;
+use crate::property::EzValues;
 use crate::scheduler::Scheduler;
 
 #[derive(Clone, Debug)]
@@ -49,10 +50,10 @@ impl EzObject for Button {
                 let path = self.path.clone();
                 self.state.text.set(load_ez_string_parameter(
                     parameter_value.trim(), scheduler, path.clone(),
-                    Box::new(move |state_tree: &mut StateTree, val: String| {
+                    Box::new(move |state_tree: &mut StateTree, val: EzValues| {
                         let state = state_tree.get_mut(&path)
                             .unwrap().as_button_mut();
-                        state.text.set(val);
+                        state.text.set(val.as_string().clone());
                         path.clone()
                     })))
             },

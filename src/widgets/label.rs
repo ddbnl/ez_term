@@ -8,6 +8,7 @@ use crate::states::label_state::LabelState;
 use crate::states::state::{EzState, GenericState};
 use crate::parser;
 use crate::parser::load_ez_string_parameter;
+use crate::property::EzValues;
 use crate::scheduler::Scheduler;
 
 #[derive(Clone, Debug)]
@@ -51,10 +52,10 @@ impl EzObject for Label {
                 let path = self.path.clone();
                 self.state.text.set(load_ez_string_parameter(
                     parameter_value.trim(), scheduler, path.clone(),
-                    Box::new(move |state_tree: &mut StateTree, val: String| {
+                    Box::new(move |state_tree: &mut StateTree, val: EzValues| {
                         let state = state_tree.get_mut(&path)
                             .unwrap().as_label_mut();
-                        state.text.set(val);
+                        state.text.set(val.as_string().clone());
                         path.clone()
                     })))
             },

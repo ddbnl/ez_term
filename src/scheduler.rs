@@ -1,7 +1,11 @@
+use std::collections::HashMap;
+use std::sync::mpsc::Receiver;
+use std::thread::{JoinHandle, spawn};
 use std::time::{Duration, Instant};
 use crate::{CallbackConfig, EzContext, run};
-use crate::common::definitions::{CallbackTree, GenericEzTask, StateTree, ViewTree, WidgetTree, EzThread, EzUsizeProperties, EzUsizePropertySubscribers, EzUsizePropertyUpdater, EzStringPropertySubscribers, EzStringProperties, EzStringPropertyUpdater};
-use crate::property::{StringProperty, UsizeProperty};
+use crate::common::definitions::{CallbackTree, GenericEzTask, StateTree, ViewTree, WidgetTree,
+                                 EzThread, EzPropertyUpdater};
+use crate::property::{EzProperties, EzValues, StringProperty, UsizeProperty};
 
 
 #[derive(Default)]
@@ -13,10 +17,9 @@ pub struct Scheduler {
     thread_handles: Vec<(std::thread::JoinHandle<()>, Option<GenericEzTask>)>,
     new_callback_configs: Vec<(String, CallbackConfig)>,
     updated_callback_configs: Vec<(String, CallbackConfig)>,
-    usize_properties: EzUsizeProperties,
-    usize_property_subscribers: EzUsizePropertySubscribers,
-    string_properties: EzStringProperties,
-    string_property_subscribers: EzStringPropertySubscribers,
+    properties: HashMap<String, EzProperties>,
+    property_receivers: HashMap<String, Receiver<EzValues>>,
+    property_subscribers: HashMap<String, Vec<EzPropertyUpdater>>,
 }
 
 
@@ -47,28 +50,39 @@ impl Scheduler {
         self.tasks.last_mut().unwrap()
     }
 
-    pub fn schedule_threaded(&mut self, threaded_func: Box<dyn FnOnce(Vec<UsizeProperty>) + Send>,
+    pub fn schedule_threaded(&mut self,
+                             threaded_func: Box<dyn FnOnce(HashMap<String, EzProperties>) + Send>,
                              on_finish: Option<GenericEzTask>) {
+
         self.threads_to_start.push((threaded_func, on_finish));
     }
 
     pub fn update_threads(&mut self, view_tree: &mut ViewTree, state_tree: &mut StateTree,
-                          widget_tree: &WidgetTree, _callback_tree: &mut CallbackTree) {
+                          widget_tree: &WidgetTree) {
+
+        self.start_new_threads();
+        self.check_finished_threads(view_tree, state_tree, widget_tree)
+    }
+
+    pub fn start_new_threads(&mut self) {
 
         while !self.threads_to_start.is_empty() {
-            let (thread_func, on_finish) = self.threads_to_start.pop().unwrap();
-            let mut properties = Vec::new();
-            for (property, _) in  self.usize_properties.values() {
-                properties.push(property.clone());
-            }
-            let handle: std::thread::JoinHandle<()> = std::thread::spawn(move || thread_func(properties));
+            let (thread_func, on_finish) =
+                self.threads_to_start.pop().unwrap();
+
+            let properties = self.properties.clone();
+            let handle: JoinHandle<()> = spawn(move || thread_func(properties));
             self.thread_handles.push((handle, on_finish))
         }
+    }
+
+    pub fn check_finished_threads(&mut self, view_tree: &mut ViewTree, state_tree: &mut StateTree,
+                                  widget_tree: &WidgetTree) {
+
         let mut finished = Vec::new();
         for (i, (handle, _)) in self.thread_handles.iter_mut().enumerate() {
             if handle.is_finished() {
                 finished.push(i);
-
             }
         }
         for i in finished {
@@ -78,7 +92,7 @@ impl Scheduler {
                                              state_tree, widget_tree, self);
                 func(context);
             }
-            handle.join();
+            handle.join().unwrap();
         }
     }
 
@@ -147,7 +161,8 @@ impl Scheduler {
 
         let (property, receiver) =
             UsizeProperty::new(name.clone(), value);
-        self.usize_properties.insert(name, (property.clone(), receiver));
+        self.properties.insert(name.clone(), EzProperties::Usize(property.clone()));
+        self.property_receivers.insert(name, receiver);
         property
     }
 
@@ -155,7 +170,8 @@ impl Scheduler {
 
         let (property, receiver) =
             StringProperty::new(name.clone(), value);
-        self.string_properties.insert(name, (property.clone(), receiver));
+        self.properties.insert(name.clone(), EzProperties::String(property.clone()));
+        self.property_receivers.insert(name, receiver);
         property
     }
 
@@ -164,42 +180,28 @@ impl Scheduler {
         let mut to_update = Vec::new();
 
         for (name, update_funcs) in
-                self.usize_property_subscribers.iter_mut() {
-            let (_, receiver) = self.usize_properties.get(name).unwrap();
-            if let Ok(new) = receiver.try_recv() {
+                self.property_subscribers.iter_mut() {
+            let receiver = self.property_receivers.get(name).unwrap();
+            let mut new_val = None;
+            // Drain all new values if any, we only care about the latest.
+            while let Ok(new) = receiver.try_recv() {
+                new_val = Some(new);
+            }
+            if let Some(val) = new_val {
                 for update_func in update_funcs {
-                    to_update.push(update_func(state_tree, new));
+                    to_update.push(update_func(state_tree, val.clone()));
                 }
             }
         }
-
-        for (name, update_funcs) in
-        self.string_property_subscribers.iter_mut() {
-            let (_, receiver) = self.string_properties.get(name).unwrap();
-            if let Ok(new) = receiver.try_recv() {
-                for update_func in update_funcs {
-                    to_update.push(update_func(state_tree, new.clone()));
-                }
-            }
-        }
-
         self.widgets_to_update.extend(to_update);
     }
 
-    pub fn subscribe_to_usize_callback(&mut self, name: String, update_func: EzUsizePropertyUpdater) {
+    pub fn subscribe_to_ez_property(&mut self, name: String, update_func: EzPropertyUpdater) {
 
-        if !self.usize_property_subscribers.contains_key(&name) {
-            self.usize_property_subscribers.insert(name.clone(), Vec::new());
+        if !self.property_subscribers.contains_key(&name) {
+            self.property_subscribers.insert(name.clone(), Vec::new());
         }
-        self.usize_property_subscribers.get_mut(&name).unwrap().push(update_func);
-    }
-
-    pub fn subscribe_to_string_callback(&mut self, name: String, update_func: EzStringPropertyUpdater) {
-
-        if !self.string_property_subscribers.contains_key(&name) {
-            self.string_property_subscribers.insert(name.clone(), Vec::new());
-        }
-        self.string_property_subscribers.get_mut(&name).unwrap().push(update_func);
+        self.property_subscribers.get_mut(&name).unwrap().push(update_func);
     }
 
     pub fn update_widget(&mut self, path: String) {

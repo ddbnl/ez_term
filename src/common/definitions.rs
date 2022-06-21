@@ -1,13 +1,12 @@
 use std::collections::HashMap;
-use std::sync::mpsc::Receiver;
 use crossterm::event::KeyCode;
 use crossterm::style::StyledContent;
-use crate::{scheduler, UsizeProperty};
+use crate::{scheduler};
 use crate::widgets::widget::{Pixel, EzObjects};
 use crate::states::definitions::CallbackConfig;
 use crate::states::state::{EzState};
 use crate::parser::EzWidgetDefinition;
-use crate::property::StringProperty;
+use crate::property::{EzProperties, EzValues,};
 
 
 /// # Convenience types
@@ -88,15 +87,14 @@ pub type GenericEzFunction = Box<dyn FnMut(EzContext) -> bool>;
 pub type GenericEzTask = Box<dyn FnMut(EzContext) -> bool>;
 
 
-pub type EzUsizeProperties = HashMap<String, (UsizeProperty, Receiver<usize>)>;
-pub type EzUsizePropertyUpdater = Box<dyn FnMut(&mut StateTree, usize) -> String>;
-pub type EzUsizePropertySubscribers = HashMap<String, Vec<EzUsizePropertyUpdater>>;
+/// # Ez Property Updates
+/// Close that updates an Ez property. An Ez property can subscribe to another of the same type,
+/// and it will automatically keep values in sync. When subscribed to a value, when that value
+/// changes, an [EzPropertyUpdates] func will be called to do the actual sync.
+pub type EzPropertyUpdater = Box<dyn FnMut(&mut StateTree, EzValues) -> String>;
 
-pub type EzStringProperties = HashMap<String, (StringProperty, Receiver<String>)>;
-pub type EzStringPropertyUpdater = Box<dyn FnMut(&mut StateTree, String) -> String>;
-pub type EzStringPropertySubscribers = HashMap<String, Vec<EzStringPropertyUpdater>>;
-
-pub type EzThread = Vec<(Box<dyn FnOnce(Vec<UsizeProperty>) + Send>, Option<GenericEzTask>)>;
+pub type EzThread =
+         Vec<(Box<dyn FnOnce(HashMap<String, EzProperties>) + Send>, Option<GenericEzTask>)>;
 
 
 /// ## Ez Context:

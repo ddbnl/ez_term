@@ -13,6 +13,7 @@ use crate::common::definitions::{CallbackTree, EzContext, PixelMap, StateTree, V
 use crate::scheduler::Scheduler;
 use crate::common::definitions::Coordinates;
 use crate::parser::load_ez_string_parameter;
+use crate::property::EzValues;
 
 #[derive(Clone, Debug)]
 pub struct TextInput {
@@ -53,10 +54,10 @@ impl EzObject for TextInput {
                 let path = self.path.clone();
                 self.state.text.set(load_ez_string_parameter(
                     parameter_value.trim(), scheduler, path.clone(),
-                    Box::new(move |state_tree: &mut StateTree, val: String| {
+                    Box::new(move |state_tree: &mut StateTree, val: EzValues| {
                         let state = state_tree.get_mut(&path)
                             .unwrap().as_text_input_mut();
-                        state.text.set(val);
+                        state.text.set(val.as_string().clone());
                         path.clone()
                     })))
             }

@@ -204,8 +204,7 @@ fn run_loop(mut root_widget: Layout, mut callback_tree: CallbackTree, mut schedu
             scheduler.update_callback_configs(&mut callback_tree);
             scheduler.run_tasks(
                 &mut view_tree, &mut state_tree, &widget_tree, &mut callback_tree);
-            scheduler.update_threads(&mut view_tree, &mut state_tree, &widget_tree,
-                                     &mut callback_tree);
+            scheduler.update_threads(&mut view_tree, &mut state_tree, &widget_tree);
             scheduler.update_properties(&mut state_tree);
         }
         root_widget.state = state_tree.get("/root").unwrap().as_layout().clone();

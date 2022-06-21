@@ -2,17 +2,83 @@ use std::cmp::Ordering;
 use std::ops::{Add, Sub};
 use std::sync::mpsc::{Sender, Receiver, channel};
 
+
+#[derive(Clone, Debug)]
+pub enum EzValues {
+    Usize(usize),
+    String(String),
+}
+impl EzValues {
+    pub fn as_usize(&self) -> &usize {
+        if let EzValues::Usize(i) = self {
+            i
+        } else {
+            panic!("Wrong property, expected UsizeProperty")
+        }
+    }
+
+    pub fn as_string(&self) -> &String {
+        if let EzValues::String(i) = self {
+            i
+        } else {
+            panic!("Wrong property, expected StringProperty")
+        }
+    }
+}
+
+#[derive(Clone, Debug)]
+pub enum EzProperties {
+    Usize(UsizeProperty),
+    String(StringProperty)
+}
+impl EzProperties {
+
+    pub fn as_usize(&self) -> &UsizeProperty {
+        if let EzProperties::Usize(i) = self {
+            i
+        } else {
+            panic!("Wrong property, expected UsizeProperty")
+        }
+    }
+
+    pub fn as_usize_mut(&mut self) -> &mut UsizeProperty {
+        if let EzProperties::Usize(i) = self {
+            i
+        } else {
+            panic!("Wrong property, expected UsizeProperty")
+        }
+    }
+
+    pub fn as_string(&self) -> &StringProperty {
+        if let EzProperties::String(i) = self {
+            i
+        } else {
+            panic!("Wrong property, expected StringProperty")
+        }
+    }
+
+    pub fn as_string_mut(&mut self) -> &mut StringProperty {
+        if let EzProperties::String(i) = self {
+            i
+        } else {
+            panic!("Wrong property, expected StringProperty")
+        }
+    }
+
+}
+
+
 #[derive(Clone, Debug)]
 pub struct UsizeProperty {
     pub name: String,
     pub value: usize,
-    tx: Sender<usize>,
+    tx: Sender<EzValues>,
 }
 impl UsizeProperty {
 
-    pub fn new(name: String, value: usize) -> (Self, Receiver<usize>) {
+    pub fn new(name: String, value: usize) -> (Self, Receiver<EzValues>) {
 
-        let (tx, rx): (Sender<usize>, Receiver<usize>) = channel();
+        let (tx, rx): (Sender<EzValues>, Receiver<EzValues>) = channel();
         let property = UsizeProperty {
             name,
             value,
@@ -26,7 +92,7 @@ impl UsizeProperty {
     pub fn set(&mut self, new: usize) {
         if new != self.value {
             self.value = new;
-            self.tx.send(new).unwrap();
+            self.tx.send(EzValues::Usize(new)).unwrap();
         }
     }
 
@@ -67,13 +133,13 @@ impl Sub<usize> for UsizeProperty {
 pub struct StringProperty {
     pub name: String,
     pub value: String,
-    tx: Sender<String>,
+    tx: Sender<EzValues>,
 }
 impl StringProperty {
 
-    pub fn new(name: String, value: String) -> (Self, Receiver<String>) {
+    pub fn new(name: String, value: String) -> (Self, Receiver<EzValues>) {
 
-        let (tx, rx): (Sender<String>, Receiver<String>) = channel();
+        let (tx, rx): (Sender<EzValues>, Receiver<EzValues>) = channel();
         let property = StringProperty {
             name,
             value,
@@ -87,7 +153,7 @@ impl StringProperty {
     pub fn set(&mut self, new: String) {
         if new != self.value {
             self.value = new.clone();
-            self.tx.send(new).unwrap();
+            self.tx.send(EzValues::String(new)).unwrap();
         }
     }
 }
