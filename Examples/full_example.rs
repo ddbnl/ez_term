@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::time::Duration;
 use crossterm::style::Color;
-use ez_term::{self, GenericState, EzObject, EzContext, EzProperty};
+use ez_term::{self, GenericState, EzObject, EzContext};
 
 
 fn main() {
@@ -167,8 +167,8 @@ fn test_slider_on_value_change(context: EzContext) -> bool {
     // Now we will create a text and a color depending on whether the checkbox was turned on or off
     let text = value.to_string();
     let color =
-        if state.value.get() as f32 / state.maximum as f32 <= 1.0/3.0 {Color::Red}
-        else if state.value.get() as f32 / state.maximum as f32 <= 2.0/3.0 {Color::Yellow}
+        if state.value.value as f32 / state.maximum as f32 <= 1.0/3.0 {Color::Red}
+        else if state.value.value as f32 / state.maximum as f32 <= 2.0/3.0 {Color::Yellow}
         else {Color::Green};
     // Next we will retrieve a label widget state and change the text and color field. This will
     // cause the text to change on the next frame.

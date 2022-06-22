@@ -1,7 +1,7 @@
 use crossterm::event::KeyCode;
 use crossterm::style::Color;
 use crate::common;
-use crate::property::UsizeProperty;
+use crate::property::EzProperty;
 use crate::scheduler::Scheduler;
 
 
@@ -63,8 +63,8 @@ pub enum VerticalAlignment {
 /// Convenience wrapper around a size tuple.
 #[derive(PartialEq, Clone, Debug)]
 pub struct StateSize {
-    pub width: UsizeProperty,
-    pub height: UsizeProperty,
+    pub width: EzProperty<usize>,
+    pub height: EzProperty<usize>,
     pub infinite_width: bool,
     pub infinite_height: bool,
 }
@@ -88,8 +88,8 @@ impl StateSize {
 /// Convenience wrapper around an XY tuple.
 #[derive(PartialEq, Clone, Debug)]
 pub struct StateCoordinates {
-    pub x: UsizeProperty,
-    pub y: UsizeProperty,
+    pub x: EzProperty<usize>,
+    pub y: EzProperty<usize>,
 }
 impl StateCoordinates {
     pub fn new(x: usize, y: usize, name: String, scheduler: &mut Scheduler) -> Self {
@@ -429,10 +429,10 @@ impl Default for ColorConfig {
 
 #[derive(PartialEq, Clone, Debug)]
 pub struct Padding {
-    pub top: UsizeProperty,
-    pub bottom: UsizeProperty,
-    pub left: UsizeProperty,
-    pub right: UsizeProperty,
+    pub top: EzProperty<usize>,
+    pub bottom: EzProperty<usize>,
+    pub left: EzProperty<usize>,
+    pub right: EzProperty<usize>,
 }
 impl Padding {
     pub fn new(top: usize, bottom: usize, left: usize, right: usize, name: String,

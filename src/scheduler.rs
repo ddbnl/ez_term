@@ -5,7 +5,7 @@ use std::time::{Duration, Instant};
 use crate::{CallbackConfig, EzContext, run};
 use crate::common::definitions::{CallbackTree, GenericEzTask, StateTree, ViewTree, WidgetTree,
                                  EzThread, EzPropertyUpdater};
-use crate::property::{EzProperties, EzValues, StringProperty, UsizeProperty};
+use crate::property::{EzProperties, EzValues, EzProperty};
 
 
 #[derive(Default)]
@@ -160,19 +160,19 @@ impl Scheduler {
 
     pub fn exit(&self) { run::stop(); }
 
-    pub fn new_usize_property(&mut self, name: String, value: usize) -> UsizeProperty {
+    pub fn new_usize_property(&mut self, name: String, value: usize) -> EzProperty<usize> {
 
         let (property, receiver) =
-            UsizeProperty::new(name.clone(), value);
+            EzProperty::new(name.clone(), value);
         self.properties.insert(name.clone(), EzProperties::Usize(property.clone()));
         self.property_receivers.insert(name, receiver);
         property
     }
 
-    pub fn new_string_property(&mut self, name: String, value: String) -> StringProperty {
+    pub fn new_string_property(&mut self, name: String, value: String) -> EzProperty<String> {
 
         let (property, receiver) =
-            StringProperty::new(name.clone(), value);
+            EzProperty::new(name.clone(), value);
         self.properties.insert(name.clone(), EzProperties::String(property.clone()));
         self.property_receivers.insert(name, receiver);
         property

@@ -1,6 +1,6 @@
 use crate::scheduler::Scheduler;
 use crate::common::definitions::Coordinates;
-use crate::property::StringProperty;
+use crate::property::EzProperty;
 use crate::states::definitions::{StateCoordinates, SizeHint, PosHint, StateSize, AutoScale, Padding,
                                  HorizontalAlignment, VerticalAlignment, BorderConfig, ColorConfig};
 use crate::states::state::GenericState;
@@ -14,7 +14,7 @@ pub struct ButtonState {
     pub path: String,
 
     /// Text currently being displayed by the label
-    pub text: StringProperty,
+    pub text: EzProperty<String>,
 
     /// Position of this widget relative to its' parent [Layout]
     pub position: StateCoordinates,
@@ -204,9 +204,9 @@ impl GenericState for ButtonState {
 }
 impl ButtonState {
 
-    pub fn get_text(&self) -> &StringProperty { &self.text }
+    pub fn get_text(&self) -> &EzProperty<String> { &self.text }
 
-    pub fn get_text_mut(&mut self) -> &mut StringProperty { &mut self.text }
+    pub fn get_text_mut(&mut self) -> &mut EzProperty<String> { &mut self.text }
 
     pub fn set_flashing(&mut self, flashing: bool) {
         if self.flashing != flashing { self.changed = true }

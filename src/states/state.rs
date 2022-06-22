@@ -340,14 +340,14 @@ pub trait GenericState {
 
     /// Set x coordinate of [Position]
     fn set_x(&mut self, x: usize) {
-        if x != self.get_position().x.get() {
+        if x != self.get_position().x.value {
             self.get_position_mut().x.set(x);
         }
     }
 
     /// Set y coordinate of [Position]
     fn set_y(&mut self, y: usize) {
-        if y != self.get_position().y.get() {
+        if y != self.get_position().y.value {
             self.get_position_mut().y.set(y);
         }
     }

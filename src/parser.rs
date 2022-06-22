@@ -119,10 +119,10 @@ impl EzWidgetDefinition {
             initialized.add_child(initialized_sub_widget, scheduler);
         }
         let terminal_size = size().unwrap();
-        if initialized.state.get_size().width.get() == 0  {
+        if initialized.state.get_size().width.get() == &0  {
             initialized.state.get_size_mut().width.set(terminal_size.0 as usize);
         }
-        if initialized.state.get_size().height.get() == 0 {
+        if initialized.state.get_size().height.get() == &0 {
             initialized.state.get_size_mut().height.set(terminal_size.1 as usize);
         }
         initialized.state.templates = templates;

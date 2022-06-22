@@ -12,6 +12,7 @@ pub enum EzValues {
     String(String),
 }
 impl EzValues {
+
     pub fn as_usize(&self) -> &usize {
         if let EzValues::Usize(i) = self {
             i
@@ -28,15 +29,26 @@ impl EzValues {
         }
     }
 }
+impl From<usize> for EzValues {
+    fn from(inner: usize) -> EzValues {
+        EzValues::Usize(inner)
+    }
+}
+impl From<String> for EzValues {
+    fn from(inner: String) -> EzValues {
+        EzValues::String(inner)
+    }
+}
+
 
 #[derive(Clone, Debug)]
 pub enum EzProperties {
-    Usize(UsizeProperty),
-    String(StringProperty)
+    Usize(EzProperty<usize>),
+    String(EzProperty<String>)
 }
 impl EzProperties {
 
-    pub fn as_usize(&self) -> &UsizeProperty {
+    pub fn as_usize(&self) -> &EzProperty<usize> {
         if let EzProperties::Usize(i) = self {
             i
         } else {
@@ -44,7 +56,7 @@ impl EzProperties {
         }
     }
 
-    pub fn as_usize_mut(&mut self) -> &mut UsizeProperty {
+    pub fn as_usize_mut(&mut self) -> &mut EzProperty<usize> {
         if let EzProperties::Usize(i) = self {
             i
         } else {
@@ -52,7 +64,7 @@ impl EzProperties {
         }
     }
 
-    pub fn as_string(&self) -> &StringProperty {
+    pub fn as_string(&self) -> &EzProperty<String> {
         if let EzProperties::String(i) = self {
             i
         } else {
@@ -60,7 +72,7 @@ impl EzProperties {
         }
     }
 
-    pub fn as_string_mut(&mut self) -> &mut StringProperty {
+    pub fn as_string_mut(&mut self) -> &mut EzProperty<String> {
         if let EzProperties::String(i) = self {
             i
         } else {
@@ -71,119 +83,69 @@ impl EzProperties {
 }
 
 
-pub trait EzProperty {
+#[derive(Clone, Debug)]
+pub struct EzProperty<T> {
 
-    fn bind(&self, callback: GenericEzFunction, scheduler: &mut Scheduler) {
+    pub name: String,
+    pub value: T,
+    tx: Sender <EzValues>,
+}
+impl<T> EzProperty<T> where EzValues: From<T> {
+
+    pub fn new(name: String, value: T) -> (Self, Receiver<EzValues>) {
+
+        let (tx, rx): (Sender<EzValues>, Receiver<EzValues>) = channel();
+        let property = EzProperty {
+            name,
+            value,
+            tx
+        };
+        (property, rx)
+    }
+
+    pub fn get(&self) -> &T { &self.value }
+
+    pub fn set(&mut self, new: T) where T: PartialEq + Clone {
+
+        if new != self.value {
+            self.value = new.clone();
+            self.tx.send(EzValues::from(new)).unwrap();
+        }
+    }
+
+    pub fn bind(&self, callback: GenericEzFunction, scheduler: &mut Scheduler) {
 
         let config = CallbackConfig::from_on_value_change(callback);
         scheduler.set_callback_config(self.get_name().as_str(), config);
     }
 
-    fn get_name(&self) -> &String;
-}
-
-
-#[derive(Clone, Debug)]
-pub struct UsizeProperty {
-    pub name: String,
-    pub value: usize,
-    tx: Sender<EzValues>,
-}
-impl EzProperty for UsizeProperty {
-    fn get_name(&self) -> &String { &self.name }
-}
-impl UsizeProperty {
-
-    pub fn new(name: String, value: usize) -> (Self, Receiver<EzValues>) {
-
-        let (tx, rx): (Sender<EzValues>, Receiver<EzValues>) = channel();
-        let property = UsizeProperty {
-            name,
-            value,
-            tx
-        };
-        (property, rx)
-    }
-
-    pub fn get(&self) -> usize { self.value }
-
-    pub fn set(&mut self, new: usize) {
-        if new != self.value {
-            self.value = new;
-            self.tx.send(EzValues::Usize(new)).unwrap();
-        }
-    }
-
-    pub fn add(&mut self, rhs: usize) {
-        self.set(self.value + rhs);
+    pub fn get_name(&self) -> &String {
+        &self.name
     }
 }
-impl PartialEq for UsizeProperty {
+impl<T> PartialEq for EzProperty<T> where T: PartialEq {
     fn eq(&self, other: &Self) -> bool {
         self.value == other.value
     }
 }
-impl PartialEq<usize> for UsizeProperty {
+impl PartialEq<usize> for EzProperty<usize> {
     fn eq(&self, other: &usize) -> bool { &self.value == other }
 }
 
-impl PartialOrd<usize> for UsizeProperty {
+impl PartialOrd<usize> for EzProperty<usize> {
     fn partial_cmp(&self, other: &usize) -> Option<Ordering> {
         Some(self.value.cmp(other))
     }
 }
-
-impl Add<usize> for UsizeProperty {
+impl Add<usize> for EzProperty<usize> {
     type Output = usize;
-    fn add(self, rhs: usize) -> Self::Output {
-        self.value + rhs
-    }
+    fn add(self, rhs: usize) -> Self::Output { self.value + rhs }
 }
-impl Sub<usize> for UsizeProperty {
+impl Sub<usize> for EzProperty<usize> {
     type Output = usize;
-    fn sub(self, rhs: usize) -> Self::Output {
-        self.value - rhs
-    }
+    fn sub(self, rhs: usize) -> Self::Output { self.value - rhs }
 }
-
-
-#[derive(Clone, Debug)]
-pub struct StringProperty {
-    pub name: String,
-    pub value: String,
-    tx: Sender<EzValues>,
-}
-impl EzProperty for StringProperty {
-    fn get_name(&self) -> &String { &self.name }
-}
-impl StringProperty {
-
-    pub fn new(name: String, value: String) -> (Self, Receiver<EzValues>) {
-
-        let (tx, rx): (Sender<EzValues>, Receiver<EzValues>) = channel();
-        let property = StringProperty {
-            name,
-            value,
-            tx
-        };
-        (property, rx)
-    }
-
-    pub fn get(&self) -> &String { &self.value }
-
-    pub fn set(&mut self, new: String) {
-        if new != self.value {
-            self.value = new.clone();
-            self.tx.send(EzValues::String(new)).unwrap();
-        }
-    }
-}
-impl PartialEq for StringProperty {
-    fn eq(&self, other: &Self) -> bool {
-        self.value == other.value
-    }
-}
-impl PartialEq<String> for StringProperty {
+impl PartialEq<String> for EzProperty<String> {
     fn eq(&self, other: &String) -> bool {
         &self.value == other
     }

@@ -349,8 +349,8 @@ impl Layout {
         common::widget_functions::reposition_with_pos_hint(
             parent_size.width.value, parent_size.height.value,
             state.as_generic_mut());
-        let x = state.as_generic().get_position().x.get();
-        let y = state.as_generic().get_position().y.get();
+        let x = state.as_generic().get_position().x.value;
+        let y = state.as_generic().get_position().y.value;
         state.as_generic_mut().set_absolute_position(Coordinates::new(x, y));
 
         //Get contents
@@ -951,7 +951,7 @@ impl Layout {
                 if let EzObjects::Button(button) = child {
                     let state = state_tree
                         .get_by_path_mut(&button.path).as_button_mut();
-                    state.set_x(if state.get_position().x.get() >= difference
+                    state.set_x(if state.get_position().x.get() >= &difference
                     { state.get_position().x.get() - difference } else { 0 });
                     state.set_absolute_position(Coordinates::new(
                         if state.get_absolute_position().x >= difference

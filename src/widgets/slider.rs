@@ -148,7 +148,7 @@ impl Slider {
                    widget_tree: &WidgetTree, callback_tree: &mut CallbackTree,
                    scheduler: &mut Scheduler) {
         let state = state_tree.get_by_path_mut(&self.path).as_slider_mut();
-        if state.value.get() == state.minimum { return }
+        if state.value == state.minimum { return }
         state.set_value(state.get_value() - state.get_step() as usize);
         state.update(scheduler);
         if let Some(ref mut i ) = callback_tree
@@ -162,7 +162,7 @@ impl Slider {
                    scheduler: &mut Scheduler) {
 
         let state = state_tree.get_by_path_mut(&self.path).as_slider_mut();
-        if state.value.get() == state.maximum { return }
+        if state.value == state.maximum { return }
         state.set_value(state.get_value() + state.get_step() as usize);
         state.update(scheduler);
         self.on_value_change_callback(view_tree, state_tree, widget_tree, callback_tree,

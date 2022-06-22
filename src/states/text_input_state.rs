@@ -1,5 +1,5 @@
 use crate::common::definitions::Coordinates;
-use crate::property::StringProperty;
+use crate::property::EzProperty;
 use crate::scheduler::Scheduler;
 use crate::states::definitions::{StateCoordinates, SizeHint, PosHint, StateSize, AutoScale, Padding,
                                  HorizontalAlignment, VerticalAlignment, BorderConfig, ColorConfig};
@@ -14,7 +14,7 @@ pub struct TextInputState {
     pub path: String,
 
     /// Text currently being displayed by the text input
-    pub text: StringProperty,
+    pub text: EzProperty<String>,
 
     /// Position of this widget relative to its' parent [Layout]
     pub position: StateCoordinates,
@@ -226,9 +226,9 @@ impl GenericState for TextInputState {
 }
 impl TextInputState {
 
-    pub fn get_text(&self) -> &StringProperty { &self.text }
+    pub fn get_text(&self) -> &EzProperty<String> { &self.text }
 
-    pub fn get_text_mut(&mut self) -> &mut StringProperty { &mut self.text }
+    pub fn get_text_mut(&mut self) -> &mut EzProperty<String> { &mut self.text }
 
     pub fn set_cursor_pos(&mut self, cursor_pos: Coordinates) {
         if self.cursor_pos != cursor_pos { self.changed = true }

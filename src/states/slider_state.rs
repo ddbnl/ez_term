@@ -1,6 +1,6 @@
 use crate::scheduler::Scheduler;
 use crate::common::definitions::Coordinates;
-use crate::property::{UsizeProperty};
+use crate::property::EzProperty;
 use crate::states::definitions::{AutoScale, BorderConfig, ColorConfig, HorizontalAlignment,
                                  Padding, PosHint, StateSize, SizeHint, StateCoordinates,
                                  VerticalAlignment};
@@ -15,7 +15,7 @@ pub struct SliderState {
     pub path: String,
 
     /// Current value of the slider
-    pub value: UsizeProperty,
+    pub value: EzProperty<usize>,
 
     /// Low boundary of the slider
     pub minimum: usize,
@@ -215,12 +215,12 @@ impl GenericState for SliderState {
 impl SliderState {
 
     pub fn set_value(&mut self, value: usize) {
-        if self.value.get() != value { self.changed = true }
+        if self.value.get() != &value { self.changed = true }
         self.value.set(value);
         self.validate();
     }
 
-    pub fn get_value(&self) -> usize { self.value.get() }
+    pub fn get_value(&self) -> &usize { self.value.get() }
 
     pub fn set_minimum(&mut self, minimum: usize) {
         if self.minimum != minimum { self.changed = true }
