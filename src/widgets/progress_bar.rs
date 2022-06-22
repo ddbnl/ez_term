@@ -88,7 +88,7 @@ impl EzObject for ProgressBar {
                                           state.get_color_config().foreground,
                                      state.get_color_config().background)));
         }
-        if state.get_border_config().enabled {
+        if state.get_border_config().enabled.value {
             contents = common::widget_functions::add_border(
                 contents, state.get_border_config());
         }

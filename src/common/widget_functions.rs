@@ -83,17 +83,17 @@ pub fn reposition_with_pos_hint(parent_width: usize, parent_height: usize,
 pub fn add_border(mut content: common::definitions::PixelMap, config: &BorderConfig) -> common::definitions::PixelMap {
     if content.is_empty() { return content }
     // Create border elements
-    let horizontal_border = Pixel::new(config.horizontal_symbol.clone(),
+    let horizontal_border = Pixel::new(config.horizontal_symbol.value.clone(),
                                        config.fg_color, config.bg_color);
-    let vertical_border = Pixel::new(config.vertical_symbol.clone(),
+    let vertical_border = Pixel::new(config.vertical_symbol.value.clone(),
                                      config.fg_color, config.bg_color);
-    let top_left_border = Pixel::new(config.top_left_symbol.clone(),
+    let top_left_border = Pixel::new(config.top_left_symbol.value.clone(),
                                      config.fg_color, config.bg_color);
-    let top_right_border = Pixel::new(config.top_right_symbol.clone(),
+    let top_right_border = Pixel::new(config.top_right_symbol.value.clone(),
                                       config.fg_color, config.bg_color);
-    let bottom_left_border = Pixel::new(config.bottom_left_symbol.clone(),
+    let bottom_left_border = Pixel::new(config.bottom_left_symbol.value.clone(),
                                         config.fg_color, config.bg_color);
-    let bottom_right_border = Pixel::new(config.bottom_right_symbol.clone(),
+    let bottom_right_border = Pixel::new(config.bottom_right_symbol.value.clone(),
                                          config.fg_color, config.bg_color);
     // Create horizontal borders
     for x in 0..content.len() {

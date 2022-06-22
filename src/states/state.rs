@@ -265,24 +265,24 @@ pub trait GenericState {
     /// positioned relative to its' parent.
     fn get_pos_hint(&self) -> &PosHint;
 
-    /// Set width autoscaling bool. If the widget supports it and turned on,
-    /// automatically adjusts width to the actual width of its' content
-    fn set_auto_scale(&mut self, _auto_scale: AutoScale);
-
     /// Get autoscaling config. If the widget supports it and turned on,
     /// automatically adjusts size to the actual size of its' content
     fn get_auto_scale(&self) -> &AutoScale;
 
+    /// Get mut autoscaling config. If the widget supports it and turned on,
+    /// automatically adjusts size to the actual size of its' content
+    fn get_auto_scale_mut(&mut self) -> &mut AutoScale;
+
     /// Set width autoscaling bool. If the widget supports it and turned on,
     /// automatically adjusts width to the actual width of its' content
     fn set_auto_scale_width(&mut self, auto_scale: bool) {
-        self.set_auto_scale(AutoScale::new(auto_scale, self.get_auto_scale().height));
+        self.get_auto_scale_mut().width.set(auto_scale);
     }
 
     /// Set height autoscaling bool. If the widget supports it and turned on,
     /// automatically adjusts height to the actual height of its' content
     fn set_auto_scale_height(&mut self, auto_scale: bool) {
-        self.set_auto_scale(AutoScale::new(self.get_auto_scale().width, auto_scale));
+        self.get_auto_scale_mut().height.set(auto_scale);
     }
 
     /// Get current [Size] of this object
@@ -304,11 +304,11 @@ pub trait GenericState {
     fn get_effective_size(&self) -> Size {
 
         let width_result: isize = self.get_size().width.value as isize
-            -if self.get_border_config().enabled {2} else {0}
+            -if self.get_border_config().enabled.value {2} else {0}
             -self.get_padding().left.value as isize - self.get_padding().right.value as isize;
         let width = if width_result < 0 {0} else { width_result };
         let height_result: isize = self.get_size().height.value as isize
-            -if self.get_border_config().enabled {2} else {0}
+            -if self.get_border_config().enabled.value {2} else {0}
             -self.get_padding().top.value as isize - self.get_padding().bottom.value as isize;
         let height = if height_result < 0 {0} else { height_result };
         Size::new(width as usize, height as usize)
@@ -318,7 +318,7 @@ pub trait GenericState {
     /// e.g. border and padding will be added to this automatically.
     fn set_effective_width(&mut self, width: usize) {
 
-        let offset = if self.get_border_config().enabled {2} else {0}
+        let offset = if self.get_border_config().enabled.value {2} else {0}
             + self.get_padding().left.value + self.get_padding().right.value;
         self.get_size_mut().width.set(width + offset);
     }
@@ -327,7 +327,7 @@ pub trait GenericState {
     /// e.g. border and padding will be added to this automatically.
     fn set_effective_height(&mut self, height: usize) {
 
-        let offset = if self.get_border_config().enabled {2} else {0}
+        let offset = if self.get_border_config().enabled.value {2} else {0}
             + self.get_padding().top.value + self.get_padding().bottom.value;
         self.get_size_mut().height.set(height + offset);
     }
@@ -356,9 +356,9 @@ pub trait GenericState {
     /// e.g. borders, padding, etc.
     fn get_effective_position(&self) -> Coordinates {
         Coordinates::new(
-            self.get_position().x.get() +if self.get_border_config().enabled {1}
+            self.get_position().x.get() +if self.get_border_config().enabled.value {1}
             else {0} + self.get_padding().left.value,
-            self.get_position().y.get() +if self.get_border_config().enabled {1}
+            self.get_position().y.get() +if self.get_border_config().enabled.value {1}
             else {0} + self.get_padding().top.value)
     }
 
@@ -375,9 +375,9 @@ pub trait GenericState {
     /// e.g. border and padding
     fn get_effective_absolute_position(&self) -> Coordinates {
         Coordinates::new(
-         self.get_absolute_position().x +if self.get_border_config().enabled {1} else {0}
+         self.get_absolute_position().x +if self.get_border_config().enabled.value {1} else {0}
              + self.get_padding().left.value,
-         self.get_absolute_position().y +if self.get_border_config().enabled {1} else {0}
+         self.get_absolute_position().y +if self.get_border_config().enabled.value {1} else {0}
              + self.get_padding().top.value)
     }
 

@@ -64,9 +64,9 @@ impl CanvasState {
             pos_hint: PosHint::default(),
             size: StateSize::new(0, 0, path.clone(), scheduler),
             size_hint: SizeHint::default(),
-            auto_scale: AutoScale::default(),
-            padding: Padding::new(0, 0, 0, 0, path, scheduler),
-            border_config: BorderConfig::default(),
+            auto_scale: AutoScale::new(false, false, path.clone(), scheduler),
+            padding: Padding::new(0, 0, 0, 0, path.clone(), scheduler),
+            border_config: BorderConfig::new(false, path, scheduler),
             colors: ColorConfig::default(),
             halign: HorizontalAlignment::Left,
             valign: VerticalAlignment::Top,
@@ -95,12 +95,9 @@ impl GenericState for CanvasState {
 
     fn get_pos_hint(&self) -> &PosHint { &self.pos_hint }
 
-    fn set_auto_scale(&mut self, auto_scale: AutoScale) {
-        if self.auto_scale != auto_scale { self.changed = true }
-        self.auto_scale = auto_scale;
-    }
-
     fn get_auto_scale(&self) -> &AutoScale { &self.auto_scale }
+
+    fn get_auto_scale_mut(&mut self) -> &mut AutoScale { &mut self.auto_scale }
 
     fn get_size(&self) -> &StateSize { &self.size  }
 

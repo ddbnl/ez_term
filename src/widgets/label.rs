@@ -94,7 +94,7 @@ impl EzObject for Label {
 
 
         let chunk_size =
-            if state.get_size().infinite_width || state.get_auto_scale().width {text.len() + 1}
+            if state.get_size().infinite_width || state.get_auto_scale().width.value {text.len() + 1}
             else {state.get_effective_size().width};
         let content_lines = common::widget_functions::wrap_text(text, chunk_size);
         // If content is scrolled simply scale to length of content on that axis
@@ -109,14 +109,14 @@ impl EzObject for Label {
         }
         // If user wants to autoscale we set size to size of content or if that does not it to
         // size of the widget
-        if state.get_auto_scale().width {
+        if state.get_auto_scale().width.value {
             let longest_line = content_lines.iter().map(|x| x.len()).max();
             let auto_scale_width = if let Some(i) = longest_line { i } else { 0 };
             if auto_scale_width < state.get_effective_size().width {
                 state.set_effective_width(auto_scale_width);
             }
         }
-        if state.get_auto_scale().height {
+        if state.get_auto_scale().height.value {
             let auto_scale_height = content_lines.len();
             if auto_scale_height < state.get_effective_size().height {
                 state.set_effective_height(auto_scale_height);
@@ -146,7 +146,7 @@ impl EzObject for Label {
             }
             contents.push(new_y);
         }
-        if state.get_border_config().enabled {
+        if state.get_border_config().enabled.value {
             contents = common::widget_functions::add_border(
                 contents, state.get_border_config());
         }

@@ -92,7 +92,7 @@ impl TextInputState {
             absolute_position: Coordinates::default(),
             size: StateSize::new(0, 0, path.clone(), scheduler),
             size_hint: SizeHint::default(),
-            auto_scale: AutoScale::default(),
+            auto_scale: AutoScale::new(false, false, path.clone(), scheduler),
             pos_hint: PosHint::default(),
             padding: Padding::new(0, 0, 0, 0, path.clone(), scheduler),
             halign: HorizontalAlignment::Left,
@@ -107,7 +107,7 @@ impl TextInputState {
             text: scheduler.new_string_property(format!("{}/text", path.clone()),
                                                 String::new()),
             max_length: 10000,
-            border_config: BorderConfig::default(),
+            border_config: BorderConfig::new(false, path, scheduler),
             colors: ColorConfig::default(),
             changed: false,
             force_redraw: false
@@ -136,12 +136,9 @@ impl GenericState for TextInputState {
 
     fn get_pos_hint(&self) -> &PosHint { &self.pos_hint }
 
-    fn set_auto_scale(&mut self, auto_scale: AutoScale) {
-        if self.auto_scale != auto_scale { self.changed = true }
-        self.auto_scale = auto_scale;
-    }
-
     fn get_auto_scale(&self) -> &AutoScale { &self.auto_scale }
+
+    fn get_auto_scale_mut(&mut self) -> &mut AutoScale { &mut self.auto_scale }
 
     fn get_size(&self) -> &StateSize { &self.size  }
 

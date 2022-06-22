@@ -6,11 +6,13 @@ use crate::parser;
 use crate::common;
 use crate::common::definitions::{CallbackTree, EzContext, PixelMap, StateTree, ViewTree, WidgetTree,
                                  Coordinates};
+use crate::parser::load_ez_bool_parameter;
+use crate::property::EzValues;
 use crate::widgets::widget::{Pixel, EzObject, EzObjects};
 use crate::states::layout_state::LayoutState;
 use crate::states::state::{EzState, GenericState};
 use crate::scheduler::Scheduler;
-use crate::states::definitions::{AutoScale, CallbackConfig, ColorConfig, LayoutMode, StateSize,
+use crate::states::definitions::{CallbackConfig, ColorConfig, LayoutMode, StateSize,
                                  SizeHint, LayoutOrientation, ScrollingConfig};
 use crate::widgets::button::Button;
 
@@ -47,6 +49,34 @@ impl Layout {
             state: LayoutState::new(path, scheduler),
         }
     }
+
+    fn load_scrolling_enable_x_parameter(&mut self, parameter_value: &str,
+                                         scheduler: &mut Scheduler) {
+
+        let path = self.path.clone();
+        self.state.get_scrolling_config_mut().enable_x.set(load_ez_bool_parameter(
+            parameter_value.trim(), scheduler, path.clone(),
+            Box::new(move |state_tree: &mut StateTree, val: EzValues| {
+                let state = state_tree.get_by_path_mut(&path)
+                    .as_layout_mut();
+                state.get_scrolling_config_mut().enable_x.set(val.as_bool().to_owned());
+                path.clone()
+            })))
+    }
+
+    fn load_scrolling_enable_y_parameter(&mut self, parameter_value: &str,
+                                         scheduler: &mut Scheduler) {
+
+        let path = self.path.clone();
+        self.state.get_scrolling_config_mut().enable_y.set(load_ez_bool_parameter(
+            parameter_value.trim(), scheduler, path.clone(),
+            Box::new(move |state_tree: &mut StateTree, val: EzValues| {
+                let state = state_tree.get_by_path_mut(&path)
+                    .as_layout_mut();
+                state.get_scrolling_config_mut().enable_y.set(val.as_bool().to_owned());
+                path.clone()
+            })))
+    }
 }
 
 
@@ -78,12 +108,15 @@ impl EzObject for Layout {
                                        parameter_value)
                 }
             },
-            "scroll" => parser::load_full_enable_scrolling_parameter(
-                parameter_value.trim(), &mut self.state.scrolling_config),
-            "scroll_x" => self.state.scrolling_config.enable_x =
-                parser::load_bool_parameter(parameter_value.trim()),
-            "scroll_y" => self.state.scrolling_config.enable_y =
-                parser::load_bool_parameter(parameter_value.trim()),
+            "scroll" => {
+                let (x, y) = parameter_value.split_once(',').unwrap();
+                self.load_scrolling_enable_x_parameter(x.trim(), scheduler);
+                self.load_scrolling_enable_y_parameter(y.trim(), scheduler);
+            }
+            "scroll_x" => self.load_scrolling_enable_x_parameter(
+                parameter_value.trim(), scheduler),
+            "scroll_y" => self.load_scrolling_enable_y_parameter(
+                parameter_value.trim(), scheduler),
             "fill" =>
                 self.state.fill = parser::load_bool_parameter(parameter_value.trim()),
             "filler_symbol" =>
@@ -143,7 +176,7 @@ impl EzObject for Layout {
 
         if merged_content.is_empty() { return merged_content } // Empty widget
         // Put border around content if border if set
-        if state.get_border_config().enabled {
+        if state.get_border_config().enabled.value {
             merged_content = common::widget_functions::add_border(merged_content,
                                                                   state.get_border_config());
         }
@@ -312,14 +345,14 @@ impl Layout {
         let state = state_tree.get_by_path_mut(&self.get_full_path())
             .as_layout_mut();
         // If user wants to autoscale width we set width to length of content
-        if state.get_auto_scale().width {
+        if state.get_auto_scale().width.value {
             let auto_scale_width = contents.len();
             if auto_scale_width < state.get_effective_size().width {
                 state.set_effective_width(auto_scale_width);
             }
         }
         // If user wants to autoscale height we set height to the highest column
-        if state.get_auto_scale().height {
+        if state.get_auto_scale().height.value {
             let auto_scale_height = contents.iter()
                 .map(|x| x.len()).max().unwrap_or(0);
             if auto_scale_height < state.get_effective_size().height {
@@ -418,10 +451,10 @@ impl Layout {
 
             // If autoscaling is enabled set child size to max width. It is then expected to scale
             // itself according to its' content
-            if state.get_auto_scale().width {
+            if state.get_auto_scale().width.value {
                 state.get_size_mut().width.set(own_width)
             }
-            if state.get_auto_scale().height {
+            if state.get_auto_scale().height.value {
                 state.get_size_mut().height.set(own_height)
             }
             // Scale down child to remaining size in the case that the child is too large, rather
@@ -517,8 +550,8 @@ impl Layout {
             if let LayoutOrientation::Horizontal = own_orientation {
                 if let Some(size_hint_x) = state.get_size_hint().x
                 {
-                    if size_hint_x != 1.0 || state.get_auto_scale().width ||
-                        state.get_auto_scale().height || state.get_size().width > 0 {
+                    if size_hint_x != 1.0 || state.get_auto_scale().width.value ||
+                        state.get_auto_scale().height.value || state.get_size().width > 0 {
                         all_default_size_hint_x = false;
                     }
                 } else {
@@ -529,8 +562,8 @@ impl Layout {
             }
             if let LayoutOrientation::Vertical = own_orientation {
                 if let Some(size_hint_y) = state.get_size_hint().y {
-                    if size_hint_y != 1.0 || state.get_auto_scale().height ||
-                        state.get_auto_scale().width || state.get_size().height > 0 {
+                    if size_hint_y != 1.0 || state.get_auto_scale().height.value ||
+                        state.get_auto_scale().width.value || state.get_size().height > 0 {
                         all_default_size_hint_y = false;
                     }
                 } else {
@@ -904,7 +937,8 @@ impl Layout {
                         own_colors.active_background
                     } else { own_colors.tab_background };
 
-                child_state.set_auto_scale(AutoScale::new(true, true));
+                child_state.auto_scale.width.set(true);
+                child_state.auto_scale.height.set(true);
                 child_state.set_x(pos_x);
                 child_state.set_y(0);
                 let content = i.get_contents(state_tree);
@@ -999,32 +1033,32 @@ impl Layout {
             let state = state_tree
                 .get_by_path_mut(&generic_child.get_full_path().clone()).as_generic_mut();
 
-            if own_size.infinite_width || own_scrolling.enable_x {
+            if own_size.infinite_width || own_scrolling.enable_x.value {
                 state.get_size_mut().infinite_width = true;
             }
-            if own_size.infinite_height || own_scrolling.enable_y {
+            if own_size.infinite_height || own_scrolling.enable_y.value {
                 state.get_size_mut().infinite_height = true;
             }
 
             let width_left =
-                if !own_scrolling.enable_x && !own_size.infinite_width &&
+                if !own_scrolling.enable_x.value && !own_size.infinite_width &&
                     !state.get_size().infinite_width && own_effective_size.width >= position.x
                     {own_effective_size.width - position.x} else {0};
             // If autoscaling is enabled set child size to max width. It is then expected to scale
             // itself according to its' content
-            if state.get_auto_scale().width {
+            if state.get_auto_scale().width.value {
                 state.get_size_mut().width.set(width_left)
             }
-            if state.get_auto_scale().height {
+            if state.get_auto_scale().height.value {
                 state.get_size_mut().height.set(own_effective_size.height)
             }
             // Scale down child to remaining size in the case that the child is too large, rather
             // panicking.
-            if !own_scrolling.enable_x && !own_size.infinite_width &&
+            if !own_scrolling.enable_x.value && !own_size.infinite_width &&
                 state.get_size().width > width_left {
                 state.get_size_mut().width.set(width_left);
             }
-            if !own_scrolling.enable_y && !own_size.infinite_height &&
+            if !own_scrolling.enable_y.value && !own_size.infinite_height &&
                 state.get_size().height > own_effective_size.height {
                 state.get_size_mut().height.set(own_effective_size.height);
             }
@@ -1065,11 +1099,11 @@ impl Layout {
     fn scale_self_to_largest_child(&self, content_list: &[PixelMap], state_tree: &mut StateTree){
 
         let state = state_tree.get_by_path_mut(&self.path).as_layout_mut();
-        if state.auto_scale.width {
+        if state.auto_scale.width.value {
             state.set_effective_width(
                 content_list.iter().map(|x| x.len()).max().unwrap());
         }
-        if state.auto_scale.height {
+        if state.auto_scale.height.value {
             state.set_effective_height(
                 content_list.iter().map(
                     |child| child.iter().map(|x| x.len()).max().unwrap())
@@ -1098,35 +1132,35 @@ impl Layout {
                 state_tree.get_by_path_mut(&generic_child.get_full_path()).as_generic_mut();
 
             // If we're scrolling on an axis then the child can be infinite size on that axis
-            if own_size.infinite_width || own_scrolling.enable_x {
+            if own_size.infinite_width || own_scrolling.enable_x.value {
                 child_state.get_size_mut().infinite_width = true;
             }
-            if own_size.infinite_height || own_scrolling.enable_y {
+            if own_size.infinite_height || own_scrolling.enable_y.value {
                 child_state.get_size_mut().infinite_height = true;
             }
 
             // Determine how much height we have left to give the child. Can be 0 if we're scrolling
             // as we use [Size.infinite_height]
             let height_left =
-                if !own_scrolling.enable_y && !own_size.infinite_height &&
+                if !own_scrolling.enable_y.value && !own_size.infinite_height &&
                     own_effective_size.height >= position.y && !child_state.get_size().infinite_height
                 {own_effective_size.height - position.y } else { 0 };
             // If autoscaling is enabled set child size to max width. It is then expected to scale
             // itself according to its' content
-            if child_state.get_auto_scale().width {
+            if child_state.get_auto_scale().width.value {
                 child_state.get_size_mut().width.set(own_effective_size.width)
             }
-            if child_state.get_auto_scale().height {
+            if child_state.get_auto_scale().height.value {
                 child_state.get_size_mut().height.set(height_left)
             }
             // Scale down child to remaining size in the case that the child is too large, rather
             // panicking.
-            if !own_scrolling.enable_x && !own_size.infinite_width &&
+            if !own_scrolling.enable_x.value && !own_size.infinite_width &&
                 !child_state.get_size().infinite_width &&
                 child_state.get_size().width > own_effective_size.width {
                 child_state.get_size_mut().width.set(own_effective_size.width);
             }
-            if !own_scrolling.enable_y && !own_size.infinite_height &&
+            if !own_scrolling.enable_y.value && !own_size.infinite_height &&
                 !child_state.get_size().infinite_height &&
                 child_state.get_size().height > height_left {
                 child_state.get_size_mut().height.set(height_left);
@@ -1231,7 +1265,7 @@ impl Layout {
     fn handle_scroll_down(&self, state_tree: &mut StateTree, scheduler: &mut Scheduler) {
 
         let state = state_tree.get_by_path_mut(&self.path).as_layout_mut();
-        if !state.get_scrolling_config().enable_y { return }
+        if !state.get_scrolling_config().enable_y.value { return }
         let scroll_chunk = (state.get_effective_size().height as f32 * 0.75) as usize;
         let new_view_start;
         if state.get_scrolling_config().view_start_y + state.get_effective_size().height ==
@@ -1253,7 +1287,7 @@ impl Layout {
     fn handle_scroll_up(&self, state_tree: &mut StateTree, scheduler: &mut Scheduler) {
 
         let state = state_tree.get_by_path_mut(&self.path).as_layout_mut();
-        if !state.get_scrolling_config().enable_y { return }
+        if !state.get_scrolling_config().enable_y.value { return }
         let scroll_chunk = (state.get_effective_size().height as f32 * 0.75) as usize;
         let new_view_start;
         if state.get_scrolling_config().view_start_y == 0 {
@@ -1273,7 +1307,7 @@ impl Layout {
     fn handle_scroll_right(&self, state_tree: &mut StateTree, scheduler: &mut Scheduler) {
 
         let state = state_tree.get_by_path_mut(&self.path).as_layout_mut();
-        if !state.get_scrolling_config().enable_x { return }
+        if !state.get_scrolling_config().enable_x.value { return }
         let scroll_chunk = (state.get_effective_size().width as f32 * 0.75) as usize;
         let new_view_start;
         if state.get_scrolling_config().view_start_x + state.get_effective_size().width ==
@@ -1294,7 +1328,7 @@ impl Layout {
     fn handle_scroll_left(&self, state_tree: &mut StateTree, scheduler: &mut Scheduler) {
 
         let state = state_tree.get_by_path_mut(&self.path).as_layout_mut();
-        if !state.get_scrolling_config().enable_x { return }
+        if !state.get_scrolling_config().enable_x.value { return }
         let scroll_chunk = (state.get_effective_size().width as f32 * 0.75) as usize;
         let new_view_start;
         if state.get_scrolling_config().view_start_x == 0 {
@@ -1316,7 +1350,8 @@ impl Layout {
 
         let state = state_tree.get_by_path_mut(&self.get_full_path())
             .as_layout_mut();
-        if !state.scrolling_config.enable_x || contents.len() <= state.get_effective_size().width {
+        if !state.scrolling_config.enable_x.value
+            || contents.len() <= state.get_effective_size().width {
             state.scrolling_config.is_scrolling_x = false;
             return contents
         }
@@ -1340,7 +1375,7 @@ impl Layout {
 
         let state = state_tree.get_by_path_mut(&self.get_full_path())
             .as_layout_mut();
-        if !state.scrolling_config.enable_y ||
+        if !state.scrolling_config.enable_y.value ||
             contents[0].len() <= state.get_effective_size().height {
             state.scrolling_config.is_scrolling_y = false;
             return contents

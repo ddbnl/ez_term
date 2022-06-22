@@ -96,7 +96,7 @@ impl EzObject for Canvas {
                 .map(|x| x.graphemes(true).rev().collect())
                 .collect();
 
-            if state.get_auto_scale().width {
+            if state.get_auto_scale().width.value {
                 let longest_line = lines.iter().map(|x| x.chars().count()).max();
                 let auto_scale_width =
                     if let Some(i) = longest_line { i } else { 0 };
@@ -104,7 +104,7 @@ impl EzObject for Canvas {
                     state.set_effective_width(auto_scale_width);
                 }
             }
-            if state.get_auto_scale().height {
+            if state.get_auto_scale().height.value {
                 let auto_scale_height = lines.len();
                 if auto_scale_height < state.get_effective_size().height || state.get_size().infinite_height{
                     state.set_effective_height(auto_scale_height);
@@ -134,7 +134,7 @@ impl EzObject for Canvas {
         } else {
             contents = self.contents.clone();
         }
-        if state.get_border_config().enabled {
+        if state.get_border_config().enabled.value {
             contents = common::widget_functions::add_border(
                 contents, state.get_border_config());
         }

@@ -79,7 +79,59 @@ Combining simple concepts such as size hints, position hints, horizontal/vertica
 allow you to make relatively complex layouts without painstakingly hardcoding sizes, or writing your own scaling
 formulas.
 
-If this seems useful to you please let me know or star the repo, so I can guage interest.
+Widget properties can be bound to the properties of other widgets of the same type
+(syncing them automatically), or to custom properties you create and can pass to your app. First an
+example of binding the height of one widget to another:
+```
+- Layout:
+  id: parent_layout
+  - Label:
+    id: label_1
+    height: 5
+  - Label:  
+    id: label_2
+    height: parent.label_1.height
+```
+
+Sometimes you want to bind the property of a widget to a value in your app. For example, binding the
+progress of your app to a progress bar. To make this simpler, you can register a custom property, bind
+it to a widget property, and then update the property in your app (which automatically syncs it to the 
+UI). Here is an example:
+
+```
+// First we load the config file
+let (root_widget, mut scheduler) = ez_term::load_ez_ui("./Examples/full_example.ez");
+
+// Before we start the UI we register a custom property
+let value_property = scheduler.new_usize_property("progress_property".to_string(), 0);
+
+// Now, in the config file, we bind the progress bar property to our custom property
+- ProgressBar:
+    id: progress_bar
+    value: properties.progress_property
+    max: 100
+    
+// The following function represents our example app:
+fn progress_example_app(mut properties: HashMap<String, ez_term::EzProperties>) {
+
+    let value_property = properties.get_mut("progress_property").unwrap();
+    for x in 1..6 {
+        value_property.as_usize_mut().set(x*20);
+        std::thread::sleep(Duration::from_secs(1))
+    };
+}
+
+// Now we bind a callback to a button that starts our example app when clicked:
+let start_app = 
+    |context: EzContext| {
+        context.scheduler.schedule_threaded(Box::new(progress_example_app), None)
+    }
+scheduler.update_callback_config("progress_button",
+    ez_term::CallbackConfig::from_on_press(
+        Box::new(start_app)));
+```
+
+If this seems useful to you please let me know or star the repo, so I can gauge interest.
 
 # Current state
 Very much a work in progress and still not available on Cargo. See the projects page for what I'm working on. 
@@ -89,6 +141,8 @@ Currently supports the following:
 - Ez language:
   - Define entire UI in an Ez file using simple english
   - Supports templates and template inheritance
+  - Bind widget parameters to one another (e.g. 'width: another_widget.width')
+  - Refer to other widgets' values from within the config file
 - Widgets:
   - Screen layout (multiple screens, one active at a time)
   - Tabbed layout
@@ -99,6 +153,7 @@ Currently supports the following:
   - Text input
   - Checkbox 
   - Slider
+  - Progress bar
   - Radio buttons
   - Dropdowns 
   - Canvases (load content from text file or fill manually through code)

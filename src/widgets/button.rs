@@ -27,13 +27,11 @@ pub struct Button {
 impl Button {
 
     pub fn new(id: String, path: String, scheduler: &mut Scheduler) -> Self {
-        let mut obj = Button {
+        Button {
             id,
             path: path.clone(),
             state: ButtonState::new(path, scheduler),
-        };
-        obj.state.border_config.enabled = true;
-        obj
+        }
     }
 }
 
@@ -89,11 +87,12 @@ impl EzObject for Button {
         let text = state.text.value.clone();
 
         let write_width = if state.get_size().infinite_width ||
-            state.get_auto_scale().width { text.len() + 1 }
+            state.get_auto_scale().width.value { text.len() + 1 }
             else {state.get_effective_size().width };
         let content_lines = common::widget_functions::wrap_text(text, write_width);
         let write_height =
-            if state.get_size().infinite_height || state.get_auto_scale().height { content_lines.len() }
+            if state.get_size().infinite_height || state.get_auto_scale().height.value
+            { content_lines.len() }
             else {state.get_effective_size().height };
 
         let longest_line = content_lines.iter().map(|x| x.len()).max();
@@ -109,10 +108,10 @@ impl EzObject for Button {
             }
             contents.push(new_y);
         }
-        if state.get_auto_scale().width {
+        if state.get_auto_scale().width.value {
             state.set_effective_width(contents.len());
         }
-        if state.get_auto_scale().height {
+        if state.get_auto_scale().height.value {
             state.set_effective_height(contents[0].len());
         }
         (contents, _) = common::widget_functions::align_content_horizontally(

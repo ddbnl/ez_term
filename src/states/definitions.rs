@@ -107,13 +107,21 @@ impl StateCoordinates {
 
 
 /// Convenience wrapper around an size_hint tuple.
-#[derive(PartialEq, Copy, Clone, Default, Debug)]
+#[derive(PartialEq, Clone, Debug)]
 pub struct AutoScale {
-    pub width: bool,
-    pub height: bool,
+    pub width: EzProperty<bool>,
+    pub height: EzProperty<bool>,
 }
 impl AutoScale {
-    pub fn new(width: bool, height: bool) -> Self { AutoScale{width, height} }
+    pub fn new(width: bool, height: bool, name: String, scheduler: &mut Scheduler) -> Self {
+        let width_property =
+            scheduler.new_bool_property(format!("{}/autoscale_width", name.clone()),
+                                        width);
+        let height_property =
+            scheduler.new_bool_property(format!("{}/autoscale_height", name.clone()),
+                                        height);
+        AutoScale{width: width_property, height: height_property}
+    }
 }
 
 
@@ -139,9 +147,7 @@ pub struct PosHint {
 }
 impl PosHint {
     pub fn new(x: Option<(HorizontalAlignment, f64)>,
-               y: Option<(VerticalAlignment, f64)>) -> Self {
-        PosHint{x, y}
-    }
+               y: Option<(VerticalAlignment, f64)>) -> Self { PosHint{x, y} }
 }
 impl Default for PosHint {
     fn default() -> Self { PosHint{x: Some((HorizontalAlignment::Left, 1.0)),
@@ -276,14 +282,14 @@ impl CallbackConfig {
 
 
 /// Convenience wrapper around a [LayoutState] scrolling configuration
-#[derive(PartialEq, Clone, Debug, Default)]
+#[derive(PartialEq, Clone, Debug)]
 pub struct ScrollingConfig {
 
     /// Bool representing whether the x axis should be able to scroll
-    pub enable_x: bool,
+    pub enable_x: EzProperty<bool>,
 
     /// Bool representing whether the y axis should be able to scroll
-    pub enable_y: bool,
+    pub enable_y: EzProperty<bool>,
 
     /// Start of the view on the x axis, content is shown from here until view_start_x + width
     pub view_start_x: usize,
@@ -305,31 +311,54 @@ pub struct ScrollingConfig {
     /// Original width of the content being scrolled
     pub original_width: usize,
 }
+impl ScrollingConfig {
+
+    pub fn new(enable_x: bool, enable_y: bool, name: String, scheduler: &mut Scheduler) -> Self {
+
+        let x_property =
+            scheduler.new_bool_property(format!("{}/scrolling_enable_x", name.clone()),
+                                        enable_x);
+        let y_property =
+            scheduler.new_bool_property(format!("{}/scrolling_enable_y", name.clone()),
+                                        enable_y);
+        ScrollingConfig {
+            enable_x: x_property,
+            enable_y: y_property,
+            view_start_x: 0,
+            view_start_y: 0,
+            is_scrolling_x: false,
+            is_scrolling_y: false,
+            original_height: 0,
+            original_width: 0
+        }
+    }
+}
+
 
 /// Convenience wrapper around a border configuration
 #[derive(PartialEq, Clone, Debug)]
 pub struct BorderConfig {
 
     /// Bool representing whether an object should have a border
-    pub enabled: bool,
+    pub enabled: EzProperty<bool>,
 
     /// The [Pixel.symbol] to use for the horizontal border if [border] is true
-    pub horizontal_symbol: String,
+    pub horizontal_symbol: EzProperty<String>,
     
     /// The [Pixel.symbol] to use for the vertical border if [border] is true
-    pub vertical_symbol: String,
+    pub vertical_symbol: EzProperty<String>,
     
     /// The [Pixel.symbol] to use for the top left border if [border] is true
-    pub top_left_symbol: String,
+    pub top_left_symbol: EzProperty<String>,
     
     /// The [Pixel.symbol] to use for the top right border if [border] is true
-    pub top_right_symbol: String,
+    pub top_right_symbol: EzProperty<String>,
     
     /// The [Pixel.symbol] to use for the bottom left border if [border] is true
-    pub bottom_left_symbol: String,
+    pub bottom_left_symbol: EzProperty<String>,
     
     /// The [Pixel.symbol] to use for the bottom right border if [border] is true
-    pub bottom_right_symbol: String,
+    pub bottom_right_symbol: EzProperty<String>,
     
     /// The [Pixel.foreground_color]  to use for the border if [border] is true
     pub fg_color: Color,
@@ -337,16 +366,45 @@ pub struct BorderConfig {
     /// The [Pixel.background_color] to use for the border if [border] is true
     pub bg_color: Color,
 }
-impl Default for BorderConfig {
-    fn default() -> Self {
+
+impl BorderConfig {
+
+    pub fn new(enable: bool, name: String, scheduler: &mut Scheduler) -> Self {
+
+        let enabled_property =
+            scheduler.new_bool_property(format!("{}/border_enabled", name.clone()),
+                                        enable);
+        let horizontal_property =
+            scheduler.new_string_property(format!("{}/border_horizontal", name.clone()),
+                                          "━".to_string());
+        let vertical_property =
+            scheduler.new_string_property(format!("{}/border_vertical", name.clone()),
+                                          "│".to_string());
+
+        let top_left_property =
+            scheduler.new_string_property(format!("{}/border_top_left", name.clone()),
+                                          "┍".to_string());
+
+        let top_right_property =
+            scheduler.new_string_property(format!("{}/border_top_right", name.clone()),
+                                          "┑".to_string());
+
+        let bottom_left_property =
+            scheduler.new_string_property(format!("{}/border_bottom_left", name.clone()),
+                                          "┕".to_string());
+
+        let bottom_right_property =
+            scheduler.new_string_property(format!("{}/border_bottom_right", name.clone()),
+                                          "┙".to_string());
+
        BorderConfig {
-           enabled: false,
-           horizontal_symbol: "━".to_string(),
-           vertical_symbol: "│".to_string(),
-           top_left_symbol: "┍".to_string(),
-           top_right_symbol: "┑".to_string(),
-           bottom_left_symbol: "┕".to_string(),
-           bottom_right_symbol: "┙".to_string(),
+           enabled: enabled_property,
+           horizontal_symbol: horizontal_property,
+           vertical_symbol: vertical_property,
+           top_left_symbol: top_left_property,
+           top_right_symbol: top_right_property,
+           bottom_left_symbol: bottom_left_property,
+           bottom_right_symbol: bottom_right_property,
            fg_color: Color::White,
            bg_color: Color::Black,
        } 

@@ -122,13 +122,13 @@ impl EzObject for TextInput {
             }
             contents.push(new_y);
         }
-        if state.get_auto_scale().width {
+        if state.get_auto_scale().width.value {
             state.set_effective_width(contents.len());
         }
-        if state.get_auto_scale().height {
+        if state.get_auto_scale().height.value {
             state.set_effective_height(1);
         }
-        if state.get_border_config().enabled {
+        if state.get_border_config().enabled.value {
             contents = common::widget_functions::add_border(
                 contents, state.get_border_config());
         }

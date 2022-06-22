@@ -92,7 +92,7 @@ impl EzObject for Checkbox {
             vec!(Pixel { symbol: "]".to_string(), foreground_color: fg_color,
                 background_color: bg_color, underline: false}),
         );
-        if state.get_border_config().enabled {
+        if state.get_border_config().enabled.value {
             contents = common::widget_functions::add_border(
                 contents, state.get_border_config());
         }

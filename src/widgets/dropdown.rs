@@ -132,7 +132,8 @@ impl EzObject for Dropdown {
             size: StateSize::new(
                 state.get_size().width.value, state.total_options() + 2,
                 modal_path.clone(), scheduler),
-            auto_scale: AutoScale::new(false, false),
+            auto_scale: AutoScale::new(
+                false, false, modal_path.clone(), scheduler),
             options: state.get_options(),
             allow_none: state.allow_none,
             size_hint: SizeHint::new(None, None),

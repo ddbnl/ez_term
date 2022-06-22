@@ -10,8 +10,7 @@ use std::str::FromStr;
 use crossterm::terminal::size;
 use unicode_segmentation::UnicodeSegmentation;
 use crate::common::definitions::{EzPropertyUpdater};
-use crate::states::definitions::{HorizontalAlignment, VerticalAlignment, AutoScale, SizeHint,
-                                 ScrollingConfig, PosHint};
+use crate::states::definitions::{HorizontalAlignment, VerticalAlignment, SizeHint, PosHint};
 use crate::widgets::layout::{Layout};
 use crate::widgets::canvas::Canvas;
 use crate::widgets::label::Label;
@@ -352,25 +351,55 @@ pub fn load_selection_order_parameter(value: &str) -> usize {
 
 /// Convenience function used by widgets to load a full auto_scale parameter defined in an .ez file
 /// Looks like "auto_scale: true, false"
-pub fn load_full_enable_scrolling_parameter(
-    value: &str, scrolling_config: &mut ScrollingConfig) {
+pub fn load_full_auto_scale_parameter(state: &mut dyn GenericState, parameter_value: &str,
+                                      scheduler: &mut Scheduler, path: String) {
 
-    let (x_str, y_str) = value.split_once(',').unwrap();
-    let x = load_bool_parameter(x_str.trim());
-    let y = load_bool_parameter(y_str.trim());
-    scrolling_config.enable_x = x;
-    scrolling_config.enable_y = y;
+    let (width_str, height_str) = parameter_value.split_once(',').unwrap();
+    load_auto_scale_width_parameter(state, width_str, scheduler,
+                                   path.clone());
+    load_auto_scale_height_parameter(state, height_str, scheduler, path);
 }
 
 
-/// Convenience function used by widgets to load a full auto_scale parameter defined in an .ez file
-/// Looks like "auto_scale: true, false"
-pub fn load_full_auto_scale_parameter(value: &str) -> AutoScale {
+pub fn load_auto_scale_width_parameter(state: &mut dyn GenericState, parameter_value: &str,
+                                       scheduler: &mut Scheduler, path: String) {
 
-    let (width_str, height_str) = value.split_once(',').unwrap();
-    let width = load_bool_parameter(width_str.trim());
-    let height = load_bool_parameter(height_str.trim());
-    AutoScale::new(width, height)
+    state.set_auto_scale_width(load_ez_bool_parameter(
+        parameter_value.trim(), scheduler, path.clone(),
+        Box::new(move |state_tree: &mut StateTree, val: EzValues| {
+            let state = state_tree.get_by_path_mut(&path.clone())
+                .as_generic_mut();
+            state.set_auto_scale_width(val.as_bool().clone());
+            path.clone()
+        })))
+}
+
+
+pub fn load_auto_scale_height_parameter(state: &mut dyn GenericState, parameter_value: &str,
+                                        scheduler: &mut Scheduler, path: String) {
+
+    state.set_auto_scale_height(load_ez_bool_parameter(
+        parameter_value.trim(), scheduler, path.clone(),
+        Box::new(move |state_tree: &mut StateTree, val: EzValues| {
+            let state = state_tree.get_by_path_mut(&path.clone())
+                .as_generic_mut();
+            state.set_auto_scale_height(val.as_bool().clone());
+            path.clone()
+        })))
+}
+
+
+pub fn load_border_enable_parameter(state: &mut dyn GenericState, parameter_value: &str,
+                                    scheduler: &mut Scheduler, path: String) {
+
+    state.get_border_config_mut().enabled.set(load_ez_bool_parameter(
+        parameter_value.trim(), scheduler, path.clone(),
+        Box::new(move |state_tree: &mut StateTree, val: EzValues| {
+            let state = state_tree.get_by_path_mut(&path.clone())
+                .as_generic_mut();
+            state.get_border_config_mut().enabled.set(val.as_bool().clone());
+            path.clone()
+        })))
 }
 
 
@@ -515,7 +544,7 @@ pub fn load_ez_int_parameter(value: &str, scheduler: &mut Scheduler, path: Strin
                              update_func: EzPropertyUpdater) -> usize {
 
     if value.starts_with("parent.") {
-        let new_path = resolve_parent_path(path.clone(), value);
+        let new_path = resolve_parent_path(path, value);
         scheduler.subscribe_to_ez_property(new_path, update_func);
         0
     } else if value.starts_with("properties.") {
@@ -526,6 +555,24 @@ pub fn load_ez_int_parameter(value: &str, scheduler: &mut Scheduler, path: Strin
         value.trim().parse().unwrap()
     }
 }
+
+
+pub fn load_ez_bool_parameter(value: &str, scheduler: &mut Scheduler, path: String,
+                              update_func: EzPropertyUpdater) -> bool {
+
+    if value.starts_with("parent.") {
+        let new_path = resolve_parent_path(path.clone(), value);
+        scheduler.subscribe_to_ez_property(new_path, update_func);
+        false
+    } else if value.starts_with("properties.") {
+        let new_path = value.strip_prefix("properties.").unwrap();
+        scheduler.subscribe_to_ez_property(new_path.to_string(), update_func);
+        false
+    } else {
+        load_bool_parameter(value)
+    }
+}
+
 
 pub fn load_ez_string_parameter(value: &str, scheduler: &mut Scheduler, path: String,
                                 update_func: EzPropertyUpdater) -> String {
@@ -543,6 +590,7 @@ pub fn load_ez_string_parameter(value: &str, scheduler: &mut Scheduler, path: St
     }
 }
 
+
 fn resolve_parent_path(mut path: String, mut value: &str) -> String {
 
     loop {
@@ -554,10 +602,11 @@ fn resolve_parent_path(mut path: String, mut value: &str) -> String {
             break
         }
     }
-    path
+    path.to_string()
 }
 
-pub fn load_x_parameter(state: &mut dyn GenericState, parameter_value: String,
+
+pub fn load_x_parameter(state: &mut dyn GenericState, parameter_value: &str,
                         scheduler: &mut Scheduler, path: String) {
 
     state.set_x(load_ez_int_parameter(
@@ -570,7 +619,8 @@ pub fn load_x_parameter(state: &mut dyn GenericState, parameter_value: String,
         })))
 }
 
-pub fn load_y_parameter(state: &mut dyn GenericState, parameter_value: String,
+
+pub fn load_y_parameter(state: &mut dyn GenericState, parameter_value: &str,
                         scheduler: &mut Scheduler, path: String) {
 
     state.set_y(load_ez_int_parameter(
@@ -583,7 +633,8 @@ pub fn load_y_parameter(state: &mut dyn GenericState, parameter_value: String,
         })))
 }
 
-pub fn load_width_parameter(state: &mut dyn GenericState, parameter_value: String,
+
+pub fn load_width_parameter(state: &mut dyn GenericState, parameter_value: &str,
                             scheduler: &mut Scheduler, path: String) {
 
     state.set_width(load_ez_int_parameter(
@@ -596,7 +647,8 @@ pub fn load_width_parameter(state: &mut dyn GenericState, parameter_value: Strin
         })))
 }
 
-pub fn load_height_parameter(state: &mut dyn GenericState, parameter_value: String,
+
+pub fn load_height_parameter(state: &mut dyn GenericState, parameter_value: &str,
                             scheduler: &mut Scheduler, path: String) {
 
     state.set_height(load_ez_int_parameter(
@@ -609,7 +661,8 @@ pub fn load_height_parameter(state: &mut dyn GenericState, parameter_value: Stri
         })))
 }
 
-pub fn load_padding_top_parameter(state: &mut dyn GenericState, parameter_value: String,
+
+pub fn load_padding_top_parameter(state: &mut dyn GenericState, parameter_value: &str,
                              scheduler: &mut Scheduler, path: String) {
 
     state.set_padding_top(load_ez_int_parameter(
@@ -622,7 +675,8 @@ pub fn load_padding_top_parameter(state: &mut dyn GenericState, parameter_value:
         })))
 }
 
-pub fn load_padding_bottom_parameter(state: &mut dyn GenericState, parameter_value: String,
+
+pub fn load_padding_bottom_parameter(state: &mut dyn GenericState, parameter_value: &str,
                                   scheduler: &mut Scheduler, path: String) {
 
     state.set_padding_bottom(load_ez_int_parameter(
@@ -635,7 +689,8 @@ pub fn load_padding_bottom_parameter(state: &mut dyn GenericState, parameter_val
         })))
 }
 
-pub fn load_padding_left_parameter(state: &mut dyn GenericState, parameter_value: String,
+
+pub fn load_padding_left_parameter(state: &mut dyn GenericState, parameter_value: &str,
                                   scheduler: &mut Scheduler, path: String) {
 
     state.set_padding_left(load_ez_int_parameter(
@@ -648,7 +703,8 @@ pub fn load_padding_left_parameter(state: &mut dyn GenericState, parameter_value
         })))
 }
 
-pub fn load_padding_right_parameter(state: &mut dyn GenericState, parameter_value: String,
+
+pub fn load_padding_right_parameter(state: &mut dyn GenericState, parameter_value: &str,
                                   scheduler: &mut Scheduler, path: String) {
 
     state.set_padding_right(load_ez_int_parameter(
@@ -661,6 +717,90 @@ pub fn load_padding_right_parameter(state: &mut dyn GenericState, parameter_valu
         })))
 }
 
+
+pub fn load_border_horizontal_parameter(state: &mut dyn GenericState, parameter_value: &str,
+                                        scheduler: &mut Scheduler, path: String) {
+
+    state.get_border_config_mut().horizontal_symbol.set(load_ez_string_parameter(
+        parameter_value.trim(), scheduler, path.clone(),
+        Box::new(move |state_tree: &mut StateTree, val: EzValues| {
+            let state = state_tree.get_by_path_mut(&path)
+                .as_generic_mut();
+            state.get_border_config_mut().horizontal_symbol.set(val.as_string().clone());
+            path.to_string()
+        })))
+}
+
+
+pub fn load_border_vertical_parameter(state: &mut dyn GenericState, parameter_value: &str,
+                                        scheduler: &mut Scheduler, path: String) {
+
+    state.get_border_config_mut().vertical_symbol.set(load_ez_string_parameter(
+        parameter_value.trim(), scheduler, path.clone(),
+        Box::new(move |state_tree: &mut StateTree, val: EzValues| {
+            let state = state_tree.get_by_path_mut(&path.clone())
+                .as_generic_mut();
+            state.get_border_config_mut().vertical_symbol.set(val.as_string().clone());
+            path.clone()
+        })))
+}
+
+
+pub fn load_border_top_left_parameter(state: &mut dyn GenericState, parameter_value: &str,
+                                        scheduler: &mut Scheduler, path: String) {
+
+    state.get_border_config_mut().top_left_symbol.set(load_ez_string_parameter(
+        parameter_value.trim(), scheduler, path.clone(),
+        Box::new(move |state_tree: &mut StateTree, val: EzValues| {
+            let state = state_tree.get_by_path_mut(&path.clone())
+                .as_generic_mut();
+            state.get_border_config_mut().top_left_symbol.set(val.as_string().clone());
+            path.clone()
+        })))
+}
+
+
+pub fn load_border_top_right_parameter(state: &mut dyn GenericState, parameter_value: &str,
+                                        scheduler: &mut Scheduler, path: String) {
+
+    state.get_border_config_mut().top_right_symbol.set(load_ez_string_parameter(
+        parameter_value.trim(), scheduler, path.clone(),
+        Box::new(move |state_tree: &mut StateTree, val: EzValues| {
+            let state = state_tree.get_by_path_mut(&path.clone())
+                .as_generic_mut();
+            state.get_border_config_mut().top_right_symbol.set(val.as_string().clone());
+            path.clone()
+        })))
+}
+
+
+pub fn load_border_bottom_left_parameter(state: &mut dyn GenericState, parameter_value: &str,
+                                        scheduler: &mut Scheduler, path: String) {
+    state.get_border_config_mut().bottom_left_symbol.set(load_ez_string_parameter(
+        parameter_value.trim(), scheduler, path.clone(),
+        Box::new(move |state_tree: &mut StateTree, val: EzValues| {
+            let state = state_tree.get_by_path_mut(&path.clone())
+                .as_generic_mut();
+            state.get_border_config_mut().bottom_left_symbol.set(val.as_string().clone());
+            path.clone()
+        })))
+}
+
+
+pub fn load_border_bottom_right_parameter(state: &mut dyn GenericState, parameter_value: &str,
+                                         scheduler: &mut Scheduler, path: String) {
+
+    state.get_border_config_mut().bottom_right_symbol.set(load_ez_string_parameter(
+        parameter_value.trim(), scheduler, path.clone(),
+        Box::new(move |state_tree: &mut StateTree, val: EzValues| {
+            let state = state_tree.get_by_path_mut(&path.clone())
+                .as_generic_mut();
+            state.get_border_config_mut().bottom_right_symbol.set(val.as_string().clone());
+            path.clone()
+        })))
+}
+
+
 /// Load a parameter common to all [EzObjects]. Returns a bool representing whether the parameter
 /// was consumed. If not consumed it should be a parameter specific to a widget.
 pub fn load_common_parameters(parameter_name: &str, parameter_value: String,
@@ -670,12 +810,12 @@ pub fn load_common_parameters(parameter_name: &str, parameter_value: String,
     let state = obj.get_state_mut();
     match parameter_name {
         "id" => obj.set_id(parameter_value.trim().to_string()),
-        "x" => load_x_parameter(state, parameter_value, scheduler, path),
-        "y" => load_y_parameter(state, parameter_value, scheduler, path),
+        "x" => load_x_parameter(state, parameter_value.trim(), scheduler, path),
+        "y" => load_y_parameter(state, parameter_value.trim(), scheduler, path),
         "pos" => {
             let (x,y) = parameter_value.trim().split_once(',').unwrap();
-            load_x_parameter(state, x.to_string(), scheduler, path.clone());
-            load_y_parameter(state, y.to_string(), scheduler, path);
+            load_x_parameter(state, x.trim(), scheduler, path.clone());
+            load_y_parameter(state, y.trim(), scheduler, path);
         },
         "size_hint" => state.set_size_hint(
             load_full_size_hint_parameter(parameter_value.trim())),
@@ -685,32 +825,34 @@ pub fn load_common_parameters(parameter_name: &str, parameter_value: String,
             load_size_hint_parameter(parameter_value.trim())),
         "size" => {
             let (width, height) = parameter_value.trim().split_once(',').unwrap();
-            load_width_parameter(state, width.to_string(), scheduler,
+            load_width_parameter(state, width.trim(), scheduler,
                                  path.clone());
-            load_height_parameter(state, height.to_string(), scheduler, path);
+            load_height_parameter(state, height.trim(), scheduler, path);
         },
-        "width" => load_width_parameter(state, parameter_value, scheduler, path),
-        "height" => load_height_parameter(state, parameter_value, scheduler, path),
+        "width" => load_width_parameter(
+            state, parameter_value.trim(), scheduler, path),
+        "height" => load_height_parameter(
+            state, parameter_value.trim(), scheduler, path),
         "pos_hint" => state.set_pos_hint(load_full_pos_hint_parameter(parameter_value.trim())),
         "pos_hint_x" => state.set_pos_hint_x(
             load_pos_hint_x_parameter(parameter_value.trim())),
         "pos_hint_y" => state.set_pos_hint_y(
             load_pos_hint_y_parameter(parameter_value.trim())),
-        "auto_scale" => state.set_auto_scale(load_full_auto_scale_parameter(
-            parameter_value.trim())),
-        "auto_scale_width" =>
-            state.set_auto_scale_width(load_bool_parameter(parameter_value.trim())),
-        "auto_scale_height" =>
-            state.set_auto_scale_height(load_bool_parameter(parameter_value.trim())),
+        "auto_scale" => load_full_auto_scale_parameter(
+            state, parameter_value.trim(), scheduler, path),
+        "auto_scale_width" => load_auto_scale_width_parameter(
+            state, parameter_value.trim(), scheduler, path),
+        "auto_scale_height" => load_auto_scale_height_parameter(
+            state, parameter_value.trim(), scheduler, path),
         "padding" => {
             let padding_params: Vec<&str> = parameter_value.trim().split(',').collect();
-            load_padding_top_parameter(state, padding_params[0].to_string(),
+            load_padding_top_parameter(state, padding_params[0].trim(),
                                        scheduler,path.clone());
-            load_padding_bottom_parameter(state, padding_params[1].to_string(),
+            load_padding_bottom_parameter(state, padding_params[1].trim(),
                                        scheduler,path.clone());
-            load_padding_left_parameter(state, padding_params[2].to_string(),
+            load_padding_left_parameter(state, padding_params[2].trim(),
                                        scheduler,path.clone());
-            load_padding_right_parameter(state, padding_params[3].to_string(),
+            load_padding_right_parameter(state, padding_params[3].trim(),
                                        scheduler,path);
         },
         "disabled" => state.set_disabled(load_bool_parameter(parameter_value.trim())),
@@ -718,17 +860,13 @@ pub fn load_common_parameters(parameter_name: &str, parameter_value: String,
             load_selection_order_parameter(parameter_value.as_str())) },
         "padding_x" => {
             let (left, right) = parameter_value.split_once(',').unwrap();
-            load_padding_left_parameter(state, left.to_string(),
-                                        scheduler,path.clone());
-            load_padding_right_parameter(state, right.to_string(),
-                                         scheduler,path);
+            load_padding_left_parameter(state, left.trim(), scheduler,path.clone());
+            load_padding_right_parameter(state, right.trim(), scheduler,path);
         },
         "padding_y" => {
             let (top, bottom) = parameter_value.split_once(',').unwrap();
-            load_padding_left_parameter(state, top.to_string(),
-                                        scheduler,path.clone());
-            load_padding_right_parameter(state, bottom.to_string(),
-                                         scheduler,path);
+            load_padding_left_parameter(state, top.trim(), scheduler,path.clone());
+            load_padding_right_parameter(state, bottom.trim(), scheduler,path);
         },
         "padding_top" => state.set_padding_top(parameter_value.trim().parse().unwrap()),
         "padding_bottom" => state.set_padding_bottom(parameter_value.trim().parse().unwrap()),
@@ -764,20 +902,20 @@ pub fn load_common_parameters(parameter_name: &str, parameter_value: String,
             load_color_parameter(parameter_value),
         "cursor_color" =>
             state.get_colors_config_mut().cursor = load_color_parameter(parameter_value),
-        "border" => state.get_border_config_mut().enabled =
-            load_bool_parameter(parameter_value.trim()),
-        "border_horizontal_symbol" => state.get_border_config_mut().horizontal_symbol =
-            parameter_value.trim().to_string(),
-        "border_vertical_symbol" => state.get_border_config_mut().vertical_symbol =
-            parameter_value.trim().to_string(),
-        "border_top_right_symbol" => state.get_border_config_mut().top_right_symbol =
-            parameter_value.trim().to_string(),
-        "border_top_left_symbol" => state.get_border_config_mut().top_left_symbol =
-            parameter_value.trim().to_string(),
-        "border_bottom_left_symbol" => state.get_border_config_mut().bottom_left_symbol =
-            parameter_value.trim().to_string(),
-        "border_bottom_right_symbol" => state.get_border_config_mut().bottom_right_symbol =
-            parameter_value.trim().to_string(),
+        "border" => load_border_enable_parameter(
+            state, parameter_value.trim(), scheduler, path),
+        "border_horizontal_symbol" => load_border_horizontal_parameter(
+            state, parameter_value.trim(), scheduler, path),
+        "border_vertical_symbol" => load_border_vertical_parameter(
+            state, parameter_value.trim(), scheduler, path),
+        "border_top_right_symbol" => load_border_top_left_parameter(
+            state, parameter_value.trim(), scheduler, path),
+        "border_top_left_symbol" => load_border_top_right_parameter(
+            state, parameter_value.trim(), scheduler, path),
+        "border_bottom_left_symbol" => load_border_bottom_left_parameter(
+            state, parameter_value.trim(), scheduler, path),
+        "border_bottom_right_symbol" => load_border_bottom_right_parameter(
+            state, parameter_value.trim(), scheduler, path),
         "border_fg_color" => state.get_border_config_mut().fg_color =
             load_color_parameter(parameter_value),
         "border_bg_color" => state.get_border_config_mut().bg_color =

@@ -82,10 +82,10 @@ impl DropdownState {
            position: StateCoordinates::new(0, 0, path.clone(), scheduler),
            absolute_position: Coordinates::default(),
            size_hint: SizeHint::default(),
-           auto_scale: AutoScale::default(),
+           auto_scale: AutoScale::new(false, false, path.clone(), scheduler),
            pos_hint: PosHint::default(),
            size: StateSize::new(0, 0, path.clone(), scheduler),
-           padding: Padding::new(0, 0, 0, 0, path, scheduler),
+           padding: Padding::new(0, 0, 0, 0, path.clone(), scheduler),
            halign: HorizontalAlignment::Left,
            valign: VerticalAlignment::Top,
            focussed: false,
@@ -95,7 +95,7 @@ impl DropdownState {
            options: Vec::new(),
            allow_none: true,
            choice: String::new(),
-           border_config: BorderConfig::default(),
+           border_config: BorderConfig::new(false, path, scheduler),
            colors: ColorConfig::default(),
            changed: false,
            force_redraw: false
@@ -122,12 +122,9 @@ impl GenericState for DropdownState {
 
     fn get_pos_hint(&self) -> &PosHint { &self.pos_hint }
 
-    fn set_auto_scale(&mut self, auto_scale: AutoScale) {
-        if self.auto_scale != auto_scale { self.changed = true }
-        self.auto_scale = auto_scale;
-    }
-
     fn get_auto_scale(&self) -> &AutoScale { &self.auto_scale }
+
+    fn get_auto_scale_mut(&mut self) -> &mut AutoScale { &mut self.auto_scale }
 
     fn get_size(&self) -> &StateSize { &self.size }
 
@@ -306,15 +303,15 @@ impl DroppedDownMenuState {
             position: StateCoordinates::new(0, 0, path.clone(), scheduler),
             absolute_position: Coordinates::default(),
             size_hint: SizeHint::default(),
-            auto_scale: AutoScale::default(),
+            auto_scale: AutoScale::new(false, false, path.clone(), scheduler),
             pos_hint: PosHint::default(),
             size: StateSize::new(0, 3, path.clone(), scheduler),
-            padding: Padding::new(0, 0, 0, 0, path, scheduler),
+            padding: Padding::new(0, 0, 0, 0, path.clone(), scheduler),
             options: Vec::new(),
             allow_none: true,
             dropped_down_selected_row:0,
             choice: String::new(),
-            border_config: BorderConfig::default(),
+            border_config: BorderConfig::new(false, path, scheduler),
             colors: ColorConfig::default(),
             changed: false,
             force_redraw: false
@@ -341,12 +338,9 @@ impl GenericState for DroppedDownMenuState {
 
     fn get_pos_hint(&self) -> &PosHint { &self.pos_hint }
 
-    fn set_auto_scale(&mut self, auto_scale: AutoScale) {
-        if self.auto_scale != auto_scale { self.changed = true }
-        self.auto_scale = auto_scale;
-    }
-
     fn get_auto_scale(&self) -> &AutoScale { &self.auto_scale }
+
+    fn get_auto_scale_mut(&mut self) -> &mut AutoScale { &mut self.auto_scale }
 
     fn get_size(&self) -> &StateSize { &self.size }
 

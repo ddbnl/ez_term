@@ -80,7 +80,7 @@ impl ButtonState {
            size: StateSize::new(0, 0, path.clone(), scheduler),
            size_hint: SizeHint::default(),
            pos_hint: PosHint::default(),
-           auto_scale: AutoScale::default(),
+           auto_scale: AutoScale::new(false, false, path.clone(), scheduler),
            padding: Padding::new(0, 0, 0, 0, path.clone(), scheduler),
            halign: HorizontalAlignment::Left,
            valign: VerticalAlignment::Top,
@@ -90,7 +90,7 @@ impl ButtonState {
            selected: false,
            selection_order: 0,
            flashing: false,
-           border_config: BorderConfig::default(),
+           border_config: BorderConfig::new(true, path, scheduler),
            colors: ColorConfig::default(),
            changed: false,
            force_redraw: false,
@@ -115,12 +115,9 @@ impl GenericState for ButtonState {
 
     fn get_pos_hint(&self) -> &PosHint { &self.pos_hint }
 
-    fn set_auto_scale(&mut self, auto_scale: AutoScale) {
-        if self.auto_scale != auto_scale { self.changed = true }
-        self.auto_scale = auto_scale;
-    }
-
     fn get_auto_scale(&self) -> &AutoScale { &self.auto_scale }
+
+    fn get_auto_scale_mut(&mut self) -> &mut AutoScale { &mut self.auto_scale }
 
     fn get_size(&self) -> &StateSize { &self.size }
 

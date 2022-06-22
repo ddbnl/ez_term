@@ -178,6 +178,15 @@ impl Scheduler {
         property
     }
 
+    pub fn new_bool_property(&mut self, name: String, value: bool) -> EzProperty<bool> {
+
+        let (property, receiver) =
+            EzProperty::new(name.clone(), value);
+        self.properties.insert(name.clone(), EzProperties::Bool(property.clone()));
+        self.property_receivers.insert(name, receiver);
+        property
+    }
+
     pub fn update_properties(&mut self, view_tree: &mut ViewTree, state_tree: &mut StateTree,
                              widget_tree: &WidgetTree, callback_tree: &mut CallbackTree) {
 

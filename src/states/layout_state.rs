@@ -114,10 +114,10 @@ impl LayoutState {
             size_hint: SizeHint::default(),
             pos_hint: PosHint::default(),
             size: StateSize::new(0, 0, path.clone(), scheduler),
-            auto_scale: AutoScale::default(),
+            auto_scale: AutoScale::new(false, false, path.clone(), scheduler),
             orientation: LayoutOrientation::Horizontal,
             mode: LayoutMode::Box,
-            padding: Padding::new(0, 0, 0, 0, path, scheduler),
+            padding: Padding::new(0, 0, 0, 0, path.clone(), scheduler),
             halign: HorizontalAlignment::Left,
             valign: VerticalAlignment::Top,
             active_screen: String::new(),
@@ -126,8 +126,9 @@ impl LayoutState {
             selected_tab_header: String::new(),
             fill: false,
             filler_symbol: String::new(),
-            scrolling_config: ScrollingConfig::default(),
-            border_config: BorderConfig::default(),
+            scrolling_config: ScrollingConfig::new(false, false, path.clone(),
+                                                   scheduler),
+            border_config: BorderConfig::new(false, path, scheduler),
             colors: ColorConfig::default(),
             changed: false,
             open_modals: Vec::new(),
@@ -141,9 +142,7 @@ impl LayoutState {
 }
 impl GenericState for LayoutState {
 
-    fn get_path(&self) -> &String {
-        &self.path
-    }
+    fn get_path(&self) -> &String { &self.path }
 
     fn set_size_hint(&mut self, size_hint: SizeHint) { self.size_hint = size_hint; }
 
@@ -156,12 +155,9 @@ impl GenericState for LayoutState {
 
     fn get_pos_hint(&self) -> &PosHint { &self.pos_hint }
 
-    fn set_auto_scale(&mut self, auto_scale: AutoScale) {
-        if self.auto_scale != auto_scale { self.changed = true }
-        self.auto_scale = auto_scale;
-    }
-
     fn get_auto_scale(&self) -> &AutoScale { &self.auto_scale }
+
+    fn get_auto_scale_mut(&mut self) -> &mut AutoScale { &mut self.auto_scale }
 
     fn get_size(&self) -> &StateSize { &self.size  }
 
@@ -170,13 +166,13 @@ impl GenericState for LayoutState {
     fn get_effective_size(&self) -> Size {
 
         let width_result: isize = self.size.width.value as isize
-            -if self.get_border_config().enabled {2} else {0}
-            -if self.scrolling_config.enable_y {1} else {0}
+            -if self.get_border_config().enabled.value {2} else {0}
+            -if self.scrolling_config.enable_y.value {1} else {0}
             -self.get_padding().left.value as isize - self.get_padding().right.value as isize;
         let width = if width_result < 0 {0} else { width_result};
         let height_result: isize = self.size.height.value as isize
-            -if self.get_border_config().enabled {2} else {0}
-            -if self.scrolling_config.enable_x {1} else {0}
+            -if self.get_border_config().enabled.value {2} else {0}
+            -if self.scrolling_config.enable_x.value {1} else {0}
             -self.get_padding().top.value as isize - self.get_padding().bottom.value as isize;
         let height = if height_result < 0 {0} else { height_result};
         Size::new(width as usize, height as usize)
@@ -185,8 +181,8 @@ impl GenericState for LayoutState {
     /// Set the how much width you want the actual content inside this widget to have. Width for
     /// e.g. border and padding will be added to this automatically.
     fn set_effective_width(&mut self, width: usize) {
-        let offset = if self.get_border_config().enabled {2} else {0}
-            + if self.scrolling_config.enable_y {1} else {0}
+        let offset = if self.get_border_config().enabled.value {2} else {0}
+            + if self.scrolling_config.enable_y.value {1} else {0}
             + self.get_padding().left.value + self.get_padding().right.value;
         self.get_size_mut().width.set(width + offset);
     }
@@ -195,8 +191,8 @@ impl GenericState for LayoutState {
     /// e.g. border and padding will be added to this automatically.
     fn set_effective_height(&mut self, height: usize) {
 
-        let offset = if self.get_border_config().enabled {2} else {0}
-            + if self.scrolling_config.enable_x {1} else {0}
+        let offset = if self.get_border_config().enabled.value {2} else {0}
+            + if self.scrolling_config.enable_x.value {1} else {0}
             + self.get_padding().top.value + self.get_padding().bottom.value;
         self.get_size_mut().height.set(height + offset);
     }
