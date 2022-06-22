@@ -4,7 +4,7 @@
 //! values for the user to select.
 use crossterm::event::{Event, KeyCode, MouseButton, MouseEventKind};
 use crate::common;
-use crate::common::definitions::{CallbackTree, Coordinates, StateTree, ViewTree, WidgetTree};
+use crate::common::definitions::{CallbackTree, Coordinates, PixelMap, StateTree, ViewTree, WidgetTree};
 use crate::states::definitions::{StateSize, AutoScale, SizeHint, Padding, PosHint, StateCoordinates};
 use crate::states::dropdown_state::{DropdownState, DroppedDownMenuState};
 use crate::states::state::{EzState, GenericState};
@@ -45,7 +45,7 @@ impl EzObject for Dropdown {
                          scheduler: &mut Scheduler) {
 
         let consumed = parser::load_common_parameters(
-            &parameter_name, parameter_value.clone(),Box::new(self), scheduler);
+            &parameter_name, parameter_value.clone(),self, scheduler);
         if consumed { return }
         match parameter_name.as_str() {
             "allow_none" =>
@@ -72,22 +72,21 @@ impl EzObject for Dropdown {
 
     fn get_state(&self) -> EzState { EzState::Dropdown(self.state.clone()) }
 
-    fn get_state_mut(&mut self) -> Box<&mut dyn GenericState>{ Box::new(&mut self.state) }
+    fn get_state_mut(&mut self) -> &mut dyn GenericState { &mut self.state }
 
     /// Content of this widget depends on whether it is currently dropped down or not. If not,
     /// then display a label with a border representing the currently selected value. If dropped
     /// down show a list of all options, with the currently selected one on top.
-    fn get_contents(&self, state_tree: &mut common::definitions::StateTree)
-        -> common::definitions::PixelMap {
+    fn get_contents(&self, state_tree: &mut StateTree) -> PixelMap {
 
         let state =
-            state_tree.get_mut(&self.get_full_path()).unwrap().as_dropdown_mut();
+            state_tree.get_by_path_mut(&self.get_full_path()).as_dropdown_mut();
         // If dropped down get full content instead
         // Set a default value if user didn't give one
         let mut active = state.choice.clone();
         if active.is_empty() && !state.allow_none {
             active = state.options.first()
-                .expect("Dropdown widget must have at least one option").to_string(); // todo move to validation
+                .expect("Dropdown widget must have at least one option").to_string();
         }
         // Create a bordered label representing currently active value
         let (fg_color, bg_color) = state.get_context_colors();
@@ -120,7 +119,7 @@ impl EzObject for Dropdown {
                 _widget_tree: &WidgetTree, _callback_tree: &mut CallbackTree,
                 scheduler: &mut Scheduler) -> bool {
 
-        let state = state_tree.get(&self.get_full_path()).unwrap()
+        let state = state_tree.get_by_path(&self.get_full_path())
             .as_dropdown();
         let modal_id = format!("{}_modal", self.get_id());
         let modal_path = format!("/modal/{}", modal_id);
@@ -152,10 +151,10 @@ impl EzObject for Dropdown {
         };
         let new_modal = DroppedDownMenu {
             id: modal_id,
-            path: modal_path.clone(),
+            path: modal_path,
             state: new_modal_state,
         };
-        let root_state = state_tree.get_mut("/root").unwrap().as_layout_mut();
+        let root_state = state_tree.get_by_path_mut("/root").as_layout_mut();
         let (_, extra_state_tree) = root_state
             .open_modal(widget::EzObjects::DroppedDownMenu(new_modal));
         root_state.update(scheduler);
@@ -197,7 +196,7 @@ pub struct DroppedDownMenu {
 
 impl DroppedDownMenu {
 
-    fn new(id: String, path: String, scheduler: &mut Scheduler) -> Self {
+    pub fn new(id: String, path: String, scheduler: &mut Scheduler) -> Self {
 
         DroppedDownMenu {
             id,
@@ -210,7 +209,7 @@ impl DroppedDownMenu {
 impl EzObject for DroppedDownMenu {
 
     fn load_ez_parameter(&mut self, _parameter_name: String, _parameter_value: String,
-                         scheduler: &mut Scheduler) { }
+                         _scheduler: &mut Scheduler) { }
 
     fn set_id(&mut self, id: String) { self.id = id }
 
@@ -222,13 +221,12 @@ impl EzObject for DroppedDownMenu {
 
     fn get_state(&self) -> EzState { EzState::DroppedDownMenu(self.state.clone()) }
 
-    fn get_state_mut(&mut self) -> Box<&mut dyn GenericState>{ Box::new(&mut self.state) }
+    fn get_state_mut(&mut self) -> &mut dyn GenericState { &mut self.state }
 
-    fn get_contents(&self, state_tree: &mut common::definitions::StateTree)
-        -> common::definitions::PixelMap {
+    fn get_contents(&self, state_tree: &mut StateTree) -> PixelMap {
 
         let state = state_tree
-            .get_mut(&self.get_full_path()).unwrap().as_dropped_down_menu_mut();
+            .get_by_path_mut(&self.get_full_path()).as_dropped_down_menu_mut();
         let mut options:Vec<String> = state.get_dropped_down_options().iter()
             .map(|x| x.chars().rev().collect::<String>()).collect();
 
@@ -254,7 +252,7 @@ impl EzObject for DroppedDownMenu {
 
         }
         let state = state_tree
-            .get(&self.get_full_path()).unwrap().as_dropped_down_menu();
+            .get_by_path(&self.get_full_path()).as_dropped_down_menu();
         contents = common::widget_functions::add_padding(
             contents, state.get_padding(), state.colors.background,
             state.colors.foreground);
@@ -263,14 +261,12 @@ impl EzObject for DroppedDownMenu {
         contents
     }
 
-    fn handle_event(&self, event: Event, view_tree: &mut common::definitions::ViewTree,
-                    state_tree: &mut common::definitions::StateTree,
-                    widget_tree: &common::definitions::WidgetTree,
-                    callback_tree: &mut common::definitions::CallbackTree,
+    fn handle_event(&self, event: Event, view_tree: &mut ViewTree, state_tree: &mut StateTree,
+                    widget_tree: &WidgetTree, callback_tree: &mut CallbackTree,
                     scheduler: &mut Scheduler) -> bool {
 
-        let state = state_tree.get_mut(&self.get_full_path().clone())
-            .unwrap().as_dropped_down_menu_mut();
+        let state = state_tree.get_by_path_mut(&self.get_full_path())
+            .as_dropped_down_menu_mut();
         match event {
             Event::Key(key) => {
                 match key.code {
@@ -313,31 +309,25 @@ impl EzObject for DroppedDownMenu {
 impl DroppedDownMenu {
 
     /// Called when this widget is already dropped down and enter is pressed
-    pub fn handle_enter(&self, view_tree: &mut common::definitions::ViewTree,
-                        state_tree: &mut common::definitions::StateTree,
-                        widget_tree: &common::definitions::WidgetTree,
-                        callback_tree: &mut common::definitions::CallbackTree,
+    pub fn handle_enter(&self, view_tree: &mut ViewTree, state_tree: &mut StateTree,
+                        widget_tree: &WidgetTree, callback_tree: &mut CallbackTree,
                         scheduler: &mut Scheduler) {
 
-        let selected = state_tree.get(&self.get_full_path()).unwrap()
+        let selected = state_tree.get_by_path(&self.get_full_path())
             .as_dropped_down_menu().dropped_down_selected_row;
         let choice = state_tree
-            .get(&self.get_full_path()).unwrap().as_dropped_down_menu()
+            .get_by_path(&self.get_full_path()).as_dropped_down_menu()
             .get_dropped_down_options()[selected].clone();
-        let parent = state_tree.get(&self.get_full_path()).unwrap()
+        let parent = state_tree.get_by_path(&self.get_full_path())
             .as_dropped_down_menu().parent_path.clone();
-        let state = state_tree.get_mut(&parent).unwrap().as_dropdown_mut();
+        let state = state_tree.get_by_path_mut(&parent).as_dropdown_mut();
         state.set_choice(choice);
         state.update(scheduler);
-        let state = state_tree.get_mut("/root").unwrap().as_layout_mut();
+        let state = state_tree.get_by_path_mut("/root").as_layout_mut();
         state.dismiss_modal();
         state.update(scheduler);
-        if let Some(ref mut i) = callback_tree
-            .get_mut(&parent).unwrap().on_value_change {
-            let context = common::definitions::EzContext::new(parent,
-                                                 view_tree, state_tree, widget_tree, scheduler);
-            i(context);
-        }
+        self.on_value_change_callback(view_tree, state_tree, widget_tree, callback_tree,
+                                      scheduler);
     }
 
     /// Called when this widget is already dropped down and up is pressed
@@ -360,13 +350,11 @@ impl DroppedDownMenu {
     }
 
     /// Called when this widget is already dropped down and widget is left clicked
-    pub fn handle_left_click(&self, view_tree: &mut common::definitions::ViewTree,
-                             state_tree: &mut common::definitions::StateTree,
-                             widget_tree: &common::definitions::WidgetTree,
-                             callback_tree: &mut common::definitions::CallbackTree,
+    pub fn handle_left_click(&self, view_tree: &mut ViewTree, state_tree: &mut StateTree,
+                             widget_tree: &WidgetTree, callback_tree: &mut CallbackTree,
                              scheduler: &mut Scheduler, pos: Coordinates) {
 
-        let state = state_tree.get(&self.get_full_path()).unwrap()
+        let state = state_tree.get_by_path(&self.get_full_path())
             .as_dropped_down_menu();
         let parent = state.parent_path.clone();
         if state.collides(pos) {
@@ -375,21 +363,21 @@ impl DroppedDownMenu {
             if clicked_row != 0 && clicked_row <= state.get_effective_size().height - 2 {
                 let choice = state.get_dropped_down_options()[clicked_row - 1]
                     .clone();
-                let state = state_tree.get_mut(&parent).unwrap().as_dropdown_mut();
+                let state = state_tree.get_by_path_mut(&parent).as_dropdown_mut();
                 state.set_choice(choice);
                 state.update(scheduler);
-                let state = state_tree.get_mut("/root").unwrap().as_layout_mut();
+                let state = state_tree.get_by_path_mut("/root").as_layout_mut();
                 state.dismiss_modal();
                 state.update(scheduler);
                 if let Some(ref mut i) = callback_tree
-                    .get_mut(&parent).unwrap().on_value_change {
+                    .get_by_path_mut(&parent).on_value_change {
                     let context = common::definitions::EzContext::new(
                         parent, view_tree, state_tree, widget_tree, scheduler);
                     i(context);
                 }
             }
         } else {
-            let state = state_tree.get_mut("/root").unwrap().as_layout_mut();
+            let state = state_tree.get_by_path_mut("/root").as_layout_mut();
             state.dismiss_modal();
             state.update(scheduler);
         }

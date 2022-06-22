@@ -27,36 +27,6 @@ pub type KeyMap = HashMap<KeyCode, KeyboardCallbackFunction>;
 pub type Templates = HashMap<String, EzWidgetDefinition>;
 
 
-/// ## View tree:
-/// Grid of StyledContent representing the entire screen currently being displayed. After each frame
-/// an updated ViewTree is diffed to the old one, and only changed parts of the screen are updated.
-pub type ViewTree = Vec<Vec<StyledContent<String>>>;
-
-
-/// ## State tree:
-/// A <WidgetPath, State> HashMap. The State contains all run-time information for a
-/// widget, such as the text of a label, or whether a checkbox is currently checked. Callbacks
-/// receive a mutable reference to the widget state and can change what they need. Then after each
-/// frame the updated StateTree is diffed with the old one, and only changed widgets are redrawn.
-pub type StateTree = HashMap<String, EzState>;
-
-
-/// ## Widget tree:
-/// A read-only list of all widgets, passed to callbacks. Can be used to access static information
-/// of a widget that is not in its' State. Widgets are represented by the EzWidget enum, but
-/// can be cast to the generic UxObject or IsWidget trait. If you are sure of the type of widget
-/// you are dealing with it can also be cast to specific widget types.
-pub type CallbackTree = HashMap<String, CallbackConfig>;
-
-
-/// ## Widget tree:
-/// A read-only list of all widgets, passed to callbacks. Can be used to access static information
-/// of a widget that is not in its' State. Widgets are represented by the EzWidget enum, but
-/// can be cast to the generic UxObject or IsWidget trait. If you are sure of the type of widget
-/// you are dealing with it can also be cast to specific widget types.
-pub type WidgetTree<'a> = HashMap<String, &'a EzObjects>;
-
-
 /// ## Keyboard callback function:
 /// This is used for binding keyboard callbacks to widgets, meaning that any callback functions a
 /// user makes should use this signature.
@@ -93,8 +63,115 @@ pub type GenericEzTask = Box<dyn FnMut(EzContext) -> bool>;
 /// changes, an [EzPropertyUpdates] func will be called to do the actual sync.
 pub type EzPropertyUpdater = Box<dyn FnMut(&mut StateTree, EzValues) -> String>;
 
-pub type EzThread =
-         Vec<(Box<dyn FnOnce(HashMap<String, EzProperties>) + Send>, Option<GenericEzTask>)>;
+
+/// # Ez Thread
+/// Func that can be spawned as a background thread. Receives a dict of all [EzProperties].
+/// Ez properties can be bound to widgets, so updating an EzProperty in a thread can update the UI.
+pub type EzThread = Box<dyn FnOnce(HashMap<String, EzProperties>) + Send>;
+
+
+/// Convenience wrapper for [StateTree], [WidgetTree] and [CallbackTree]. Allows getting objects
+/// by ID of a widget instead of full path.
+#[derive(Default)]
+pub struct Tree<T> {
+
+    /// Name of the tree, used in panic messages to make errors more clear
+    pub name: String,
+
+    /// HashMap of objects to provide caching and ID lookup for
+    pub objects: HashMap<String, T>,
+
+    /// Cache that translates widget IDs to paths
+    cache: HashMap<String, String>,
+}
+impl<T> Tree<T> {
+
+    pub fn new(name: String) -> Self {
+        Tree { name, objects: HashMap::new(), cache: HashMap::new() }
+    }
+
+    pub fn insert(&mut self, k: String, v: T) {
+        if k.contains('/') {
+            self.cache.insert(k.rsplit_once('/').unwrap().1.to_string(), k.clone());
+        } else {
+            self.cache.insert(k.clone(), k.clone());
+        }
+        self.objects.insert(k, v);
+    }
+
+    pub fn extend(&mut self, other: Tree<T>) {
+        for (k, v) in other.objects.into_iter() {
+            self.insert(k, v);
+        }
+    }
+
+    pub fn remove(&mut self, k: &str) {
+        self.cache.remove(k.rsplit_once('/').unwrap().1);
+        self.objects.remove(k);
+    }
+
+    pub fn get_by_path(&self, path: &str) -> &T {
+        self.objects.get(path).unwrap_or_else(|| panic!("Object {} not in {}", path, self.name))
+    }
+
+    pub fn get_by_path_mut(&mut self, path: &str) -> &mut T {
+        self.objects.get_mut(path)
+            .unwrap_or_else(|| panic!("Object {} not in {}", path, self.name))
+    }
+
+    pub fn get_by_id(&self, id: &str) -> &T {
+
+        if let Some(path) = self.cache.get(id) {
+            self.get_by_path(path)
+        } else {
+            panic!("Tried a lookup by ID in {}, but the ID \"{}\" is not unique. \
+            Make the ID unique or use \"get_by_path\" instead", self.name, id)
+        }
+    }
+
+    pub fn get_by_id_mut(&mut self, id: &str) -> &mut T {
+
+        let full_path;
+        if let Some(path) = self.cache.get(id) {
+            full_path = path.clone();
+        } else {
+            panic!("Tried a lookup by ID in {}, but the ID \"{}\" is not unique. \
+            Make the ID unique or use \"get_by_path\" instead", self.name, id)
+        }
+        self.get_by_path_mut(&full_path)
+    }
+}
+
+
+
+/// ## View tree:
+/// Grid of StyledContent representing the entire screen currently being displayed. After each frame
+/// an updated ViewTree is diffed to the old one, and only changed parts of the screen are updated.
+pub type ViewTree = Vec<Vec<StyledContent<String>>>;
+
+
+/// ## State tree:
+/// A <WidgetPath, State> HashMap. The State contains all run-time information for a
+/// widget, such as the text of a label, or whether a checkbox is currently checked. Callbacks
+/// receive a mutable reference to the widget state and can change what they need. Then after each
+/// frame the updated StateTree is diffed with the old one, and only changed widgets are redrawn.
+pub type StateTree = Tree<EzState>;
+
+
+/// ## Widget tree:
+/// A read-only list of all widgets, passed to callbacks. Can be used to access static information
+/// of a widget that is not in its' State. Widgets are represented by the EzWidget enum, but
+/// can be cast to the generic UxObject or IsWidget trait. If you are sure of the type of widget
+/// you are dealing with it can also be cast to specific widget types.
+pub type CallbackTree = Tree<CallbackConfig>;
+
+
+/// ## Widget tree:
+/// A read-only list of all widgets, passed to callbacks. Can be used to access static information
+/// of a widget that is not in its' State. Widgets are represented by the EzWidget enum, but
+/// can be cast to the generic UxObject or IsWidget trait. If you are sure of the type of widget
+/// you are dealing with it can also be cast to specific widget types.
+pub type WidgetTree<'a> = Tree<&'a EzObjects>;
 
 
 /// ## Ez Context:

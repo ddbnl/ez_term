@@ -38,7 +38,7 @@ impl EzObject for ProgressBar {
     fn load_ez_parameter(&mut self, parameter_name: String, parameter_value: String,
                          scheduler: &mut Scheduler) {
         let consumed = parser::load_common_parameters(
-            &parameter_name, parameter_value.clone(), Box::new(self), scheduler);
+            &parameter_name, parameter_value.clone(), self, scheduler);
         if consumed { return }
         match parameter_name.as_str() {
             "value" => {
@@ -48,8 +48,8 @@ impl EzObject for ProgressBar {
                         parameter_value.trim(), scheduler,
                         self.path.clone(),
                         Box::new(move |state_tree: &mut StateTree, val: EzValues| {
-                            let state = state_tree.get_mut(&path)
-                                .unwrap().as_progress_bar_mut();
+                            let state = state_tree.get_by_path_mut(&path)
+                                .as_progress_bar_mut();
                             state.set_value(val.as_usize().clone());
                             path.clone()
                         })))
@@ -69,11 +69,11 @@ impl EzObject for ProgressBar {
 
     fn get_state(&self) -> EzState { EzState::ProgressBar(self.state.clone()) }
 
-    fn get_state_mut(&mut self) -> Box<&mut dyn GenericState>{ Box::new(&mut self.state) }
+    fn get_state_mut(&mut self) -> &mut dyn GenericState { &mut self.state }
 
     fn get_contents(&self, state_tree: &mut StateTree) -> PixelMap {
 
-        let state = state_tree.get_mut(&self.get_full_path()).unwrap()
+        let state = state_tree.get_by_path_mut(&self.get_full_path())
             .as_progress_bar_mut();
         state.size.height.set(1);
 
@@ -93,9 +93,9 @@ impl EzObject for ProgressBar {
                 contents, state.get_border_config());
         }
         let state = state_tree
-            .get(&self.get_full_path()).unwrap().as_progress_bar();
-        let parent_colors = state_tree.get(self.get_full_path()
-            .rsplit_once('/').unwrap().0).unwrap().as_generic().get_color_config();
+            .get_by_path(&self.get_full_path()).as_progress_bar();
+        let parent_colors = state_tree.get_by_path(self.get_full_path()
+            .rsplit_once('/').unwrap().0).as_generic().get_color_config();
         contents = common::widget_functions::add_padding(
             contents, state.get_padding(), parent_colors.background,
             parent_colors.foreground);

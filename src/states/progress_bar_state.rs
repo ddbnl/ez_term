@@ -202,7 +202,7 @@ impl ProgressBarState {
 
     pub fn get_value(&self) -> usize { self.value }
 
-    pub fn set_max_value(&mut self, mut max_value: usize) {
+    pub fn set_max_value(&mut self, max_value: usize) {
         if self.value > max_value {
             self.set_value(max_value)
         }

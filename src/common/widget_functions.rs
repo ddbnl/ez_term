@@ -1,9 +1,8 @@
 use crossterm::style::{Color};
 use crate::common;
 use crate::common::definitions::{StateTree};
-use crate::states::definitions::{CallbackConfig, LayoutMode, HorizontalPositionHint,
-                                 VerticalPositionHint, Padding, BorderConfig, VerticalAlignment,
-                                 HorizontalAlignment};
+use crate::states::definitions::{CallbackConfig, LayoutMode, Padding, BorderConfig,
+                                 VerticalAlignment, HorizontalAlignment};
 use crate::scheduler::Scheduler;
 use crate::states::state::{EzState, GenericState};
 use crate::widgets::widget::{EzObjects, Pixel};
@@ -12,18 +11,19 @@ use crate::widgets::widget::{EzObjects, Pixel};
 pub fn open_popup(template: String, state_tree: &mut StateTree,
                   scheduler: &mut Scheduler) -> String {
     
-    let state = state_tree.get_mut("/root").unwrap().as_layout_mut();
+    let state = state_tree.get_by_path_mut("/root").as_layout_mut();
     state.update(scheduler);
     let (path, sub_tree) = state.open_popup(template, scheduler);
     state_tree.extend(sub_tree);
-    let state = state_tree.get_mut("/root").unwrap().as_layout_mut();
-    scheduler.set_callback_config(path.clone(),
+    let state = state_tree.get_by_path_mut("/root").as_layout_mut();
+    scheduler.set_callback_config(path.as_str(),
                                   CallbackConfig::default());
     let modal = state.open_modals.first().unwrap();
     if let EzObjects::Layout(ref i) = modal {
         for sub_widget in i.get_widgets_recursive().values() {
-            scheduler.set_callback_config(sub_widget.as_ez_object().get_full_path(),
-                                          CallbackConfig::default());
+            scheduler.set_callback_config(
+                sub_widget.as_ez_object().get_full_path().as_str(),
+                CallbackConfig::default());
         }
     }
     path
@@ -55,9 +55,9 @@ pub fn reposition_with_pos_hint(parent_width: usize, parent_height: usize,
     // Set x by pos_hint if any
     if let Some((keyword, fraction)) = child_state.get_pos_hint().x {
         let initial_pos = match keyword {
-            HorizontalPositionHint::Left => 0,
-            HorizontalPositionHint::Right => parent_width - child_state.get_size().width.value,
-            HorizontalPositionHint::Center =>
+            HorizontalAlignment::Left => 0,
+            HorizontalAlignment::Right => parent_width - child_state.get_size().width.value,
+            HorizontalAlignment::Center =>
                 (parent_width as f64 / 2.0).round() as usize -
                     (child_state.get_size().width.value as f64 / 2.0).round() as usize,
         };
@@ -67,9 +67,9 @@ pub fn reposition_with_pos_hint(parent_width: usize, parent_height: usize,
     // Set y by pos hint if any
     if let Some((keyword, fraction)) = child_state.get_pos_hint().y {
         let initial_pos = match keyword {
-            VerticalPositionHint::Top => 0,
-            VerticalPositionHint::Bottom => parent_height - child_state.get_size().height.value,
-            VerticalPositionHint::Middle =>
+            VerticalAlignment::Top => 0,
+            VerticalAlignment::Bottom => parent_height - child_state.get_size().height.value,
+            VerticalAlignment::Middle =>
                 (parent_height as f64 / 2.0).round() as usize -
                     (child_state.get_size().height.value as f64 / 2.0).round() as usize,
         };
@@ -330,7 +330,7 @@ pub fn wrap_text (mut text: String, width: usize) -> Vec<String> {
 pub fn is_in_view(path: String, state_tree: &StateTree) -> bool {
 
     // If the widget belongs to a tab or screen that is not active, it is not in view
-    let window_size = state_tree.get("/root").unwrap().as_generic().get_size().clone();
+    let window_size = state_tree.get_by_path("/root").as_generic().get_size().clone();
 
     // Prepare to iterate from root widget to subwidget to sub-sub-widget etc.
     let mut paths: Vec<&str> = path.split('/').collect();
@@ -349,7 +349,7 @@ pub fn is_in_view(path: String, state_tree: &StateTree) -> bool {
             working_path = format!("{}/{}", working_path, paths.pop().unwrap());
             continue
         }
-        let state = state_tree.get(&working_path).unwrap();
+        let state = state_tree.get_by_path(&working_path);
         // Determine if this part of the tree is in view. It's not in view if a visible area
         // was determined and this is not in it (visible area means we're scrolling somewhere),
         // or if absolute positions falls outside of window size.
@@ -450,13 +450,13 @@ pub fn widget_is_hidden(widget_path: String, state_tree: &StateTree) -> bool {
         widget_path.rsplit_once('/').unwrap().0.to_string();
     let mut check_child = widget_path.clone();
     loop {
-        let parent_state = state_tree.get(&check_parent).unwrap().as_layout();
+        let parent_state = state_tree.get_by_path(&check_parent).as_layout();
         if parent_state.mode == LayoutMode::Screen &&
             parent_state.active_screen != check_child.rsplit_once('/').unwrap().1 {
             return true
         }
         if parent_state.mode == LayoutMode::Tabbed {
-            if let EzState::Layout(_) = state_tree.get(&check_child).unwrap() {
+            if let EzState::Layout(_) = state_tree.get_by_path(&check_child) {
                 if parent_state.active_tab != check_child {
                     return true
                 }

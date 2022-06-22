@@ -3,7 +3,6 @@ use crate::common::definitions::Coordinates;
 use crate::scheduler::Scheduler;
 use crate::states::definitions::{StateCoordinates, SizeHint, PosHint, StateSize, AutoScale, Padding,
                                  HorizontalAlignment, VerticalAlignment, BorderConfig, ColorConfig};
-use crate::states;
 
 
 /// [State] implementation.

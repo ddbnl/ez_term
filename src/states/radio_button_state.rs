@@ -1,4 +1,3 @@
-use crate::states;
 use crate::common::definitions::Coordinates;
 use crate::scheduler::Scheduler;
 use crate::states::definitions::{StateCoordinates, SizeHint, PosHint, StateSize, AutoScale, Padding,

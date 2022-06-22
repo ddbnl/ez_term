@@ -50,7 +50,7 @@ impl EzObject for Canvas {
                          scheduler: &mut Scheduler) {
 
         let consumed = parser::load_common_parameters(
-            &parameter_name, parameter_value.clone(),Box::new(self), scheduler);
+            &parameter_name, parameter_value.clone(),self, scheduler);
         if consumed { return }
         match parameter_name.as_str() {
             "from_file" => self.from_file = Some(parameter_value.trim().to_string()),
@@ -68,7 +68,7 @@ impl EzObject for Canvas {
 
     fn get_state(&self) -> EzState { EzState::Canvas(self.state.clone()) }
 
-    fn get_state_mut(&mut self) -> Box<&mut dyn GenericState>{ Box::new(&mut self.state) }
+    fn get_state_mut(&mut self) -> &mut dyn GenericState { &mut self.state }
 
     /// Set the content of this Widget. You must manually fill a [PixelMap] of the same
     /// [height] and [width] as this widget and pass it here.
@@ -86,7 +86,7 @@ impl EzObject for Canvas {
     fn get_contents(&self, state_tree: &mut common::definitions::StateTree) -> common::definitions::PixelMap {
 
         let state = state_tree
-            .get_mut(&self.get_full_path()).unwrap().as_canvas_mut();
+            .get_by_path_mut(&self.get_full_path()).as_canvas_mut();
         let mut contents;
         if let Some(path) = self.from_file.clone() {
             let mut file = File::open(path).expect("Unable to open file");
@@ -138,9 +138,9 @@ impl EzObject for Canvas {
             contents = common::widget_functions::add_border(
                 contents, state.get_border_config());
         }
-        let state = state_tree.get(&self.get_full_path()).unwrap().as_canvas();
-        let parent_colors = state_tree.get(self.get_full_path()
-            .rsplit_once('/').unwrap().0).unwrap().as_generic().get_color_config();
+        let state = state_tree.get_by_path(&self.get_full_path()).as_canvas();
+        let parent_colors = state_tree.get_by_path(self.get_full_path()
+            .rsplit_once('/').unwrap().0).as_generic().get_color_config();
         contents = common::widget_functions::add_padding(
             contents, state.get_padding(),parent_colors.background,
             parent_colors.foreground);

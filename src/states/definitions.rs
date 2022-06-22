@@ -60,22 +60,6 @@ pub enum VerticalAlignment {
 }
 
 
-#[derive(PartialEq, Clone, Copy, Debug)]
-pub enum HorizontalPositionHint {
-    Left,
-    Right,
-    Center
-}
-
-
-#[derive(PartialEq, Clone, Copy, Debug)]
-pub enum VerticalPositionHint {
-    Top,
-    Bottom,
-    Middle
-}
-
-
 /// Convenience wrapper around a size tuple.
 #[derive(PartialEq, Clone, Debug)]
 pub struct StateSize {
@@ -150,18 +134,18 @@ impl Default for SizeHint {
 /// Convenience wrapper around an pos_hint tuple.
 #[derive(PartialEq, Copy, Clone, Debug)]
 pub struct PosHint {
-    pub x: Option<(HorizontalPositionHint, f64)>,
-    pub y: Option<(VerticalPositionHint, f64)>,
+    pub x: Option<(HorizontalAlignment, f64)>,
+    pub y: Option<(VerticalAlignment, f64)>,
 }
 impl PosHint {
-    pub fn new(x: Option<(HorizontalPositionHint, f64)>,
-               y: Option<(VerticalPositionHint, f64)>) -> Self {
+    pub fn new(x: Option<(HorizontalAlignment, f64)>,
+               y: Option<(VerticalAlignment, f64)>) -> Self {
         PosHint{x, y}
     }
 }
 impl Default for PosHint {
-    fn default() -> Self { PosHint{x: Some((HorizontalPositionHint::Left, 1.0)),
-                                    y: Some((VerticalPositionHint::Top, 1.0)) }}
+    fn default() -> Self { PosHint{x: Some((HorizontalAlignment::Left, 1.0)),
+                                    y: Some((VerticalAlignment::Top, 1.0)) }}
 }
 
 

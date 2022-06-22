@@ -50,7 +50,7 @@ impl EzObject for RadioButton {
                          scheduler: &mut Scheduler) {
 
         let consumed = parser::load_common_parameters(
-            &parameter_name, parameter_value.clone(),Box::new(self), scheduler);
+            &parameter_name, parameter_value.clone(),self, scheduler);
         if consumed { return }
         match parameter_name.as_str() {
             "group" => {
@@ -76,12 +76,12 @@ impl EzObject for RadioButton {
 
     fn get_state(&self) -> EzState { EzState::RadioButton(self.state.clone()) }
     
-    fn get_state_mut(&mut self) -> Box<&mut dyn GenericState>{ Box::new(&mut self.state) }
+    fn get_state_mut(&mut self) -> &mut dyn GenericState { &mut self.state }
     
     fn get_contents(&self, state_tree: &mut StateTree) -> common::definitions::PixelMap {
 
         let state = state_tree
-            .get_mut(&self.get_full_path()).unwrap().as_radio_button_mut();
+            .get_by_path_mut(&self.get_full_path()).as_radio_button_mut();
         state.set_width(5);
         state.set_height(1);
         let active_symbol = { if state.active {self.active_symbol}
@@ -104,9 +104,9 @@ impl EzObject for RadioButton {
                 contents, state.get_border_config());
         }
         let state = state_tree
-            .get(&self.get_full_path()).unwrap().as_radio_button();
-        let parent_colors = state_tree.get(self.get_full_path()
-            .rsplit_once('/').unwrap().0).unwrap().as_generic().get_color_config();
+            .get_by_path(&self.get_full_path()).as_radio_button();
+        let parent_colors = state_tree.get_by_path(self.get_full_path()
+            .rsplit_once('/').unwrap().0).as_generic().get_color_config();
         contents = common::widget_functions::add_padding(
             contents, state.get_padding(), parent_colors.background,
             parent_colors.foreground);
@@ -137,7 +137,7 @@ impl RadioButton {
                     scheduler: &mut Scheduler) {
 
         // Find all other radio buttons in same group and make them inactive (mutual exclusivity)
-        for (path, state) in state_tree.iter_mut() {
+        for (path, state) in state_tree.objects.iter_mut() {
             if let EzState::RadioButton(ref mut i) = state {
                 if i.get_group() == state.as_radio_button().group && path != &self.get_full_path() {
                     state.as_radio_button_mut().set_active(false);
@@ -145,18 +145,13 @@ impl RadioButton {
             }
         }
         // Set entered radio button to active and select it
-        let state = state_tree.get_mut(&self.get_full_path()).unwrap()
+        let state = state_tree.get_by_path_mut(&self.get_full_path())
             .as_radio_button_mut();
         if !state.active {
             state.set_active(true);
             state.update(scheduler);
-            if let Some(ref mut i) = callback_tree
-                .get_mut(&self.get_full_path()).unwrap().on_value_change {
-                let context = common::definitions::EzContext::new(
-                    self.get_full_path(), view_tree, state_tree, widget_tree,
-                    scheduler);
-                i(context);
-            }
+            self.on_value_change_callback(view_tree, state_tree, widget_tree, callback_tree,
+                                          scheduler);
         } else {
             return // Nothing to do
         }

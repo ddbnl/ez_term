@@ -7,7 +7,7 @@ use crossterm::event::{Event, KeyCode};
 use crate::parser;
 use crate::states::text_input_state::TextInputState;
 use crate::states::state::{EzState, GenericState};
-use crate::widgets::widget::{Pixel, EzObject, EzObjects};
+use crate::widgets::widget::{Pixel, EzObject};
 use crate::common;
 use crate::common::definitions::{CallbackTree, EzContext, PixelMap, StateTree, ViewTree, WidgetTree};
 use crate::scheduler::Scheduler;
@@ -42,11 +42,11 @@ impl TextInput {
 
 impl EzObject for TextInput {
 
-    fn load_ez_parameter(&mut self, parameter_name: String, mut parameter_value: String,
+    fn load_ez_parameter(&mut self, parameter_name: String, parameter_value: String,
                          scheduler: &mut Scheduler) {
 
         let consumed = parser::load_common_parameters(
-            &parameter_name, parameter_value.clone(),Box::new(self), scheduler);
+            &parameter_name, parameter_value.clone(),self, scheduler);
         if consumed { return }
         match parameter_name.as_str() {
             "max_length" => self.state.set_max_length(parameter_value.trim().parse().unwrap()),
@@ -55,8 +55,8 @@ impl EzObject for TextInput {
                 self.state.text.set(load_ez_string_parameter(
                     parameter_value.trim(), scheduler, path.clone(),
                     Box::new(move |state_tree: &mut StateTree, val: EzValues| {
-                        let state = state_tree.get_mut(&path)
-                            .unwrap().as_text_input_mut();
+                        let state = state_tree.get_by_path_mut(&path)
+                            .as_text_input_mut();
                         state.text.set(val.as_string().clone());
                         path.clone()
                     })))
@@ -74,12 +74,12 @@ impl EzObject for TextInput {
 
     fn get_state(&self) -> EzState { EzState::TextInput(self.state.clone()) }
     
-    fn get_state_mut(&mut self) -> Box<&mut dyn GenericState>{ Box::new(&mut self.state) }
+    fn get_state_mut(&mut self) -> &mut dyn GenericState { &mut self.state }
 
     fn get_contents(&self, state_tree: &mut StateTree) -> PixelMap {
 
         let state = state_tree
-            .get_mut(&self.get_full_path()).unwrap().as_text_input_mut();
+            .get_by_path_mut(&self.get_full_path()).as_text_input_mut();
         let (fg_color, bg_color) = state.get_context_colors();
         let mut text = state.get_text().value.clone();
         if text.len() > state.get_effective_size().width - 1 {
@@ -132,9 +132,9 @@ impl EzObject for TextInput {
             contents = common::widget_functions::add_border(
                 contents, state.get_border_config());
         }
-        let state = state_tree.get(&self.get_full_path()).unwrap().as_text_input();
-        let parent_colors = state_tree.get(self.get_full_path()
-            .rsplit_once('/').unwrap().0).unwrap().as_generic().get_color_config();
+        let state = state_tree.get_by_path(&self.get_full_path()).as_text_input();
+        let parent_colors = state_tree.get_by_path(self.get_full_path()
+            .rsplit_once('/').unwrap().0).as_generic().get_color_config();
         contents = common::widget_functions::add_padding(
             contents, state.get_padding(),parent_colors.background,
             parent_colors.foreground);
@@ -145,50 +145,34 @@ impl EzObject for TextInput {
                     state_tree: &mut StateTree, widget_tree: &WidgetTree,
                     callback_tree: &mut CallbackTree, scheduler: &mut Scheduler) -> bool {
 
-        let state = state_tree.get_mut(&self.get_full_path())
-            .unwrap().as_text_input_mut();
+        let state = state_tree.get_by_path_mut(&self.get_full_path())
+            .as_text_input_mut();
         let current_text = state.text.clone();
         if let Event::Key(key) = event {
             if key.code == KeyCode::Backspace {
                 handle_backspace(state, scheduler);
-                if state.text != current_text {
-                    if let Some(ref mut i ) = callback_tree
-                        .get_mut(&self.get_full_path()).unwrap().on_value_change {
-                        i(EzContext::new(self.get_full_path(),
-                        view_tree, state_tree, widget_tree, scheduler));
-                    }
-                }
+                self.check_changed_text(view_tree, state_tree, widget_tree, callback_tree,
+                                        scheduler,current_text.value);
                 return true
             }
-            if key.code == KeyCode::Delete {
+            else if key.code == KeyCode::Delete {
                 handle_delete(state, scheduler);
-                if state.text != current_text {
-                    if let Some(ref mut i ) = callback_tree
-                        .get_mut(&self.get_full_path()).unwrap().on_value_change {
-                        i(EzContext::new(
-                            self.get_full_path(), view_tree, state_tree, widget_tree,
-                            scheduler));
-                    }
-                }
+                self.check_changed_text(view_tree, state_tree, widget_tree, callback_tree,
+                                        scheduler,current_text.value);
                 return true
             }
-            if key.code == KeyCode::Left {
+            else if key.code == KeyCode::Left {
                 handle_left(state, scheduler);
                 return true
             }
-            if key.code == KeyCode::Right {
+            else if key.code == KeyCode::Right {
                 handle_right(state, scheduler);
                 return true
             }
-            if let KeyCode::Char(c) = key.code {
+            else if let KeyCode::Char(c) = key.code {
                 handle_char(state, c, scheduler);
-                if state.text != current_text {
-                    if let Some(ref mut i ) = callback_tree
-                        .get_mut(&self.get_full_path()).unwrap().on_value_change {
-                        i(EzContext::new(self.get_full_path(), view_tree, state_tree,
-                                         widget_tree, scheduler));
-                    }
-                }
+                self.check_changed_text(view_tree, state_tree, widget_tree, callback_tree,
+                                        scheduler,current_text.value);
                 return true
             }
         }
@@ -206,8 +190,8 @@ impl EzObject for TextInput {
                  widget_tree: &WidgetTree, callback_tree: &mut CallbackTree,
                  scheduler: &mut Scheduler, mouse_pos: Option<Coordinates>) -> bool {
 
-        let state = state_tree.get_mut(
-            &self.get_full_path()).unwrap().as_text_input_mut();
+        let state = state_tree.get_by_path_mut(
+            &self.get_full_path()).as_text_input_mut();
         state.set_selected(true);
         state.update(scheduler);
         // Handle blinking of cursor
@@ -233,13 +217,8 @@ impl EzObject for TextInput {
         }
 
         // Call user callback if any
-        if let Some(ref mut i) = callback_tree.
-            get_mut(&self.get_full_path()).unwrap().on_select {
-            let context = EzContext::new(
-                self.get_full_path(), view_tree, state_tree, widget_tree,
-                scheduler);
-            i(context, mouse_pos);
-        };
+        self.on_select_callback(view_tree, state_tree, widget_tree, callback_tree,
+                                scheduler, mouse_pos);
         true
     }
 }
@@ -302,6 +281,19 @@ impl TextInput {
         obj.load_ez_config(config, scheduler).unwrap();
         obj
     }
+
+    /// Check if text has changed to call on_value_change.
+    fn check_changed_text(&self, view_tree: &mut ViewTree,
+                          state_tree: &mut StateTree, widget_tree: &WidgetTree,
+                          callback_tree: &mut CallbackTree, scheduler: &mut Scheduler,
+                          old_text: String) {
+
+        let state = state_tree.get_by_path(&self.path).as_text_input();
+        if state.text != old_text {
+            self.on_value_change_callback(view_tree, state_tree, widget_tree, callback_tree,
+                                          scheduler);
+        }
+    }
 }
 
 /// Start blink the position on which the cursor is currently located. This is a custom cursor not
@@ -316,7 +308,7 @@ fn start_cursor_blink(target_pos: Coordinates, state: &mut TextInputState,
     state.update(scheduler);
     let mut counter = 3;
     let blink_func = move | context: EzContext | {
-        let state = context.state_tree.get_mut(&context.widget_path).unwrap()
+        let state = context.state_tree.get_by_path_mut(&context.widget_path)
             .as_text_input_mut();
         if !state.selected {
             state.set_blink_switch(false);

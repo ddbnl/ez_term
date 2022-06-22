@@ -41,11 +41,11 @@ impl Label {
 
 impl EzObject for Label {
 
-    fn load_ez_parameter(&mut self, parameter_name: String, mut parameter_value: String,
+    fn load_ez_parameter(&mut self, parameter_name: String, parameter_value: String,
                          scheduler: &mut Scheduler) {
 
         let consumed = parser::load_common_parameters(
-            &parameter_name, parameter_value.clone(),Box::new(self), scheduler);
+            &parameter_name, parameter_value.clone(),self, scheduler);
         if consumed { return }
         match parameter_name.as_str() {
             "text" => {
@@ -53,8 +53,8 @@ impl EzObject for Label {
                 self.state.text.set(load_ez_string_parameter(
                     parameter_value.trim(), scheduler, path.clone(),
                     Box::new(move |state_tree: &mut StateTree, val: EzValues| {
-                        let state = state_tree.get_mut(&path)
-                            .unwrap().as_label_mut();
+                        let state = state_tree.get_by_path_mut(&path)
+                            .as_label_mut();
                         state.text.set(val.as_string().clone());
                         path.clone()
                     })))
@@ -74,13 +74,13 @@ impl EzObject for Label {
 
     fn get_state(&self) -> EzState { EzState::Label(self.state.clone()) }
 
-    fn get_state_mut(&mut self) -> Box<&mut dyn GenericState>{ Box::new(&mut self.state) }
+    fn get_state_mut(&mut self) -> &mut dyn GenericState { &mut self.state }
 
     fn get_contents(&self, state_tree: &mut common::definitions::StateTree)
         -> common::definitions::PixelMap {
 
         let state = state_tree
-            .get_mut(&self.get_full_path()).unwrap().as_label_mut();
+            .get_by_path_mut(&self.get_full_path()).as_label_mut();
         let mut text;
         // Load text from file
         if let Some(path) = self.from_file.clone() {
@@ -150,9 +150,9 @@ impl EzObject for Label {
             contents = common::widget_functions::add_border(
                 contents, state.get_border_config());
         }
-        let state = state_tree.get(&self.get_full_path()).unwrap().as_label();
-        let parent_colors = state_tree.get(self.get_full_path()
-            .rsplit_once('/').unwrap().0).unwrap().as_generic().get_color_config();
+        let state = state_tree.get_by_path(&self.get_full_path()).as_label();
+        let parent_colors = state_tree.get_by_path(self.get_full_path()
+            .rsplit_once('/').unwrap().0).as_generic().get_color_config();
         contents = common::widget_functions::add_padding(
             contents, state.get_padding(), parent_colors.background,
             parent_colors.foreground);

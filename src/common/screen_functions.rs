@@ -3,9 +3,8 @@
 use crossterm::style::{PrintStyledContent};
 use crossterm::{QueueableCommand, cursor, ExecutableCommand};
 use std::io::{stdout, Write};
-use std::collections::HashMap;
 use crate::common;
-use crate::common::definitions::{StateTree, ViewTree, Coordinates};
+use crate::common::definitions::{StateTree, ViewTree, Coordinates, CallbackTree};
 use crate::scheduler::Scheduler;
 use crate::widgets::layout::Layout;
 use crate::states::definitions::CallbackConfig;
@@ -62,8 +61,8 @@ pub fn redraw_changed_widgets(view_tree: &mut ViewTree, state_tree: &mut StateTr
 
     // We update the root widgets' state only. It's a special case because it can hold new
     // modals it might need to access internally.
-    root_widget.state = state_tree.get_mut("/root").unwrap().as_layout().clone();
-    if !state_tree.get("/root").unwrap().as_layout().open_modals.is_empty() &&
+    root_widget.state = state_tree.get_by_path_mut("/root").as_layout().clone();
+    if !state_tree.get_by_path("/root").as_layout().open_modals.is_empty() &&
         !changed_states.is_empty(){
         force_redraw = true;
     }
@@ -91,7 +90,7 @@ pub fn redraw_widgets(paths: &mut Vec<String>, view_tree: &mut ViewTree,
             // scrolled; we will find the origin of the scroll and redraw that widget instead
             // to keep the view intact.
             loop {
-                let state = state_tree.get(&widget_path).unwrap();
+                let state = state_tree.get_by_path(&widget_path);
                 if (!state.as_generic().get_size().infinite_width &&
                     !state.as_generic().get_size().infinite_height) ||
                     widget_path == "/root" {
@@ -123,7 +122,7 @@ pub fn initialize_view_tree(width: usize, height: usize) -> ViewTree {
 /// Get the State for each child [EzWidget] and return it in a <[path], [State]> HashMap.
 pub fn initialize_state_tree(root_layout: &Layout) -> StateTree {
 
-    let mut state_tree = HashMap::new();
+    let mut state_tree = StateTree::new("state_tree".to_string());
     for (child_path, child) in root_layout.get_widgets_recursive() {
         state_tree.insert(child_path, child.as_ez_object().get_state());
     }
@@ -135,7 +134,7 @@ pub fn initialize_state_tree(root_layout: &Layout) -> StateTree {
 /// Get the State for each child [EzWidget] and return it in a <[path], [State]> HashMap.
 pub fn initialize_callback_tree(root_layout: &Layout) -> common::definitions::CallbackTree {
 
-    let mut callback_tree = HashMap::new();
+    let mut callback_tree = CallbackTree::new("callback_tree".to_string());
     for (child_path, _child) in root_layout.get_widgets_recursive() {
         callback_tree.insert(child_path, CallbackConfig::default());
     }
@@ -151,15 +150,16 @@ pub fn clean_trees(root_widget: &mut Layout, state_tree: &mut common::definition
                    callback_tree: &mut common::definitions::CallbackTree, scheduler: &mut Scheduler) {
 
     let widget_tree = root_widget.get_widget_tree();
-    let state_paths: Vec<String> = state_tree.keys().into_iter().cloned().collect();
+    let state_paths: Vec<String> = state_tree.objects.keys().into_iter().cloned().collect();
     for path in state_paths {
-        if path != "/root" && !widget_tree.contains_key(&path) {
+        if path != "/root" && !widget_tree.objects.contains_key(&path) {
             state_tree.remove(&path);
         }
     }
-    let callback_paths: Vec<String> = callback_tree.keys().into_iter().cloned().collect();
+    let callback_paths: Vec<String> = callback_tree.objects.keys().into_iter().cloned().collect();
     for path in callback_paths {
-        if path != "/root" && !widget_tree.contains_key(&path) && !scheduler.properties.contains_key(&path) {
+        if path != "/root" && !widget_tree.objects.contains_key(&path)
+            && !scheduler.properties.contains_key(&path) {
             callback_tree.remove(&path);
         }
     }

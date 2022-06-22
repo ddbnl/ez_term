@@ -142,7 +142,7 @@ fn run_loop(mut root_widget: Layout, mut callback_tree: CallbackTree, mut schedu
                     } else {
                         consumed = true;
                     }
-                } else if let MouseEventKind::Drag(i) = mouse_event.kind{
+                } else if let MouseEventKind::Drag(_) = mouse_event.kind{
                     continue
                 }
             }
@@ -174,8 +174,7 @@ fn run_loop(mut root_widget: Layout, mut callback_tree: CallbackTree, mut schedu
             // Try to let currently selected widget handle and consume the event
             if !consumed {
                 if let Some(i) = selected_widget {
-                    if !state_tree
-                        .get(&i.get_full_path()).unwrap().as_generic().get_disabled() {
+                    if !state_tree.get_by_path(&i.get_full_path()).as_generic().get_disabled() {
                         consumed = i.handle_event(
                             event, &mut view_tree, &mut state_tree, &widget_tree,
                             &mut callback_tree, &mut scheduler);
@@ -185,13 +184,12 @@ fn run_loop(mut root_widget: Layout, mut callback_tree: CallbackTree, mut schedu
             }
             if !consumed {
                 if let Event::Resize(width, height) = event {
-                    let current_size = state_tree.get(&root_widget.path).unwrap()
+                    let current_size = state_tree.get_by_path(&root_widget.path)
                         .as_generic().get_size();
                     if current_size.height != height as usize ||
                         current_size.width != width as usize {
-                        view_tree = handle_resize(
-                            &mut state_tree, &mut root_widget,
-                            width as usize, height as usize, &mut scheduler);
+                        view_tree = handle_resize(&mut state_tree, &mut root_widget,
+                                                  width as usize, height as usize);
                         continue
                     }
                 }
@@ -208,7 +206,7 @@ fn run_loop(mut root_widget: Layout, mut callback_tree: CallbackTree, mut schedu
             scheduler.update_properties(&mut view_tree, &mut state_tree, &widget_tree,
                                         &mut callback_tree);
         }
-        root_widget.state = state_tree.get("/root").unwrap().as_layout().clone();
+        root_widget.state = state_tree.get_by_path("/root").as_layout().clone();
 
         // Update the state tree for each widget, redrawing any that changed. If a global
         // forced redraw was issued by a widget we'll perform one.
@@ -238,12 +236,12 @@ fn handle_modal_event (event: Event, view_tree: &mut ViewTree, state_tree: &mut 
                        scheduler: &mut Scheduler, root_widget: &Layout) -> bool {
 
     let mut consumed;
-    if state_tree.get(&root_widget.path.clone()).unwrap().as_layout().open_modals.is_empty() {
+    if state_tree.get_by_path(&root_widget.path.clone()).as_layout().open_modals.is_empty() {
         return false
     }
-    let modal_root = state_tree.get(&root_widget.path.clone()).unwrap().as_layout()
+    let modal_root = state_tree.get_by_path(&root_widget.path.clone()).as_layout()
         .open_modals.first().unwrap().as_ez_object().get_full_path();
-    for (path, widget) in widget_tree {
+    for (path, widget) in widget_tree.objects.iter() {
         if !path.starts_with(&modal_root) { continue }
         if let widget::EzObjects::Layout(i) = widget {
             for child in i.get_widgets_recursive().values() {
@@ -306,7 +304,7 @@ fn handle_key_event(key: KeyEvent, view_tree: &mut ViewTree, state_tree: &mut St
                 common::selection_functions::get_selected_widget(widget_tree, state_tree);
             if let Some(widget) = selected_widget {
                 if !state_tree
-                    .get(&widget.get_full_path()).unwrap().as_generic().get_disabled() {
+                    .get_by_path(&widget.get_full_path()).as_generic().get_disabled() {
                     widget.on_keyboard_enter(view_tree, state_tree, widget_tree,
                                              callback_tree, scheduler);
                 }
@@ -337,8 +335,7 @@ fn handle_mouse_event(event: MouseEvent, view_tree: &mut ViewTree, state_tree: &
         for widget in common::selection_functions::get_widget_by_position(
             mouse_position, widget_tree, state_tree) {
 
-            let abs = state_tree.get(&widget.get_full_path()).unwrap()
-                .as_generic()
+            let abs = state_tree.get_by_path(&widget.get_full_path()).as_generic()
                 .get_absolute_position();
             let relative_position = Coordinates::new(
                 mouse_position.x - abs.x, mouse_position.y - abs.y);
@@ -349,7 +346,7 @@ fn handle_mouse_event(event: MouseEvent, view_tree: &mut ViewTree, state_tree: &
 
                     let consumed = widget.on_left_mouse_click(view_tree, state_tree, widget_tree,
                                                callback_tree, scheduler,relative_position);
-                    if consumed && state_tree.get(&widget.get_full_path()).unwrap().as_generic()
+                    if consumed && state_tree.get_by_path(&widget.get_full_path()).as_generic()
                             .is_selectable() {
                         widget.on_select(view_tree, state_tree, widget_tree, callback_tree,
                                          scheduler,Some(relative_position));
@@ -390,16 +387,15 @@ fn handle_mouse_event(event: MouseEvent, view_tree: &mut ViewTree, state_tree: &
 /// Handle a resize event by setting the size of the root widget to the new window size, updating
 /// the sizes/positions of all children and generating a new view tree of the right size.
 fn handle_resize(state_tree: &mut StateTree, root_widget: &mut Layout,
-                 new_width: usize, new_height: usize, scheduler: &mut Scheduler) -> ViewTree{
+                 new_width: usize, new_height: usize) -> ViewTree{
 
-    for state in state_tree.values_mut() {
-        if let EzState::Layout(i) = state {
+    for state in state_tree.objects.values_mut() {
+        if let EzState::Layout(_) = state {
             state.as_layout_mut().scrolling_config.view_start_x = 0;
             state.as_layout_mut().scrolling_config.view_start_y = 0;
         }
     }
-    let state = state_tree.get_mut(&root_widget.path).unwrap()
-        .as_generic_mut();
+    let state = state_tree.get_by_path_mut(&root_widget.path).as_generic_mut();
     state.get_size_mut().width.set(new_width as usize);
     state.get_size_mut().height.set(new_height as usize);
     let old_view_tree = common::screen_functions::initialize_view_tree(

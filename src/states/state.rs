@@ -8,9 +8,8 @@ use crate::states::label_state::{LabelState};
 use crate::states::button_state::{ButtonState};
 use crate::states::checkbox_state::{CheckboxState};
 use crate::states::definitions::{AutoScale, BorderConfig, ColorConfig,
-                                 HorizontalAlignment, HorizontalPositionHint, Padding, PosHint,
-                                 StateSize, SizeHint, StateCoordinates, VerticalAlignment,
-                                 VerticalPositionHint};
+                                 HorizontalAlignment, Padding, PosHint, StateSize, SizeHint,
+                                 StateCoordinates, VerticalAlignment};
 use crate::states::dropdown_state::{DropdownState, DroppedDownMenuState};
 use crate::states::layout_state::LayoutState;
 use crate::states::progress_bar_state::ProgressBarState;
@@ -249,7 +248,7 @@ pub trait GenericState {
     /// ("center_x", 0.9)
     /// When positioning the widget, "center_x" will be replaced with the middle x coordinate of
     /// parent Layout, and multiplied with the float.
-    fn set_pos_hint_x(&mut self, pos_hint: Option<(HorizontalPositionHint, f64)>) {
+    fn set_pos_hint_x(&mut self, pos_hint: Option<(HorizontalAlignment, f64)>) {
         self.set_pos_hint(PosHint::new(pos_hint, self.get_pos_hint().y));
     }
 
@@ -258,7 +257,7 @@ pub trait GenericState {
     /// ("top", 0.9)
     /// When positioning the widget, "top" will be replaced with the y coordinate of the top of the
     /// parent Layout, and multiplied by the float.
-    fn set_pos_hint_y(&mut self, pos_hint: Option<(VerticalPositionHint, f64)>) {
+    fn set_pos_hint_y(&mut self, pos_hint: Option<(VerticalAlignment, f64)>) {
         self.set_pos_hint(PosHint::new(self.get_pos_hint().x, pos_hint));
     }
 
@@ -497,7 +496,7 @@ pub trait GenericState {
 
     /// Set the disabled field of a widget. Only implemented by interactive widgets (i.e. widgets
     /// that are selectable).
-    fn set_disabled(&mut self, disabled: bool) { }
+    fn set_disabled(&mut self, _disabled: bool) { }
 
     /// Get the disabled field of a widget. Only implemented by interactive widgets (i.e. widgets
     /// that are selectable).

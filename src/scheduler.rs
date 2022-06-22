@@ -13,8 +13,8 @@ pub struct Scheduler {
     tasks: Vec<Task>,
     pub widgets_to_update: Vec<String>,
     pub force_redraw: bool,
-    threads_to_start: EzThread,
-    thread_handles: Vec<(std::thread::JoinHandle<()>, Option<GenericEzTask>)>,
+    threads_to_start: Vec<(EzThread, Option<GenericEzTask>)>,
+    thread_handles: Vec<(JoinHandle<()>, Option<GenericEzTask>)>,
     new_callback_configs: Vec<(String, CallbackConfig)>,
     updated_callback_configs: Vec<(String, CallbackConfig)>,
     pub properties: HashMap<String, EzProperties>,
@@ -129,14 +129,14 @@ impl Scheduler {
     }
 
     /// Pass a callback config that will be set verbatim on the object on the next frame.
-    pub fn set_callback_config(&mut self, widget_path: String, callback_config: CallbackConfig) {
-        self.new_callback_configs.push((widget_path, callback_config));
+    pub fn set_callback_config(&mut self, widget_path: &str, callback_config: CallbackConfig) {
+        self.new_callback_configs.push((widget_path.to_string(), callback_config));
     }
 
     /// Pass a callback config that will update the current callback config for the object on the
     /// next frame. Only sets new callbacks, cannot remove old ones.
-    pub fn update_callback_config(&mut self, widget_path: String, callback_config: CallbackConfig) {
-        self.updated_callback_configs.push((widget_path, callback_config));
+    pub fn update_callback_config(&mut self, widget_path: &str, callback_config: CallbackConfig) {
+        self.updated_callback_configs.push((widget_path.to_string(), callback_config));
 
     }
 
@@ -148,11 +148,13 @@ impl Scheduler {
             callback_tree.insert(path, callback_config);
         }
         while !self.updated_callback_configs.is_empty() {
-            let (path, callback_config) =
+            let (path_or_id, callback_config) =
                 self.updated_callback_configs.pop().unwrap();
-            callback_tree.get_mut(&path).unwrap_or_else(
-                || panic!("Cannot set new callback config for path \"{}\" as it cannot be resolved",
-                path)).update_from(callback_config);
+            if path_or_id.contains('/') {
+                callback_tree.get_by_path_mut(&path_or_id).update_from(callback_config);
+            } else {
+                callback_tree.get_by_id_mut(&path_or_id).update_from(callback_config);
+            }
         }
     }
 
@@ -198,12 +200,12 @@ impl Scheduler {
             }
         }
         for name in to_callback {
-            if callback_tree.contains_key(&name) {
+            if callback_tree.objects.contains_key(&name) {
                 let context =
                     EzContext::new(name.clone(), view_tree, state_tree,
                                    widget_tree,self);
                 if let Some(ref mut callback) =
-                        callback_tree.get_mut(&name).unwrap().on_value_change {
+                        callback_tree.get_by_path_mut(&name).on_value_change {
                     callback(context);
                 }
             }

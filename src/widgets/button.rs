@@ -4,7 +4,7 @@ use crate::states::state::{EzState, GenericState};
 use crate::states::definitions::{HorizontalAlignment, VerticalAlignment};
 use crate::states::button_state::ButtonState;
 use crate::common;
-use crate::common::definitions::StateTree;
+use crate::common::definitions::{CallbackTree, PixelMap, StateTree, ViewTree, WidgetTree};
 use crate::widgets::widget::{Pixel, EzObject};
 use crate::parser;
 use crate::parser::load_ez_string_parameter;
@@ -27,11 +27,13 @@ pub struct Button {
 impl Button {
 
     pub fn new(id: String, path: String, scheduler: &mut Scheduler) -> Self {
-        Button {
+        let mut obj = Button {
             id,
             path: path.clone(),
             state: ButtonState::new(path, scheduler),
-        }
+        };
+        obj.state.border_config.enabled = true;
+        obj
     }
 }
 
@@ -42,7 +44,7 @@ impl EzObject for Button {
                          scheduler: &mut Scheduler) {
         
         let consumed = parser::load_common_parameters(
-            &parameter_name, parameter_value.clone(),Box::new(self),
+            &parameter_name, parameter_value.clone(),self,
             scheduler);
         if consumed { return }
         match parameter_name.as_str() {
@@ -51,8 +53,8 @@ impl EzObject for Button {
                 self.state.text.set(load_ez_string_parameter(
                     parameter_value.trim(), scheduler, path.clone(),
                     Box::new(move |state_tree: &mut StateTree, val: EzValues| {
-                        let state = state_tree.get_mut(&path)
-                            .unwrap().as_button_mut();
+                        let state = state_tree.get_by_path_mut(&path)
+                            .as_button_mut();
                         state.text.set(val.as_string().clone());
                         path.clone()
                     })))
@@ -72,11 +74,11 @@ impl EzObject for Button {
 
     fn get_state(&self) -> EzState { EzState::Button(self.state.clone()) }
 
-    fn get_state_mut(&mut self) -> Box<&mut dyn GenericState>{ Box::new(&mut self.state) }
+    fn get_state_mut(&mut self) -> &mut dyn GenericState { &mut self.state }
 
-    fn get_contents(&self, state_tree: &mut common::definitions::StateTree) -> common::definitions::PixelMap {
+    fn get_contents(&self, state_tree: &mut StateTree) -> PixelMap {
 
-        let state = state_tree.get_mut(&self.get_full_path()).unwrap()
+        let state = state_tree.get_by_path_mut(&self.get_full_path())
             .as_button_mut();
 
         let (fg_color, bg_color) =
@@ -121,34 +123,26 @@ impl EzObject for Button {
             state.get_effective_size().height, fg_color, bg_color);
         contents = common::widget_functions::add_border(
             contents, state.get_border_config());
-        let state = state_tree.get(&self.get_full_path()).unwrap().as_button();
-        let parent_colors = state_tree.get(self.get_full_path()
-            .rsplit_once('/').unwrap().0).unwrap().as_generic().get_color_config();
+        let state = state_tree.get_by_path(&self.get_full_path()).as_button();
+        let parent_colors = state_tree.get_by_path(self.get_full_path()
+            .rsplit_once('/').unwrap().0).as_generic().get_color_config();
         contents = common::widget_functions::add_padding(
             contents, state.get_padding(), parent_colors.background,
             parent_colors.foreground);
         contents
     }
 
-    fn on_press(&self, view_tree: &mut common::definitions::ViewTree,
-                state_tree: &mut common::definitions::StateTree,
-                widget_tree: &common::definitions::WidgetTree,
-                callback_tree: &mut common::definitions::CallbackTree, scheduler: &mut Scheduler)
-    -> bool {
+    fn on_press(&self, view_tree: &mut ViewTree, state_tree: &mut StateTree,
+                widget_tree: &WidgetTree, callback_tree: &mut CallbackTree,
+                scheduler: &mut Scheduler) -> bool {
 
-        let context = common::definitions::EzContext::new(
-            self.get_full_path().clone(), view_tree, state_tree, widget_tree, scheduler);
-
-        let mut consumed = false;
-        if let Some(ref mut i) = callback_tree
-            .get_mut(&self.get_full_path()).unwrap().on_press {
-            consumed = i(context);
-        }
+        let consumed = self.on_press_callback(view_tree, state_tree, widget_tree,
+                                                        callback_tree, scheduler);
         if !consumed {
             self.handle_on_press(state_tree, scheduler);
             return true
         }
-        consumed
+        false
     }
 }
 impl Button {
@@ -156,23 +150,22 @@ impl Button {
     /// Initialize an instance of this object using the passed config coming from [ez_parser]
     pub fn from_config(config: Vec<String>, id: String, path: String, scheduler: &mut Scheduler)
         -> Self {
+
         let mut obj = Button::new(id, path, scheduler);
         obj.load_ez_config(config, scheduler).unwrap();
-        obj.state.border_config.enabled = true;
         obj
     }
 
-    pub fn handle_on_press(&self, state_tree: &mut common::definitions::StateTree,
-                           scheduler: &mut Scheduler) {
+    pub fn handle_on_press(&self, state_tree: &mut StateTree, scheduler: &mut Scheduler) {
 
-        let state = state_tree.get_mut(&self.get_full_path()).unwrap().as_button_mut();
+        let state = state_tree.get_by_path_mut(&self.get_full_path()).as_button_mut();
         state.set_flashing(true);
         state.update(scheduler);
         let scheduled_func =
             | context: common::definitions::EzContext | {
-                if !context.state_tree.contains_key(&context.widget_path) { return false }
-                let state = context.state_tree.get_mut(&context.widget_path)
-                    .unwrap().as_button_mut();
+                if !context.state_tree.objects.contains_key(&context.widget_path) { return false }
+                let state = context.state_tree.get_by_path_mut(&context.widget_path)
+                    .as_button_mut();
                 state.set_flashing(false);
                 state.update(context.scheduler);
                 true

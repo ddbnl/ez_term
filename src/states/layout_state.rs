@@ -1,5 +1,5 @@
 use std::collections::HashMap;
-use crate::common::definitions::{Coordinates, Size};
+use crate::common::definitions::{Coordinates, Size, StateTree};
 use crate::states::definitions::{StateCoordinates, SizeHint, PosHint, StateSize, AutoScale, Padding,
                                  HorizontalAlignment, VerticalAlignment, BorderConfig, ColorConfig,
                                  LayoutMode, LayoutOrientation, ScrollingConfig};
@@ -349,7 +349,7 @@ impl LayoutState {
     /// Open a popup based on a template defined in the Ez file. Returns the state of the new popup
     pub fn open_popup(&mut self, template: String, scheduler: &mut Scheduler)
         -> (String, common::definitions::StateTree) {
-        let mut popup = self.templates.get_mut(&template).unwrap().clone();
+        let mut popup = self.templates.get(&template).unwrap().clone();
         let init_popup = popup.parse(&mut self.templates, scheduler,
                                      "/modal".to_string(), 0, None);
         self.open_modal(init_popup)
@@ -370,7 +370,7 @@ impl LayoutState {
             i.propagate_paths();
             extra_state_tree = common::screen_functions::initialize_state_tree(i);
         } else {
-            extra_state_tree = HashMap::new();
+            extra_state_tree = StateTree::new("state_tree".to_string());
             extra_state_tree.insert(modal_path.clone(),modal.as_ez_object().get_state());
         }
         self.open_modals.push(modal);

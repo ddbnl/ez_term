@@ -39,7 +39,7 @@ impl EzObject for Slider {
     fn load_ez_parameter(&mut self, parameter_name: String, parameter_value: String,
                          scheduler: &mut Scheduler) {
         let consumed = parser::load_common_parameters(
-            &parameter_name, parameter_value.clone(), Box::new(self), scheduler);
+            &parameter_name, parameter_value.clone(), self, scheduler);
         if consumed { return }
         match parameter_name.as_str() {
             "value" => self.state.set_value(parameter_value.trim().parse().unwrap()),
@@ -60,11 +60,11 @@ impl EzObject for Slider {
 
     fn get_state(&self) -> EzState { EzState::Slider(self.state.clone()) }
 
-    fn get_state_mut(&mut self) -> Box<&mut dyn GenericState>{ Box::new(&mut self.state) }
+    fn get_state_mut(&mut self) -> &mut dyn GenericState { &mut self.state }
 
     fn get_contents(&self, state_tree: &mut StateTree) -> PixelMap {
 
-        let state = state_tree.get_mut(&self.get_full_path()).unwrap()
+        let state = state_tree.get_by_path_mut(&self.get_full_path())
             .as_slider_mut();
         state.size.height.set(1);
         if state.auto_scale.width {
@@ -91,9 +91,9 @@ impl EzObject for Slider {
                 fg_color, bg_color)));
         }
 
-        let state = state_tree.get(&self.get_full_path()).unwrap().as_slider();
-        let parent_colors = state_tree.get(self.get_full_path()
-            .rsplit_once('/').unwrap().0).unwrap().as_generic().get_color_config();
+        let state = state_tree.get_by_path(&self.get_full_path()).as_slider();
+        let parent_colors = state_tree.get_by_path(self.get_full_path()
+            .rsplit_once('/').unwrap().0).as_generic().get_color_config();
         contents = common::widget_functions::add_padding(
             contents, state.get_padding(), parent_colors.background,
             parent_colors.foreground);
@@ -120,20 +120,16 @@ impl EzObject for Slider {
                            widget_tree: &WidgetTree, callback_tree: &mut CallbackTree,
                            scheduler: &mut Scheduler, mouse_pos: Coordinates) -> bool {
 
-        let state = state_tree.get_mut(&self.path).unwrap().as_slider_mut();
-        let ratio = ((state.maximum - state.minimum) as f64
-            / state.get_effective_size().width as f64);
+        let state = state_tree.get_by_path_mut(&self.path).as_slider_mut();
+        let ratio = (state.maximum - state.minimum) as f64
+            / state.get_effective_size().width as f64;
         let mut value = (ratio * mouse_pos.x as f64) as usize + state.minimum;
-        value -= (value % state.step as usize);
+        value -= value % state.step as usize;
         value = min(value, state.maximum);
         state.set_value(value);
         state.update(scheduler);
-
-        if let Some(ref mut i ) = callback_tree
-            .get_mut(&self.get_full_path()).unwrap().on_value_change {
-            i(EzContext::new(self.get_full_path(),
-                             view_tree, state_tree, widget_tree, scheduler));
-        }
+        self.on_value_change_callback(view_tree, state_tree, widget_tree, callback_tree,
+                                      scheduler);
         true
     }
 }
@@ -151,12 +147,12 @@ impl Slider {
     fn handle_left(&self, view_tree: &mut ViewTree, state_tree: &mut StateTree,
                    widget_tree: &WidgetTree, callback_tree: &mut CallbackTree,
                    scheduler: &mut Scheduler) {
-        let state = state_tree.get_mut(&self.path).unwrap().as_slider_mut();
+        let state = state_tree.get_by_path_mut(&self.path).as_slider_mut();
         if state.value.get() == state.minimum { return }
         state.set_value(state.get_value() - state.get_step() as usize);
         state.update(scheduler);
         if let Some(ref mut i ) = callback_tree
-            .get_mut(&self.get_full_path()).unwrap().on_value_change {
+            .get_by_path_mut(&self.get_full_path()).on_value_change {
             i(EzContext::new(self.get_full_path(),
                              view_tree, state_tree, widget_tree, scheduler));
         }
@@ -165,14 +161,11 @@ impl Slider {
                    widget_tree: &WidgetTree, callback_tree: &mut CallbackTree,
                    scheduler: &mut Scheduler) {
 
-        let state = state_tree.get_mut(&self.path).unwrap().as_slider_mut();
+        let state = state_tree.get_by_path_mut(&self.path).as_slider_mut();
         if state.value.get() == state.maximum { return }
         state.set_value(state.get_value() + state.get_step() as usize);
         state.update(scheduler);
-        if let Some(ref mut i ) = callback_tree
-            .get_mut(&self.get_full_path()).unwrap().on_value_change {
-            i(EzContext::new(self.get_full_path(),
-                             view_tree, state_tree, widget_tree, scheduler));
-        }
+        self.on_value_change_callback(view_tree, state_tree, widget_tree, callback_tree,
+                                      scheduler);
     }
 }

@@ -47,7 +47,7 @@ impl EzObject for Checkbox {
                          scheduler: &mut Scheduler) {
 
         let consumed = parser::load_common_parameters(
-            &parameter_name, parameter_value.clone(),Box::new(self), scheduler);
+            &parameter_name, parameter_value.clone(),self, scheduler);
         if consumed { return }
         match parameter_name.as_str() {
             "active" =>
@@ -68,12 +68,12 @@ impl EzObject for Checkbox {
 
     fn get_state(&self) -> EzState { EzState::Checkbox(self.state.clone()) }
 
-    fn get_state_mut(&mut self) -> Box<&mut dyn GenericState>{ Box::new(&mut self.state) }
+    fn get_state_mut(&mut self) -> &mut dyn GenericState{ &mut self.state }
 
     fn get_contents(&self, state_tree: &mut StateTree) -> PixelMap {
 
-        let state = state_tree.get_mut(&self.get_full_path())
-            .unwrap().as_checkbox_mut();
+        let state = state_tree.get_by_path_mut(&self.get_full_path())
+            .as_checkbox_mut();
         state.set_width(5);
         state.set_height(1);
         let active_symbol = { if state.active {self.active_symbol}
@@ -125,14 +125,11 @@ impl Checkbox {
                            widget_tree: &WidgetTree, callback_tree: &mut CallbackTree,
                            scheduler: &mut Scheduler) {
 
-        let state = state_tree.get_mut(&self.get_full_path())
-            .unwrap().as_checkbox_mut();
+        let state = state_tree.get_by_path_mut(&self.get_full_path())
+            .as_checkbox_mut();
         state.set_active(!state.get_active());
         state.update(scheduler);
-        if let Some(ref mut i) = callback_tree
-            .get_mut(&self.get_full_path()).unwrap().on_value_change {
-            i(common::definitions::EzContext::new(self.get_full_path().clone(), view_tree,
-                                     state_tree, widget_tree, scheduler));
-        }
+        self.on_value_change_callback(view_tree, state_tree, widget_tree, callback_tree,
+                                      scheduler);
     }
 }

@@ -2,8 +2,7 @@ use crate::scheduler::Scheduler;
 use crate::common::definitions::Coordinates;
 use crate::property::StringProperty;
 use crate::states::definitions::{StateCoordinates, SizeHint, PosHint, StateSize, AutoScale, Padding,
-                                 HorizontalAlignment, VerticalAlignment, BorderConfig, ColorConfig,
-                                 HorizontalPositionHint, VerticalPositionHint};
+                                 HorizontalAlignment, VerticalAlignment, BorderConfig, ColorConfig};
 use crate::states::state::GenericState;
 
 

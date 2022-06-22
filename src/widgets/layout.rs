@@ -1,8 +1,7 @@
 //! # Layout
 //! Module implementing the Layout struct.
 use std::collections::HashMap;
-use std::io::Error;
-use crossterm::event::{Event, KeyCode, MouseEventKind};
+use crossterm::event::{Event, KeyCode};
 use crate::parser;
 use crate::common;
 use crate::common::definitions::{CallbackTree, EzContext, PixelMap, StateTree, ViewTree, WidgetTree,
@@ -11,7 +10,8 @@ use crate::widgets::widget::{Pixel, EzObject, EzObjects};
 use crate::states::layout_state::LayoutState;
 use crate::states::state::{EzState, GenericState};
 use crate::scheduler::Scheduler;
-use crate::states::definitions::{AutoScale, CallbackConfig, ColorConfig, LayoutMode, StateSize, SizeHint, LayoutOrientation, ScrollingConfig};
+use crate::states::definitions::{AutoScale, CallbackConfig, ColorConfig, LayoutMode, StateSize,
+                                 SizeHint, LayoutOrientation, ScrollingConfig};
 use crate::widgets::button::Button;
 
 
@@ -56,7 +56,7 @@ impl EzObject for Layout {
                          scheduler: &mut Scheduler) {
 
         let consumed = parser::load_common_parameters(
-            &parameter_name, parameter_value.clone(),Box::new(self), scheduler);
+            &parameter_name, parameter_value.clone(),self, scheduler);
         if consumed { return }
         match parameter_name.as_str() {
             "mode" => {
@@ -101,14 +101,14 @@ impl EzObject for Layout {
 
     fn get_state(&self) -> EzState { EzState::Layout(self.state.clone()) }
 
-    fn get_state_mut(&mut self) -> Box<&mut dyn GenericState>{ Box::new(&mut self.state) }
+    fn get_state_mut(&mut self) -> &mut dyn GenericState { &mut self.state }
 
     fn get_contents(&self, state_tree: &mut StateTree) -> PixelMap {
 
         let mut merged_content = PixelMap::new();
-        let mode = state_tree.get(&self.path).unwrap().as_layout().mode.clone();
+        let mode = state_tree.get_by_path(&self.path).as_layout().mode.clone();
         let orientation =
-            state_tree.get(&self.path).unwrap().as_layout().orientation.clone();
+            state_tree.get_by_path(&self.path).as_layout().orientation.clone();
         match mode {
             LayoutMode::Box => {
                 match orientation {
@@ -139,7 +139,7 @@ impl EzObject for Layout {
         merged_content = self.add_empty_filler(state_tree, merged_content);
         merged_content = self.create_horizontal_scroll_box(state_tree, merged_content);
         merged_content = self.create_vertical_scroll_box(state_tree, merged_content);
-        let state = state_tree.get(&self.get_full_path()).unwrap().as_layout();
+        let state = state_tree.get_by_path(&self.get_full_path()).as_layout();
 
         if merged_content.is_empty() { return merged_content } // Empty widget
         // Put border around content if border if set
@@ -161,8 +161,8 @@ impl EzObject for Layout {
                     _widget_tree: &WidgetTree, _callback_tree: &mut CallbackTree,
                     scheduler: &mut Scheduler) -> bool {
 
-        let state = state_tree.get_mut(&self.get_full_path())
-            .unwrap().as_layout_mut();
+        let state = state_tree.get_by_path_mut(&self.get_full_path())
+            .as_layout_mut();
         if let Event::Key(key) = event {
             if key.code == KeyCode::PageUp {
                 self.handle_scroll_up(state_tree, scheduler);
@@ -189,34 +189,10 @@ impl EzObject for Layout {
         false
     }
 
-    fn on_scroll_up(&self, view_tree: &mut ViewTree, state_tree: &mut StateTree,
-                    widget_tree: &WidgetTree, callback_tree: &mut CallbackTree,
-                    scheduler: &mut Scheduler) -> bool {
-
-        let state = state_tree.get_mut(&self.path).unwrap().as_layout_mut();
-        if state.scrolling_config.is_scrolling_y || state.scrolling_config.is_scrolling_x {
-            self.handle_scroll_up(state_tree, scheduler);
-            return true
-        }
-        return false
-    }
-
-    fn on_scroll_down(&self, view_tree: &mut ViewTree, state_tree: &mut StateTree,
-                      widget_tree: &WidgetTree, callback_tree: &mut CallbackTree,
-                      scheduler: &mut Scheduler) -> bool {
-
-        let state = state_tree.get_mut(&self.path).unwrap().as_layout_mut();
-        if state.scrolling_config.is_scrolling_y || state.scrolling_config.is_scrolling_x {
-            self.handle_scroll_down(state_tree, scheduler);
-            return true
-        }
-        false
-    }
-
     fn on_keyboard_enter(&self, _view_tree: &mut ViewTree, state_tree: &mut StateTree,
                          _widget_tree: &WidgetTree, _callback_tree: &mut CallbackTree,
                          scheduler: &mut Scheduler) -> bool {
-        let state = state_tree.get_mut(&self.path).unwrap().as_layout_mut();
+        let state = state_tree.get_by_path_mut(&self.path).as_layout_mut();
         if !state.selected_tab_header.is_empty() {
             state.set_active_tab(state.get_selected_tab_header()
                 .strip_suffix("_tab_header").unwrap().to_string());
@@ -230,7 +206,7 @@ impl EzObject for Layout {
                            _widget_tree: &WidgetTree, _callback_tree: &mut CallbackTree,
                            scheduler: &mut Scheduler, mouse_pos: Coordinates) -> bool {
 
-        let state = state_tree.get_mut(&self.path).unwrap().as_layout_mut();
+        let state = state_tree.get_by_path_mut(&self.path).as_layout_mut();
 
         if state.scrolling_config.is_scrolling_x &&
             mouse_pos.y == state.get_effective_size().height + 1 {
@@ -269,13 +245,37 @@ impl EzObject for Layout {
         false
     }
 
+    fn on_scroll_up(&self, _view_tree: &mut ViewTree, state_tree: &mut StateTree,
+                    _widget_tree: &WidgetTree, _callback_tree: &mut CallbackTree,
+                    scheduler: &mut Scheduler) -> bool {
+
+        let state = state_tree.get_by_path_mut(&self.path).as_layout_mut();
+        if state.scrolling_config.is_scrolling_y || state.scrolling_config.is_scrolling_x {
+            self.handle_scroll_up(state_tree, scheduler);
+            return true
+        }
+        false
+    }
+
+    fn on_scroll_down(&self, _view_tree: &mut ViewTree, state_tree: &mut StateTree,
+                      _widget_tree: &WidgetTree, _callback_tree: &mut CallbackTree,
+                      scheduler: &mut Scheduler) -> bool {
+
+        let state = state_tree.get_by_path_mut(&self.path).as_layout_mut();
+        if state.scrolling_config.is_scrolling_y || state.scrolling_config.is_scrolling_x {
+            self.handle_scroll_down(state_tree, scheduler);
+            return true
+        }
+        false
+    }
+
     fn on_select(&self, _view_tree: &mut ViewTree, state_tree: &mut StateTree,
                  _widget_tree: &WidgetTree, _callback_tree: &mut CallbackTree,
                  scheduler: &mut Scheduler, _mouse_pos: Option<Coordinates>) -> bool {
 
         for child in self.children.iter() {
             if let EzObjects::Button(i) = child {
-                let state = state_tree.get_mut(&self.path).unwrap().as_layout_mut();
+                let state = state_tree.get_by_path_mut(&self.path).as_layout_mut();
                 state.selected_tab_header = i.path.clone();
                 state.update(scheduler);
                 return true
@@ -288,7 +288,7 @@ impl EzObject for Layout {
                  _widget_tree: &WidgetTree, _callback_tree: &mut CallbackTree,
                  scheduler: &mut Scheduler) -> bool {
 
-        let state = state_tree.get_mut(&self.path).unwrap().as_layout_mut();
+        let state = state_tree.get_by_path_mut(&self.path).as_layout_mut();
         state.selected_tab_header.clear();
         state.update(scheduler);
         true
@@ -309,7 +309,7 @@ impl Layout {
     /// Scale size down to the size of the actual content of the layout.
     fn auto_scale_to_content(&self, state_tree: &mut StateTree, contents: PixelMap) -> PixelMap {
 
-        let state = state_tree.get_mut(&self.get_full_path()).unwrap()
+        let state = state_tree.get_by_path_mut(&self.get_full_path())
             .as_layout_mut();
         // If user wants to autoscale width we set width to length of content
         if state.get_auto_scale().width {
@@ -333,17 +333,17 @@ impl Layout {
     /// overlap all content.
     fn get_modal_contents(&self, state_tree: &mut StateTree, mut contents: PixelMap) -> PixelMap {
 
-        if state_tree.get(&self.get_full_path()).unwrap().as_layout().get_modals().is_empty() {
+        if state_tree.get_by_path(&self.get_full_path()).as_layout().get_modals().is_empty() {
             return contents
         }
 
         // Size modal
-        let parent_size = state_tree.get(&self.get_full_path()).unwrap().as_layout()
+        let parent_size = state_tree.get_by_path(&self.get_full_path()).as_layout()
             .get_size().clone();
-        let modal = state_tree.get(&self.get_full_path()).unwrap().as_layout()
+        let modal = state_tree.get_by_path(&self.get_full_path()).as_layout()
             .get_modals().first().unwrap().clone();
         let state = state_tree
-            .get_mut(&modal.as_ez_object().get_full_path()).unwrap();
+            .get_by_path_mut(&modal.as_ez_object().get_full_path());
         common::widget_functions::resize_with_size_hint(state, parent_size.width.value,
                                                         parent_size.height.value);
         common::widget_functions::reposition_with_pos_hint(
@@ -365,9 +365,9 @@ impl Layout {
 
         // Overwrite own content with modal (modal is always on top)
         let state = state_tree
-            .get_mut(&state_tree.get(&self.get_full_path()).unwrap().as_layout()
+            .get_by_path_mut(&state_tree.get_by_path(&self.get_full_path()).as_layout()
             .get_modals().first().unwrap().as_ez_object()
-            .get_full_path()).unwrap().as_generic();
+            .get_full_path()).as_generic();
         let start_pos = state.get_position();
         for x in 0..modal_content.len() {
             for y in 0..modal_content[x].len() {
@@ -387,7 +387,7 @@ impl Layout {
     /// childs' [width] and [height].
     fn get_float_mode_contents(&self, mut content: PixelMap, state_tree: &mut StateTree)
         -> PixelMap {
-        let own_state = state_tree.get(&self.get_full_path()).unwrap().as_layout();
+        let own_state = state_tree.get_by_path(&self.get_full_path()).as_layout();
         let own_height = own_state.get_effective_size().height;
         let own_width = own_state.get_effective_size().width;
 
@@ -413,8 +413,8 @@ impl Layout {
             if content.is_empty() { return content }  // No space left in widget
 
             let generic_child = child.as_ez_object();
-            let state = state_tree.get_mut(
-                &generic_child.get_full_path()).unwrap().as_generic_mut();
+            let state = state_tree.get_by_path_mut(
+                &generic_child.get_full_path()).as_generic_mut();
 
             // If autoscaling is enabled set child size to max width. It is then expected to scale
             // itself according to its' content
@@ -434,8 +434,8 @@ impl Layout {
             }
 
             let child_content = generic_child.get_contents(state_tree);
-            let state = state_tree.get_mut(
-                &generic_child.get_full_path()).unwrap().as_generic_mut(); // re-borrow
+            let state = state_tree.get_by_path_mut(
+                &generic_child.get_full_path()).as_generic_mut(); // re-borrow
             common::widget_functions::reposition_with_pos_hint(
                 own_width, own_height,state);
             let child_pos = state.get_position();
@@ -455,8 +455,8 @@ impl Layout {
     /// Set the sizes of children that use size_hint(s) using own proportions.
     pub fn set_child_sizes(&self, state_tree: &mut StateTree) {
 
-        let own_state = state_tree.get_mut(&self.get_full_path())
-            .unwrap().as_layout();
+        let own_state = state_tree.get_by_path_mut(&self.get_full_path())
+            .as_layout();
         let own_width = own_state.get_effective_size().width;
         let own_height = own_state.get_effective_size().height;
 
@@ -471,16 +471,16 @@ impl Layout {
             if all_default_size_hint_x {
                 for child in self.get_children() {
                     let generic_child = child.as_ez_object();
-                    let state = state_tree.get_mut(&generic_child.get_full_path())
-                        .unwrap().as_generic_mut();
+                    let state = state_tree.get_by_path_mut(&generic_child.get_full_path())
+                        .as_generic_mut();
                     state.set_size_hint_x(Some(1.0 / (self.children.len() as f64)));
                 }
             }
             if all_default_size_hint_y {
                 for child in self.get_children() {
                     let generic_child = child.as_ez_object();
-                    let state = state_tree.get_mut(&generic_child.get_full_path())
-                        .unwrap().as_generic_mut();
+                    let state = state_tree.get_by_path_mut(&generic_child.get_full_path())
+                        .as_generic_mut();
                     state.set_size_hint_y(Some(1.0 / (self.children.len() as f64)));
                 }
             }
@@ -488,8 +488,7 @@ impl Layout {
         // Now calculate actual sizes.
         for child in self.get_children() {
             let generic_child = child.as_ez_object();
-            let state = state_tree.get_mut(&generic_child.get_full_path())
-                .unwrap();
+            let state = state_tree.get_by_path_mut(&generic_child.get_full_path());
             common::widget_functions::resize_with_size_hint(
                 state, own_width, own_height);
         }
@@ -506,15 +505,15 @@ impl Layout {
 
         let mut all_default_size_hint_x = true;
         let mut all_default_size_hint_y = true;
-        let own_orientation = state_tree.get(&self.path).unwrap()
+        let own_orientation = state_tree.get_by_path(&self.path)
             .as_layout().orientation.clone();
         for child in self.get_children() {
             if !all_default_size_hint_x && !all_default_size_hint_y {
                 break
             }
             let generic_child = child.as_ez_object();
-            let state = state_tree.get(&generic_child.get_full_path())
-                .unwrap().as_generic();
+            let state = state_tree
+                .get_by_path(&generic_child.get_full_path()).as_generic();
             if let LayoutOrientation::Horizontal = own_orientation {
                 if let Some(size_hint_x) = state.get_size_hint().x
                 {
@@ -549,16 +548,16 @@ impl Layout {
     /// [absolute_position] for all children. Use on root layout to propagate all absolute positions.
     pub fn propagate_absolute_positions(&self, state_tree: &mut StateTree) {
 
-        let absolute_position = state_tree.get(&self.path).unwrap().as_generic()
+        let absolute_position = state_tree.get_by_path(&self.path).as_generic()
             .get_effective_absolute_position();
-        let size = state_tree.get(&self.path).unwrap().as_layout()
+        let size = state_tree.get_by_path(&self.path).as_layout()
             .get_size().clone();
-        let scrolling = state_tree.get(&self.path).unwrap().as_layout()
+        let scrolling = state_tree.get_by_path(&self.path).as_layout()
             .get_scrolling_config().clone();
         for child in self.get_children() {
             if let EzObjects::Layout(i) = child {
                 let child_state =
-                    state_tree.get_mut(&i.get_full_path()).unwrap().as_generic_mut();
+                    state_tree.get_by_path_mut(&i.get_full_path()).as_generic_mut();
                 let pos = child_state.get_position();
                 let mut new_absolute_position = Coordinates::new(
                     absolute_position.x + pos.x.get(), absolute_position.y + pos.y.get());
@@ -567,8 +566,8 @@ impl Layout {
                 child_state.set_absolute_position(new_absolute_position);
                 i.propagate_absolute_positions(state_tree);
             } else {
-                let child_state = state_tree.get_mut(
-                    &child.as_ez_object().get_full_path()).unwrap().as_generic_mut();
+                let child_state = state_tree.get_by_path_mut(
+                    &child.as_ez_object().get_full_path()).as_generic_mut();
                 let pos = child_state.get_position();
                 let mut new_absolute_position = Coordinates::new(
                     absolute_position.x + pos.x.get(), absolute_position.y + pos.y.get());
@@ -622,7 +621,7 @@ impl Layout {
     pub fn add_child(&mut self, mut child: EzObjects, scheduler: &mut Scheduler) {
 
         let generic_child = child.as_ez_object_mut();
-        let id = generic_child.get_id().clone();
+        let id = generic_child.get_id();
         let path = generic_child.get_full_path().clone();
         let parent_path = self.path.clone();
         if self.child_lookup.contains_key(&id) {
@@ -630,28 +629,27 @@ impl Layout {
                     generic_child.get_id());
         }
 
-        self.child_lookup.insert(generic_child.get_id().clone(), self.children.len());
+        self.child_lookup.insert(generic_child.get_id(), self.children.len());
         self.children.push(child.clone());
 
         if self.state.mode == LayoutMode::Tabbed {
             if let EzObjects::Layout(_) = child.clone() {
-                let new_id = format!("{}_tab_header", id.clone());
-                let new_path = format!("{}/{}", parent_path, new_id.clone());
+                let new_id = format!("{}_tab_header", id);
+                let new_path = format!("{}/{}", parent_path, new_id);
                 let mut tab_header = Button::new(new_id, new_path, scheduler);
                 tab_header.state.size_hint = SizeHint::new(None, None);
                 tab_header.state.text.set(id);
 
                 let tab_on_click = move |context: EzContext| {
-                    let state = context.state_tree
-                        .get_mut(&parent_path)
-                        .unwrap().as_layout_mut();
+                    let state= context.state_tree
+                        .get_by_path_mut(&parent_path).as_layout_mut();
                     state.set_active_tab(path.clone());
                     state.update(context.scheduler);
                     true
                 };
                 let callback_config = CallbackConfig::from_on_press(
                     Box::new(tab_on_click));
-                scheduler.set_callback_config(tab_header.path.clone(), callback_config);
+                scheduler.set_callback_config(tab_header.path.as_str(), callback_config);
                 self.add_child(EzObjects::Button(tab_header), scheduler);
             }
         }
@@ -660,7 +658,7 @@ impl Layout {
     /// Get an EzWidget trait object for each child [EzWidget] and return it in a
     /// <[path], [EzObject]> HashMap.
     pub fn get_widget_tree(&self) -> WidgetTree {
-        let mut widget_tree = WidgetTree::new();
+        let mut widget_tree = WidgetTree::new("widget_tree".to_string());
         for (child_path, child) in self.get_widgets_recursive() {
             widget_tree.insert(child_path, child);
         }
@@ -749,7 +747,7 @@ impl Layout {
 
     /// Fill any empty positions with [Pixel] from [get_filler]
     pub fn add_user_filler(&self, state_tree: &mut StateTree, mut contents: PixelMap) -> PixelMap {
-        let state = state_tree.get_mut(&self.get_full_path()).unwrap()
+        let state = state_tree.get_by_path_mut(&self.get_full_path())
             .as_layout_mut();
         if !state.fill { return contents }
 
@@ -759,7 +757,7 @@ impl Layout {
 
         for x in 0..(state.get_effective_size().width) {
             for y in contents[x].iter_mut() {
-                if y.symbol.is_empty() || y.symbol == " ".to_string() {
+                if y.symbol.is_empty() || y.symbol == " " {
                     y.symbol = filler.symbol.clone();
                 }
             }
@@ -781,7 +779,7 @@ impl Layout {
     /// the user did not define a custom filler.
     pub fn add_empty_filler(&self, state_tree: &mut StateTree, mut contents: PixelMap) -> PixelMap {
 
-        let state = state_tree.get_mut(&self.get_full_path()).unwrap()
+        let state = state_tree.get_by_path_mut(&self.get_full_path())
             .as_layout_mut();
         while contents.len() < state.get_effective_size().width {
             contents.push(Vec::new());
@@ -803,11 +801,11 @@ impl Layout {
 
     fn get_screen_mode_contents(&self, state_tree: &mut StateTree) -> PixelMap {
 
-        let mut active_screen = state_tree.get(&self.path).unwrap()
+        let mut active_screen = state_tree.get_by_path(&self.path)
             .as_layout().active_screen.clone();
         if active_screen.is_empty() && !self.children.is_empty() {
             active_screen = self.children.first().unwrap().as_layout().get_id();
-            state_tree.get_mut(&self.path).unwrap().as_layout_mut().active_screen =
+            state_tree.get_by_path_mut(&self.path).as_layout_mut().active_screen =
                 active_screen.clone();
         }
         self.get_child(&active_screen).as_layout().get_contents(state_tree)
@@ -824,13 +822,13 @@ impl Layout {
         for child in self.children.iter().rev() {
             if let EzObjects::Button(ref widget) = child {
                 if next_button {
-                    let state = state_tree.get_mut(&self.path)
-                        .unwrap().as_layout_mut();
+                    let state = state_tree.get_by_path_mut(&self.path)
+                        .as_layout_mut();
                     state.set_selected_tab_header(widget.path.clone());
                     state.update(scheduler);
                     return
                 } else if state_tree
-                    .get(&self.path).unwrap().as_layout().selected_tab_header ==
+                    .get_by_path(&self.path).as_layout().selected_tab_header ==
                     widget.path {
                     next_button = true;
                 }
@@ -844,13 +842,13 @@ impl Layout {
         for child in self.children.iter() {
             if let EzObjects::Button(ref widget) = child {
                 if next_button {
-                    let state = state_tree.get_mut(&self.path)
-                        .unwrap().as_layout_mut();
+                    let state = state_tree.get_by_path_mut(&self.path)
+                        .as_layout_mut();
                     state.set_selected_tab_header(widget.path.clone());
                     state.update(scheduler);
                     return
                 } else if state_tree
-                    .get(&self.path).unwrap().as_layout().selected_tab_header ==
+                    .get_by_path(&self.path).as_layout().selected_tab_header ==
                     widget.path {
                     next_button = true;
                 }
@@ -861,7 +859,7 @@ impl Layout {
     fn get_tabbed_mode_contents(&self, state_tree: &mut StateTree) -> PixelMap {
 
         if self.children.is_empty() { return PixelMap::new() }
-        let state = state_tree.get_mut(&self.path).unwrap().as_layout_mut();
+        let state = state_tree.get_by_path_mut(&self.path).as_layout_mut();
         let own_size = state.get_size().clone();
         let own_effective_size = state.get_effective_size();
         let own_pos = state.get_effective_absolute_position();
@@ -881,20 +879,19 @@ impl Layout {
             if let EzObjects::Layout(i) = child {
                 if i.get_full_path() != active_tab { continue }
                 let child_state = state_tree
-                    .get_mut(&child.as_ez_object().get_full_path()).unwrap().as_generic_mut();
+                    .get_by_path_mut(&child.as_ez_object().get_full_path()).as_generic_mut();
                 child_state.set_effective_height(
                     if own_effective_size.height >= 3 { own_effective_size.height - 3} else {0});
                 child_state.set_effective_width(
                     if own_effective_size.width >= 1 { own_effective_size.width - 1} else {0});
                 child_state.get_position_mut().x.set(0);
                 child_state.get_position_mut().y.set(3);
-                child_state.set_absolute_position(Coordinates::new(
-                    own_pos.x, own_pos.y + 3));
+                child_state.set_absolute_position(Coordinates::new(own_pos.x, own_pos.y + 3));
                 tab_content = i.get_contents(state_tree);
             } else if let EzObjects::Button(i) = child {
 
-                let child_state = state_tree
-                    .get_mut(&i.path).unwrap().as_button_mut();
+                let child_state=
+                    state_tree.get_by_path_mut(&i.path).as_button_mut();
 
                 child_state.colors.foreground =
                     if selection == i.path { own_colors.selection_foreground }
@@ -907,19 +904,13 @@ impl Layout {
                         own_colors.active_background
                     } else { own_colors.tab_background };
 
-                child_state.set_size_hint(SizeHint::new(None, None));
                 child_state.set_auto_scale(AutoScale::new(true, true));
-                child_state.set_effective_width(own_effective_size.width);
-                child_state.set_effective_height(1);
                 child_state.set_x(pos_x);
                 child_state.set_y(0);
                 let content = i.get_contents(state_tree);
                 let child_state = state_tree
-                    .get_mut(&child.as_ez_object().get_full_path()).unwrap().as_button_mut();
-                let new_width = child_state.text.value.len() + 2;
-                child_state.get_size_mut().width.set(new_width);
-                child_state.get_size_mut().height.set(3);
-                let mut custom_size = own_effective_size.clone();
+                    .get_by_path_mut(&i.path).as_button_mut();
+                let mut custom_size = own_effective_size;
                 custom_size.width -= 1;
                 custom_size.height = 3;
                 button_content = self.merge_horizontal_contents(
@@ -959,7 +950,7 @@ impl Layout {
             for child in self.children.iter() {
                 if let EzObjects::Button(button) = child {
                     let state = state_tree
-                        .get_mut(&button.path).unwrap().as_button_mut();
+                        .get_by_path_mut(&button.path).as_button_mut();
                     state.set_x(if state.get_position().x.get() >= difference
                     { state.get_position().x.get() - difference } else { 0 });
                     state.set_absolute_position(Coordinates::new(
@@ -977,12 +968,12 @@ impl Layout {
             button_content.push(row);
         }
 
-        let state = state_tree.get_mut(&self.path).unwrap().as_layout_mut();
+        let state = state_tree.get_by_path_mut(&self.path).as_layout_mut();
         self.merge_vertical_contents(
             button_content,
             tab_content,
             own_effective_size.width, own_size.infinite_width,
-            own_colors.clone(), state)
+            own_colors, state)
     }
 }
 
@@ -994,10 +985,9 @@ impl Layout {
     /// own [height] for each.
     fn get_box_mode_horizontal_orientation_contents(&self, state_tree: &mut StateTree) -> PixelMap {
 
-        let state = state_tree.get_mut(&self.get_full_path()).unwrap().as_layout();
+        let state = state_tree.get_by_path_mut(&self.get_full_path()).as_layout();
         let own_effective_size = state.get_effective_size();
         let own_size = state.get_size().clone();
-        let own_scaling = state.get_auto_scale().clone();
         let own_colors = state.get_color_config().clone();
         let own_scrolling = state.get_scrolling_config().clone();
 
@@ -1007,7 +997,7 @@ impl Layout {
 
             let generic_child = child.as_ez_object();
             let state = state_tree
-                .get_mut(&generic_child.get_full_path().clone()).unwrap().as_generic_mut();
+                .get_by_path_mut(&generic_child.get_full_path().clone()).as_generic_mut();
 
             if own_size.infinite_width || own_scrolling.enable_x {
                 state.get_size_mut().infinite_width = true;
@@ -1043,8 +1033,8 @@ impl Layout {
             state.set_y(position.y);
             let child_content = generic_child.get_contents(state_tree);
             if child_content.is_empty() { continue }  // handle empty widget
-            let state = state_tree.get_mut(&generic_child.get_full_path())
-                .unwrap().as_generic_mut(); // re-borrow
+            let state = state_tree.get_by_path_mut(&generic_child.get_full_path())
+                .as_generic_mut(); // re-borrow
             if state.get_size().infinite_width {
                 state.get_size_mut().width.set(child_content.len())
             }
@@ -1055,28 +1045,36 @@ impl Layout {
             position.x += child_content.len();
             content_list.push(child_content);
         }
-        if own_scaling.width {
-            state_tree.get_mut(&self.path).unwrap().as_layout_mut().set_effective_width(
-                content_list.iter().map(|x| x.len()).max().unwrap());
-        }
-        if own_scaling.height {
-            state_tree.get_mut(&self.path).unwrap().as_layout_mut().set_effective_height(
-                content_list.iter().map(
-                    |child| child.iter().map(|x| x.len()).max().unwrap())
-                    .max().unwrap());
-        }
-        let own_effective_size = state_tree.get_mut(&self.get_full_path())
-            .unwrap().as_layout().get_effective_size();
+
+        self.scale_self_to_largest_child(&content_list, state_tree);
+        let own_effective_size = state_tree.get_by_path_mut(&self.get_full_path())
+            .as_layout().get_effective_size();
         let mut merged_content = PixelMap::new();
         for (i, content) in content_list.into_iter().enumerate() {
             merged_content = self.merge_horizontal_contents(
                 merged_content, content,
                 own_effective_size.height, own_size.infinite_height,
                 own_colors.clone(),
-                state_tree.get_mut(&self.children.get(i).unwrap().as_ez_object()
-                    .get_full_path()).unwrap().as_generic_mut());
+                state_tree.get_by_path_mut(
+                    &self.children.get(i).unwrap().as_ez_object()
+                    .get_full_path()).as_generic_mut());
         }
         merged_content
+    }
+
+    fn scale_self_to_largest_child(&self, content_list: &[PixelMap], state_tree: &mut StateTree){
+
+        let state = state_tree.get_by_path_mut(&self.path).as_layout_mut();
+        if state.auto_scale.width {
+            state.set_effective_width(
+                content_list.iter().map(|x| x.len()).max().unwrap());
+        }
+        if state.auto_scale.height {
+            state.set_effective_height(
+                content_list.iter().map(
+                    |child| child.iter().map(|x| x.len()).max().unwrap())
+                    .max().unwrap());
+        }
     }
 
     /// Used by [get_contents] when the [LayoutMode] is set to [Box] and [LayoutOrientation] is
@@ -1085,10 +1083,9 @@ impl Layout {
 
         // Some clones as we will need to borrow from state tree again later
 
-        let state = state_tree.get_mut(&self.get_full_path()).unwrap().as_layout();
+        let state = state_tree.get_by_path_mut(&self.get_full_path()).as_layout();
         let own_effective_size = state.get_effective_size();
         let own_size = state.get_size().clone();
-        let own_scaling = state.get_auto_scale().clone();
         let own_colors = state.get_color_config().clone();
         let own_scrolling = state.get_scrolling_config().clone();
 
@@ -1098,7 +1095,7 @@ impl Layout {
 
             let generic_child = child.as_ez_object();
             let child_state =
-                state_tree.get_mut(&generic_child.get_full_path()).unwrap().as_generic_mut();
+                state_tree.get_by_path_mut(&generic_child.get_full_path()).as_generic_mut();
 
             // If we're scrolling on an axis then the child can be infinite size on that axis
             if own_size.infinite_width || own_scrolling.enable_x {
@@ -1138,8 +1135,8 @@ impl Layout {
             child_state.set_x(position.x);
             child_state.set_y(position.y);
             let child_content = generic_child.get_contents(state_tree);
-            let state = state_tree.get_mut(&generic_child.get_full_path())
-                .unwrap().as_generic_mut(); // re-borrow
+            let state = state_tree.get_by_path_mut(&generic_child.get_full_path())
+                .as_generic_mut(); // re-borrow
             if state.get_size().infinite_width {
                 state.get_size_mut().width.set(child_content.len())
             }
@@ -1149,26 +1146,18 @@ impl Layout {
             position.y += if !child_content.is_empty() {child_content[0].len()} else {0};
             content_list.push(child_content);
         }
-        if own_scaling.width {
-            state_tree.get_mut(&self.path).unwrap().as_layout_mut().set_effective_width(
-                content_list.iter().map(|child| child.len()).max().unwrap());
-        }
-        if own_scaling.height {
-            state_tree.get_mut(&self.path).unwrap().as_layout_mut().set_effective_height(
-                content_list.iter().map(
-                    |child| child.iter().map(|x| x.len()).max().unwrap())
-                    .max().unwrap());
-        }
-        let own_effective_size = state_tree.get_mut(&self.get_full_path())
-            .unwrap().as_layout().get_effective_size();
+        self.scale_self_to_largest_child(&content_list, state_tree);
+        let own_effective_size = state_tree.get_by_path_mut(&self.get_full_path())
+            .as_layout().get_effective_size();
         let mut merged_content = PixelMap::new();
         for (i, content) in content_list.into_iter().enumerate() {
             merged_content = self.merge_vertical_contents(
                 merged_content, content,
                 own_effective_size.width, own_size.infinite_width,
                 own_colors.clone(),
-                state_tree.get_mut(&self.children.get(i).unwrap().as_ez_object()
-                    .get_full_path()).unwrap().as_generic_mut());
+                state_tree.get_by_path_mut(
+                    &self.children.get(i).unwrap().as_ez_object()
+                    .get_full_path()).as_generic_mut());
         }
         merged_content
     }
@@ -1241,7 +1230,7 @@ impl Layout {
     /// Handle command by user to scroll down by increasing the scroll_view of y
     fn handle_scroll_down(&self, state_tree: &mut StateTree, scheduler: &mut Scheduler) {
 
-        let state = state_tree.get_mut(&self.path).unwrap().as_layout_mut();
+        let state = state_tree.get_by_path_mut(&self.path).as_layout_mut();
         if !state.get_scrolling_config().enable_y { return }
         let scroll_chunk = (state.get_effective_size().height as f32 * 0.75) as usize;
         let new_view_start;
@@ -1263,7 +1252,7 @@ impl Layout {
     /// Handle command by user to scroll down by decreasing the scroll_view of y
     fn handle_scroll_up(&self, state_tree: &mut StateTree, scheduler: &mut Scheduler) {
 
-        let state = state_tree.get_mut(&self.path).unwrap().as_layout_mut();
+        let state = state_tree.get_by_path_mut(&self.path).as_layout_mut();
         if !state.get_scrolling_config().enable_y { return }
         let scroll_chunk = (state.get_effective_size().height as f32 * 0.75) as usize;
         let new_view_start;
@@ -1283,7 +1272,7 @@ impl Layout {
     /// Handle command by user to scroll down by increasing the scroll_view of x
     fn handle_scroll_right(&self, state_tree: &mut StateTree, scheduler: &mut Scheduler) {
 
-        let state = state_tree.get_mut(&self.path).unwrap().as_layout_mut();
+        let state = state_tree.get_by_path_mut(&self.path).as_layout_mut();
         if !state.get_scrolling_config().enable_x { return }
         let scroll_chunk = (state.get_effective_size().width as f32 * 0.75) as usize;
         let new_view_start;
@@ -1304,7 +1293,7 @@ impl Layout {
     /// Handle command by user to scroll down by decreasing the scroll_view of x
     fn handle_scroll_left(&self, state_tree: &mut StateTree, scheduler: &mut Scheduler) {
 
-        let state = state_tree.get_mut(&self.path).unwrap().as_layout_mut();
+        let state = state_tree.get_by_path_mut(&self.path).as_layout_mut();
         if !state.get_scrolling_config().enable_x { return }
         let scroll_chunk = (state.get_effective_size().width as f32 * 0.75) as usize;
         let new_view_start;
@@ -1325,7 +1314,7 @@ impl Layout {
     fn create_horizontal_scroll_box(&self, state_tree: &mut StateTree, contents: PixelMap)
                                     -> PixelMap {
 
-        let state = state_tree.get_mut(&self.get_full_path()).unwrap()
+        let state = state_tree.get_by_path_mut(&self.get_full_path())
             .as_layout_mut();
         if !state.scrolling_config.enable_x || contents.len() <= state.get_effective_size().width {
             state.scrolling_config.is_scrolling_x = false;
@@ -1349,7 +1338,7 @@ impl Layout {
     fn create_vertical_scroll_box(&self, state_tree: &mut StateTree, contents: PixelMap)
         -> PixelMap {
 
-        let state = state_tree.get_mut(&self.get_full_path()).unwrap()
+        let state = state_tree.get_by_path_mut(&self.get_full_path())
             .as_layout_mut();
         if !state.scrolling_config.enable_y ||
             contents[0].len() <= state.get_effective_size().height {
@@ -1375,7 +1364,7 @@ impl Layout {
     fn create_horizontal_scrollbar(
         &self, state_tree: &mut StateTree, mut contents: PixelMap) -> PixelMap {
 
-        let state = state_tree.get(&self.get_full_path()).unwrap().as_layout();
+        let state = state_tree.get_by_path(&self.get_full_path()).as_layout();
         let (fg_color, _) = state.get_context_colors();
         let bg_color = state.get_color_config().background;
 
@@ -1398,7 +1387,7 @@ impl Layout {
         &self, state_tree: &mut StateTree, mut contents: PixelMap) -> PixelMap {
 
         let mut scrollbar = Vec::new();
-        let state = state_tree.get(&self.get_full_path()).unwrap().as_layout();
+        let state = state_tree.get_by_path(&self.get_full_path()).as_layout();
         let (fg_color, _) = state.get_context_colors();
         let bg_color = state.get_color_config().background;
 
