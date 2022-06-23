@@ -20,22 +20,29 @@ require much study.
 Dividing the screen in four text labels, should be as simple as:
 ```
 
-- Layout: my_horizontal_box
+- Layout: 
+    id: my_horizontal_box
     mode: box
     orientation: horizontal
-    - Layout: my_vertical_box_left
+    - Layout: 
+        id: my_vertical_box_left
         mode: box
         orientation: vertical
-        - Label: my_upper_left_label
+        - Label: 
+            id: my_upper_left_label
             text: hello
-        - Label: my_lower_left_label
+        - Label: 
+            id: my_lower_left_label
             text: hello
-    - Layout: my_vertical_box_right
+    - Layout: 
+        id: my_vertical_box_right
         mode: box
         orientation: vertical
-        - Label: my_upper_right_label
+        - Label: 
+            id: my_upper_right_label
             text: hello
-        - Label: my_lower_right_label
+        - Label: 
+            id: my_lower_right_label
             text: hello
 ```
 ![img_1.png](img_1.png)
@@ -87,9 +94,11 @@ example of binding the height of one widget to another:
   id: parent_layout
   - Label:
     id: label_1
+    size_hint_y: None
     height: 5
   - Label:  
     id: label_2
+    size_hint_y: None
     height: parent.label_1.height
 ```
 
@@ -129,6 +138,9 @@ let start_app =
 scheduler.update_callback_config("progress_button",
     ez_term::CallbackConfig::from_on_press(
         Box::new(start_app)));
+        
+// Done, now we start the UI
+ez_term::run(root_widget, scheduler);
 ```
 
 If this seems useful to you please let me know or star the repo, so I can gauge interest.
