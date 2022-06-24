@@ -12,7 +12,8 @@ use crate::common;
 use crate::common::definitions::{CallbackTree, EzContext, PixelMap, StateTree, ViewTree, WidgetTree};
 use crate::scheduler::Scheduler;
 use crate::common::definitions::Coordinates;
-use crate::parser::load_ez_string_property;
+use crate::parser::load_widget_properties::load_common_property;
+use crate::parser::load_base_properties::load_ez_string_property;
 use crate::property::EzValues;
 
 #[derive(Clone, Debug)]
@@ -45,7 +46,7 @@ impl EzObject for TextInput {
     fn load_ez_parameter(&mut self, parameter_name: String, parameter_value: String,
                          scheduler: &mut Scheduler) {
 
-        let consumed = parser::load_common_property(
+        let consumed = load_common_property(
             &parameter_name, parameter_value.clone(),self, scheduler);
         if consumed { return }
         match parameter_name.as_str() {

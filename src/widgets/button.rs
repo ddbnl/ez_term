@@ -6,8 +6,8 @@ use crate::states::button_state::ButtonState;
 use crate::common;
 use crate::common::definitions::{CallbackTree, PixelMap, StateTree, ViewTree, WidgetTree};
 use crate::widgets::widget::{Pixel, EzObject};
-use crate::parser;
-use crate::parser::load_ez_string_property;
+use crate::parser::load_widget_properties::load_common_property;
+use crate::parser::load_base_properties::load_ez_string_property;
 use crate::property::EzValues;
 use crate::scheduler::Scheduler;
 
@@ -41,7 +41,7 @@ impl EzObject for Button {
     fn load_ez_parameter(&mut self, parameter_name: String, parameter_value: String,
                          scheduler: &mut Scheduler) {
         
-        let consumed = parser::load_common_property(
+        let consumed = load_common_property(
             &parameter_name, parameter_value.clone(),self,
             scheduler);
         if consumed { return }

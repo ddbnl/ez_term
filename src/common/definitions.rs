@@ -5,8 +5,8 @@ use crate::{scheduler};
 use crate::widgets::widget::{Pixel, EzObjects};
 use crate::states::definitions::CallbackConfig;
 use crate::states::state::{EzState};
-use crate::parser::EzWidgetDefinition;
 use crate::property::{EzProperties, EzValues,};
+use crate::parser::widget_definition::EzWidgetDefinition;
 
 
 /// # Convenience types
