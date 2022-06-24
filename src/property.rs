@@ -132,6 +132,16 @@ impl EzProperties {
             else { panic!("Wrong property, expected StringProperty") }
     }
 
+    pub fn as_bool(&self) -> &EzProperty<bool> {
+        if let EzProperties::Bool(i) = self { i }
+        else { panic!("Wrong property, expected BoolProperty") }
+    }
+
+    pub fn as_bool_mut(&mut self) -> &mut EzProperty<bool> {
+        if let EzProperties::Bool(i) = self { i }
+        else { panic!("Wrong property, expected BoolProperty") }
+    }
+
     pub fn as_color(&self) -> &EzProperty<Color> {
         if let EzProperties::Color(i) = self { i }
         else { panic!("Wrong property, expected ColorProperty") }
@@ -184,18 +194,16 @@ impl EzProperties {
         else { panic!("Wrong property, expected VerticalPosHintProperty") }
     }
 
-    pub fn as_size_hint_property(&self) -> &EzProperty<Option<f64>> {
+    pub fn as_size_hint(&self) -> &EzProperty<Option<f64>> {
         if let EzProperties::SizeHint(i) = self { i }
         else { panic!("Wrong property, expected SizeHintProperty") }
     }
 
-    pub fn as_size_hint_property_mut(&mut self) -> &mut EzProperty<Option<f64>> {
+    pub fn as_size_hint_mut(&mut self) -> &mut EzProperty<Option<f64>> {
         if let EzProperties::SizeHint(i) = self { i }
         else { panic!("Wrong property, expected SizeHintProperty") }
     }
-
 }
-
 
 #[derive(Clone, Debug)]
 pub struct EzProperty<T> {

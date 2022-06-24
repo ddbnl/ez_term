@@ -66,7 +66,7 @@ impl CanvasState {
             auto_scale: AutoScale::new(false, false, path.clone(), scheduler),
             padding: Padding::new(0, 0, 0, 0, path.clone(), scheduler),
             border_config: BorderConfig::new(false, path.clone(), scheduler),
-             colors: ColorConfig::new(path.clone(), scheduler),
+            colors: ColorConfig::new(path.clone(), scheduler),
             halign: scheduler.new_horizontal_alignment_property(
                 format!("{}/halign", path), HorizontalAlignment::Left),
             valign: scheduler.new_vertical_alignment_property(
@@ -149,4 +149,20 @@ impl GenericState for CanvasState {
     fn get_selection_order(&self) -> &EzProperty<usize> { &self.selection_order }
 
     fn set_selection_order(&mut self, order: usize) { self.selection_order.set(order); }
+
+    fn clean_up_properties(&self, scheduler: &mut Scheduler) {
+
+        self.position.clean_up_properties(scheduler);
+        self.size.clean_up_properties(scheduler);
+        self.size_hint.clean_up_properties(scheduler);
+        self.pos_hint.clean_up_properties(scheduler);
+        self.auto_scale.clean_up_properties(scheduler);
+        self.padding.clean_up_properties(scheduler);
+        scheduler.clean_up_property(&self.halign.name);
+        scheduler.clean_up_property(&self.valign.name);
+        scheduler.clean_up_property(&self.disabled.name);
+        scheduler.clean_up_property(&self.selection_order.name);
+        self.border_config.clean_up_properties(scheduler);
+        self.colors.clean_up_properties(scheduler);
+    }
 }

@@ -160,8 +160,14 @@ impl Scheduler {
         }
     }
 
+    /// Gracefully exit the app.
     pub fn exit(&self) { run::stop(); }
 
+    /// Register a new property and return it. After a property has been registered it's possible
+    /// for widget properties to subscribed to it, meaning their values will be kept in sync. If
+    /// you want to bind a value in your app to a widget property, use this func to get a property
+    /// and pass it to your app. Then use property.set() to update it. Any widget properties bound
+    /// to the property will update automatically.
     pub fn new_usize_property(&mut self, name: String, value: usize) -> EzProperty<usize> {
 
         let (property, receiver) =
@@ -171,6 +177,11 @@ impl Scheduler {
         property
     }
 
+    /// Register a new property and return it. After a property has been registered it's possible
+    /// for widget properties to subscribed to it, meaning their values will be kept in sync. If
+    /// you want to bind a value in your app to a widget property, use this func to get a property
+    /// and pass it to your app. Then use property.set() to update it. Any widget properties bound
+    /// to the property will update automatically.
     pub fn new_string_property(&mut self, name: String, value: String) -> EzProperty<String> {
 
         let (property, receiver) =
@@ -180,6 +191,11 @@ impl Scheduler {
         property
     }
 
+    /// Register a new property and return it. After a property has been registered it's possible
+    /// for widget properties to subscribed to it, meaning their values will be kept in sync. If
+    /// you want to bind a value in your app to a widget property, use this func to get a property
+    /// and pass it to your app. Then use property.set() to update it. Any widget properties bound
+    /// to the property will update automatically.
     pub fn new_bool_property(&mut self, name: String, value: bool) -> EzProperty<bool> {
 
         let (property, receiver) =
@@ -189,6 +205,11 @@ impl Scheduler {
         property
     }
 
+    /// Register a new property and return it. After a property has been registered it's possible
+    /// for widget properties to subscribed to it, meaning their values will be kept in sync. If
+    /// you want to bind a value in your app to a widget property, use this func to get a property
+    /// and pass it to your app. Then use property.set() to update it. Any widget properties bound
+    /// to the property will update automatically.
     pub fn new_color_property(&mut self, name: String, value: Color) -> EzProperty<Color> {
 
         let (property, receiver) =
@@ -198,6 +219,11 @@ impl Scheduler {
         property
     }
 
+    /// Register a new property and return it. After a property has been registered it's possible
+    /// for widget properties to subscribed to it, meaning their values will be kept in sync. If
+    /// you want to bind a value in your app to a widget property, use this func to get a property
+    /// and pass it to your app. Then use property.set() to update it. Any widget properties bound
+    /// to the property will update automatically.
     pub fn new_vertical_alignment_property(&mut self, name: String, value: VerticalAlignment)
         -> EzProperty<VerticalAlignment> {
 
@@ -208,6 +234,11 @@ impl Scheduler {
         property
     }
 
+    /// Register a new property and return it. After a property has been registered it's possible
+    /// for widget properties to subscribed to it, meaning their values will be kept in sync. If
+    /// you want to bind a value in your app to a widget property, use this func to get a property
+    /// and pass it to your app. Then use property.set() to update it. Any widget properties bound
+    /// to the property will update automatically.
     pub fn new_horizontal_alignment_property(&mut self, name: String, value: HorizontalAlignment) 
         -> EzProperty<HorizontalAlignment> {
 
@@ -218,6 +249,11 @@ impl Scheduler {
         property
     }
 
+    /// Register a new property and return it. After a property has been registered it's possible
+    /// for widget properties to subscribed to it, meaning their values will be kept in sync. If
+    /// you want to bind a value in your app to a widget property, use this func to get a property
+    /// and pass it to your app. Then use property.set() to update it. Any widget properties bound
+    /// to the property will update automatically.
     pub fn new_horizontal_pos_hint_property(
         &mut self, name: String, value: Option<(HorizontalAlignment, f64)>) 
         -> EzProperty<Option<(HorizontalAlignment, f64)>> {
@@ -229,6 +265,11 @@ impl Scheduler {
         property
     }
 
+    /// Register a new property and return it. After a property has been registered it's possible
+    /// for widget properties to subscribed to it, meaning their values will be kept in sync. If
+    /// you want to bind a value in your app to a widget property, use this func to get a property
+    /// and pass it to your app. Then use property.set() to update it. Any widget properties bound
+    /// to the property will update automatically.
     pub fn new_vertical_pos_hint_property(
         &mut self, name: String, value: Option<(VerticalAlignment, f64)>)
         -> EzProperty<Option<(VerticalAlignment, f64)>> {
@@ -240,6 +281,11 @@ impl Scheduler {
         property
     }
 
+    /// Register a new property and return it. After a property has been registered it's possible
+    /// for widget properties to subscribed to it, meaning their values will be kept in sync. If
+    /// you want to bind a value in your app to a widget property, use this func to get a property
+    /// and pass it to your app. Then use property.set() to update it. Any widget properties bound
+    /// to the property will update automatically.
     pub fn new_size_hint_property(&mut self, name: String, value: Option<f64>) 
         -> EzProperty<Option<f64>> {
 
@@ -250,6 +296,8 @@ impl Scheduler {
         property
     }
 
+    /// Check all EzProperty that have at least one subscriber and check if they've send a new
+    /// value. If so, call the update func of all subsribers and any registered user callbacks.
     pub fn update_properties(&mut self, view_tree: &mut ViewTree, state_tree: &mut StateTree,
                              widget_tree: &WidgetTree, callback_tree: &mut CallbackTree) {
 
@@ -285,6 +333,10 @@ impl Scheduler {
         self.widgets_to_update.extend(to_update);
     }
 
+    /// Subscribe one property to another, ensuring the subscriber will always have the value of the
+    /// property it is subscribed to on the next frame. An update func is required which will be
+    /// called when the property subscribed to changes. The update func receives the new value and
+    /// is responsible for setting the appropriate field on the subscriber.
     pub fn subscribe_to_ez_property(&mut self, name: String, update_func: EzPropertyUpdater) {
 
         if !self.property_subscribers.contains_key(&name) {
@@ -293,6 +345,8 @@ impl Scheduler {
         self.property_subscribers.get_mut(&name).unwrap().push(update_func);
     }
 
+    /// Schedule a widget to be updated on the next frame. Can also be called from the widget itself
+    /// as ```[widget.update(scheduler)]``` (for convenience).
     pub fn update_widget(&mut self, path: String) {
         if path.starts_with("/modal") {
             self.force_redraw = true;
@@ -303,13 +357,41 @@ impl Scheduler {
         }
     }
 
+    /// Schedule a full screen redraw on the next frame. [get_contents] will be called on the root
+    /// widget and drawn to screen. Only changed pixels are actually drawn as an optimization.
     pub fn force_redraw(&mut self) { self.force_redraw = true; }
 
+    /// Bind a callback function to the changing of an EzProperty. Make sure that the function you
+    /// create has the right signature, e.g.:
+    /// ```
+    /// |context: EzContext| {
+    ///     let state  = context.state_tree.get_by_id("my_label");
+    ///     state.set_text("Value changed");
+    ///     state.update(context.scheduler);
+    /// }
+    /// ```
     pub fn bind_ez_property_callback(&mut self, name: String, callback: Box<dyn FnMut(EzContext)>) {
 
         let callbacks =
             self.property_callbacks.entry(name).or_insert(Vec::new());
         callbacks.push(callback);
+    }
+
+    /// Drain channel values. Called occasionally to drain channels which have no subscribers.
+    pub fn drain_property_channels(&mut self) {
+        for receiver in self.property_receivers.values() {
+            while let Ok(_) = receiver.try_recv() {}
+        }
+    }
+
+    /// Clean up a property completely. Called automatically when widget states are cleaned up.
+    /// E.g. when a modal is removed from a layout.
+    pub fn clean_up_property(&mut self, name: &str) {
+
+        self.properties.remove(name);
+        self.property_callbacks.remove(name);
+        self.property_receivers.remove(name);
+        self.property_subscribers.remove(name);
     }
 }
 

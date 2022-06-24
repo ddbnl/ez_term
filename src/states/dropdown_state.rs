@@ -92,12 +92,11 @@ impl DropdownState {
            colors: ColorConfig::new(path, scheduler),
        }
     }
+
 }
 impl GenericState for DropdownState {
 
-    fn get_path(&self) -> &String {
-        &self.path
-    }
+    fn get_path(&self) -> &String { &self.path }
 
     fn get_size_hint(&self) -> &SizeHint { &self.size_hint }
 
@@ -162,7 +161,25 @@ impl GenericState for DropdownState {
     fn set_selected(&mut self, state: bool) {
         self.selected = state;
     }
+
     fn get_selected(&self) -> bool { self.selected }
+    fn clean_up_properties(&self, scheduler: &mut Scheduler) {
+
+        self.position.clean_up_properties(scheduler);
+        self.size.clean_up_properties(scheduler);
+        self.size_hint.clean_up_properties(scheduler);
+        self.pos_hint.clean_up_properties(scheduler);
+        self.auto_scale.clean_up_properties(scheduler);
+        self.padding.clean_up_properties(scheduler);
+        scheduler.clean_up_property(&self.halign.name);
+        scheduler.clean_up_property(&self.valign.name);
+        scheduler.clean_up_property(&self.allow_none.name);
+        scheduler.clean_up_property(&self.choice.name);
+        scheduler.clean_up_property(&self.disabled.name);
+        scheduler.clean_up_property(&self.selection_order.name);
+        self.border_config.clean_up_properties(scheduler);
+        self.colors.clean_up_properties(scheduler);
+    }
 }
 impl DropdownState {
 
@@ -277,7 +294,7 @@ impl DroppedDownMenuState {
                 format!("{}/disabled", path),false),
             selection_order: scheduler.new_usize_property(
                 format!("{}/selection_order", path), 0),
-            dropped_down_selected_row:0,
+            dropped_down_selected_row: 0,
         }
     }
 }
@@ -346,6 +363,24 @@ impl GenericState for DroppedDownMenuState {
     fn get_selection_order(&self) -> &EzProperty<usize> { &self.selection_order }
 
     fn set_selection_order(&mut self, order: usize) { self.selection_order.set(order); }
+
+    fn clean_up_properties(&self, scheduler: &mut Scheduler) {
+
+        self.position.clean_up_properties(scheduler);
+        self.size.clean_up_properties(scheduler);
+        self.size_hint.clean_up_properties(scheduler);
+        self.pos_hint.clean_up_properties(scheduler);
+        self.auto_scale.clean_up_properties(scheduler);
+        self.padding.clean_up_properties(scheduler);
+        scheduler.clean_up_property(&self.halign.name);
+        scheduler.clean_up_property(&self.valign.name);
+        scheduler.clean_up_property(&self.allow_none.name);
+        scheduler.clean_up_property(&self.disabled.name);
+        scheduler.clean_up_property(&self.choice.name);
+        scheduler.clean_up_property(&self.selection_order.name);
+        self.border_config.clean_up_properties(scheduler);
+        self.colors.clean_up_properties(scheduler);
+    }
 }
 
 impl DroppedDownMenuState {

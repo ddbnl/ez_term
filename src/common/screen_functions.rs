@@ -4,7 +4,7 @@ use crossterm::style::{PrintStyledContent};
 use crossterm::{QueueableCommand, cursor, ExecutableCommand};
 use std::io::{stdout, Write};
 use crate::common;
-use crate::common::definitions::{StateTree, ViewTree, Coordinates, CallbackTree};
+use crate::common::definitions::{StateTree, ViewTree, Coordinates, CallbackTree, PixelMap};
 use crate::scheduler::Scheduler;
 use crate::widgets::layout::Layout;
 use crate::states::definitions::CallbackConfig;
@@ -14,10 +14,7 @@ use crate::widgets::widget::{Pixel, EzObject};
 /// Write content to a [ViewTree]. Only writes differences. By writing to a view tree first and then
 /// only writing the [ViewTree] to screen at the end of a frame cycle, we avoid unnecessary
 /// expensive screen writing operations.
-pub fn write_to_view_tree(base_position: Coordinates,
-                          content: common::definitions::PixelMap,
-                          view_tree: &mut common::definitions::ViewTree) {
-
+pub fn write_to_view_tree(base_position: Coordinates, content: PixelMap, view_tree: &mut ViewTree) {
     for x in 0..content.len() {
         for y in 0..content[x].len() {
             let write_pos =
@@ -132,7 +129,7 @@ pub fn initialize_state_tree(root_layout: &Layout) -> StateTree {
 
 
 /// Get the State for each child [EzWidget] and return it in a <[path], [State]> HashMap.
-pub fn initialize_callback_tree(root_layout: &Layout) -> common::definitions::CallbackTree {
+pub fn initialize_callback_tree(root_layout: &Layout) -> CallbackTree {
 
     let mut callback_tree = CallbackTree::new("callback_tree".to_string());
     for (child_path, _child) in root_layout.get_widgets_recursive() {
@@ -146,13 +143,14 @@ pub fn initialize_callback_tree(root_layout: &Layout) -> common::definitions::Ca
 
 /// Clean up orphaned states and callback configs in their respective trees. E.g. for when a
 /// modal closes.
-pub fn clean_trees(root_widget: &mut Layout, state_tree: &mut common::definitions::StateTree,
-                   callback_tree: &mut common::definitions::CallbackTree, scheduler: &mut Scheduler) {
+pub fn clean_trees(root_widget: &mut Layout, state_tree: &mut StateTree,
+                   callback_tree: &mut CallbackTree, scheduler: &mut Scheduler) {
 
     let widget_tree = root_widget.get_widget_tree();
     let state_paths: Vec<String> = state_tree.objects.keys().into_iter().cloned().collect();
     for path in state_paths {
         if path != "/root" && !widget_tree.objects.contains_key(&path) {
+            state_tree.get_by_path(&path).as_generic().clean_up_properties(scheduler);
             state_tree.remove(&path);
         }
     }

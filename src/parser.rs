@@ -608,7 +608,7 @@ pub fn load_full_pos_hint_property(state: &mut dyn GenericState, property_value:
 
     let (x_str, y_str) = property_value.split_once(',').unwrap();
     load_horizontal_pos_hint_property(state, x_str, scheduler, path.clone());
-    load_vertical_pos_hint_property(state, y_str, scheduler, path);
+    load_vertical_pos_hint_property(state, y_str, scheduler, path.clone());
 }
 
 

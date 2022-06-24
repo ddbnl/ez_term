@@ -110,6 +110,7 @@ fn run_loop(mut root_widget: Layout, mut callback_tree: CallbackTree, mut schedu
     let last_update = Instant::now();
     let mut last_mouse_pos: (u16, u16) = (0, 0);
     let mut track_mouse_pos = false;
+    let mut cleanup_timer = 0;
     loop {
 
         // Now we check for and deal with a possible event
@@ -216,9 +217,16 @@ fn run_loop(mut root_widget: Layout, mut callback_tree: CallbackTree, mut schedu
         common::screen_functions::write_to_screen(&old_view_tree, &view_tree);
         scheduler.force_redraw = false;
 
-        common::screen_functions::clean_trees(
-            &mut root_widget, &mut state_tree, &mut callback_tree, &mut scheduler);
+
         track_mouse_pos = !root_widget.state.open_modals.is_empty();
+        if cleanup_timer == 100 {
+            common::screen_functions::clean_trees(
+                &mut root_widget, &mut state_tree, &mut callback_tree, &mut scheduler);
+            scheduler.drain_property_channels();
+            cleanup_timer = 0;
+        } else {
+            cleanup_timer += 1;
+        }
     }
 }
 

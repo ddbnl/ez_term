@@ -510,4 +510,6 @@ pub trait GenericState {
     fn update(&self, scheduler: &mut Scheduler)  {
         scheduler.update_widget(self.get_path().to_string())
     }
+
+    fn clean_up_properties(&self, scheduler: &mut Scheduler);
 }

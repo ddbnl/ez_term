@@ -82,6 +82,11 @@ impl StateSize {
             infinite_height: false
         }
     }
+
+    pub fn clean_up_properties(&self, scheduler: &mut Scheduler) {
+        scheduler.clean_up_property(&self.width.name);
+        scheduler.clean_up_property(&self.height.name);
+    }
 }
 
 
@@ -103,6 +108,11 @@ impl StateCoordinates {
             y: y_property
         }
     }
+
+    pub fn clean_up_properties(&self, scheduler: &mut Scheduler) {
+        scheduler.clean_up_property(&self.x.name);
+        scheduler.clean_up_property(&self.y.name);
+    }
 }
 
 
@@ -123,6 +133,11 @@ impl AutoScale {
                                         height);
         AutoScale{width: width_property, height: height_property}
     }
+
+    pub fn clean_up_properties(&self, scheduler: &mut Scheduler) {
+        scheduler.clean_up_property(&self.width.name);
+        scheduler.clean_up_property(&self.height.name);
+    }
 }
 
 
@@ -141,6 +156,11 @@ impl SizeHint {
             scheduler.new_size_hint_property(format!("{}/size_hint_height", name),
                                         y);
         SizeHint{x: x_property, y: y_property}
+    }
+
+    pub fn clean_up_properties(&self, scheduler: &mut Scheduler) {
+        scheduler.clean_up_property(&self.x.name);
+        scheduler.clean_up_property(&self.y.name);
     }
 }
 
@@ -162,6 +182,11 @@ impl PosHint {
             scheduler.new_vertical_pos_hint_property(
                 format!("{}/pos_hint_y", name),y);
         PosHint{x: x_property, y: y_property}
+    }
+
+    pub fn clean_up_properties(&self, scheduler: &mut Scheduler) {
+        scheduler.clean_up_property(&self.x.name);
+        scheduler.clean_up_property(&self.y.name);
     }
 }
 
@@ -343,6 +368,10 @@ impl ScrollingConfig {
             original_width: 0
         }
     }
+    pub fn clean_up_properties(&self, scheduler: &mut Scheduler) {
+        scheduler.clean_up_property(&self.enable_x.name);
+        scheduler.clean_up_property(&self.enable_y.name);
+    }
 }
 
 
@@ -422,6 +451,18 @@ impl BorderConfig {
            bg_color,
        } 
     }
+
+    pub fn clean_up_properties(&self, scheduler: &mut Scheduler) {
+        scheduler.clean_up_property(&self.enabled.name);
+        scheduler.clean_up_property(&self.horizontal_symbol.name);
+        scheduler.clean_up_property(&self.vertical_symbol.name);
+        scheduler.clean_up_property(&self.top_left_symbol.name);
+        scheduler.clean_up_property(&self.top_right_symbol.name);
+        scheduler.clean_up_property(&self.bottom_left_symbol.name);
+        scheduler.clean_up_property(&self.bottom_right_symbol.name);
+        scheduler.clean_up_property(&self.fg_color.name);
+        scheduler.clean_up_property(&self.bg_color.name);
+    }
 }
 
 
@@ -473,7 +514,6 @@ pub struct ColorConfig {
     /// The [Pixel.background_color] to use for this widgets' content when a position has been
     /// highlighted by the blinking cursor
     pub cursor: EzProperty<Color>,
-
 }
 impl ColorConfig {
     pub fn new(name: String, scheduler: &mut Scheduler) -> Self {
@@ -534,6 +574,24 @@ impl ColorConfig {
             cursor,
         }
     }
+
+    pub fn clean_up_properties(&self, scheduler: &mut Scheduler) {
+        scheduler.clean_up_property(&self.foreground.name);
+        scheduler.clean_up_property(&self.background.name);
+        scheduler.clean_up_property(&self.selection_foreground.name);
+        scheduler.clean_up_property(&self.selection_background.name);
+        scheduler.clean_up_property(&self.disabled_foreground.name);
+        scheduler.clean_up_property(&self.disabled_background.name);
+        scheduler.clean_up_property(&self.active_foreground.name);
+        scheduler.clean_up_property(&self.active_background.name);
+        scheduler.clean_up_property(&self.flash_foreground.name);
+        scheduler.clean_up_property(&self.flash_background.name);
+        scheduler.clean_up_property(&self.tab_foreground.name);
+        scheduler.clean_up_property(&self.tab_background.name);
+        scheduler.clean_up_property(&self.filler_foreground.name);
+        scheduler.clean_up_property(&self.filler_background.name);
+        scheduler.clean_up_property(&self.cursor.name);
+    }
 }
 
 
@@ -563,5 +621,12 @@ impl Padding {
             left: left_property,
             right: right_property,
         }
+    }
+
+    pub fn clean_up_properties(&self, scheduler: &mut Scheduler) {
+        scheduler.clean_up_property(&self.top.name);
+        scheduler.clean_up_property(&self.bottom.name);
+        scheduler.clean_up_property(&self.left.name);
+        scheduler.clean_up_property(&self.right.name);
     }
 }

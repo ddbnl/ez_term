@@ -161,6 +161,23 @@ impl GenericState for CheckboxState {
     fn set_selected(&mut self, state: bool) { self.selected = state; }
 
     fn get_selected(&self) -> bool { self.selected }
+
+    fn clean_up_properties(&self, scheduler: &mut Scheduler) {
+
+        self.position.clean_up_properties(scheduler);
+        self.size.clean_up_properties(scheduler);
+        self.size_hint.clean_up_properties(scheduler);
+        self.pos_hint.clean_up_properties(scheduler);
+        self.auto_scale.clean_up_properties(scheduler);
+        self.padding.clean_up_properties(scheduler);
+        scheduler.clean_up_property(&self.halign.name);
+        scheduler.clean_up_property(&self.valign.name);
+        scheduler.clean_up_property(&self.active.name);
+        scheduler.clean_up_property(&self.disabled.name);
+        scheduler.clean_up_property(&self.selection_order.name);
+        self.border_config.clean_up_properties(scheduler);
+        self.colors.clean_up_properties(scheduler);
+    }
 }
 impl CheckboxState {
 
