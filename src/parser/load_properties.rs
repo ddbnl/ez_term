@@ -2,10 +2,10 @@
 //! Module containing structs and functions for paring a .ez file into a root layout.
 use crate::widgets::widget::{EzObject};
 use crate::common::definitions::{StateTree};
-use crate::property::EzValues;
-use crate::scheduler::Scheduler;
+use crate::property::values::EzValues;
+use crate::scheduler::scheduler::Scheduler;
 use crate::states::state::GenericState;
-use crate::parser::{parse_properties, load_base_properties};
+use crate::parser::load_base_properties;
 
 
 /* Specific property loaders */
@@ -477,12 +477,12 @@ pub fn load_tab_background_color_property(state: &mut dyn GenericState, property
 pub fn load_flash_foreground_color_property(state: &mut dyn GenericState, property_value: &str,
                                              scheduler: &mut Scheduler, path: String) {
 
-    state.get_colors_config_mut().filler_foreground.set(load_base_properties::load_ez_color_property(
+    state.get_colors_config_mut().flash_foreground.set(load_base_properties::load_ez_color_property(
         property_value.trim(), scheduler, path.clone(),
         Box::new(move |state_tree: &mut StateTree, val: EzValues| {
             let state = state_tree.get_by_path_mut(&path.clone())
                 .as_generic_mut();
-            state.get_colors_config_mut().filler_foreground.set(*val.as_color());
+            state.get_colors_config_mut().flash_foreground.set(*val.as_color());
             path.clone()
         })))
 }

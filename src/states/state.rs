@@ -3,7 +3,7 @@
 use crossterm::style::Color;
 use crate::common::definitions::{Coordinates, Size};
 use crate::EzProperty;
-use crate::scheduler::Scheduler;
+use crate::scheduler::scheduler::Scheduler;
 use crate::states::canvas_state::{CanvasState};
 use crate::states::label_state::{LabelState};
 use crate::states::button_state::{ButtonState};

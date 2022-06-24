@@ -3,7 +3,7 @@ use crate::common;
 use crate::common::definitions::{StateTree};
 use crate::states::definitions::{CallbackConfig, LayoutMode, Padding, BorderConfig,
                                  VerticalAlignment, HorizontalAlignment};
-use crate::scheduler::Scheduler;
+use crate::scheduler::scheduler::Scheduler;
 use crate::states::state::{EzState, GenericState};
 use crate::widgets::widget::{EzObjects, Pixel};
 

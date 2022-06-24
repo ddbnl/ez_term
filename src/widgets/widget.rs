@@ -6,7 +6,7 @@ use std::io::{Error};
 use crossterm::event::Event;
 use crate::common;
 use crate::common::definitions::{CallbackTree, StateTree, ViewTree, WidgetTree, Coordinates};
-use crate::scheduler::Scheduler;
+use crate::scheduler::scheduler::Scheduler;
 use crate::states::state::{EzState, GenericState};
 use crate::widgets::layout::{Layout};
 use crate::widgets::label::{Label};
@@ -264,7 +264,7 @@ pub trait EzObject {
         let state = state_tree.get_by_path(&self.get_full_path()).as_generic();
         let pos = state.get_absolute_position();
         let content = self.get_contents(state_tree);
-        common::screen_functions::write_to_view_tree(pos, content, view_tree);
+        view_tree.write_content(pos, content);
     }
 
     /// Set the content for a widget manually. This is not implemented for most widgets, as they

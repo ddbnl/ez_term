@@ -13,7 +13,7 @@ use crate::widgets::text_input::TextInput;
 use crate::widgets::dropdown::Dropdown;
 use crate::widgets::widget::{EzObjects, EzObject};
 use crate::common::definitions::{Templates};
-use crate::scheduler::Scheduler;
+use crate::scheduler::scheduler::Scheduler;
 use crate::widgets::progress_bar::ProgressBar;
 use crate::widgets::slider::Slider;
 use crate::states::state::GenericState;
@@ -53,7 +53,7 @@ impl EzWidgetDefinition {
 
     /// Parse a definition as the root layout. The normal parsed method results in a generic
     /// EzObjects enum, whereas the root widget should be a Layout specifically.
-    fn parse_as_root(&mut self, mut templates: Templates, scheduler: &mut Scheduler) -> Layout {
+    pub fn parse_as_root(&mut self, mut templates: Templates, scheduler: &mut Scheduler) -> Layout {
 
         let (config, mut sub_widgets, _) =
             parse_lang::parse_level(self.content.clone(), self.indentation_offset, self.line_offset)

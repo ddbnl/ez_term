@@ -9,10 +9,10 @@ use crate::states::definitions::{StateSize, AutoScale, SizeHint, Padding, PosHin
 use crate::states::dropdown_state::{DropdownState, DroppedDownMenuState};
 use crate::states::state::{EzState, GenericState};
 use crate::widgets::widget::{self, EzObject};
-use crate::parser;
-use crate::parser::{load_ez_bool_property, load_ez_string_property};
-use crate::property::EzValues;
-use crate::scheduler::Scheduler;
+use crate::parser::load_properties::load_common_property;
+use crate::parser::load_base_properties::{load_ez_bool_property, load_ez_string_property};
+use crate::property::values::EzValues;
+use crate::scheduler::scheduler::Scheduler;
 
 
 #[derive(Clone, Debug)]
@@ -72,7 +72,7 @@ impl EzObject for Dropdown {
     fn load_ez_parameter(&mut self, parameter_name: String, parameter_value: String,
                          scheduler: &mut Scheduler) {
 
-        let consumed = parser::load_common_property(
+        let consumed = load_common_property(
             &parameter_name, parameter_value.clone(),self, scheduler);
         if consumed { return }
         match parameter_name.as_str() {

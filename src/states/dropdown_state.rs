@@ -1,7 +1,8 @@
 use crate::states::state::GenericState;
 use crate::common::definitions::{Coordinates};
 use crate::EzProperty;
-use crate::scheduler::Scheduler;
+use crate::scheduler::scheduler_funcs::clean_up_property;
+use crate::scheduler::scheduler::Scheduler;
 use crate::states::definitions::{StateCoordinates, SizeHint, PosHint, StateSize, AutoScale, Padding,
                                  HorizontalAlignment, VerticalAlignment, BorderConfig, ColorConfig};
 
@@ -171,12 +172,12 @@ impl GenericState for DropdownState {
         self.pos_hint.clean_up_properties(scheduler);
         self.auto_scale.clean_up_properties(scheduler);
         self.padding.clean_up_properties(scheduler);
-        scheduler.clean_up_property(&self.halign.name);
-        scheduler.clean_up_property(&self.valign.name);
-        scheduler.clean_up_property(&self.allow_none.name);
-        scheduler.clean_up_property(&self.choice.name);
-        scheduler.clean_up_property(&self.disabled.name);
-        scheduler.clean_up_property(&self.selection_order.name);
+        clean_up_property(scheduler, &self.halign.name);
+        clean_up_property(scheduler, &self.valign.name);
+        clean_up_property(scheduler, &self.allow_none.name);
+        clean_up_property(scheduler, &self.choice.name);
+        clean_up_property(scheduler, &self.disabled.name);
+        clean_up_property(scheduler, &self.selection_order.name);
         self.border_config.clean_up_properties(scheduler);
         self.colors.clean_up_properties(scheduler);
     }
@@ -372,12 +373,12 @@ impl GenericState for DroppedDownMenuState {
         self.pos_hint.clean_up_properties(scheduler);
         self.auto_scale.clean_up_properties(scheduler);
         self.padding.clean_up_properties(scheduler);
-        scheduler.clean_up_property(&self.halign.name);
-        scheduler.clean_up_property(&self.valign.name);
-        scheduler.clean_up_property(&self.allow_none.name);
-        scheduler.clean_up_property(&self.disabled.name);
-        scheduler.clean_up_property(&self.choice.name);
-        scheduler.clean_up_property(&self.selection_order.name);
+        clean_up_property(scheduler, &self.halign.name);
+        clean_up_property(scheduler, &self.valign.name);
+        clean_up_property(scheduler, &self.allow_none.name);
+        clean_up_property(scheduler, &self.disabled.name);
+        clean_up_property(scheduler, &self.choice.name);
+        clean_up_property(scheduler, &self.selection_order.name);
         self.border_config.clean_up_properties(scheduler);
         self.colors.clean_up_properties(scheduler);
     }

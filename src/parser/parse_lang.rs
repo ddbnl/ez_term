@@ -7,7 +7,7 @@ use std::io::{Error};
 use unicode_segmentation::UnicodeSegmentation;
 use crate::widgets::layout::{Layout};
 use crate::common::definitions::{Templates};
-use crate::scheduler::Scheduler;
+use crate::scheduler::scheduler::Scheduler;
 use crate::parser::widget_definition::EzWidgetDefinition;
 
 

@@ -5,19 +5,6 @@ use std::str::FromStr;
 use crate::states::definitions::{HorizontalAlignment, VerticalAlignment};
 
 
-/* Parsing funcs */
-/// Convenience function use by widgets to load a color property defined in a .ez file.
-/// Looks like "red".
-pub fn parse_selection_order_property(value: &str) -> usize {
-
-    let value: usize = value.trim().parse().unwrap_or_else(
-        |_| panic!("Could not parse this selection order number: {}", value));
-    if value == 0 {
-        panic!("selection_order must be higher than 0: {}", value);
-    }
-    value
-}
-
 pub fn parse_color_property(value: &str) -> Color {
     if value.contains(',') {
         let rgb: Vec<&str> = value.split(',').collect();

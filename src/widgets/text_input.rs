@@ -4,17 +4,16 @@
 use std::cmp::min;
 use std::time::Duration;
 use crossterm::event::{Event, KeyCode};
-use crate::parser;
 use crate::states::text_input_state::TextInputState;
 use crate::states::state::{EzState, GenericState};
 use crate::widgets::widget::{Pixel, EzObject};
 use crate::common;
 use crate::common::definitions::{CallbackTree, EzContext, PixelMap, StateTree, ViewTree, WidgetTree};
-use crate::scheduler::Scheduler;
+use crate::scheduler::scheduler::Scheduler;
 use crate::common::definitions::Coordinates;
-use crate::parser::load_widget_properties::load_common_property;
+use crate::parser::load_properties::load_common_property;
 use crate::parser::load_base_properties::load_ez_string_property;
-use crate::property::EzValues;
+use crate::property::values::EzValues;
 
 #[derive(Clone, Debug)]
 pub struct TextInput {

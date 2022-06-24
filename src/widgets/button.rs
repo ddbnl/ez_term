@@ -6,10 +6,10 @@ use crate::states::button_state::ButtonState;
 use crate::common;
 use crate::common::definitions::{CallbackTree, PixelMap, StateTree, ViewTree, WidgetTree};
 use crate::widgets::widget::{Pixel, EzObject};
-use crate::parser::load_widget_properties::load_common_property;
+use crate::parser::load_properties::load_common_property;
 use crate::parser::load_base_properties::load_ez_string_property;
-use crate::property::EzValues;
-use crate::scheduler::Scheduler;
+use crate::property::values::EzValues;
+use crate::scheduler::scheduler::Scheduler;
 
 #[derive(Clone, Debug)]
 pub struct Button {

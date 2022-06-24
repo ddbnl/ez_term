@@ -4,45 +4,25 @@ use crossterm::style::{PrintStyledContent};
 use crossterm::{QueueableCommand, cursor, ExecutableCommand};
 use std::io::{stdout, Write};
 use crate::common;
-use crate::common::definitions::{StateTree, ViewTree, Coordinates, CallbackTree, PixelMap};
-use crate::scheduler::Scheduler;
+use crate::common::definitions::{StateTree, ViewTree, CallbackTree};
+use crate::scheduler::scheduler::Scheduler;
 use crate::widgets::layout::Layout;
 use crate::states::definitions::CallbackConfig;
-use crate::widgets::widget::{Pixel, EzObject};
-
-
-/// Write content to a [ViewTree]. Only writes differences. By writing to a view tree first and then
-/// only writing the [ViewTree] to screen at the end of a frame cycle, we avoid unnecessary
-/// expensive screen writing operations.
-pub fn write_to_view_tree(base_position: Coordinates, content: PixelMap, view_tree: &mut ViewTree) {
-    for x in 0..content.len() {
-        for y in 0..content[x].len() {
-            let write_pos =
-                Coordinates::new(base_position.x + x, base_position.y + y);
-            if write_pos.x < view_tree.len() && write_pos.y < view_tree[write_pos.x].len() {
-                view_tree[write_pos.x][write_pos.y] = content[x][y].get_pixel().clone();
-            }
-        }
-    }
-}
-
+use crate::widgets::widget::{EzObject};
 
 
 /// Write content to screen. Only writes differences between an old [ViewTree] (previous frame) and
 /// a new [ViewTree] (current frame) are written.
-pub fn write_to_screen(old_view_tree: &ViewTree, view_tree: &ViewTree) {
+pub fn write_to_screen(view_tree: &mut ViewTree) {
 
     stdout().execute(cursor::SavePosition).unwrap();
-    for x in 0..view_tree.len() {
-        for y in 0..view_tree[x].len() {
-            if old_view_tree[x][y] != view_tree[x][y] {
-                stdout().queue(cursor::MoveTo(x as u16, y as u16)).unwrap()
-                    .queue(PrintStyledContent(view_tree[x][y].clone())).unwrap();
-            }
-        }
+    for (coord, content) in view_tree.get_changed() {
+        stdout().queue(cursor::MoveTo(coord.x as u16, coord.y as u16)).unwrap()
+            .queue(PrintStyledContent(content.clone())).unwrap();
     }
     stdout().flush().unwrap();
     stdout().execute(cursor::RestorePosition).unwrap();
+    view_tree.clear_changed();
 }
 
 
@@ -89,8 +69,7 @@ pub fn redraw_widgets(paths: &mut Vec<String>, view_tree: &mut ViewTree,
             loop {
                 let state = state_tree.get_by_path(&widget_path);
                 if (!state.as_generic().get_size().infinite_width &&
-                    !state.as_generic().get_size().infinite_height) ||
-                    widget_path == "/root" {
+                    !state.as_generic().get_size().infinite_height) || widget_path == "/root" {
                     break
                 } else {
                     widget_path = widget_path.rsplit_once('/').unwrap().0.to_string()
@@ -101,20 +80,6 @@ pub fn redraw_widgets(paths: &mut Vec<String>, view_tree: &mut ViewTree,
         }
     }
 }
-
-
-/// Create an empty view tree
-pub fn initialize_view_tree(width: usize, height: usize) -> ViewTree {
-    let mut view_tree = ViewTree::new();
-    for x in 0..width {
-        view_tree.push(Vec::new());
-        for _ in 0..height {
-            view_tree[x].push(Pixel::default().get_pixel())
-        }
-    }
-    view_tree
-}
-
 
 /// Get the State for each child [EzWidget] and return it in a <[path], [State]> HashMap.
 pub fn initialize_state_tree(root_layout: &Layout) -> StateTree {

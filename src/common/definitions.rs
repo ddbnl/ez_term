@@ -1,11 +1,12 @@
 use std::collections::HashMap;
 use crossterm::event::KeyCode;
 use crossterm::style::StyledContent;
-use crate::{scheduler};
 use crate::widgets::widget::{Pixel, EzObjects};
+use crate::scheduler::scheduler::Scheduler;
 use crate::states::definitions::CallbackConfig;
 use crate::states::state::{EzState};
-use crate::property::{EzProperties, EzValues,};
+use crate::property::properties::EzProperties;
+use crate::property::values::EzValues;
 use crate::parser::widget_definition::EzWidgetDefinition;
 
 
@@ -147,7 +148,66 @@ impl<T> Tree<T> {
 /// ## View tree:
 /// Grid of StyledContent representing the entire screen currently being displayed. After each frame
 /// an updated ViewTree is diffed to the old one, and only changed parts of the screen are updated.
-pub type ViewTree = Vec<Vec<StyledContent<String>>>;
+#[derive(Clone, Default, Debug)]
+pub struct ViewTree {
+    screen: Vec<Vec<StyledContent<String>>>,
+    changed: Vec<Coordinates>
+}
+impl ViewTree {
+
+    pub fn get_changed(&self) -> Vec<(&Coordinates, &StyledContent<String>)>{
+        let mut results = Vec::new();
+        for coord in self.changed.iter() {
+            results.push((coord, &self.screen[coord.x][coord.y]));
+        }
+        results
+    }
+
+    pub fn clear_changed(&mut self) {
+        self.changed.clear();
+    }
+
+    /// Write content to a [ViewTree]. Only writes differences. By writing to a view tree first and then
+    /// only writing the [ViewTree] to screen at the end of a frame cycle, we avoid unnecessary
+    /// expensive screen writing operations.
+    pub fn write_content(&mut self, base_position: Coordinates, content: PixelMap) {
+        for x in 0..content.len() {
+            for y in 0..content[x].len() {
+                let write_pos =
+                    Coordinates::new(base_position.x + x, base_position.y + y);
+                if write_pos.x < self.width() && write_pos.y < self.height(write_pos.x) {
+                    self.write_pixel(write_pos,content[x][y].get_pixel());
+                }
+            }
+        }
+    }
+
+    pub fn write_pixel(&mut self, position: Coordinates, content: StyledContent<String>) {
+        if self.screen[position.x][position.y] != content {
+            self.screen[position.x][position.y] = content;
+            self.changed.push(position);
+        }
+    }
+
+    pub fn width(&self) -> usize {
+        return self.screen.len()
+    }
+
+    pub fn height(&self, width: usize) -> usize {
+        return self.screen[width].len()
+    }
+
+    pub fn initialize(&mut self, width: usize, height: usize) {
+
+        self.screen.clear();
+        for x in 0..width {
+            self.screen.push(Vec::new());
+            for _ in 0..height {
+                self.screen[x].push(Pixel::default().get_pixel())
+            }
+        }
+    }
+}
 
 
 /// ## State tree:
@@ -191,12 +251,12 @@ pub struct EzContext<'a, 'b, 'c, 'd> {
     pub widget_tree: &'c WidgetTree<'c>,
 
     /// The current [Scheduler]
-    pub scheduler: &'d mut scheduler::Scheduler,
+    pub scheduler: &'d mut Scheduler,
 }
 impl<'a, 'b , 'c, 'd> EzContext<'a, 'b , 'c, 'd> {
 
     pub fn new(widget_path: String, view_tree: &'a mut ViewTree, state_tree: &'b mut StateTree,
-               widget_tree: &'c WidgetTree, scheduler: &'d mut scheduler::Scheduler) -> Self {
+               widget_tree: &'c WidgetTree, scheduler: &'d mut Scheduler) -> Self {
         EzContext { widget_path, view_tree, state_tree, widget_tree, scheduler }
     }
 }

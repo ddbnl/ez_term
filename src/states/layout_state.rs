@@ -4,7 +4,8 @@ use crate::states::definitions::{StateCoordinates, SizeHint, PosHint, StateSize,
                                  HorizontalAlignment, VerticalAlignment, BorderConfig, ColorConfig,
                                  LayoutMode, LayoutOrientation, ScrollingConfig};
 use crate::{common, EzProperty};
-use crate::scheduler::Scheduler;
+use crate::scheduler::scheduler_funcs::clean_up_property;
+use crate::scheduler::scheduler::Scheduler;
 use crate::states::state::GenericState;
 use crate::widgets::widget::EzObjects;
 
@@ -255,15 +256,15 @@ impl GenericState for LayoutState {
         self.pos_hint.clean_up_properties(scheduler);
         self.auto_scale.clean_up_properties(scheduler);
         self.padding.clean_up_properties(scheduler);
-        scheduler.clean_up_property(&self.halign.name);
-        scheduler.clean_up_property(&self.valign.name);
-        scheduler.clean_up_property(&self.active_screen.name);
-        scheduler.clean_up_property(&self.active_tab.name);
-        scheduler.clean_up_property(&self.tab_name.name);
-        scheduler.clean_up_property(&self.fill.name);
-        scheduler.clean_up_property(&self.filler_symbol.name);
-        scheduler.clean_up_property(&self.disabled.name);
-        scheduler.clean_up_property(&self.selection_order.name);
+        clean_up_property(scheduler, &self.halign.name);
+        clean_up_property(scheduler, &self.valign.name);
+        clean_up_property(scheduler, &self.active_screen.name);
+        clean_up_property(scheduler, &self.active_tab.name);
+        clean_up_property(scheduler, &self.tab_name.name);
+        clean_up_property(scheduler, &self.fill.name);
+        clean_up_property(scheduler, &self.filler_symbol.name);
+        clean_up_property(scheduler, &self.disabled.name);
+        clean_up_property(scheduler, &self.selection_order.name);
         self.border_config.clean_up_properties(scheduler);
         self.colors.clean_up_properties(scheduler);
     }

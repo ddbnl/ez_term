@@ -1,6 +1,7 @@
-use crate::scheduler::Scheduler;
+use crate::scheduler::scheduler_funcs::clean_up_property;
+use crate::scheduler::scheduler::Scheduler;
 use crate::common::definitions::Coordinates;
-use crate::property::EzProperty;
+use crate::property::property::EzProperty;
 use crate::states::definitions::{AutoScale, BorderConfig, ColorConfig, HorizontalAlignment,
                                  Padding, PosHint, StateSize, SizeHint, StateCoordinates,
                                  VerticalAlignment};
@@ -173,14 +174,14 @@ impl GenericState for SliderState {
         self.pos_hint.clean_up_properties(scheduler);
         self.auto_scale.clean_up_properties(scheduler);
         self.padding.clean_up_properties(scheduler);
-        scheduler.clean_up_property(&self.halign.name);
-        scheduler.clean_up_property(&self.valign.name);
-        scheduler.clean_up_property(&self.value.name);
-        scheduler.clean_up_property(&self.minimum.name);
-        scheduler.clean_up_property(&self.maximum.name);
-        scheduler.clean_up_property(&self.step.name);
-        scheduler.clean_up_property(&self.disabled.name);
-        scheduler.clean_up_property(&self.selection_order.name);
+        clean_up_property(scheduler, &self.halign.name);
+        clean_up_property(scheduler, &self.valign.name);
+        clean_up_property(scheduler, &self.value.name);
+        clean_up_property(scheduler, &self.minimum.name);
+        clean_up_property(scheduler, &self.maximum.name);
+        clean_up_property(scheduler, &self.step.name);
+        clean_up_property(scheduler, &self.disabled.name);
+        clean_up_property(scheduler, &self.selection_order.name);
         self.border_config.clean_up_properties(scheduler);
         self.colors.clean_up_properties(scheduler);
     }

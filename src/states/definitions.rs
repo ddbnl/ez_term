@@ -1,8 +1,9 @@
 use crossterm::event::KeyCode;
 use crossterm::style::Color;
 use crate::common;
-use crate::property::EzProperty;
-use crate::scheduler::Scheduler;
+use crate::property::property::EzProperty;
+use crate::scheduler::scheduler::Scheduler;
+use crate::scheduler::scheduler_funcs::clean_up_property;
 
 
 /// Used with Box mode [Layout], determines whether widgets are placed below or above each other.
@@ -84,8 +85,8 @@ impl StateSize {
     }
 
     pub fn clean_up_properties(&self, scheduler: &mut Scheduler) {
-        scheduler.clean_up_property(&self.width.name);
-        scheduler.clean_up_property(&self.height.name);
+        clean_up_property(scheduler, &self.width.name);
+        clean_up_property(scheduler, &self.height.name);
     }
 }
 
@@ -110,8 +111,8 @@ impl StateCoordinates {
     }
 
     pub fn clean_up_properties(&self, scheduler: &mut Scheduler) {
-        scheduler.clean_up_property(&self.x.name);
-        scheduler.clean_up_property(&self.y.name);
+        clean_up_property(scheduler, &self.x.name);
+        clean_up_property(scheduler, &self.y.name);
     }
 }
 
@@ -135,8 +136,8 @@ impl AutoScale {
     }
 
     pub fn clean_up_properties(&self, scheduler: &mut Scheduler) {
-        scheduler.clean_up_property(&self.width.name);
-        scheduler.clean_up_property(&self.height.name);
+        clean_up_property(scheduler, &self.width.name);
+        clean_up_property(scheduler, &self.height.name);
     }
 }
 
@@ -159,8 +160,8 @@ impl SizeHint {
     }
 
     pub fn clean_up_properties(&self, scheduler: &mut Scheduler) {
-        scheduler.clean_up_property(&self.x.name);
-        scheduler.clean_up_property(&self.y.name);
+        clean_up_property(scheduler, &self.x.name);
+        clean_up_property(scheduler, &self.y.name);
     }
 }
 
@@ -185,8 +186,8 @@ impl PosHint {
     }
 
     pub fn clean_up_properties(&self, scheduler: &mut Scheduler) {
-        scheduler.clean_up_property(&self.x.name);
-        scheduler.clean_up_property(&self.y.name);
+        clean_up_property(scheduler, &self.x.name);
+        clean_up_property(scheduler, &self.y.name);
     }
 }
 
@@ -369,8 +370,8 @@ impl ScrollingConfig {
         }
     }
     pub fn clean_up_properties(&self, scheduler: &mut Scheduler) {
-        scheduler.clean_up_property(&self.enable_x.name);
-        scheduler.clean_up_property(&self.enable_y.name);
+        clean_up_property(scheduler, &self.enable_x.name);
+        clean_up_property(scheduler, &self.enable_y.name);
     }
 }
 
@@ -453,15 +454,15 @@ impl BorderConfig {
     }
 
     pub fn clean_up_properties(&self, scheduler: &mut Scheduler) {
-        scheduler.clean_up_property(&self.enabled.name);
-        scheduler.clean_up_property(&self.horizontal_symbol.name);
-        scheduler.clean_up_property(&self.vertical_symbol.name);
-        scheduler.clean_up_property(&self.top_left_symbol.name);
-        scheduler.clean_up_property(&self.top_right_symbol.name);
-        scheduler.clean_up_property(&self.bottom_left_symbol.name);
-        scheduler.clean_up_property(&self.bottom_right_symbol.name);
-        scheduler.clean_up_property(&self.fg_color.name);
-        scheduler.clean_up_property(&self.bg_color.name);
+        clean_up_property(scheduler, &self.enabled.name);
+        clean_up_property(scheduler, &self.horizontal_symbol.name);
+        clean_up_property(scheduler, &self.vertical_symbol.name);
+        clean_up_property(scheduler, &self.top_left_symbol.name);
+        clean_up_property(scheduler, &self.top_right_symbol.name);
+        clean_up_property(scheduler, &self.bottom_left_symbol.name);
+        clean_up_property(scheduler, &self.bottom_right_symbol.name);
+        clean_up_property(scheduler, &self.fg_color.name);
+        clean_up_property(scheduler, &self.bg_color.name);
     }
 }
 
@@ -576,21 +577,21 @@ impl ColorConfig {
     }
 
     pub fn clean_up_properties(&self, scheduler: &mut Scheduler) {
-        scheduler.clean_up_property(&self.foreground.name);
-        scheduler.clean_up_property(&self.background.name);
-        scheduler.clean_up_property(&self.selection_foreground.name);
-        scheduler.clean_up_property(&self.selection_background.name);
-        scheduler.clean_up_property(&self.disabled_foreground.name);
-        scheduler.clean_up_property(&self.disabled_background.name);
-        scheduler.clean_up_property(&self.active_foreground.name);
-        scheduler.clean_up_property(&self.active_background.name);
-        scheduler.clean_up_property(&self.flash_foreground.name);
-        scheduler.clean_up_property(&self.flash_background.name);
-        scheduler.clean_up_property(&self.tab_foreground.name);
-        scheduler.clean_up_property(&self.tab_background.name);
-        scheduler.clean_up_property(&self.filler_foreground.name);
-        scheduler.clean_up_property(&self.filler_background.name);
-        scheduler.clean_up_property(&self.cursor.name);
+        clean_up_property(scheduler, &self.foreground.name);
+        clean_up_property(scheduler, &self.background.name);
+        clean_up_property(scheduler, &self.selection_foreground.name);
+        clean_up_property(scheduler, &self.selection_background.name);
+        clean_up_property(scheduler, &self.disabled_foreground.name);
+        clean_up_property(scheduler, &self.disabled_background.name);
+        clean_up_property(scheduler, &self.active_foreground.name);
+        clean_up_property(scheduler, &self.active_background.name);
+        clean_up_property(scheduler, &self.flash_foreground.name);
+        clean_up_property(scheduler, &self.flash_background.name);
+        clean_up_property(scheduler, &self.tab_foreground.name);
+        clean_up_property(scheduler, &self.tab_background.name);
+        clean_up_property(scheduler, &self.filler_foreground.name);
+        clean_up_property(scheduler, &self.filler_background.name);
+        clean_up_property(scheduler, &self.cursor.name);
     }
 }
 
@@ -624,9 +625,9 @@ impl Padding {
     }
 
     pub fn clean_up_properties(&self, scheduler: &mut Scheduler) {
-        scheduler.clean_up_property(&self.top.name);
-        scheduler.clean_up_property(&self.bottom.name);
-        scheduler.clean_up_property(&self.left.name);
-        scheduler.clean_up_property(&self.right.name);
+        clean_up_property(scheduler, &self.top.name);
+        clean_up_property(scheduler, &self.bottom.name);
+        clean_up_property(scheduler, &self.left.name);
+        clean_up_property(scheduler, &self.right.name);
     }
 }

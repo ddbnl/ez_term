@@ -5,11 +5,10 @@ use crate::common::definitions::{CallbackTree, PixelMap, StateTree, ViewTree, Wi
 use crate::widgets::widget::{Pixel, EzObject};
 use crate::states::checkbox_state::CheckboxState;
 use crate::states::state::{EzState, GenericState};
-use crate::parser;
-use crate::parser::load_widget_properties::load_common_property;
+use crate::parser::load_properties::load_common_property;
 use crate::parser::load_base_properties::load_ez_bool_property;
-use crate::property::EzValues;
-use crate::scheduler::Scheduler;
+use crate::property::values::EzValues;
+use crate::scheduler::scheduler::Scheduler;
 
 #[derive(Clone, Debug)]
 pub struct Checkbox {
