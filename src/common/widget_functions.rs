@@ -34,13 +34,13 @@ pub fn open_popup(template: String, state_tree: &mut StateTree,
 pub fn resize_with_size_hint(state: &mut EzState, parent_width: usize, parent_height: usize) {
 
     let mut_state = state.as_generic_mut();
-    if let Some(size_hint_x) = mut_state.get_size_hint().x {
+    if let Some(size_hint_x) = mut_state.get_size_hint().x.value {
         let raw_child_size = parent_width as f64 * size_hint_x;
         let child_size = raw_child_size.round() as usize;
         mut_state.get_size_mut().width.set(child_size);
     }
 
-    if let Some(size_hint_y) = mut_state.get_size_hint().y {
+    if let Some(size_hint_y) = mut_state.get_size_hint().y.value {
         let raw_child_size = parent_height as f64 * size_hint_y;
         let child_size = raw_child_size.round() as usize;
         mut_state.get_size_mut().height.set(child_size);
@@ -53,7 +53,7 @@ pub fn reposition_with_pos_hint(parent_width: usize, parent_height: usize,
                                 child_state: &mut dyn GenericState) {
 
     // Set x by pos_hint if any
-    if let Some((keyword, fraction)) = child_state.get_pos_hint().x {
+    if let Some((keyword, fraction)) = child_state.get_pos_hint().x.value {
         let initial_pos = match keyword {
             HorizontalAlignment::Left => 0,
             HorizontalAlignment::Right => parent_width - child_state.get_size().width.value,
@@ -65,7 +65,7 @@ pub fn reposition_with_pos_hint(parent_width: usize, parent_height: usize,
         child_state.get_position_mut().x.set(x);
     }
     // Set y by pos hint if any
-    if let Some((keyword, fraction)) = child_state.get_pos_hint().y {
+    if let Some((keyword, fraction)) = child_state.get_pos_hint().y.value {
         let initial_pos = match keyword {
             VerticalAlignment::Top => 0,
             VerticalAlignment::Bottom => parent_height - child_state.get_size().height.value,
@@ -84,17 +84,23 @@ pub fn add_border(mut content: common::definitions::PixelMap, config: &BorderCon
     if content.is_empty() { return content }
     // Create border elements
     let horizontal_border = Pixel::new(config.horizontal_symbol.value.clone(),
-                                       config.fg_color, config.bg_color);
+                                       config.fg_color.value,
+                                       config.bg_color.value);
     let vertical_border = Pixel::new(config.vertical_symbol.value.clone(),
-                                     config.fg_color, config.bg_color);
+                                     config.fg_color.value,
+                                     config.bg_color.value);
     let top_left_border = Pixel::new(config.top_left_symbol.value.clone(),
-                                     config.fg_color, config.bg_color);
+                                     config.fg_color.value,
+                                     config.bg_color.value);
     let top_right_border = Pixel::new(config.top_right_symbol.value.clone(),
-                                      config.fg_color, config.bg_color);
+                                      config.fg_color.value,
+                                      config.bg_color.value);
     let bottom_left_border = Pixel::new(config.bottom_left_symbol.value.clone(),
-                                        config.fg_color, config.bg_color);
+                                        config.fg_color.value,
+                                        config.bg_color.value);
     let bottom_right_border = Pixel::new(config.bottom_right_symbol.value.clone(),
-                                         config.fg_color, config.bg_color);
+                                         config.fg_color.value,
+                                         config.bg_color.value);
     // Create horizontal borders
     for x in 0..content.len() {
         let mut new_x = vec!(horizontal_border.clone());
@@ -452,7 +458,7 @@ pub fn widget_is_hidden(widget_path: String, state_tree: &StateTree) -> bool {
     loop {
         let parent_state = state_tree.get_by_path(&check_parent).as_layout();
         if parent_state.mode == LayoutMode::Screen &&
-            parent_state.active_screen != check_child.rsplit_once('/').unwrap().1 {
+            parent_state.active_screen.value != check_child.rsplit_once('/').unwrap().1 {
             return true
         }
         if parent_state.mode == LayoutMode::Tabbed {

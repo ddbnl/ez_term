@@ -6,14 +6,14 @@ use crate::parser;
 use crate::common;
 use crate::common::definitions::{CallbackTree, EzContext, PixelMap, StateTree, ViewTree, WidgetTree,
                                  Coordinates};
-use crate::parser::load_ez_bool_parameter;
+use crate::parser::{load_ez_bool_property, load_ez_string_property};
 use crate::property::EzValues;
 use crate::widgets::widget::{Pixel, EzObject, EzObjects};
 use crate::states::layout_state::LayoutState;
 use crate::states::state::{EzState, GenericState};
 use crate::scheduler::Scheduler;
 use crate::states::definitions::{CallbackConfig, ColorConfig, LayoutMode, StateSize,
-                                 SizeHint, LayoutOrientation, ScrollingConfig};
+                                 LayoutOrientation, ScrollingConfig};
 use crate::widgets::button::Button;
 
 
@@ -50,11 +50,37 @@ impl Layout {
         }
     }
 
-    fn load_scrolling_enable_x_parameter(&mut self, parameter_value: &str,
-                                         scheduler: &mut Scheduler) {
+    fn load_fill_property(&mut self, parameter_value: &str, scheduler: &mut Scheduler) {
 
         let path = self.path.clone();
-        self.state.get_scrolling_config_mut().enable_x.set(load_ez_bool_parameter(
+        self.state.set_fill(load_ez_bool_property(
+            parameter_value.trim(), scheduler, path.clone(),
+            Box::new(move |state_tree: &mut StateTree, val: EzValues| {
+                let state = state_tree.get_by_path_mut(&path)
+                    .as_layout_mut();
+                state.set_fill(val.as_bool().to_owned());
+                path.clone()
+            })))
+    }
+
+    fn load_filler_symbol_property(&mut self, parameter_value: &str, scheduler: &mut Scheduler) {
+
+        let path = self.path.clone();
+        self.state.set_filler_symbol(load_ez_string_property(
+            parameter_value.trim(), scheduler, path.clone(),
+            Box::new(move |state_tree: &mut StateTree, val: EzValues| {
+                let state = state_tree.get_by_path_mut(&path)
+                    .as_layout_mut();
+                state.set_filler_symbol(val.as_string().to_owned());
+                path.clone()
+            })))
+    }
+
+    fn load_scrolling_enable_x_property(&mut self, parameter_value: &str,
+                                        scheduler: &mut Scheduler) {
+
+        let path = self.path.clone();
+        self.state.get_scrolling_config_mut().enable_x.set(load_ez_bool_property(
             parameter_value.trim(), scheduler, path.clone(),
             Box::new(move |state_tree: &mut StateTree, val: EzValues| {
                 let state = state_tree.get_by_path_mut(&path)
@@ -64,11 +90,11 @@ impl Layout {
             })))
     }
 
-    fn load_scrolling_enable_y_parameter(&mut self, parameter_value: &str,
-                                         scheduler: &mut Scheduler) {
+    fn load_scrolling_enable_y_property(&mut self, parameter_value: &str,
+                                        scheduler: &mut Scheduler) {
 
         let path = self.path.clone();
-        self.state.get_scrolling_config_mut().enable_y.set(load_ez_bool_parameter(
+        self.state.get_scrolling_config_mut().enable_y.set(load_ez_bool_property(
             parameter_value.trim(), scheduler, path.clone(),
             Box::new(move |state_tree: &mut StateTree, val: EzValues| {
                 let state = state_tree.get_by_path_mut(&path)
@@ -85,7 +111,7 @@ impl EzObject for Layout {
     fn load_ez_parameter(&mut self, parameter_name: String, parameter_value: String,
                          scheduler: &mut Scheduler) {
 
-        let consumed = parser::load_common_parameters(
+        let consumed = parser::load_common_property(
             &parameter_name, parameter_value.clone(),self, scheduler);
         if consumed { return }
         match parameter_name.as_str() {
@@ -110,17 +136,16 @@ impl EzObject for Layout {
             },
             "scroll" => {
                 let (x, y) = parameter_value.split_once(',').unwrap();
-                self.load_scrolling_enable_x_parameter(x.trim(), scheduler);
-                self.load_scrolling_enable_y_parameter(y.trim(), scheduler);
+                self.load_scrolling_enable_x_property(x.trim(), scheduler);
+                self.load_scrolling_enable_y_property(y.trim(), scheduler);
             }
-            "scroll_x" => self.load_scrolling_enable_x_parameter(
+            "scroll_x" => self.load_scrolling_enable_x_property(
                 parameter_value.trim(), scheduler),
-            "scroll_y" => self.load_scrolling_enable_y_parameter(
+            "scroll_y" => self.load_scrolling_enable_y_property(
                 parameter_value.trim(), scheduler),
-            "fill" =>
-                self.state.fill = parser::load_bool_parameter(parameter_value.trim()),
+            "fill" => self.load_fill_property(parameter_value.trim(), scheduler),
             "filler_symbol" =>
-                self.state.set_filler_symbol(parameter_value.trim().to_string()),
+                self.load_filler_symbol_property(parameter_value.trim(), scheduler),
             _ => panic!("Invalid parameter name for layout {}", parameter_name)
         }
     }
@@ -182,8 +207,9 @@ impl EzObject for Layout {
         }
         // Put padding around content if set
         merged_content = common::widget_functions::add_padding(
-            merged_content, state.get_padding(), state.get_color_config().background,
-            state.get_color_config().foreground);
+            merged_content, state.get_padding(),
+            state.get_color_config().background.value,
+            state.get_color_config().foreground.value);
         merged_content = self.get_modal_contents(state_tree, merged_content);
 
         self.propagate_absolute_positions(state_tree);
@@ -426,19 +452,19 @@ impl Layout {
 
 
         // Fill self with background first. Then overlay widgets.
-        let filler = Pixel::new(own_state.get_filler_symbol(),
-                                own_state.get_color_config().filler_foreground,
-                                own_state.get_color_config().filler_background);
+        let filler = Pixel::new(own_state.get_filler_symbol().value.clone(),
+                                own_state.get_color_config().filler_foreground.value,
+                                own_state.get_color_config().filler_background.value);
         for _ in 0..own_width {
             content.push(Vec::new());
             for _ in 0..own_height {
-                if own_state.fill {
+                if own_state.fill.value {
                     content.last_mut().unwrap().push(filler.clone());
                 } else {
                     content.last_mut().unwrap().push(
                         Pixel::new(
-                            " ".to_string(), own_state.colors.foreground,
-                            own_state.colors.background));
+                            " ".to_string(), own_state.colors.foreground.value,
+                            own_state.colors.background.value));
                 }
             }
         }
@@ -548,7 +574,7 @@ impl Layout {
             let state = state_tree
                 .get_by_path(&generic_child.get_full_path()).as_generic();
             if let LayoutOrientation::Horizontal = own_orientation {
-                if let Some(size_hint_x) = state.get_size_hint().x
+                if let Some(size_hint_x) = state.get_size_hint().x.value
                 {
                     if size_hint_x != 1.0 || state.get_auto_scale().width.value ||
                         state.get_auto_scale().height.value || state.get_size().width > 0 {
@@ -561,7 +587,7 @@ impl Layout {
                 all_default_size_hint_x = false;
             }
             if let LayoutOrientation::Vertical = own_orientation {
-                if let Some(size_hint_y) = state.get_size_hint().y {
+                if let Some(size_hint_y) = state.get_size_hint().y.value {
                     if size_hint_y != 1.0 || state.get_auto_scale().height.value ||
                         state.get_auto_scale().width.value || state.get_size().height > 0 {
                         all_default_size_hint_y = false;
@@ -655,7 +681,7 @@ impl Layout {
 
         let generic_child = child.as_ez_object_mut();
         let id = generic_child.get_id();
-        let path = generic_child.get_full_path().clone();
+        let path = generic_child.get_full_path();
         let parent_path = self.path.clone();
         if self.child_lookup.contains_key(&id) {
             panic!("A layout may not contain two children with identical IDs: \"{}\"",
@@ -670,7 +696,8 @@ impl Layout {
                 let new_id = format!("{}_tab_header", id);
                 let new_path = format!("{}/{}", parent_path, new_id);
                 let mut tab_header = Button::new(new_id, new_path, scheduler);
-                tab_header.state.size_hint = SizeHint::new(None, None);
+                tab_header.state.set_size_hint_x(None);
+                tab_header.state.set_size_hint_y(None);
                 tab_header.state.text.set(id);
 
                 let tab_on_click = move |context: EzContext| {
@@ -782,13 +809,13 @@ impl Layout {
     pub fn add_user_filler(&self, state_tree: &mut StateTree, mut contents: PixelMap) -> PixelMap {
         let state = state_tree.get_by_path_mut(&self.get_full_path())
             .as_layout_mut();
-        if !state.fill { return contents }
+        if !state.fill.value { return contents }
 
-        let filler = Pixel::new(state.get_filler_symbol(),
-                                state.get_color_config().filler_foreground,
-                                state.get_color_config().filler_background);
+        let filler = Pixel::new(state.get_filler_symbol().value.clone(),
+                                state.get_color_config().filler_foreground.value,
+                                state.get_color_config().filler_background.value);
 
-        for x in 0..(state.get_effective_size().width) {
+        for x in 0..state.get_effective_size().width {
             for y in contents[x].iter_mut() {
                 if y.symbol.is_empty() || y.symbol == " " {
                     y.symbol = filler.symbol.clone();
@@ -820,8 +847,8 @@ impl Layout {
         for x in contents.iter_mut() {
             while x.len() < state.get_effective_size().height {
                 x.push(Pixel::new(
-                    " ".to_string(), state.get_color_config().foreground,
-                    state.get_color_config().background));
+                    " ".to_string(), state.get_color_config().foreground.value,
+                    state.get_color_config().background.value));
             }
         }
         contents
@@ -835,11 +862,11 @@ impl Layout {
     fn get_screen_mode_contents(&self, state_tree: &mut StateTree) -> PixelMap {
 
         let mut active_screen = state_tree.get_by_path(&self.path)
-            .as_layout().active_screen.clone();
+            .as_layout().active_screen.value.clone();
         if active_screen.is_empty() && !self.children.is_empty() {
             active_screen = self.children.first().unwrap().as_layout().get_id();
-            state_tree.get_by_path_mut(&self.path).as_layout_mut().active_screen =
-                active_screen.clone();
+            state_tree.get_by_path_mut(&self.path).as_layout_mut().active_screen
+                .set(active_screen.clone());
         }
         self.get_child(&active_screen).as_layout().get_contents(state_tree)
     }
@@ -898,10 +925,10 @@ impl Layout {
         let own_pos = state.get_effective_absolute_position();
         let own_colors = state.colors.clone();
         let selection = state.selected_tab_header.clone();
-        if state.active_tab.is_empty() {
+        if state.active_tab.value.is_empty() {
             state.set_active_tab(self.children[0].as_ez_object().get_full_path());
         }
-        let active_tab = state.active_tab.clone();
+        let active_tab = state.active_tab.value.clone();
 
         let mut button_content = PixelMap::new();
         let mut tab_content = PixelMap::new();
@@ -926,16 +953,16 @@ impl Layout {
                 let child_state=
                     state_tree.get_by_path_mut(&i.path).as_button_mut();
 
-                child_state.colors.foreground =
-                    if selection == i.path { own_colors.selection_foreground }
+                child_state.colors.foreground.set(
+                    if selection == i.path { own_colors.selection_foreground.value }
                     else if active_tab.rsplit_once('/').unwrap().1 == child_state.text.value {
-                        own_colors.active_foreground
-                    } else { own_colors.tab_foreground };
-                child_state.colors.background =
-                    if selection == i.path { own_colors.selection_background }
+                        own_colors.active_foreground.value
+                    } else { own_colors.tab_foreground.value });
+                child_state.colors.background.set(
+                    if selection == i.path { own_colors.selection_background.value }
                     else if active_tab.rsplit_once('/').unwrap().1 == child_state.text.value {
-                        own_colors.active_background
-                    } else { own_colors.tab_background };
+                        own_colors.active_background.value
+                    } else { own_colors.tab_background.value });
 
                 child_state.auto_scale.width.set(true);
                 child_state.auto_scale.height.set(true);
@@ -966,8 +993,8 @@ impl Layout {
             }
         }
         let fill_pixel = Pixel::new(" ".to_string(),
-                                    own_colors.foreground,
-                                    own_colors.background);
+                                    own_colors.foreground.value,
+                                    own_colors.background.value);
         if own_effective_size.width < button_content.len()  {
             let mut difference;
             if own_effective_size.width <= selected_pos_x + selected_width {
@@ -1205,9 +1232,9 @@ impl Layout {
         if !parent_infinite_height && parent_height > new[0].len() {
             let offset;
             (new, offset) = common::widget_functions::align_content_vertically(
-                new, state.get_vertical_alignment(), parent_height,
-                parent_colors.foreground,
-                parent_colors.background);
+                new, state.get_vertical_alignment().value, parent_height,
+                parent_colors.foreground.value,
+                parent_colors.background.value);
             state.set_y(state.get_position().y.get() + offset);
         }
 
@@ -1230,9 +1257,9 @@ impl Layout {
         let offset;
         if parent_width > new.len() && !parent_infinite_width {
             (new, offset) = common::widget_functions::align_content_horizontally(
-                new, state.get_horizontal_alignment(), parent_width,
-                parent_colors.foreground,
-                parent_colors.background);
+                new, state.get_horizontal_alignment().value, parent_width,
+                parent_colors.foreground.value,
+                parent_colors.background.value);
             state.set_x(state.get_position().x.get() + offset);
         }
 
@@ -1247,8 +1274,8 @@ impl Layout {
                     merged_content[x].push(new[x][y].clone())
                 } else {
                     merged_content[x].push(Pixel { symbol: " ".to_string(),
-                        foreground_color: parent_colors.foreground,
-                        background_color: parent_colors.background,
+                        foreground_color: parent_colors.foreground.value,
+                        background_color: parent_colors.background.value,
                         underline: false});
                 }
             }
@@ -1401,7 +1428,7 @@ impl Layout {
 
         let state = state_tree.get_by_path(&self.get_full_path()).as_layout();
         let (fg_color, _) = state.get_context_colors();
-        let bg_color = state.get_color_config().background;
+        let bg_color = state.get_color_config().background.value;
 
         let (scrollbar_size, scrollbar_pos) = self.get_horizontal_scrollbar_parameters(
             state.get_scrolling_config().original_width,
@@ -1424,7 +1451,7 @@ impl Layout {
         let mut scrollbar = Vec::new();
         let state = state_tree.get_by_path(&self.get_full_path()).as_layout();
         let (fg_color, _) = state.get_context_colors();
-        let bg_color = state.get_color_config().background;
+        let bg_color = state.get_color_config().background.value;
 
         let (scrollbar_size, scrollbar_pos) = self.get_vertical_scrollbar_parameters(
             state.get_scrolling_config().original_height,

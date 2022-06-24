@@ -49,7 +49,7 @@ impl EzObject for Canvas {
     fn load_ez_parameter(&mut self, parameter_name: String, parameter_value: String,
                          scheduler: &mut Scheduler) {
 
-        let consumed = parser::load_common_parameters(
+        let consumed = parser::load_common_property(
             &parameter_name, parameter_value.clone(),self, scheduler);
         if consumed { return }
         match parameter_name.as_str() {
@@ -118,14 +118,14 @@ impl EzObject for Canvas {
                     if y < lines.len() && !lines[y].is_empty() {
                         widget_content[x].push(Pixel {
                             symbol: lines[y].pop().unwrap().to_string(),
-                            foreground_color: state.get_color_config().foreground,
-                            background_color: state.get_color_config().background,
+                            foreground_color: state.get_color_config().foreground.value,
+                            background_color: state.get_color_config().background.value,
                             underline: false})
                     } else {
                         widget_content[x].push(Pixel {
                             symbol: " ".to_string(),
-                            foreground_color: state.get_color_config().foreground,
-                            background_color: state.get_color_config().background,
+                            foreground_color: state.get_color_config().foreground.value,
+                            background_color: state.get_color_config().background.value,
                             underline: false})
                     }
                 }
@@ -142,8 +142,8 @@ impl EzObject for Canvas {
         let parent_colors = state_tree.get_by_path(self.get_full_path()
             .rsplit_once('/').unwrap().0).as_generic().get_color_config();
         contents = common::widget_functions::add_padding(
-            contents, state.get_padding(),parent_colors.background,
-            parent_colors.foreground);
+            contents, state.get_padding(),parent_colors.background.value,
+            parent_colors.foreground.value);
         contents
     }
 }

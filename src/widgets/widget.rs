@@ -533,12 +533,6 @@ pub trait EzObject {
         };
         false
     }
-
-    /// Set the focus state of a widget. When a widget is focussed it alone consumes all events.
-    fn set_focus(&mut self, _enabled: bool) {}
-
-    /// Get the focus state of a widget. When a widget is focussed it alone consumes all events.
-    fn get_focus(&self) -> bool { false }
 }
 
 

@@ -158,14 +158,6 @@ fn run_loop(mut root_widget: Layout, mut callback_tree: CallbackTree, mut schedu
             let selected_widget = if consumed {None}
             else {common::selection_functions::get_selected_widget(&widget_tree, &mut state_tree)};
 
-            // Focussed widgets get second-highest priority in consuming an event
-            if !consumed {
-                if let Some(i) = selected_widget {
-                    consumed = i.get_focus() && i.handle_event(
-                        event, &mut view_tree, &mut state_tree, &widget_tree,
-                        &mut callback_tree, &mut scheduler);
-                }
-            }
             // Try to handle event as global
             if !consumed {
                 consumed = handle_global_event(event, &mut view_tree, &mut state_tree, &widget_tree,
@@ -174,7 +166,8 @@ fn run_loop(mut root_widget: Layout, mut callback_tree: CallbackTree, mut schedu
             // Try to let currently selected widget handle and consume the event
             if !consumed {
                 if let Some(i) = selected_widget {
-                    if !state_tree.get_by_path(&i.get_full_path()).as_generic().get_disabled() {
+                    if !state_tree.get_by_path(&i.get_full_path())
+                        .as_generic().get_disabled().value {
                         consumed = i.handle_event(
                             event, &mut view_tree, &mut state_tree, &widget_tree,
                             &mut callback_tree, &mut scheduler);
@@ -280,10 +273,7 @@ fn handle_global_event(event: Event, view_tree: &mut ViewTree, state_tree: &mut 
 
 
 /// Global key handler. If a key event matches one of these keys it will be consumed and not passed
-/// on any further. The order for events is:
-/// 1. Focussed widget
-/// 2. Global key binds (this function)
-/// 3. Selected widget
+/// on any further.
 fn handle_key_event(key: KeyEvent, view_tree: &mut ViewTree, state_tree: &mut StateTree,
                     widget_tree: &WidgetTree, callback_tree: &mut CallbackTree,
                     scheduler: &mut Scheduler) -> bool {
@@ -304,7 +294,7 @@ fn handle_key_event(key: KeyEvent, view_tree: &mut ViewTree, state_tree: &mut St
                 common::selection_functions::get_selected_widget(widget_tree, state_tree);
             if let Some(widget) = selected_widget {
                 if !state_tree
-                    .get_by_path(&widget.get_full_path()).as_generic().get_disabled() {
+                    .get_by_path(&widget.get_full_path()).as_generic().get_disabled().value {
                     widget.on_keyboard_enter(view_tree, state_tree, widget_tree,
                                              callback_tree, scheduler);
                 }
@@ -321,10 +311,7 @@ fn handle_key_event(key: KeyEvent, view_tree: &mut ViewTree, state_tree: &mut St
 
 
 /// Global mouse event handler. If the click pos collides a widget it will be consumed and not
-/// passed on any further. The order for events is:
-/// 1. Focussed widget
-/// 2. Global key binds (this function)
-/// 3. Selected widget
+/// passed on any further.
 fn handle_mouse_event(event: MouseEvent, view_tree: &mut ViewTree, state_tree: &mut StateTree,
                       widget_tree: &WidgetTree, callback_tree: &mut CallbackTree, 
                       scheduler: &mut Scheduler) -> bool {

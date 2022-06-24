@@ -71,7 +71,7 @@ pub fn select_next(view_tree: &mut common::definitions::ViewTree,
         let state = state_tree.get_by_path_mut(&i.get_full_path()).as_generic_mut();
         state.set_selected(false);
         state.update(scheduler);
-        let order = state.get_selection_order();
+        let order = state.get_selection_order().value;
         i.on_deselect(view_tree, state_tree, widget_tree, callback_tree, scheduler);
         order
     } else {
@@ -112,23 +112,23 @@ pub fn find_next_selection(current_selection: usize, state_tree: &common::defini
     for (path, state) in state_tree.objects.iter()  {
         if !path.starts_with(path_prefix) { continue };
         let generic_state = state.as_generic();
-        if generic_state.is_selectable() && !generic_state.get_disabled() {
+        if generic_state.is_selectable() && !generic_state.get_disabled().value {
             if let Some(i) = next_order {
-                if generic_state.get_selection_order() > 0 &&
-                    generic_state.get_selection_order() > current_selection &&
-                    generic_state.get_selection_order() < i &&
+                if generic_state.get_selection_order().value > 0 &&
+                    generic_state.get_selection_order().value > current_selection &&
+                    generic_state.get_selection_order().value < i &&
                     !common::widget_functions::widget_is_hidden(
                         path.to_string(), state_tree) &&
                     common::widget_functions::is_in_view(path.to_string(), state_tree) {
-                    next_order = Some(generic_state.get_selection_order());
+                    next_order = Some(generic_state.get_selection_order().value);
                     next_widget = Some(path.to_string());
                 }
-            } else if generic_state.get_selection_order() > 0 &&
-                generic_state.get_selection_order() > current_selection &&
+            } else if generic_state.get_selection_order().value > 0 &&
+                generic_state.get_selection_order().value > current_selection &&
                 !common::widget_functions::widget_is_hidden(
                     path.to_string(), state_tree) &&
                 common::widget_functions::is_in_view(path.to_string(), state_tree) {
-                next_order = Some(generic_state.get_selection_order());
+                next_order = Some(generic_state.get_selection_order().value);
                 next_widget = Some(path.to_string());
             }
         }
@@ -156,7 +156,7 @@ pub fn select_previous(view_tree: &mut common::definitions::ViewTree, state_tree
         let state = state_tree.get_by_path_mut(&i.get_full_path()).as_generic_mut();
         state.set_selected(false);
         state.update(scheduler);
-        let order = state.get_selection_order();
+        let order = state.get_selection_order().value;
         i.on_deselect(view_tree, state_tree, widget_tree, callback_tree, scheduler);
         order
     } else {
@@ -197,23 +197,23 @@ pub fn find_previous_selection(current_selection: usize,
     for (path, state) in state_tree.objects.iter()  {
         if !path.starts_with(path_prefix) { continue }
         let generic_state = state.as_generic();
-        if generic_state.is_selectable() && !generic_state.get_disabled() {
+        if generic_state.is_selectable() && !generic_state.get_disabled().value {
             if let Some(i) = previous_order {
-                if generic_state.get_selection_order() > 0 &&
-                    generic_state.get_selection_order() < current_selection &&
-                    generic_state.get_selection_order() > i &&
+                if generic_state.get_selection_order().value > 0 &&
+                    generic_state.get_selection_order().value < current_selection &&
+                    generic_state.get_selection_order().value > i &&
                     !common::widget_functions::widget_is_hidden(
                         path.to_string(), state_tree) &&
                     common::widget_functions::is_in_view(path.to_string(), state_tree) {
-                    previous_order = Some(generic_state.get_selection_order());
+                    previous_order = Some(generic_state.get_selection_order().value);
                     previous_widget = Some(path.to_string());
                 }
-            } else if generic_state.get_selection_order() > 0 &&
-                generic_state.get_selection_order() < current_selection &&
+            } else if generic_state.get_selection_order().value > 0 &&
+                generic_state.get_selection_order().value < current_selection &&
                 !common::widget_functions::widget_is_hidden(
                     path.to_string(), state_tree) &&
                 common::widget_functions::is_in_view(path.to_string(), state_tree) {
-                previous_order = Some(generic_state.get_selection_order());
+                previous_order = Some(generic_state.get_selection_order().value);
                 previous_widget = Some(path.to_string());
             }
         }
@@ -239,7 +239,7 @@ pub fn get_widget_by_position<'a>(pos: Coordinates,
     let mut results = Vec::new();
     for (widget_path, state) in state_tree.objects.iter() {
         if !widget_path.starts_with(&path_prefix) || widget_path == "/root" ||
-            state.as_generic().get_disabled() ||
+            state.as_generic().get_disabled().value ||
             common::widget_functions::widget_is_hidden(widget_path.clone(),  state_tree) {
             continue
         }

@@ -2,12 +2,12 @@
 use std::fs::File;
 use std::io::prelude::*;
 use crate::common;
-use crate::common::definitions::StateTree;
+use crate::common::definitions::{PixelMap, StateTree};
 use crate::widgets::widget::{Pixel, EzObject};
 use crate::states::label_state::LabelState;
 use crate::states::state::{EzState, GenericState};
 use crate::parser;
-use crate::parser::load_ez_string_parameter;
+use crate::parser::load_ez_string_property;
 use crate::property::EzValues;
 use crate::scheduler::Scheduler;
 
@@ -44,13 +44,13 @@ impl EzObject for Label {
     fn load_ez_parameter(&mut self, parameter_name: String, parameter_value: String,
                          scheduler: &mut Scheduler) {
 
-        let consumed = parser::load_common_parameters(
+        let consumed = parser::load_common_property(
             &parameter_name, parameter_value.clone(),self, scheduler);
         if consumed { return }
         match parameter_name.as_str() {
             "text" => {
                 let path = self.path.clone();
-                self.state.text.set(load_ez_string_parameter(
+                self.state.text.set(load_ez_string_property(
                     parameter_value.trim(), scheduler, path.clone(),
                     Box::new(move |state_tree: &mut StateTree, val: EzValues| {
                         let state = state_tree.get_by_path_mut(&path)
@@ -76,9 +76,8 @@ impl EzObject for Label {
 
     fn get_state_mut(&mut self) -> &mut dyn GenericState { &mut self.state }
 
-    fn get_contents(&self, state_tree: &mut common::definitions::StateTree)
-        -> common::definitions::PixelMap {
-
+    fn get_contents(&self, state_tree: &mut StateTree) -> PixelMap {
+        
         let state = state_tree
             .get_by_path_mut(&self.get_full_path()).as_label_mut();
         let mut text;
@@ -91,8 +90,7 @@ impl EzObject for Label {
         } else {
             text = state.text.value.clone();
         }
-
-
+        
         let chunk_size =
             if state.get_size().infinite_width || state.get_auto_scale().width.value {text.len() + 1}
             else {state.get_effective_size().width};
@@ -131,15 +129,15 @@ impl EzObject for Label {
                 if y < content_lines.len() && x < content_lines[y].len() {
                     new_y.push(Pixel {
                         symbol: content_lines[y][x..x+1].to_string(),
-                        foreground_color: state.get_color_config().foreground,
-                        background_color: state.get_color_config().background,
+                        foreground_color: state.get_color_config().foreground.value,
+                        background_color: state.get_color_config().background.value,
                         underline: false
                     })
                 } else {
                     new_y.push(Pixel {
                         symbol: " ".to_string(),
-                        foreground_color: state.get_color_config().foreground,
-                        background_color: state.get_color_config().background,
+                        foreground_color: state.get_color_config().foreground.value,
+                        background_color: state.get_color_config().background.value,
                         underline: false
                     })
                 }
@@ -154,8 +152,8 @@ impl EzObject for Label {
         let parent_colors = state_tree.get_by_path(self.get_full_path()
             .rsplit_once('/').unwrap().0).as_generic().get_color_config();
         contents = common::widget_functions::add_padding(
-            contents, state.get_padding(), parent_colors.background,
-            parent_colors.foreground);
+            contents, state.get_padding(), parent_colors.background.value,
+            parent_colors.foreground.value);
         contents
     }
 }

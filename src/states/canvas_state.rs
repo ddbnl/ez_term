@@ -1,4 +1,5 @@
 use crate::common::definitions::Coordinates;
+use crate::EzProperty;
 use crate::scheduler::Scheduler;
 use crate::states::definitions::{StateCoordinates, SizeHint, PosHint, StateSize, AutoScale, Padding,
                                  HorizontalAlignment, VerticalAlignment, BorderConfig, ColorConfig};
@@ -34,10 +35,10 @@ pub struct CanvasState {
     pub padding: Padding,
 
     /// Horizontal alignment of this widget
-    pub halign: HorizontalAlignment,
+    pub halign: EzProperty<HorizontalAlignment>,
 
     /// Vertical alignment of this widget
-    pub valign: VerticalAlignment,
+    pub valign: EzProperty<VerticalAlignment>,
 
     /// [BorderConfig] object that will be used to draw the border if enabled
     pub border_config: BorderConfig,
@@ -45,13 +46,11 @@ pub struct CanvasState {
     /// Object containing colors to be used by this widget in different situations
     pub colors: ColorConfig,
 
-    /// Bool representing if state has changed. Triggers widget redraw.
-    pub changed: bool,
+    /// Bool representing whether widget is disabled, i.e. cannot be interacted with
+    pub disabled: EzProperty<bool>,
 
-    /// If true this forces a global screen redraw on the next frame. Screen redraws are diffed
-    /// so this can be called when needed without degrading performance. If only screen positions
-    /// that fall within this widget must be redrawn, call [EzObject.redraw] instead.
-    pub force_redraw: bool,
+    /// Global order number in which this widget will be selection when user presses down/up keys
+    pub selection_order: EzProperty<usize>,
 }
 impl CanvasState {
 
@@ -61,17 +60,21 @@ impl CanvasState {
             path: path.clone(),
             position: StateCoordinates::new(0, 0, path.clone(), scheduler),
             absolute_position: Coordinates::default(),
-            pos_hint: PosHint::default(),
+            pos_hint: PosHint::new(None, None, path.clone(), scheduler),
             size: StateSize::new(0, 0, path.clone(), scheduler),
-            size_hint: SizeHint::default(),
+            size_hint: SizeHint::new(Some(1.0), Some(1.0), path.clone(), scheduler),
             auto_scale: AutoScale::new(false, false, path.clone(), scheduler),
             padding: Padding::new(0, 0, 0, 0, path.clone(), scheduler),
-            border_config: BorderConfig::new(false, path, scheduler),
-            colors: ColorConfig::default(),
-            halign: HorizontalAlignment::Left,
-            valign: VerticalAlignment::Top,
-            changed: false,
-            force_redraw: false,
+            border_config: BorderConfig::new(false, path.clone(), scheduler),
+             colors: ColorConfig::new(path.clone(), scheduler),
+            halign: scheduler.new_horizontal_alignment_property(
+                format!("{}/halign", path), HorizontalAlignment::Left),
+            valign: scheduler.new_vertical_alignment_property(
+                format!("{}/valign", path), VerticalAlignment::Top),
+            disabled: scheduler.new_bool_property(
+                format!("{}/disabled", path),false),
+            selection_order: scheduler.new_usize_property(
+                format!("{}/selection_order", path), 0),
         }
     }
 }
@@ -81,19 +84,13 @@ impl GenericState for CanvasState {
         &self.path
     }
 
-    fn set_size_hint(&mut self, size_hint: SizeHint) {
-        if self.size_hint != size_hint { self.changed = true }
-        self.size_hint = size_hint;
-    }
-
     fn get_size_hint(&self) -> &SizeHint { &self.size_hint }
 
-    fn set_pos_hint(&mut self, pos_hint: PosHint) {
-        if self.pos_hint != pos_hint { self.changed = true }
-        self.pos_hint = pos_hint;
-    }
+    fn get_size_hint_mut(&mut self) -> &mut SizeHint { &mut self.size_hint }
 
     fn get_pos_hint(&self) -> &PosHint { &self.pos_hint }
+
+    fn get_pos_hint_mut(&mut self) -> &mut PosHint { &mut self.pos_hint }
 
     fn get_auto_scale(&self) -> &AutoScale { &self.auto_scale }
 
@@ -106,56 +103,50 @@ impl GenericState for CanvasState {
     fn get_position(&self) -> &StateCoordinates { &self.position }
 
     fn get_position_mut(&mut self) -> &mut StateCoordinates {
-        self.changed = true;
         &mut self.position
     }
 
     fn set_absolute_position(&mut self, pos: Coordinates) {
-        if self.absolute_position != pos { self.changed = true }
         self.absolute_position = pos;
     }
 
     fn get_absolute_position(&self) -> Coordinates { self.absolute_position }
 
     fn set_horizontal_alignment(&mut self, alignment: HorizontalAlignment) {
-        if self.halign != alignment { self.changed = true }
-        self.halign = alignment;
+        self.halign.set(alignment);
     }
 
-    fn get_horizontal_alignment(&self) -> HorizontalAlignment { self.halign }
+    fn get_horizontal_alignment(&self) -> &EzProperty<HorizontalAlignment> { &self.halign }
 
     fn set_vertical_alignment(&mut self, alignment: VerticalAlignment) {
-        if self.valign != alignment { self.changed = true }
-        self.valign = alignment;
+        self.valign.set(alignment);
     }
 
-    fn get_vertical_alignment(&self) -> VerticalAlignment { self.valign }
+    fn get_vertical_alignment(&self) -> &EzProperty<VerticalAlignment> { &self.valign }
 
-    fn get_padding(&self) -> &Padding { &self.padding }
+    fn get_padding(&self) -> &Padding { &self.padding}
 
     fn get_padding_mut(&mut self) -> &mut Padding { &mut self.padding }
-
-    fn set_border_config(&mut self, config: BorderConfig) {
-        if self.border_config != config { self.changed = true }
-        self.border_config = config;
-    }
 
     fn get_border_config(&self) -> &BorderConfig { &self.border_config  }
 
     fn get_border_config_mut(&mut self) -> &mut BorderConfig {
-        self.changed = true;
         &mut self.border_config
-    }
-
-    fn set_color_config(&mut self, config: ColorConfig) {
-        if self.colors != config { self.changed = true }
-        self.colors = config;
     }
 
     fn get_color_config(&self) -> &ColorConfig { &self.colors }
 
     fn get_colors_config_mut(&mut self) -> &mut ColorConfig {
-        self.changed = true;
         &mut self.colors
     }
+
+    fn set_disabled(&mut self, disabled: bool) {
+        self.disabled.set(disabled)
+    }
+
+    fn get_disabled(&self) -> &EzProperty<bool> { &self.disabled }
+
+    fn get_selection_order(&self) -> &EzProperty<usize> { &self.selection_order }
+
+    fn set_selection_order(&mut self, order: usize) { self.selection_order.set(order); }
 }

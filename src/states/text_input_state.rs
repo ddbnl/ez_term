@@ -38,26 +38,13 @@ pub struct TextInputState {
     pub padding: Padding,
 
     /// Horizontal alignment of this widget
-    pub halign: HorizontalAlignment,
+    pub halign: EzProperty<HorizontalAlignment>,
 
     /// Vertical alignment of this widget
-    pub valign: VerticalAlignment,
-    
-    /// Position of cursor relative to this widget
-    pub cursor_pos: Coordinates,
-
-    /// Bool representing whether we have a blinking scheduled task running
-    pub active_blink_task: bool,
-
-    /// Switch for blinking. When true displays [cursor_color] on the [cursor_pos]
-    pub blink_switch: bool,
-
-    /// If text is larger than the widget, only a part of the text can be displayed. This is the
-    /// index of where to start viewing the text.
-    pub view_start: usize,
+    pub valign: EzProperty<VerticalAlignment>,
 
     /// How many characters [text] may hold
-    pub max_length: usize,
+    pub max_length: EzProperty<usize>,
 
     /// [BorderConfig] object that will be used to draw the border if enabled
     pub border_config: BorderConfig,
@@ -66,21 +53,26 @@ pub struct TextInputState {
     pub colors: ColorConfig,
 
     /// Bool representing whether widget is disabled, i.e. cannot be interacted with
-    pub disabled: bool,
+    pub disabled: EzProperty<bool>,
 
     /// Global order number in which this widget will be selection when user presses down/up keys
-    pub selection_order: usize,
+    pub selection_order: EzProperty<usize>,
 
-    /// Bool representing whether this widget is currently selected.
+    /// Bool representing whether this widget is currently selected. Internal only.
     pub selected: bool,
 
-    /// Bool representing if state has changed. Triggers widget redraw.
-    pub changed: bool,
+    /// Position of cursor relative to this widget. Internal only
+    pub cursor_pos: Coordinates,
 
-    /// If true this forces a global screen redraw on the next frame. Screen redraws are diffed
-    /// so this can be called when needed without degrading performance. If only screen positions
-    /// that fall within this widget must be redrawn, call [EzObject.redraw] instead.
-    pub force_redraw: bool,
+    /// Bool representing whether we have a blinking scheduled task running. Internal only
+    pub active_blink_task: bool,
+
+    /// Switch for blinking. When true displays [cursor_color] on the [cursor_pos]. Internal only
+    pub blink_switch: bool,
+
+    /// If text is larger than the widget, only a part of the text can be displayed. This is the
+    /// index of where to start viewing the text. Internal only.
+    pub view_start: usize,
 }
 impl TextInputState {
 
@@ -91,26 +83,29 @@ impl TextInputState {
             position: StateCoordinates::new(0, 0, path.clone(), scheduler),
             absolute_position: Coordinates::default(),
             size: StateSize::new(0, 0, path.clone(), scheduler),
-            size_hint: SizeHint::default(),
+            size_hint: SizeHint::new(Some(1.0), Some(1.0), path.clone(), scheduler),
             auto_scale: AutoScale::new(false, false, path.clone(), scheduler),
-            pos_hint: PosHint::default(),
+            pos_hint: PosHint::new(None, None, path.clone(), scheduler),
             padding: Padding::new(0, 0, 0, 0, path.clone(), scheduler),
-            halign: HorizontalAlignment::Left,
-            valign: VerticalAlignment::Top,
+            halign: scheduler.new_horizontal_alignment_property(
+                format!("{}/halign", path), HorizontalAlignment::Left),
+            valign: scheduler.new_vertical_alignment_property(
+                format!("{}/valign", path), VerticalAlignment::Top),
             cursor_pos: Coordinates::default(),
             active_blink_task: false,
             blink_switch: false,
             view_start: 0,
-            disabled: false,
+            disabled: scheduler.new_bool_property(
+                format!("{}/disabled", path),false),
             selected: false,
-            selection_order: 0,
-            text: scheduler.new_string_property(format!("{}/text", path.clone()),
+            selection_order: scheduler.new_usize_property(
+                format!("{}/selection_order", path), 0),
+            text: scheduler.new_string_property(format!("{}/text", path),
                                                 String::new()),
-            max_length: 10000,
-            border_config: BorderConfig::new(false, path, scheduler),
-            colors: ColorConfig::default(),
-            changed: false,
-            force_redraw: false
+            max_length: scheduler.new_usize_property(
+                format!("{}/max_length", path), 0),
+            border_config: BorderConfig::new(false, path.clone(), scheduler),
+            colors: ColorConfig::new(path, scheduler),
         }
     }
 }
@@ -118,23 +113,15 @@ impl TextInputState {
 
 impl GenericState for TextInputState {
 
-    fn get_path(&self) -> &String {
-        &self.path
-    }
-
-    fn set_size_hint(&mut self, size_hint: SizeHint) {
-        if self.size_hint != size_hint { self.changed = true }
-        self.size_hint = size_hint;
-    }
+    fn get_path(&self) -> &String { &self.path }
 
     fn get_size_hint(&self) -> &SizeHint { &self.size_hint }
 
-    fn set_pos_hint(&mut self, pos_hint: PosHint) {
-        if self.pos_hint != pos_hint { self.changed = true }
-        self.pos_hint = pos_hint;
-    }
+    fn get_size_hint_mut(&mut self) -> &mut SizeHint { &mut self.size_hint }
 
     fn get_pos_hint(&self) -> &PosHint { &self.pos_hint }
+
+    fn get_pos_hint_mut(&mut self) -> &mut PosHint { &mut self.pos_hint }
 
     fn get_auto_scale(&self) -> &AutoScale { &self.auto_scale }
 
@@ -146,78 +133,47 @@ impl GenericState for TextInputState {
 
     fn get_position(&self) -> &StateCoordinates { &self.position }
 
-    fn get_position_mut(&mut self) -> &mut StateCoordinates {
-        self.changed = true;
-        &mut self.position
-    }
+    fn get_position_mut(&mut self) -> &mut StateCoordinates { &mut self.position }
 
     fn set_absolute_position(&mut self, pos: Coordinates) { self.absolute_position = pos }
 
     fn get_absolute_position(&self) -> Coordinates { self.absolute_position }
 
     fn set_horizontal_alignment(&mut self, alignment: HorizontalAlignment) {
-        if self.halign != alignment { self.changed = true }
-        self.halign = alignment;
+        self.halign.set(alignment);
     }
 
-    fn get_horizontal_alignment(&self) -> HorizontalAlignment { self.halign }
+    fn get_horizontal_alignment(&self) -> &EzProperty<HorizontalAlignment> { &self.halign }
 
     fn set_vertical_alignment(&mut self, alignment: VerticalAlignment) {
-        if self.valign != alignment { self.changed = true }
-        self.valign = alignment;
+        self.valign.set(alignment);
     }
 
-    fn get_vertical_alignment(&self) -> VerticalAlignment { self.valign }
+    fn get_vertical_alignment(&self) -> &EzProperty<VerticalAlignment> { &self.valign }
 
     fn get_padding(&self) -> &Padding { &self.padding }
 
     fn get_padding_mut(&mut self) -> &mut Padding { &mut self.padding }
 
-    fn set_border_config(&mut self, config: BorderConfig) {
-        if self.border_config != config { self.changed = true }
-        self.border_config = config;
-    }
-
     fn get_border_config(&self) -> &BorderConfig { &self.border_config  }
 
-    fn get_border_config_mut(&mut self) -> &mut BorderConfig {
-        self.changed = true;
-        &mut self.border_config
-    }
-
-
-    fn set_color_config(&mut self, config: ColorConfig) {
-        if self.colors != config { self.changed = true }
-        self.colors = config;
-    }
+    fn get_border_config_mut(&mut self) -> &mut BorderConfig {  &mut self.border_config  }
 
     fn get_color_config(&self) -> &ColorConfig { &self.colors }
 
-    fn get_colors_config_mut(&mut self) -> &mut ColorConfig {
-        self.changed = true;
-        &mut self.colors
-    }
+    fn get_colors_config_mut(&mut self) -> &mut ColorConfig { &mut self.colors }
 
     fn is_selectable(&self) -> bool { true }
 
-    fn set_disabled(&mut self, disabled: bool) {
-        if self.disabled != disabled { self.changed = true }
-        self.disabled = disabled
-    }
+    fn set_disabled(&mut self, disabled: bool) { self.disabled.set(disabled) }
 
-    fn get_disabled(&self) -> bool { self.disabled }
+    fn get_disabled(&self) -> &EzProperty<bool> { &self.disabled }
 
-    fn get_selection_order(&self) -> usize { self.selection_order }
+    fn get_selection_order(&self) -> &EzProperty<usize> { &self.selection_order }
 
-    fn set_selection_order(&mut self, order: usize) {
-        if self.selection_order != order { self.changed = true };
-        self.selection_order = order;
-    }
+    fn set_selection_order(&mut self, order: usize) { self.selection_order.set(order); }
 
-    fn set_selected(&mut self, state: bool) {
-        if self.selected != state { self.changed = true }
-        self.selected = state;
-    }
+    fn set_selected(&mut self, state: bool) { self.selected = state; }
 
     fn get_selected(&self) -> bool { self.selected }
 }
@@ -228,49 +184,42 @@ impl TextInputState {
     pub fn get_text_mut(&mut self) -> &mut EzProperty<String> { &mut self.text }
 
     pub fn set_cursor_pos(&mut self, cursor_pos: Coordinates) {
-        if self.cursor_pos != cursor_pos { self.changed = true }
         self.cursor_pos = cursor_pos;
     }
 
     pub fn set_cursor_x(&mut self, pos: usize) {
-        if self.cursor_pos.x != pos { self.changed = true }
         self.cursor_pos.x = pos;
     }
 
     pub fn set_cursor_y(&mut self, pos: usize) {
-        if self.cursor_pos.y != pos { self.changed = true }
         self.cursor_pos.y = pos;
     }
 
     pub fn get_cursor_pos(&self) -> Coordinates { self.cursor_pos }
 
     pub fn set_active_blink_task(&mut self, active: bool) {
-        if self.active_blink_task != active { self.changed = true }
         self.active_blink_task = active;
     }
 
     pub fn get_active_blink_task(&self) -> bool { self.active_blink_task }
 
     pub fn set_blink_switch(&mut self, active: bool) {
-        if self.blink_switch != active { self.changed = true }
         self.blink_switch = active;
     }
 
     pub fn get_blink_switch(&self) -> bool { self.blink_switch }
 
     pub fn set_view_start(&mut self, view_start: usize) {
-        if self.view_start != view_start { self.changed = true }
         self.view_start = view_start;
     }
 
     pub fn get_view_start(&self) -> usize { self.view_start }
 
     pub fn set_max_length(&mut self, max_length: usize) {
-        if self.max_length != max_length { self.changed = true }
-        self.max_length = max_length;
+        self.max_length.set(max_length);
     }
 
-    pub fn get_max_length(&self) -> usize { self.max_length }
+    pub fn get_max_length(&self) -> &EzProperty<usize> { &self.max_length }
 
 }
 

@@ -4,7 +4,7 @@ use crate::common;
 use crate::common::definitions::{PixelMap, StateTree};
 use crate::widgets::widget::{Pixel, EzObject};
 use crate::parser;
-use crate::parser::load_ez_int_parameter;
+use crate::parser::load_ez_int_property;
 use crate::property::EzValues;
 use crate::scheduler::Scheduler;
 use crate::states::progress_bar_state::ProgressBarState;
@@ -37,20 +37,20 @@ impl EzObject for ProgressBar {
 
     fn load_ez_parameter(&mut self, parameter_name: String, parameter_value: String,
                          scheduler: &mut Scheduler) {
-        let consumed = parser::load_common_parameters(
+        let consumed = parser::load_common_property(
             &parameter_name, parameter_value.clone(), self, scheduler);
         if consumed { return }
         match parameter_name.as_str() {
             "value" => {
                 let path = self.path.clone();
                 self.state.set_value(
-                    load_ez_int_parameter(
+                    load_ez_int_property(
                         parameter_value.trim(), scheduler,
                         self.path.clone(),
                         Box::new(move |state_tree: &mut StateTree, val: EzValues| {
                             let state = state_tree.get_by_path_mut(&path)
                                 .as_progress_bar_mut();
-                            state.set_value(val.as_usize().clone());
+                            state.set_value(*val.as_usize());
                             path.clone()
                         })))
             },
@@ -85,8 +85,8 @@ impl EzObject for ProgressBar {
         for x in 0..state.get_effective_size().width {
             let symbol = if value_pos != 0 && x <= value_pos { "█" } else {"░"};
             contents.push(vec!(Pixel::new(symbol.to_string(),
-                                          state.get_color_config().foreground,
-                                     state.get_color_config().background)));
+                                          state.get_color_config().foreground.value,
+                                     state.get_color_config().background.value)));
         }
         if state.get_border_config().enabled.value {
             contents = common::widget_functions::add_border(
@@ -97,8 +97,8 @@ impl EzObject for ProgressBar {
         let parent_colors = state_tree.get_by_path(self.get_full_path()
             .rsplit_once('/').unwrap().0).as_generic().get_color_config();
         contents = common::widget_functions::add_padding(
-            contents, state.get_padding(), parent_colors.background,
-            parent_colors.foreground);
+            contents, state.get_padding(), parent_colors.background.value,
+            parent_colors.foreground.value);
         contents
     }
 }

@@ -3,7 +3,7 @@ use crate::common::definitions::{Coordinates, Size, StateTree};
 use crate::states::definitions::{StateCoordinates, SizeHint, PosHint, StateSize, AutoScale, Padding,
                                  HorizontalAlignment, VerticalAlignment, BorderConfig, ColorConfig,
                                  LayoutMode, LayoutOrientation, ScrollingConfig};
-use crate::common;
+use crate::{common, EzProperty};
 use crate::scheduler::Scheduler;
 use crate::states::state::GenericState;
 use crate::widgets::widget::EzObjects;
@@ -44,29 +44,29 @@ pub struct LayoutState {
     pub padding: Padding,
 
     /// Horizontal alignment of this widget
-    pub halign: HorizontalAlignment,
+    pub halign: EzProperty<HorizontalAlignment>,
 
     /// Vertical alignment of this widget
-    pub valign: VerticalAlignment,
+    pub valign: EzProperty<VerticalAlignment>,
 
     /// ID of the child that is the active screen (i.e. its content is visible)
-    pub active_screen: String,
+    pub active_screen: EzProperty<String>,
 
     /// Name shown for tab if [is_tab] is true and parent [is_tabbed]
-    pub tab_name: String,
+    pub tab_name: EzProperty<String>,
 
     /// Path to active tab (i.e. its content is visible)
-    pub active_tab: String,
+    pub active_tab: EzProperty<String>,
 
     /// Path to active tab header button
     pub selected_tab_header: String,
 
     /// Bool representing whether this layout should be filled with [filler_symbol] in positions
     /// where it does not get other content from [get_contents]
-    pub fill: bool,
+    pub fill: EzProperty<bool>,
 
     /// The [Pixel.Symbol] to use for filler pixels if [fill] is true
-    pub filler_symbol: String,
+    pub filler_symbol: EzProperty<String>,
 
     /// [BorderConfig] object that will be used to draw the border if enabled
     pub border_config: BorderConfig,
@@ -87,21 +87,13 @@ pub struct LayoutState {
     pub templates: common::definitions::Templates,
 
     /// Bool representing whether widget is disabled, i.e. cannot be interacted with
-    pub disabled: bool,
+    pub disabled: EzProperty<bool>,
 
     /// Global order number in which this widget will be selection when user presses down/up keys
-    pub selection_order: usize,
+    pub selection_order: EzProperty<usize>,
 
     /// Bool representing whether this widget is currently selected.
     pub selected: bool,
-
-    /// Bool representing if state has changed. Triggers widget redraw.
-    pub changed: bool,
-
-    /// If true this forces a global screen redraw on the next frame. Screen redraws are diffed
-    /// so this can be called when needed without degrading performance. If only screen positions
-    /// that fall within this widget must be redrawn, call [EzObject.redraw] instead.
-    pub force_redraw: bool,
 }
 impl LayoutState {
 
@@ -111,32 +103,38 @@ impl LayoutState {
             path: path.clone(),
             position: StateCoordinates::new(0, 0, path.clone(), scheduler),
             absolute_position: Coordinates::default(),
-            size_hint: SizeHint::default(),
-            pos_hint: PosHint::default(),
+            size_hint: SizeHint::new(Some(1.0), Some(1.0), path.clone(), scheduler),
+            pos_hint: PosHint::new(None, None, path.clone(), scheduler),
             size: StateSize::new(0, 0, path.clone(), scheduler),
             auto_scale: AutoScale::new(false, false, path.clone(), scheduler),
             orientation: LayoutOrientation::Horizontal,
             mode: LayoutMode::Box,
             padding: Padding::new(0, 0, 0, 0, path.clone(), scheduler),
-            halign: HorizontalAlignment::Left,
-            valign: VerticalAlignment::Top,
-            active_screen: String::new(),
-            tab_name: "Tab".to_string(),
-            active_tab: String::new(),
+            halign: scheduler.new_horizontal_alignment_property(
+                format!("{}/halign", path), HorizontalAlignment::Left),
+            valign: scheduler.new_vertical_alignment_property(
+                format!("{}/valign", path), VerticalAlignment::Top),
+            active_screen: scheduler.new_string_property(
+                format!("{}/active_screen", path), String::new()),
+            tab_name: scheduler.new_string_property(
+                format!("{}/tab_name", path), "Tab".to_string()),
+            active_tab: scheduler.new_string_property(
+                format!("{}/active_tab", path), String::new()),
             selected_tab_header: String::new(),
-            fill: false,
-            filler_symbol: String::new(),
+            fill: scheduler.new_bool_property(format!("{}/fill", path),false),
+            filler_symbol: scheduler.new_string_property(
+                format!("{}/filler_symbol", path), String::new()),
             scrolling_config: ScrollingConfig::new(false, false, path.clone(),
                                                    scheduler),
-            border_config: BorderConfig::new(false, path, scheduler),
-            colors: ColorConfig::default(),
-            changed: false,
+            border_config: BorderConfig::new(false, path.clone(), scheduler),
+            colors: ColorConfig::new(path.clone(), scheduler),
             open_modals: Vec::new(),
             templates: HashMap::new(),
-            disabled: false,
+            disabled: scheduler.new_bool_property(
+                format!("{}/disabled", path),false),
             selected: false,
-            selection_order: 0,
-            force_redraw: false
+            selection_order: scheduler.new_usize_property(
+                format!("{}/selection_order", path), 0),
         }
     }
 }
@@ -144,16 +142,13 @@ impl GenericState for LayoutState {
 
     fn get_path(&self) -> &String { &self.path }
 
-    fn set_size_hint(&mut self, size_hint: SizeHint) { self.size_hint = size_hint; }
-
     fn get_size_hint(&self) -> &SizeHint { &self.size_hint }
 
-    fn set_pos_hint(&mut self, pos_hint: PosHint) {
-        if self.pos_hint != pos_hint { self.changed = true }
-        self.pos_hint = pos_hint;
-    }
+    fn get_size_hint_mut(&mut self) -> &mut SizeHint { &mut self.size_hint }
 
     fn get_pos_hint(&self) -> &PosHint { &self.pos_hint }
+
+    fn get_pos_hint_mut(&mut self) -> &mut PosHint { &mut self.pos_hint }
 
     fn get_auto_scale(&self) -> &AutoScale { &self.auto_scale }
 
@@ -200,7 +195,6 @@ impl GenericState for LayoutState {
     fn get_position(&self) -> &StateCoordinates { &self.position }
 
     fn get_position_mut(&mut self) -> &mut StateCoordinates {
-        self.changed = true;
         &mut self.position
     }
 
@@ -209,44 +203,30 @@ impl GenericState for LayoutState {
     fn get_absolute_position(&self) -> Coordinates { self.absolute_position }
 
     fn set_horizontal_alignment(&mut self, alignment: HorizontalAlignment) {
-        if self.halign != alignment { self.changed = true }
-        self.halign = alignment;
+        self.halign.set(alignment);
     }
 
-    fn get_horizontal_alignment(&self) -> HorizontalAlignment { self.halign }
+    fn get_horizontal_alignment(&self) -> &EzProperty<HorizontalAlignment> { &self.halign }
 
     fn set_vertical_alignment(&mut self, alignment: VerticalAlignment) {
-        if self.valign != alignment { self.changed = true }
-        self.valign = alignment;
+        self.valign.set(alignment);
     }
 
-    fn get_vertical_alignment(&self) -> VerticalAlignment { self.valign }
+    fn get_vertical_alignment(&self) -> &EzProperty<VerticalAlignment> { &self.valign }
 
     fn get_padding(&self) -> &Padding { &self.padding }
 
     fn get_padding_mut(&mut self) -> &mut Padding { &mut self.padding }
 
-    fn set_border_config(&mut self, config: BorderConfig) {
-        if self.border_config != config { self.changed = true }
-        self.border_config = config;
-    }
-
     fn get_border_config(&self) -> &BorderConfig { &self.border_config  }
 
     fn get_border_config_mut(&mut self) -> &mut BorderConfig {
-        self.changed = true;
         &mut self.border_config
-    }
-
-    fn set_color_config(&mut self, config: ColorConfig) {
-        if self.colors != config { self.changed = true }
-        self.colors = config;
     }
 
     fn get_color_config(&self) -> &ColorConfig { &self.colors }
 
     fn get_colors_config_mut(&mut self) -> &mut ColorConfig {
-        self.changed = true;
         &mut self.colors
     }
 
@@ -254,23 +234,16 @@ impl GenericState for LayoutState {
         || self.get_scrolling_config().is_scrolling_y || self.mode == LayoutMode::Tabbed }
 
     fn set_disabled(&mut self, disabled: bool) {
-        if self.disabled != disabled { self.changed = true }
-        self.disabled = disabled
+        self.disabled.set(disabled)
     }
 
-    fn get_disabled(&self) -> bool { self.disabled }
+    fn get_disabled(&self) -> &EzProperty<bool> { &self.disabled }
 
-    fn get_selection_order(&self) -> usize { self.selection_order }
+    fn get_selection_order(&self) -> &EzProperty<usize> { &self.selection_order }
 
-    fn set_selection_order(&mut self, order: usize) {
-        if self.selection_order != order { self.changed = true };
-        self.selection_order = order;
-    }
+    fn set_selection_order(&mut self, order: usize) { self.selection_order.set(order); }
 
-    fn set_selected(&mut self, state: bool) {
-        if self.selected != state { self.changed = true }
-        self.selected = state;
-    }
+    fn set_selected(&mut self, state: bool) { self.selected = state; }
 
     fn get_selected(&self) -> bool { self.selected }
 }
@@ -291,36 +264,26 @@ impl LayoutState {
     pub fn get_orientation(&self) -> &LayoutOrientation { &self.orientation }
 
     /// Set the ID of the child that is the currently active screen (i.e. content is showing)
-    pub fn set_active_screen(&mut self, id: String) {
-        if self.active_screen != id { self.changed = true }
-        self.active_screen = id;
-    }
+    pub fn set_active_screen(&mut self, id: String) { self.active_screen.set(id); }
 
     /// Get the ID of the child that is the currently active screen (i.e. content is showing)
-    pub fn get_active_screen(&self) -> String { self.active_screen.clone() }
+    pub fn get_active_screen(&self) -> &EzProperty<String> { &self.active_screen }
 
     /// Set the path to the Layout that is currently active as the current tab (i.e. content is
     /// showing)
-    pub fn set_active_tab(&mut self, path: String) {
-        if self.active_tab != path { self.changed = true }
-        self.active_tab = path;
-    }
+    pub fn set_active_tab(&mut self, path: String) { self.active_tab.set(path); }
 
     /// Get the [path] to the Layout that is currently active as a tab (i.e. content is showing)
-    pub fn get_active_tab(&self) -> String { self.active_tab.clone() }
+    pub fn get_active_tab(&self) -> &EzProperty<String> { &self.active_tab }
 
     /// Set the tab header that is currently selected
-    pub fn set_selected_tab_header(&mut self, path: String) {
-        if self.selected_tab_header != path { self.changed = true }
-        self.selected_tab_header = path;
-    }
+    pub fn set_selected_tab_header(&mut self, path: String) { self.selected_tab_header = path; }
 
     /// Get the tab header that is currently selected
     pub fn get_selected_tab_header(&self) -> String { self.selected_tab_header.clone() }
 
     /// Set the [ScrollingConfig] active for this Layout
     pub fn set_scrolling_config(&mut self, config: ScrollingConfig) {
-        if self.scrolling_config != config { self.changed = true }
         self.scrolling_config = config;
     }
 
@@ -329,22 +292,24 @@ impl LayoutState {
 
     /// Get a mutable ref to the [ScrollingConfig] active for this Layout
     pub fn get_scrolling_config_mut(&mut self) -> &mut ScrollingConfig {
-        self.changed = true;
         &mut self.scrolling_config
     }
 
+    /// Set [fill]
+    pub fn set_fill(&mut self, enable: bool) { self.fill.set(enable); }
+
+    /// Get [fill]
+    pub fn get_fill(&self) -> &EzProperty<bool> { &self.fill }
+
     /// Set [filler_symbol]
-    pub fn set_filler_symbol(&mut self, symbol: String) {
-        if self.filler_symbol != symbol { self.changed = true }
-        self.filler_symbol = symbol;
-    }
+    pub fn set_filler_symbol(&mut self, symbol: String) { self.filler_symbol.set(symbol); }
 
     /// Get [filler_symbol]
-    pub fn get_filler_symbol(&self) -> String { self.filler_symbol.clone() }
+    pub fn get_filler_symbol(&self) -> &EzProperty<String> { &self.filler_symbol }
 
     /// Open a popup based on a template defined in the Ez file. Returns the state of the new popup
     pub fn open_popup(&mut self, template: String, scheduler: &mut Scheduler)
-        -> (String, common::definitions::StateTree) {
+        -> (String, StateTree) {
         let mut popup = self.templates.get(&template).unwrap().clone();
         let init_popup = popup.parse(&mut self.templates, scheduler,
                                      "/modal".to_string(), 0, None);
@@ -352,7 +317,7 @@ impl LayoutState {
     }
     
     /// Open a new modal. Returns the state of the new modal.
-    pub fn open_modal(&mut self, mut modal: EzObjects) -> (String, common::definitions::StateTree) {
+    pub fn open_modal(&mut self, mut modal: EzObjects) -> (String, StateTree) {
 
         if modal.as_ez_object().get_id().is_empty() {
             modal.as_ez_object_mut().set_id(self.open_modals.len().to_string());
@@ -370,23 +335,22 @@ impl LayoutState {
             extra_state_tree.insert(modal_path.clone(),modal.as_ez_object().get_state());
         }
         self.open_modals.push(modal);
-        self.changed = true;
         (modal_path, extra_state_tree)
     }
     
     /// Dismiss the current modal
-    pub fn dismiss_modal(&mut self) {
+    pub fn dismiss_modal(&mut self, scheduler: &mut Scheduler) {
         self.open_modals.remove(0);
-        self.changed = true;
-        self.force_redraw = true;
+        self.update(scheduler);
+        scheduler.force_redraw();
     }
 
     /// Dismiss all modals, clearing the entire stack
-    pub fn dismiss_all_modals(&mut self) {
+    pub fn dismiss_all_modals(&mut self, scheduler: &mut Scheduler) {
 
         self.open_modals.clear();
-        self.changed = true;
-        self.force_redraw = true;
+        self.update(scheduler);
+        scheduler.force_redraw();
     }
     
     /// Get reference to all open modals
@@ -394,7 +358,6 @@ impl LayoutState {
     
     /// Get mutable reference to all open modals
     pub fn get_modals_mut(&mut self) -> &mut Vec<EzObjects> {
-        self.changed = true;
         &mut self.open_modals
     }
 

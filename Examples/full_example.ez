@@ -268,13 +268,13 @@
             fg_color: red
         - RadioButton:
             id: radio2
-            group: test_radios
+            group: parent.radio1.group
             selection_order: 25
             padding_right: 1
             fg_color: green
         - RadioButton:
             id: radio3
-            group: test_radios
+            group: parent.radio1.group
             selection_order: 30
             fg_color: blue
         - Label:
@@ -386,7 +386,7 @@
             allow_none: True
             size_hint_x: none
             width: 20
-            active: option1
+            choice: option1
             options: option1, option2, option3, option4, option5
             fg_color: yellow
             bg_color: red

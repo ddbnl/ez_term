@@ -12,7 +12,7 @@ use crate::common;
 use crate::common::definitions::{CallbackTree, EzContext, PixelMap, StateTree, ViewTree, WidgetTree};
 use crate::scheduler::Scheduler;
 use crate::common::definitions::Coordinates;
-use crate::parser::load_ez_string_parameter;
+use crate::parser::load_ez_string_property;
 use crate::property::EzValues;
 
 #[derive(Clone, Debug)]
@@ -45,14 +45,14 @@ impl EzObject for TextInput {
     fn load_ez_parameter(&mut self, parameter_name: String, parameter_value: String,
                          scheduler: &mut Scheduler) {
 
-        let consumed = parser::load_common_parameters(
+        let consumed = parser::load_common_property(
             &parameter_name, parameter_value.clone(),self, scheduler);
         if consumed { return }
         match parameter_name.as_str() {
             "max_length" => self.state.set_max_length(parameter_value.trim().parse().unwrap()),
             "text" => {
                 let path = self.path.clone();
-                self.state.text.set(load_ez_string_parameter(
+                self.state.text.set(load_ez_string_property(
                     parameter_value.trim(), scheduler, path.clone(),
                     Box::new(move |state_tree: &mut StateTree, val: EzValues| {
                         let state = state_tree.get_by_path_mut(&path)
@@ -107,7 +107,7 @@ impl EzObject for TextInput {
                         symbol: text.pop().unwrap().to_string(),
                         foreground_color: fg_color,
                         background_color: if state.get_blink_switch() &&
-                            x == state.get_cursor_pos().x {state.get_color_config().cursor }
+                            x == state.get_cursor_pos().x {state.get_color_config().cursor.value }
                         else {bg_color},
                         underline: true})
                 } else {
@@ -115,7 +115,7 @@ impl EzObject for TextInput {
                         symbol: " ".to_string(),
                         foreground_color: fg_color,
                         background_color: if state.get_blink_switch() &&
-                            x == state.get_cursor_pos().x {state.get_color_config().cursor }
+                            x == state.get_cursor_pos().x {state.get_color_config().cursor.value }
                             else {bg_color},
                         underline: true})
                 }
@@ -136,8 +136,8 @@ impl EzObject for TextInput {
         let parent_colors = state_tree.get_by_path(self.get_full_path()
             .rsplit_once('/').unwrap().0).as_generic().get_color_config();
         contents = common::widget_functions::add_padding(
-            contents, state.get_padding(),parent_colors.background,
-            parent_colors.foreground);
+            contents, state.get_padding(),parent_colors.background.value,
+            parent_colors.foreground.value);
         contents
     }
 
@@ -228,7 +228,8 @@ impl EzObject for TextInput {
 /// view where necessary.
 pub fn handle_char(state: &mut TextInputState, char: char, scheduler: &mut Scheduler) {
 
-    if state.get_text().value.len() >= state.get_max_length() {
+    if state.get_max_length().value > 0 &&
+        state.get_text().value.len() >= state.get_max_length().value {
         return
     }
     let cursor_pos = state.get_cursor_pos();

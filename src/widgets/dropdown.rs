@@ -5,11 +5,13 @@
 use crossterm::event::{Event, KeyCode, MouseButton, MouseEventKind};
 use crate::common;
 use crate::common::definitions::{CallbackTree, Coordinates, PixelMap, StateTree, ViewTree, WidgetTree};
-use crate::states::definitions::{StateSize, AutoScale, SizeHint, Padding, PosHint, StateCoordinates};
+use crate::states::definitions::{StateSize, AutoScale, SizeHint, Padding, PosHint, StateCoordinates, HorizontalAlignment, VerticalAlignment};
 use crate::states::dropdown_state::{DropdownState, DroppedDownMenuState};
 use crate::states::state::{EzState, GenericState};
 use crate::widgets::widget::{self, EzObject};
 use crate::parser;
+use crate::parser::{load_ez_bool_property, load_ez_string_property};
+use crate::property::EzValues;
 use crate::scheduler::Scheduler;
 
 
@@ -37,6 +39,32 @@ impl Dropdown {
             state: DropdownState::new(path, scheduler),
         }
     }
+
+    fn load_allow_none_property(&mut self, parameter_value: &str, scheduler: &mut Scheduler) {
+
+        let path = self.path.clone();
+        self.state.set_allow_none(load_ez_bool_property(
+            parameter_value.trim(), scheduler, path.clone(),
+            Box::new(move |state_tree: &mut StateTree, val: EzValues| {
+                let state = state_tree.get_by_path_mut(&path)
+                    .as_dropdown_mut();
+                state.set_allow_none(val.as_bool().to_owned());
+                path.clone()
+            })))
+    }
+
+    fn load_choice_property(&mut self, parameter_value: &str, scheduler: &mut Scheduler) {
+
+        let path = self.path.clone();
+        self.state.set_choice(load_ez_string_property(
+            parameter_value.trim(), scheduler, path.clone(),
+            Box::new(move |state_tree: &mut StateTree, val: EzValues| {
+                let state = state_tree.get_by_path_mut(&path)
+                    .as_dropdown_mut();
+                state.set_choice(val.as_string().to_owned());
+                path.clone()
+            })))
+    }
 }
 
 impl EzObject for Dropdown {
@@ -44,20 +72,17 @@ impl EzObject for Dropdown {
     fn load_ez_parameter(&mut self, parameter_name: String, parameter_value: String,
                          scheduler: &mut Scheduler) {
 
-        let consumed = parser::load_common_parameters(
+        let consumed = parser::load_common_property(
             &parameter_name, parameter_value.clone(),self, scheduler);
         if consumed { return }
         match parameter_name.as_str() {
-            "allow_none" =>
-                self.state.allow_none =
-                    parser::load_bool_parameter(parameter_value.trim()),
+            "allow_none" => self.load_allow_none_property(parameter_value.trim(),
+                                                          scheduler),
             "options" => {
                 self.state.options = parameter_value.split(',')
                     .map(|x| x.trim().to_string()).collect();
             },
-            "active" => {
-                self.state.choice = parameter_value.trim().to_string();
-            }
+            "choice" => self.load_choice_property(parameter_value.trim(), scheduler),
             _ => panic!("Invalid parameter name for dropdown {}", parameter_name)
         }
     }
@@ -84,13 +109,13 @@ impl EzObject for Dropdown {
         // If dropped down get full content instead
         // Set a default value if user didn't give one
         let mut active = state.choice.clone();
-        if active.is_empty() && !state.allow_none {
-            active = state.options.first()
-                .expect("Dropdown widget must have at least one option").to_string();
+        if active.value.is_empty() && !state.allow_none.value {
+            active.set(state.options.first()
+                .expect("Dropdown widget must have at least one option").to_string());
         }
         // Create a bordered label representing currently active value
         let (fg_color, bg_color) = state.get_context_colors();
-        let mut text = active.chars().rev().collect::<String>();
+        let mut text = active.value.chars().rev().collect::<String>();
         let mut contents = Vec::new();
 
         let write_width = if state.get_size().infinite_width { text.len() }
@@ -135,20 +160,29 @@ impl EzObject for Dropdown {
             auto_scale: AutoScale::new(
                 false, false, modal_path.clone(), scheduler),
             options: state.get_options(),
-            allow_none: state.allow_none,
-            size_hint: SizeHint::new(None, None),
+            allow_none: scheduler.new_bool_property(
+                format!("{}/allow_none", modal_path), state.allow_none.value),
+            size_hint: SizeHint::new(None, None,
+                                     modal_path.clone(), scheduler),
             position,
             padding: Padding::new(0, 0, 0, 0, modal_path.clone(),
                                   scheduler),
+            halign: scheduler.new_horizontal_alignment_property(
+                format!("{}/halign", modal_path), HorizontalAlignment::Left),
+            valign: scheduler.new_vertical_alignment_property(
+                format!("{}/valign", modal_path), VerticalAlignment::Top),
+            disabled: scheduler.new_bool_property(
+                format!("{}/disabled", modal_path),false),
+            selection_order: scheduler.new_usize_property(
+                format!("{}/selection_order", modal_path), 0),
             absolute_position: state.get_absolute_position(),
-            pos_hint: PosHint::new(None, None),
+            pos_hint: PosHint::new(None, None, modal_path.clone(), scheduler),
             dropped_down_selected_row: 1,
             border_config: state.border_config.clone(),
             colors: state.colors.clone(),
-            changed: false,
-            choice: state.get_choice(),
+            choice: scheduler.new_string_property(format!("{}/choice", modal_path),
+                                                  state.get_choice().value.clone()),
             parent_path: self.path.clone(),
-            force_redraw: false
         };
         let new_modal = DroppedDownMenu {
             id: modal_id,
@@ -162,10 +196,6 @@ impl EzObject for Dropdown {
         state_tree.extend(extra_state_tree);
         true
     }
-
-    fn set_focus(&mut self, enabled: bool) { self.state.focussed = enabled }
-
-    fn get_focus(&self) -> bool { self.state.focussed }
 }
 
 impl Dropdown {
@@ -236,11 +266,11 @@ impl EzObject for DroppedDownMenu {
             let mut new_y = Vec::new();
             for y in 0..options.len() {
                 let fg = if y == state.dropped_down_selected_row
-                {state.get_color_config().selection_foreground }
-                else {state.get_color_config().foreground };
+                {state.get_color_config().selection_foreground.value }
+                else {state.get_color_config().foreground.value };
                 let bg = if y == state.dropped_down_selected_row
-                {state.get_color_config().selection_background }
-                else {state.get_color_config().background };
+                {state.get_color_config().selection_background.value }
+                else {state.get_color_config().background.value };
                 if !options[y].is_empty(){
                     new_y.push(widget::Pixel{symbol: options[y].pop().unwrap().to_string(),
                         foreground_color: fg, background_color: bg, underline: false})
@@ -255,8 +285,8 @@ impl EzObject for DroppedDownMenu {
         let state = state_tree
             .get_by_path(&self.get_full_path()).as_dropped_down_menu();
         contents = common::widget_functions::add_padding(
-            contents, state.get_padding(), state.colors.background,
-            state.colors.foreground);
+            contents, state.get_padding(), state.colors.background.value,
+            state.colors.foreground.value);
         contents = common::widget_functions::add_border(
             contents, state.get_border_config());
         contents
@@ -325,7 +355,7 @@ impl DroppedDownMenu {
         state.set_choice(choice);
         state.update(scheduler);
         let state = state_tree.get_by_path_mut("/root").as_layout_mut();
-        state.dismiss_modal();
+        state.dismiss_modal(scheduler);
         state.update(scheduler);
         self.on_value_change_callback(view_tree, state_tree, widget_tree, callback_tree,
                                       scheduler);
@@ -368,7 +398,7 @@ impl DroppedDownMenu {
                 state.set_choice(choice);
                 state.update(scheduler);
                 let state = state_tree.get_by_path_mut("/root").as_layout_mut();
-                state.dismiss_modal();
+                state.dismiss_modal(scheduler);
                 state.update(scheduler);
                 if let Some(ref mut i) = callback_tree
                     .get_by_path_mut(&parent).on_value_change {
@@ -379,7 +409,7 @@ impl DroppedDownMenu {
             }
         } else {
             let state = state_tree.get_by_path_mut("/root").as_layout_mut();
-            state.dismiss_modal();
+            state.dismiss_modal(scheduler);
             state.update(scheduler);
         }
     }

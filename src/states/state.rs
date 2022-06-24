@@ -2,6 +2,7 @@
 //! A module containing the base structs and traits for widget states.
 use crossterm::style::Color;
 use crate::common::definitions::{Coordinates, Size};
+use crate::EzProperty;
 use crate::scheduler::Scheduler;
 use crate::states::canvas_state::{CanvasState};
 use crate::states::label_state::{LabelState};
@@ -218,30 +219,21 @@ pub trait GenericState {
 
     /// Set to None for passing an absolute width, or to a value between 0 and 1 to
     /// automatically scale width based on parent width
-    fn set_size_hint(&mut self, _size_hint: SizeHint) { }
-
-    /// Set to None for passing an absolute width, or to a value between 0 and 1 to
-    /// automatically scale width based on parent width
     fn set_size_hint_x(&mut self, size_hint: Option<f64>) {
-        self.set_size_hint(SizeHint::new(size_hint, self.get_size_hint().y));
+        self.get_size_hint_mut().x.set(size_hint);
     }
 
     /// Set to None for passing an absolute height, or to a value between 0 and 1 to
     /// automatically scale width based on parent height
     fn set_size_hint_y(&mut self, size_hint: Option<f64>) {
-
-        self.set_size_hint(SizeHint::new(self.get_size_hint().x, size_hint));
+        self.get_size_hint_mut().y.set(size_hint);
     }
 
-    /// If not None automatically scaled width based on parent width
+    /// Get ref to a widgets [SizeHint]
     fn get_size_hint(&self) -> &SizeHint;
 
-    /// Set to None to allow hardcoded or default positions. Set a pos hint to position relative
-    /// to parent. A pos hint is a string and a float e.g:
-    /// ("center_x", 0.9)
-    /// When positioning the widget, "center_x" will be replaced with the middle x coordinate of
-    /// parent Layout, and multiplied with the float.
-    fn set_pos_hint(&mut self, _pos_hint: PosHint) { }
+    /// Get mut ref to a widgets [SizeHint]
+    fn get_size_hint_mut(&mut self) -> &mut SizeHint;
 
     /// Set to None to allow hardcoded or default positions. Set a pos hint to position relative
     /// to parent. A pos hint is a string and a float e.g:
@@ -249,7 +241,7 @@ pub trait GenericState {
     /// When positioning the widget, "center_x" will be replaced with the middle x coordinate of
     /// parent Layout, and multiplied with the float.
     fn set_pos_hint_x(&mut self, pos_hint: Option<(HorizontalAlignment, f64)>) {
-        self.set_pos_hint(PosHint::new(pos_hint, self.get_pos_hint().y));
+        self.get_pos_hint_mut().x.set(pos_hint);
     }
 
     /// Set to None to allow hardcoded or default positions. Set a pos hint to position relative
@@ -258,12 +250,15 @@ pub trait GenericState {
     /// When positioning the widget, "top" will be replaced with the y coordinate of the top of the
     /// parent Layout, and multiplied by the float.
     fn set_pos_hint_y(&mut self, pos_hint: Option<(VerticalAlignment, f64)>) {
-        self.set_pos_hint(PosHint::new(self.get_pos_hint().x, pos_hint));
+        self.get_pos_hint_mut().y.set(pos_hint);
     }
 
     /// If none widget uses hardcoded or default positions. If a pos hint the widget will be
     /// positioned relative to its' parent.
     fn get_pos_hint(&self) -> &PosHint;
+
+    /// Get a mutable ref to a widgets [PosHint]
+    fn get_pos_hint_mut(&mut self) -> &mut PosHint;
 
     /// Get autoscaling config. If the widget supports it and turned on,
     /// automatically adjusts size to the actual size of its' content
@@ -385,13 +380,13 @@ pub trait GenericState {
     fn set_horizontal_alignment(&mut self, alignment: HorizontalAlignment);
 
     /// Get [HorizontalAlignment] of this widget
-    fn get_horizontal_alignment(&self) -> HorizontalAlignment;
+    fn get_horizontal_alignment(&self) -> &EzProperty<HorizontalAlignment>;
 
     /// Set [VerticalAlignment] of this widget
     fn set_vertical_alignment(&mut self, alignment: VerticalAlignment);
 
     /// Get [VerticalAlignment] of this widget
-    fn get_vertical_alignment(&self) -> VerticalAlignment;
+    fn get_vertical_alignment(&self) -> &EzProperty<VerticalAlignment>;
 
     /// Get [padding]
     fn get_padding(&self) -> &Padding;
@@ -415,15 +410,11 @@ pub trait GenericState {
         self.get_padding_mut().right.set(padding)
     }
     /// Pas a [BorderConfig] abject that will be used to draw the border if enabled
-    fn set_border_config(&mut self, config: BorderConfig);
 
     /// Get the [state::BorderConfig] abject that will be used to draw the border if enabled
     fn get_border_config(&self) -> &BorderConfig;
 
     fn get_border_config_mut(&mut self) -> &mut BorderConfig;
-
-    /// Set the [ColorConfig] abject that will be used to draw this widget
-    fn set_color_config(&mut self, config: ColorConfig);
 
     /// Get a ref to the [ColorConfig] abject that will be used to draw this widget
     fn get_color_config(&self) -> &ColorConfig;
@@ -436,14 +427,14 @@ pub trait GenericState {
     fn get_context_colors(&self) -> (Color, Color) {
 
         let fg_color =
-            if self.get_disabled() {self.get_color_config().disabled_foreground }
-            else if self.get_selected() {self.get_color_config().selection_foreground }
-            else {self.get_color_config().foreground };
+            if self.get_disabled().value {self.get_color_config().disabled_foreground.value }
+            else if self.get_selected() {self.get_color_config().selection_foreground.value }
+            else {self.get_color_config().foreground.value };
 
         let bg_color =
-            if self.get_disabled() {self.get_color_config().disabled_background }
-            else if self.get_selected() {self.get_color_config().selection_background }
-            else {self.get_color_config().background };
+            if self.get_disabled().value {self.get_color_config().disabled_background.value }
+            else if self.get_selected() {self.get_color_config().selection_background.value }
+            else {self.get_color_config().background.value };
 
         (fg_color, bg_color)
     }
@@ -500,24 +491,17 @@ pub trait GenericState {
 
     /// Get the disabled field of a widget. Only implemented by interactive widgets (i.e. widgets
     /// that are selectable).
-    fn get_disabled(&self) -> bool { false }
+    fn get_disabled(&self) -> &EzProperty<bool>;
 
     /// Get the order in which this widget should be selected, represented by a usize number. E.g.
     /// if there is a '1' widget, a '2' widget, and this widget is '3', calling 'select_next_widget'
     /// will select 1, then 2, then this widget. Used for keyboard up and down keys.
-    fn get_selection_order(&self) -> usize { 0 }
+    fn get_selection_order(&self) -> &EzProperty<usize>;
 
     /// Set the order in which this widget should be selected, represented by a usize number. E.g.
     /// if there is a '1' widget, a '2' widget, and this widget is '3', calling 'select_next_widget'
     /// will select 1, then 2, then this widget. Used for keyboard up and down keys.
     fn set_selection_order(&mut self, _order: usize) {}
-
-    /// Set to true to force redraw the entire screen. The screen is still diffed before redrawing
-    /// so this can be called efficiently. Nevertheless you want to call [set_changed] to redraw
-    /// only the specific widget in most cases.
-    fn set_force_redraw(&mut self, scheduler: &mut Scheduler) {
-        scheduler.force_redraw();
-    }
 
     fn set_selected(&mut self, _state: bool) {}
 

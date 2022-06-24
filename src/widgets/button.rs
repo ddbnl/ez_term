@@ -7,7 +7,7 @@ use crate::common;
 use crate::common::definitions::{CallbackTree, PixelMap, StateTree, ViewTree, WidgetTree};
 use crate::widgets::widget::{Pixel, EzObject};
 use crate::parser;
-use crate::parser::load_ez_string_parameter;
+use crate::parser::load_ez_string_property;
 use crate::property::EzValues;
 use crate::scheduler::Scheduler;
 
@@ -41,14 +41,14 @@ impl EzObject for Button {
     fn load_ez_parameter(&mut self, parameter_name: String, parameter_value: String,
                          scheduler: &mut Scheduler) {
         
-        let consumed = parser::load_common_parameters(
+        let consumed = parser::load_common_property(
             &parameter_name, parameter_value.clone(),self,
             scheduler);
         if consumed { return }
         match parameter_name.as_str() {
             "text" => {
                 let path = self.path.clone();
-                self.state.text.set(load_ez_string_parameter(
+                self.state.text.set(load_ez_string_property(
                     parameter_value.trim(), scheduler, path.clone(),
                     Box::new(move |state_tree: &mut StateTree, val: EzValues| {
                         let state = state_tree.get_by_path_mut(&path)
@@ -80,8 +80,8 @@ impl EzObject for Button {
             .as_button_mut();
 
         let (fg_color, bg_color) =
-            if state.flashing {(state.get_color_config().flash_foreground,
-                                state.get_color_config().flash_background)}
+            if state.flashing {(state.get_color_config().flash_foreground.value,
+                                state.get_color_config().flash_background.value)}
             else { state.get_context_colors() };
 
         let text = state.text.value.clone();
@@ -126,8 +126,8 @@ impl EzObject for Button {
         let parent_colors = state_tree.get_by_path(self.get_full_path()
             .rsplit_once('/').unwrap().0).as_generic().get_color_config();
         contents = common::widget_functions::add_padding(
-            contents, state.get_padding(), parent_colors.background,
-            parent_colors.foreground);
+            contents, state.get_padding(), parent_colors.background.value,
+            parent_colors.foreground.value);
         contents
     }
 
@@ -169,8 +169,7 @@ impl Button {
                 state.update(context.scheduler);
                 true
             };
-        scheduler.schedule_once(self.get_full_path().clone(),
-                                        Box::new(scheduled_func),
+        scheduler.schedule_once(self.get_full_path(),Box::new(scheduled_func),
                                         Duration::from_millis(50));
     }
 }

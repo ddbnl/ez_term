@@ -2,10 +2,12 @@ use std::collections::HashMap;
 use std::sync::mpsc::Receiver;
 use std::thread::{JoinHandle, spawn};
 use std::time::{Duration, Instant};
+use crossterm::style::Color;
 use crate::{CallbackConfig, EzContext, run};
 use crate::common::definitions::{CallbackTree, GenericEzTask, StateTree, ViewTree, WidgetTree,
                                  EzThread, EzPropertyUpdater};
 use crate::property::{EzProperties, EzValues, EzProperty};
+use crate::states::definitions::{HorizontalAlignment, VerticalAlignment};
 
 
 #[derive(Default)]
@@ -183,6 +185,67 @@ impl Scheduler {
         let (property, receiver) =
             EzProperty::new(name.clone(), value);
         self.properties.insert(name.clone(), EzProperties::Bool(property.clone()));
+        self.property_receivers.insert(name, receiver);
+        property
+    }
+
+    pub fn new_color_property(&mut self, name: String, value: Color) -> EzProperty<Color> {
+
+        let (property, receiver) =
+            EzProperty::new(name.clone(), value);
+        self.properties.insert(name.clone(), EzProperties::Color(property.clone()));
+        self.property_receivers.insert(name, receiver);
+        property
+    }
+
+    pub fn new_vertical_alignment_property(&mut self, name: String, value: VerticalAlignment)
+        -> EzProperty<VerticalAlignment> {
+
+        let (property, receiver) =
+            EzProperty::new(name.clone(), value);
+        self.properties.insert(name.clone(), EzProperties::VerticalAlignment(property.clone()));
+        self.property_receivers.insert(name, receiver);
+        property
+    }
+
+    pub fn new_horizontal_alignment_property(&mut self, name: String, value: HorizontalAlignment) 
+        -> EzProperty<HorizontalAlignment> {
+
+        let (property, receiver) =
+            EzProperty::new(name.clone(), value);
+        self.properties.insert(name.clone(), EzProperties::HorizontalAlignment(property.clone()));
+        self.property_receivers.insert(name, receiver);
+        property
+    }
+
+    pub fn new_horizontal_pos_hint_property(
+        &mut self, name: String, value: Option<(HorizontalAlignment, f64)>) 
+        -> EzProperty<Option<(HorizontalAlignment, f64)>> {
+
+        let (property, receiver) =
+            EzProperty::new(name.clone(), value);
+        self.properties.insert(name.clone(), EzProperties::HorizontalPosHint(property.clone()));
+        self.property_receivers.insert(name, receiver);
+        property
+    }
+
+    pub fn new_vertical_pos_hint_property(
+        &mut self, name: String, value: Option<(VerticalAlignment, f64)>)
+        -> EzProperty<Option<(VerticalAlignment, f64)>> {
+
+        let (property, receiver) =
+            EzProperty::new(name.clone(), value);
+        self.properties.insert(name.clone(), EzProperties::VerticalPosHint(property.clone()));
+        self.property_receivers.insert(name, receiver);
+        property
+    }
+
+    pub fn new_size_hint_property(&mut self, name: String, value: Option<f64>) 
+        -> EzProperty<Option<f64>> {
+
+        let (property, receiver) =
+            EzProperty::new(name.clone(), value);
+        self.properties.insert(name.clone(), EzProperties::SizeHint(property.clone()));
         self.property_receivers.insert(name, receiver);
         property
     }

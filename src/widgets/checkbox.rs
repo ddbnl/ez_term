@@ -6,6 +6,8 @@ use crate::widgets::widget::{Pixel, EzObject};
 use crate::states::checkbox_state::CheckboxState;
 use crate::states::state::{EzState, GenericState};
 use crate::parser;
+use crate::parser::load_ez_bool_property;
+use crate::property::EzValues;
 use crate::scheduler::Scheduler;
 
 #[derive(Clone, Debug)]
@@ -28,6 +30,7 @@ pub struct Checkbox {
 }
 
 impl Checkbox {
+
     pub fn new(id: String, path: String, scheduler: &mut Scheduler) -> Self {
 
         Checkbox {
@@ -38,6 +41,18 @@ impl Checkbox {
             state: CheckboxState::new(path, scheduler),
         }
     }
+
+    fn load_active_property(&mut self, parameter_value: &str, scheduler: &mut Scheduler) {
+
+        let path = self.path.clone();
+        self.state.set_active(load_ez_bool_property(
+            parameter_value.trim(), scheduler, path.clone(),
+            Box::new(move |state_tree: &mut StateTree, val: EzValues| {
+                let state = state_tree.get_by_path_mut(&path).as_checkbox_mut();
+                state.set_active(val.as_bool().to_owned());
+                path.clone()
+            })))
+    }
 }
 
 
@@ -46,12 +61,11 @@ impl EzObject for Checkbox {
     fn load_ez_parameter(&mut self, parameter_name: String, parameter_value: String,
                          scheduler: &mut Scheduler) {
 
-        let consumed = parser::load_common_parameters(
+        let consumed = parser::load_common_property(
             &parameter_name, parameter_value.clone(),self, scheduler);
         if consumed { return }
         match parameter_name.as_str() {
-            "active" =>
-                self.state.active = parser::load_bool_parameter(parameter_value.trim()),
+            "active" => self.load_active_property(parameter_value.trim(), scheduler),
             "active_symbol" => self.active_symbol = parameter_value.chars().last().unwrap(),
             "inactive_symbol" => self.inactive_symbol = parameter_value.chars().last().unwrap(),
             _ => panic!("Invalid parameter name for check box {}", parameter_name)
@@ -76,7 +90,7 @@ impl EzObject for Checkbox {
             .as_checkbox_mut();
         state.set_width(5);
         state.set_height(1);
-        let active_symbol = { if state.active {self.active_symbol}
+        let active_symbol = { if state.active.value {self.active_symbol}
                               else {self.inactive_symbol} };
 
         let (fg_color, bg_color) = state.get_context_colors();
@@ -98,8 +112,8 @@ impl EzObject for Checkbox {
         }
         let parent_colors = state.get_color_config();
         contents = common::widget_functions::add_padding(
-            contents, state.get_padding(),parent_colors.background,
-            parent_colors.foreground);
+            contents, state.get_padding(),parent_colors.background.value,
+            parent_colors.foreground.value);
         contents
     }
 
@@ -127,7 +141,7 @@ impl Checkbox {
 
         let state = state_tree.get_by_path_mut(&self.get_full_path())
             .as_checkbox_mut();
-        state.set_active(!state.get_active());
+        state.set_active(!state.get_active().value);
         state.update(scheduler);
         self.on_value_change_callback(view_tree, state_tree, widget_tree, callback_tree,
                                       scheduler);
