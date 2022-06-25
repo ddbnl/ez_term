@@ -1,0 +1,42 @@
+- <TabsShowcase@Layout>:
+    id: tabbed_box
+    mode: tabbed
+    size_hint_x: 1/5
+    border: True
+    selection_order: 50
+    tab_fg_color: yellow
+    tab_bg_color: red
+    - Layout:
+        id: Tab 1
+        mode: box
+        orientation: horizontal
+        scroll_y: true
+        selection_order: 55
+        selection_fg_color: red
+        - Label:
+            size_hint_y: none
+            from_file: ./Examples/dummy.txt
+    - Layout:
+        id: Tab 2
+        mode: box
+        orientation: vertical
+        - Label:
+            text: This is a label on a second tab.
+    - Layout:
+        id: Tab 3
+        mode: box
+        orientation: vertical
+        - Label:
+            text: This is a label on a third tab.
+    - Layout:
+        id: Tab 4
+        mode: box
+        orientation: vertical
+        - Label:
+            text: This is a label on a fourth tab.
+    - Layout:
+        id: Tab 5
+        mode: box
+        orientation: vertical
+        - Label:
+            text: This is a label on a fifth tab.

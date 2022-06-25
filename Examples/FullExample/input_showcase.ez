@@ -1,0 +1,58 @@
+- <InputShowcaseBox@OneThirdBox>:
+    selection_order: 1
+    - LayoutHeader:
+        text: Layout 1:
+    - InputBox1:
+        id: input_1_box
+    - InputBox2:
+        id: input_2_box
+    - InputBox3:
+        id: input_3_box
+
+
+- <InputBox1@CyanScalingBox>:
+    - Label:
+        text: This is a small text input. Its' content is bigger than its' size. It allows us to test views. Try selecting it and pressing left and right button to move through the text:
+        auto_scale_height: true
+        padding: 1, 1, 1, 1
+    - TextInput:
+        id: input_1
+        size_hint_x: None
+        width: 20
+        bg_color: blue
+        text: small input to test views
+        selection_order: 2
+        padding: 1, 1, 1, 1
+
+
+- <InputBox2@CyanScalingBox>:
+    - Label:
+        text: This is a larger input but it has a maximum length, so we can't fill it all:
+        auto_scale_height: true
+        padding: 1, 1, 1, 1
+    - TextInput:
+        id: input_2
+        size_hint: 0.9, 1
+        text: sample larger input
+        bg_color: blue
+        max_length: 25
+        selection_order: 5
+        padding_left: 1
+
+
+- <InputBox3@CyanScalingBox>:
+    - Label:
+        text: This is an input with an on_value and on_keyboard_enter callback. It mirrors what you type in the label, and prints CONFIRMED when enter is pressed.
+        auto_scale_height: true
+        padding: 1, 1, 1, 1
+    - TextInput:
+        id: input_3
+        bg_color: blue
+        text: Mirror text
+        selection_order: 10
+        padding: 1, 1, 1, 1
+    - Label:
+        id: input_3_label
+        text: parent.input_3.text
+        padding_left: 1
+        auto_scale_height: true

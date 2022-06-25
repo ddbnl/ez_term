@@ -1,9 +1,11 @@
 //! # Ez Parser
 //! Module containing structs and functions for paring a .ez file into a root layout.
 use std::collections::HashMap;
-use std::fs::File;
+use std::fs;
+use std::fs::{DirEntry, File, read_dir};
 use std::io::prelude::*;
 use std::io::{Error};
+use std::path::Path;
 use unicode_segmentation::UnicodeSegmentation;
 use crate::widgets::layout::layout::Layout;
 use crate::scheduler::scheduler::Scheduler;
@@ -12,12 +14,62 @@ use crate::parser::ez_definition::{EzWidgetDefinition, Templates};
 
 /// Load a file path into a root layout. Return the root widget and a new scheduler. Both will
 /// be needed to run an [App].
-pub fn load_ez_ui(file_path: &str) -> (Layout, Scheduler) {
+pub fn load_ez_file(file_path: &str) -> (Layout, Scheduler) {
+
     let mut file = File::open(file_path).expect("Unable to open file");
     let mut contents = String::new();
     file.read_to_string(&mut contents).expect("Unable to read file");
-    let (root_widget, scheduler) = parse_ez(contents).unwrap();
+    let (root_widget, scheduler) = load_ez_text(contents).unwrap();
     (root_widget, scheduler)
+}
+
+
+/// Load multiple file paths into a root layout. Return the root widget and a new scheduler.
+/// Both will be needed to run an [App].
+pub fn load_ez_files(file_paths: Vec<&str>) -> (Layout, Scheduler) {
+
+    let mut contents = String::new();
+    for path in file_paths {
+        let mut file = File::open(path)
+            .expect(format!("Unable to open file {}", path).as_str());
+        file.read_to_string(&mut contents)
+            .expect(format!("Unable to read file {}", path).as_str());
+        contents = format!("{}\n", contents);
+    }
+    let (root_widget, scheduler) = load_ez_text(contents).unwrap();
+    (root_widget, scheduler)
+}
+
+
+/// Load all '.ez' files from a folder recursively. There can only be one root widget, so when
+/// loading multiple files make sure all definitions are templates, except for the one root Layout.
+pub fn load_ez_folder(folder_path: &str) -> (Layout, Scheduler) {
+
+    let path = Path::new(folder_path);
+    let mut ez_files = Vec::new();
+    collect_ez_files(path, &mut ez_files);
+    load_ez_files(ez_files.iter().map(|x| x.as_str()).collect())
+}
+
+
+/// Find all files that end with '.ez' in a folder recursively.
+fn collect_ez_files(dir: &Path, ez_files: &mut Vec<String>) {
+
+    if dir.is_dir() {
+        for entry in read_dir(dir).unwrap() {
+            let entry = entry.unwrap();
+            let path = entry.path();
+            if path.is_dir() {
+                collect_ez_files(&path, ez_files);
+            } else {
+                if let Some(extension) = path.extension() {
+                    if extension == "ez" {
+                        ez_files.push(path.to_str().unwrap().to_string());
+                    }
+                }
+            }
+        }
+    }
 }
 
 
@@ -25,9 +77,9 @@ pub fn load_ez_ui(file_path: &str) -> (Layout, Scheduler) {
 /// widget definition found there as the root widget (must be a layout or panic). Then parse the
 /// root widget definition into the actual widget, which will parse sub-widgets, who will parse
 /// their sub-widgets, etc. Thus recursively loading the UI.
-pub fn parse_ez(file_string: String) -> Result<(Layout, Scheduler), Error> {
+pub fn load_ez_text(text: String) -> Result<(Layout, Scheduler), Error> {
 
-    let config_lines:Vec<String> = file_string.lines().map(|x| x.to_string()).collect();
+    let config_lines:Vec<String> = text.lines().map(|x| x.to_string()).collect();
     let (_, mut widgets, templates) =
         parse_level(config_lines, 0, 0).unwrap();
     if widgets.len() > 1 {

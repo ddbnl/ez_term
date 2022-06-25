@@ -170,7 +170,5 @@ impl EzWidgetDefinition {
     }
 }
 impl Debug for EzWidgetDefinition {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.type_name)
-    }
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result { write!(f, "{}", self.type_name) }
 }
