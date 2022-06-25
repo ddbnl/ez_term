@@ -5,10 +5,10 @@ use std::time::{Duration, Instant};
 use crossterm::style::Color;
 use crate::{CallbackConfig, EzContext};
 use crate::run::run::stop;
-use crate::common::definitions::{GenericEzTask, EzThread, EzPropertyUpdater};
-use crate::property::properties::EzProperties;
-use crate::property::values::EzValues;
-use crate::property::property::EzProperty;
+use crate::property::ez_properties::EzProperties;
+use crate::property::ez_values::EzValues;
+use crate::property::ez_property::EzProperty;
+use crate::scheduler::definitions::{EzPropertyUpdater, EzThread, GenericEzTask};
 use crate::states::definitions::{HorizontalAlignment, VerticalAlignment};
 
 
@@ -42,6 +42,7 @@ impl Scheduler {
 
     pub fn schedule_once(&mut self, widget: String, func: GenericEzTask,
                          after: Duration) {
+
         let task = Task::new(widget, func, false, after,
                              Some(Instant::now()));
         self.tasks.push(task);

@@ -1,14 +1,15 @@
 //! # Checkbox Widget
 //! Widget which is either on or off and implements an on_value_change callback.
-use crate::common;
-use crate::common::definitions::{CallbackTree, PixelMap, StateTree, ViewTree, WidgetTree};
-use crate::widgets::widget::{Pixel, EzObject};
+use crate::widgets::ez_object::{EzObject};
 use crate::states::checkbox_state::CheckboxState;
-use crate::states::state::{EzState, GenericState};
+use crate::states::ez_state::{EzState, GenericState};
 use crate::parser::load_properties::load_common_property;
 use crate::parser::load_base_properties::load_ez_bool_property;
-use crate::property::values::EzValues;
+use crate::property::ez_values::EzValues;
+use crate::run::definitions::{CallbackTree, Pixel, PixelMap, StateTree, WidgetTree};
+use crate::run::tree::ViewTree;
 use crate::scheduler::scheduler::Scheduler;
+use crate::widgets::helper_functions::{add_border, add_padding};
 
 #[derive(Clone, Debug)]
 pub struct Checkbox {
@@ -107,11 +108,10 @@ impl EzObject for Checkbox {
                 background_color: bg_color, underline: false}),
         );
         if state.get_border_config().enabled.value {
-            contents = common::widget_functions::add_border(
-                contents, state.get_border_config());
+            contents = add_border(contents, state.get_border_config());
         }
         let parent_colors = state.get_color_config();
-        contents = common::widget_functions::add_padding(
+        contents = add_padding(
             contents, state.get_padding(),parent_colors.background.value,
             parent_colors.foreground.value);
         contents

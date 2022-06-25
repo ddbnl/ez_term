@@ -1,13 +1,15 @@
 use std::collections::HashMap;
-use crate::common::definitions::{Coordinates, Size, StateTree};
 use crate::states::definitions::{StateCoordinates, SizeHint, PosHint, StateSize, AutoScale, Padding,
                                  HorizontalAlignment, VerticalAlignment, BorderConfig, ColorConfig,
                                  LayoutMode, LayoutOrientation, ScrollingConfig};
-use crate::{common, EzProperty};
+use crate::{EzProperty};
+use crate::parser::ez_definition::Templates;
+use crate::run::definitions::{Coordinates, Size, StateTree};
+use crate::run::tree::initialize_state_tree;
 use crate::scheduler::scheduler_funcs::clean_up_property;
 use crate::scheduler::scheduler::Scheduler;
-use crate::states::state::GenericState;
-use crate::widgets::widget::EzObjects;
+use crate::states::ez_state::GenericState;
+use crate::widgets::ez_object::EzObjects;
 
 
 /// [State] implementation.
@@ -17,7 +19,7 @@ pub struct LayoutState {
     /// Path to the widget to which this state belongs
     pub path: String,
 
-    /// Position of this widget relative to its' parent [Layout]
+    /// Position of this widget relative to its' parent [layout]
     pub position: StateCoordinates,
 
     /// Absolute position of this widget on screen. Automatically propagated, do not set manually
@@ -35,7 +37,7 @@ pub struct LayoutState {
     /// Automatically adjust size of widget to content
     pub auto_scale: AutoScale,
 
-    /// Layout mode enum, see [LayoutMode] for options
+    /// layout mode enum, see [LayoutMode] for options
     pub mode: LayoutMode,
 
     /// Orientation enum, see [LayoutOrientation] for options
@@ -85,7 +87,7 @@ pub struct LayoutState {
 
     /// A hashmap of 'Template Name > [EzWidgetDefinition]'. Used to instantiate widget templates
     /// at runtime. E.g. when spawning popups.
-    pub templates: common::definitions::Templates,
+    pub templates: Templates,
 
     /// Bool representing whether widget is disabled, i.e. cannot be interacted with
     pub disabled: EzProperty<bool>,
@@ -291,11 +293,11 @@ impl LayoutState {
     /// Get the ID of the child that is the currently active screen (i.e. content is showing)
     pub fn get_active_screen(&self) -> &EzProperty<String> { &self.active_screen }
 
-    /// Set the path to the Layout that is currently active as the current tab (i.e. content is
+    /// Set the path to the layout that is currently active as the current tab (i.e. content is
     /// showing)
     pub fn set_active_tab(&mut self, path: String) { self.active_tab.set(path); }
 
-    /// Get the [path] to the Layout that is currently active as a tab (i.e. content is showing)
+    /// Get the [path] to the layout that is currently active as a tab (i.e. content is showing)
     pub fn get_active_tab(&self) -> &EzProperty<String> { &self.active_tab }
 
     /// Set the tab header that is currently selected
@@ -304,15 +306,15 @@ impl LayoutState {
     /// Get the tab header that is currently selected
     pub fn get_selected_tab_header(&self) -> String { self.selected_tab_header.clone() }
 
-    /// Set the [ScrollingConfig] active for this Layout
+    /// Set the [ScrollingConfig] active for this layout
     pub fn set_scrolling_config(&mut self, config: ScrollingConfig) {
         self.scrolling_config = config;
     }
 
-    /// Get a ref to the [ScrollingConfig] active for this Layout
+    /// Get a ref to the [ScrollingConfig] active for this layout
     pub fn get_scrolling_config(&self) -> &ScrollingConfig { &self.scrolling_config }
 
-    /// Get a mutable ref to the [ScrollingConfig] active for this Layout
+    /// Get a mutable ref to the [ScrollingConfig] active for this layout
     pub fn get_scrolling_config_mut(&mut self) -> &mut ScrollingConfig {
         &mut self.scrolling_config
     }
@@ -351,7 +353,7 @@ impl LayoutState {
         let mut extra_state_tree;
         if let EzObjects::Layout(ref mut i) = modal {
             i.propagate_paths();
-            extra_state_tree = common::screen_functions::initialize_state_tree(i);
+            extra_state_tree = initialize_state_tree(i);
         } else {
             extra_state_tree = StateTree::new("state_tree".to_string());
             extra_state_tree.insert(modal_path.clone(),modal.as_ez_object().get_state());
@@ -385,12 +387,12 @@ impl LayoutState {
 
     /// Set templates. Used by [ez_parser] on the root layout to keep a hold of all templates
     /// defined by the user. They can be used to instantiate e.g. popups at runtime.
-    pub fn set_templates(&mut self, templates: common::definitions::Templates) {
+    pub fn set_templates(&mut self, templates: Templates) {
         self.templates = templates
     }
 
     /// Get templates. Use on the root layout to get all templates defined by the user.
     /// They can be used to instantiate e.g. popups at runtime.
-    pub fn get_templates(&self) -> &common::definitions::Templates { &self.templates }
+    pub fn get_templates(&self) -> &Templates { &self.templates }
 
 }

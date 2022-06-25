@@ -5,13 +5,12 @@ use std::fs::File;
 use std::io::prelude::*;
 use std::io::{Error};
 use unicode_segmentation::UnicodeSegmentation;
-use crate::widgets::layout::{Layout};
-use crate::common::definitions::{Templates};
+use crate::widgets::layout::layout::Layout;
 use crate::scheduler::scheduler::Scheduler;
-use crate::parser::widget_definition::EzWidgetDefinition;
+use crate::parser::ez_definition::{EzWidgetDefinition, Templates};
 
 
-/// Load a file path into a root Layout. Return the root widget and a new scheduler. Both will
+/// Load a file path into a root layout. Return the root widget and a new scheduler. Both will
 /// be needed to run an [App].
 pub fn load_ez_ui(file_path: &str) -> (Layout, Scheduler) {
     let mut file = File::open(file_path).expect("Unable to open file");
@@ -37,8 +36,9 @@ pub fn parse_ez(file_string: String) -> Result<(Layout, Scheduler), Error> {
         layouts to this root.", widgets.len(), widgets);
     }
     let mut root_widget = widgets.pop().unwrap();
-    if root_widget.type_name != "Layout" {
-        panic!("Root widget of an Ez file must be a Layout")
+    println!("JIJ {}", root_widget.type_name);
+    if root_widget.type_name.to_lowercase() != "layout" {
+        panic!("Root widget of an Ez file must be a layout")
     }
 
     let mut scheduler = Scheduler::default();

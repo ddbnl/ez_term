@@ -1,14 +1,15 @@
 //! A widget that displays text non-interactively.
 use std::cmp::min;
 use crossterm::event::{Event, KeyCode};
-use crate::states::state::{EzState, GenericState};
-use crate::common;
-use crate::common::definitions::{CallbackTree, EzContext, PixelMap, StateTree, ViewTree, WidgetTree,
-                                 Coordinates};
-use crate::widgets::widget::{Pixel, EzObject};
+use crate::EzContext;
+use crate::states::ez_state::{EzState, GenericState};
+use crate::widgets::ez_object::{EzObject};
 use crate::parser::load_properties::load_common_property;
+use crate::run::definitions::{CallbackTree, Coordinates, Pixel, PixelMap, StateTree, WidgetTree};
+use crate::run::tree::ViewTree;
 use crate::scheduler::scheduler::Scheduler;
 use crate::states::slider_state::SliderState;
+use crate::widgets::helper_functions::add_padding;
 
 #[derive(Clone, Debug)]
 pub struct Slider {
@@ -95,7 +96,7 @@ impl EzObject for Slider {
         let state = state_tree.get_by_path(&self.get_full_path()).as_slider();
         let parent_colors = state_tree.get_by_path(self.get_full_path()
             .rsplit_once('/').unwrap().0).as_generic().get_color_config();
-        contents = common::widget_functions::add_padding(
+        contents = add_padding(
             contents, state.get_padding(), parent_colors.background.value,
             parent_colors.foreground.value);
         contents

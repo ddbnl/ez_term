@@ -1,4 +1,4 @@
-pub mod widget;
+pub mod ez_object;
 pub mod layout;
 pub mod label;
 pub mod button;
@@ -9,3 +9,4 @@ pub mod radio_button;
 pub mod dropdown;
 pub mod slider;
 pub mod progress_bar;
+mod helper_functions;

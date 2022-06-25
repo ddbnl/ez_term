@@ -1,6 +1,6 @@
-use crate::states::state::GenericState;
-use crate::common::definitions::{Coordinates};
+use crate::states::ez_state::GenericState;
 use crate::EzProperty;
+use crate::run::definitions::Coordinates;
 use crate::scheduler::scheduler_funcs::clean_up_property;
 use crate::scheduler::scheduler::Scheduler;
 use crate::states::definitions::{StateCoordinates, SizeHint, PosHint, StateSize, AutoScale, Padding,
@@ -14,7 +14,7 @@ pub struct DropdownState {
     /// Path to the widget to which this state belongs
     pub path: String,
 
-    /// Position of this widget relative to its' parent [Layout]
+    /// Position of this widget relative to its' parent [layout]
     pub position: StateCoordinates,
 
     /// Absolute position of this widget on screen. Automatically propagated, do not set manually
@@ -214,7 +214,7 @@ pub struct DroppedDownMenuState {
     /// Widget path of the [Dropdown] that spawned this menu.
     pub parent_path: String,
 
-    /// Position of this widget relative to its' parent [Layout]
+    /// Position of this widget relative to its' parent [layout]
     pub position: StateCoordinates,
 
     /// Absolute position of this widget on screen. Automatically propagated, do not set manually

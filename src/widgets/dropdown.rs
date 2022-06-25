@@ -3,16 +3,19 @@
 //! time. The active value is always displayed, and when selected drops down all other possible
 //! values for the user to select.
 use crossterm::event::{Event, KeyCode, MouseButton, MouseEventKind};
-use crate::common;
-use crate::common::definitions::{CallbackTree, Coordinates, PixelMap, StateTree, ViewTree, WidgetTree};
-use crate::states::definitions::{StateSize, AutoScale, SizeHint, Padding, PosHint, StateCoordinates, HorizontalAlignment, VerticalAlignment};
+use crate::EzContext;
+use crate::states::definitions::{StateSize, AutoScale, SizeHint, Padding, PosHint,
+                                 StateCoordinates, HorizontalAlignment, VerticalAlignment};
 use crate::states::dropdown_state::{DropdownState, DroppedDownMenuState};
-use crate::states::state::{EzState, GenericState};
-use crate::widgets::widget::{self, EzObject};
+use crate::states::ez_state::{EzState, GenericState};
+use crate::widgets::ez_object::{self, EzObject};
 use crate::parser::load_properties::load_common_property;
 use crate::parser::load_base_properties::{load_ez_bool_property, load_ez_string_property};
-use crate::property::values::EzValues;
+use crate::property::ez_values::EzValues;
+use crate::run::definitions::{CallbackTree, Coordinates, Pixel, PixelMap, StateTree, WidgetTree};
+use crate::run::tree::ViewTree;
 use crate::scheduler::scheduler::Scheduler;
+use crate::widgets::helper_functions::{add_border, add_padding};
 
 
 #[derive(Clone, Debug)]
@@ -124,16 +127,15 @@ impl EzObject for Dropdown {
         for _ in 0..write_width {
             let mut new_y = Vec::new();
             if !text.is_empty() {
-                new_y.push(widget::Pixel::new(text.pop().unwrap().to_string(),
-                    fg_color, bg_color));
+                new_y.push(Pixel::new(text.pop().unwrap().to_string(),
+                                                 fg_color, bg_color));
             } else {
-                new_y.push(widget::Pixel::new(" ".to_string(),fg_color,
-                                      bg_color));
+                new_y.push(Pixel::new(" ".to_string(), fg_color,
+                                                 bg_color));
             }
             contents.push(new_y);
         }
-        contents = common::widget_functions::add_border(
-            contents, state.get_border_config());
+        contents = add_border(contents, state.get_border_config());
         state.set_effective_height(1);
         contents
     }
@@ -191,7 +193,7 @@ impl EzObject for Dropdown {
         };
         let root_state = state_tree.get_by_path_mut("/root").as_layout_mut();
         let (_, extra_state_tree) = root_state
-            .open_modal(widget::EzObjects::DroppedDownMenu(new_modal));
+            .open_modal(ez_object::EzObjects::DroppedDownMenu(new_modal));
         root_state.update(scheduler);
         state_tree.extend(extra_state_tree);
         true
@@ -272,11 +274,11 @@ impl EzObject for DroppedDownMenu {
                 {state.get_color_config().selection_background.value }
                 else {state.get_color_config().background.value };
                 if !options[y].is_empty(){
-                    new_y.push(widget::Pixel{symbol: options[y].pop().unwrap().to_string(),
+                    new_y.push(Pixel{symbol: options[y].pop().unwrap().to_string(),
                         foreground_color: fg, background_color: bg, underline: false})
                 } else {
-                    new_y.push(widget::Pixel::new(" ".to_string(), fg,
-                                          bg))
+                    new_y.push(Pixel::new(" ".to_string(), fg,
+                                                     bg))
                 }
             }
             contents.push(new_y.clone());
@@ -284,11 +286,10 @@ impl EzObject for DroppedDownMenu {
         }
         let state = state_tree
             .get_by_path(&self.get_full_path()).as_dropped_down_menu();
-        contents = common::widget_functions::add_padding(
+        contents = add_padding(
             contents, state.get_padding(), state.colors.background.value,
             state.colors.foreground.value);
-        contents = common::widget_functions::add_border(
-            contents, state.get_border_config());
+        contents = add_border(contents, state.get_border_config());
         contents
     }
 
@@ -402,7 +403,7 @@ impl DroppedDownMenu {
                 state.update(scheduler);
                 if let Some(ref mut i) = callback_tree
                     .get_by_path_mut(&parent).on_value_change {
-                    let context = common::definitions::EzContext::new(
+                    let context = EzContext::new(
                         parent, view_tree, state_tree, widget_tree, scheduler);
                     i(context);
                 }

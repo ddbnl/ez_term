@@ -1,6 +1,6 @@
 use crossterm::style::Color;
 use crate::states::definitions::{HorizontalAlignment, VerticalAlignment};
-use crate::property::property::EzProperty;
+use crate::property::ez_property::EzProperty;
 
 
 #[derive(Clone, Debug)]

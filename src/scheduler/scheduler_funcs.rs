@@ -1,7 +1,8 @@
 use std::thread::{JoinHandle, spawn};
 use std::time::{Instant};
 use crate::{EzContext};
-use crate::common::definitions::{CallbackTree, StateTree, ViewTree, WidgetTree};
+use crate::run::definitions::{CallbackTree, StateTree, WidgetTree};
+use crate::run::tree::ViewTree;
 use super::scheduler::Scheduler;
 
 

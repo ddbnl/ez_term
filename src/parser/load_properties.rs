@@ -1,11 +1,11 @@
 //! # Ez Parser
 //! Module containing structs and functions for paring a .ez file into a root layout.
-use crate::widgets::widget::{EzObject};
-use crate::common::definitions::{StateTree};
-use crate::property::values::EzValues;
+use crate::widgets::ez_object::{EzObject};
+use crate::property::ez_values::EzValues;
 use crate::scheduler::scheduler::Scheduler;
-use crate::states::state::GenericState;
+use crate::states::ez_state::GenericState;
 use crate::parser::load_base_properties;
+use crate::run::definitions::StateTree;
 
 
 /* Specific property loaders */

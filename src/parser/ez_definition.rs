@@ -1,9 +1,10 @@
 //! # Ez Parser
 //! Module containing structs and functions for paring a .ez file into a root layout.
+use std::collections::HashMap;
 use std::fmt::{Debug, Formatter};
 use std::io::{Error, ErrorKind};
 use crossterm::terminal::size;
-use crate::widgets::layout::{Layout};
+use crate::widgets::layout::layout::Layout;
 use crate::widgets::canvas::Canvas;
 use crate::widgets::label::Label;
 use crate::widgets::button::Button;
@@ -11,14 +12,18 @@ use crate::widgets::radio_button::RadioButton;
 use crate::widgets::checkbox::Checkbox;
 use crate::widgets::text_input::TextInput;
 use crate::widgets::dropdown::Dropdown;
-use crate::widgets::widget::{EzObjects, EzObject};
-use crate::common::definitions::{Templates};
+use crate::widgets::ez_object::{EzObjects, EzObject};
 use crate::scheduler::scheduler::Scheduler;
 use crate::widgets::progress_bar::ProgressBar;
 use crate::widgets::slider::Slider;
-use crate::states::state::GenericState;
+use crate::states::ez_state::GenericState;
 use crate::parser::parse_lang;
 
+
+/// ## Templates
+/// A hashmap of 'Template Name > [EzWidgetDefinition]'. Used to instantiate widget templates
+/// at runtime. E.g. when spawning popups.
+pub type Templates = HashMap<String, EzWidgetDefinition>;
 
 
 /// Struct representing a widget definition in a .ez file. Has methods for parsing the
@@ -52,7 +57,7 @@ impl EzWidgetDefinition {
     }
 
     /// Parse a definition as the root layout. The normal parsed method results in a generic
-    /// EzObjects enum, whereas the root widget should be a Layout specifically.
+    /// EzObjects enum, whereas the root widget should be a layout specifically.
     pub fn parse_as_root(&mut self, mut templates: Templates, scheduler: &mut Scheduler) -> Layout {
 
         let (config, mut sub_widgets, _) =

@@ -1,3 +1,3 @@
-pub mod property;
-pub mod properties;
-pub mod values;
+pub mod ez_property;
+pub mod ez_properties;
+pub mod ez_values;

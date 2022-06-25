@@ -1,8 +1,8 @@
 //! # Widget state:
 //! A module containing the base structs and traits for widget states.
 use crossterm::style::Color;
-use crate::common::definitions::{Coordinates, Size};
 use crate::EzProperty;
+use crate::run::definitions::{Coordinates, Size};
 use crate::scheduler::scheduler::Scheduler;
 use crate::states::canvas_state::{CanvasState};
 use crate::states::label_state::{LabelState};
@@ -78,13 +78,13 @@ impl EzState {
     }
 
 
-    /// Cast this state as a Layout state ref, you must be sure you have one.
+    /// Cast this state as a layout state ref, you must be sure you have one.
     pub fn as_layout(&self) -> &LayoutState {
         if let EzState::Layout(i) = self { i }
         else { panic!("wrong state.") }
     }
 
-    /// Cast this state as a mutable Layout state ref, you must be sure you have one.
+    /// Cast this state as a mutable layout state ref, you must be sure you have one.
     pub fn as_layout_mut(&mut self) -> &mut LayoutState {
         if let EzState::Layout(i) = self { i }
         else { panic!("wrong state.") }
@@ -239,7 +239,7 @@ pub trait GenericState {
     /// to parent. A pos hint is a string and a float e.g:
     /// ("center_x", 0.9)
     /// When positioning the widget, "center_x" will be replaced with the middle x coordinate of
-    /// parent Layout, and multiplied with the float.
+    /// parent layout, and multiplied with the float.
     fn set_pos_hint_x(&mut self, pos_hint: Option<(HorizontalAlignment, f64)>) {
         self.get_pos_hint_mut().x.set(pos_hint);
     }
@@ -248,7 +248,7 @@ pub trait GenericState {
     /// to parent. A pos hint is a string and a float e.g:
     /// ("top", 0.9)
     /// When positioning the widget, "top" will be replaced with the y coordinate of the top of the
-    /// parent Layout, and multiplied by the float.
+    /// parent layout, and multiplied by the float.
     fn set_pos_hint_y(&mut self, pos_hint: Option<(VerticalAlignment, f64)>) {
         self.get_pos_hint_mut().y.set(pos_hint);
     }

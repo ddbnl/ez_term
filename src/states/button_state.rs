@@ -1,10 +1,10 @@
 use crate::scheduler::scheduler::Scheduler;
 use crate::scheduler::scheduler_funcs::clean_up_property;
-use crate::common::definitions::Coordinates;
-use crate::property::property::EzProperty;
+use crate::property::ez_property::EzProperty;
+use crate::run::definitions::Coordinates;
 use crate::states::definitions::{StateCoordinates, SizeHint, PosHint, StateSize, AutoScale, Padding,
                                  HorizontalAlignment, VerticalAlignment, BorderConfig, ColorConfig};
-use crate::states::state::GenericState;
+use crate::states::ez_state::GenericState;
 
 
 /// [State] implementation for [Button].
@@ -17,7 +17,7 @@ pub struct ButtonState {
     /// Text currently being displayed by the label
     pub text: EzProperty<String>,
 
-    /// Position of this widget relative to its' parent [Layout]
+    /// Position of this widget relative to its' parent [layout]
     pub position: StateCoordinates,
 
     /// Absolute position of this layout on screen. Automatically propagated, do not set manually

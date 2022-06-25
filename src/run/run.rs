@@ -4,14 +4,20 @@
 use std::process::exit;
 use std::time::{Duration, Instant};
 use crossterm::{Result, event::{MouseEventKind, poll, read, Event}};
-use crate::common;
+use crate::CallbackConfig;
+use crate::run::definitions::{CallbackTree, Coordinates, StateTree};
+use crate::run::select::get_selected_widget;
+use crate::run::terminal::{redraw_changed_widgets, write_to_screen};
+use crate::run::tree::{clean_trees, initialize_callback_tree, initialize_state_tree, ViewTree};
 use super::terminal::{initialize_terminal, shutdown_terminal};
-use crate::common::definitions::{CallbackTree, StateTree, ViewTree, Coordinates};
 use super::input::{handle_resize, handle_modal_event, handle_global_event};
-use crate::widgets::layout::Layout;
-use crate::widgets::widget::{EzObject};
+use crate::states::ez_state::GenericState;
+use crate::widgets::layout::layout::Layout;
+use crate::widgets::ez_object::{EzObject, EzObjects};
 use crate::scheduler::scheduler::Scheduler;
 use crate::scheduler::scheduler_funcs;
+use crate::scheduler::scheduler_funcs::{run_tasks, update_callback_configs, update_properties,
+                                        update_threads};
 
 
 /// # Call this to start the terminal app.
@@ -24,8 +30,7 @@ use crate::scheduler::scheduler_funcs;
 pub fn run(root_widget: Layout, scheduler: Scheduler) {
 
     initialize_terminal().unwrap();
-    let callback_tree = 
-        common::screen_functions::initialize_callback_tree(&root_widget);
+    let callback_tree = initialize_callback_tree(&root_widget);
     run_loop(root_widget, callback_tree, scheduler).unwrap();
 }
 
@@ -42,7 +47,7 @@ fn initialize_widgets(root_widget: &mut Layout) -> (ViewTree, StateTree) {
 
     // Get initial state tree, then convert all size_hints into actual sizes. After that we can
     // set absolute positions for all children as sizes are now known.
-    let mut state_tree = common::screen_functions::initialize_state_tree(&root_widget);
+    let mut state_tree = initialize_state_tree(&root_widget);
     root_widget.set_child_sizes(&mut state_tree);
     let all_content = root_widget.get_contents(&mut state_tree);
     root_widget.propagate_absolute_positions(&mut state_tree);
@@ -52,10 +57,33 @@ fn initialize_widgets(root_widget: &mut Layout) -> (ViewTree, StateTree) {
     view_tree.initialize(root_widget.state.size.width.value,
                          root_widget.state.size.height.value);
     view_tree.write_content(Coordinates::new(0, 0), all_content);
-    common::screen_functions::write_to_screen(&mut view_tree);
+    write_to_screen(&mut view_tree);
     (view_tree, state_tree)
 
 }
+
+
+pub fn open_popup(template: String, state_tree: &mut StateTree,
+                  scheduler: &mut Scheduler) -> String {
+
+    let state = state_tree.get_by_path_mut("/root").as_layout_mut();
+    state.update(scheduler);
+    let (path, sub_tree) = state.open_popup(template, scheduler);
+    state_tree.extend(sub_tree);
+    let state = state_tree.get_by_path_mut("/root").as_layout_mut();
+    scheduler.set_callback_config(path.as_str(),
+                                  CallbackConfig::default());
+    let modal = state.open_modals.first().unwrap();
+    if let EzObjects::Layout(ref i) = modal {
+        for sub_widget in i.get_widgets_recursive().values() {
+            scheduler.set_callback_config(
+                sub_widget.as_ez_object().get_full_path().as_str(),
+                CallbackConfig::default());
+        }
+    }
+    path
+}
+
 
 /// Main loop of the app. Consumes Crossterm events to handle key/mouse input. The app works with
 /// three trees in order play nice with Rusts' "only one mutable state" requirement. Instead of
@@ -132,7 +160,7 @@ fn run_loop(mut root_widget: Layout, mut callback_tree: CallbackTree, mut schedu
             }
 
             let selected_widget = if consumed {None}
-            else {common::selection_functions::get_selected_widget(&widget_tree, &mut state_tree)};
+            else {get_selected_widget(&widget_tree, &mut state_tree)};
 
             // Try to handle event as global
             if !consumed {
@@ -168,33 +196,30 @@ fn run_loop(mut root_widget: Layout, mut callback_tree: CallbackTree, mut schedu
         if last_update.elapsed() < Duration::from_millis(32) { continue }
         {
             let widget_tree = root_widget.get_widget_tree();
-            scheduler_funcs::update_callback_configs(&mut scheduler, &mut callback_tree);
-            scheduler_funcs::run_tasks(&mut scheduler, &mut view_tree, &mut state_tree,
-                                       &widget_tree);
-            scheduler_funcs::update_threads(&mut scheduler, &mut view_tree, &mut state_tree,
-                                            &widget_tree);
-            scheduler_funcs::update_properties(&mut scheduler, &mut view_tree, &mut state_tree,
-                                               &widget_tree, &mut callback_tree);
+            update_callback_configs(&mut scheduler, &mut callback_tree);
+            run_tasks(&mut scheduler, &mut view_tree, &mut state_tree, &widget_tree);
+            update_threads(&mut scheduler, &mut view_tree, &mut state_tree, &widget_tree);
+            update_properties(&mut scheduler, &mut view_tree, &mut state_tree, &widget_tree,
+                              &mut callback_tree);
         }
         root_widget.state = state_tree.get_by_path("/root").as_layout().clone();
 
         // Update the state tree for each widget, redrawing any that changed. If a global
         // forced redraw was issued by a widget we'll perform one.
-        let forced_redraw = common::screen_functions::redraw_changed_widgets(
+        let forced_redraw = redraw_changed_widgets(
             &mut view_tree, &mut state_tree,  &mut root_widget,
             &mut scheduler.widgets_to_update, scheduler.force_redraw);
         if forced_redraw {
             let contents = root_widget.get_contents(&mut state_tree);
             view_tree.write_content(Coordinates::new(0, 0), contents);
         }
-        common::screen_functions::write_to_screen(&mut view_tree);
+        write_to_screen(&mut view_tree);
         scheduler.force_redraw = false;
 
 
         track_mouse_pos = !root_widget.state.open_modals.is_empty();
         if cleanup_timer == 100 {
-            common::screen_functions::clean_trees(
-                &mut root_widget, &mut state_tree, &mut callback_tree, &mut scheduler);
+            clean_trees(&mut root_widget, &mut state_tree, &mut callback_tree, &mut scheduler);
             scheduler_funcs::drain_property_channels(&mut scheduler);
             cleanup_timer = 0;
         } else {

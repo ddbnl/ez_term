@@ -2,11 +2,11 @@ use std::cmp::Ordering;
 use std::ops::{Add, Sub};
 use std::sync::mpsc::{Sender, Receiver, channel};
 use crossterm::style::Color;
-use crate::common::definitions::{GenericEzFunction};
 use crate::{CallbackConfig};
 use crate::scheduler::scheduler::Scheduler;
 use crate::states::definitions::{HorizontalAlignment, VerticalAlignment};
-use crate::property::values::EzValues;
+use crate::property::ez_values::EzValues;
+use crate::scheduler::definitions::GenericEzFunction;
 
 
 #[derive(Clone, Debug)]

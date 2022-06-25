@@ -1,14 +1,14 @@
 //! # Widget:
 //! A module containing the base structs and traits for widgets"
 //! functions allows starting the app based on a root layout.
-use crossterm::style::{Color, StyledContent, Stylize};
 use std::io::{Error};
 use crossterm::event::Event;
-use crate::common;
-use crate::common::definitions::{CallbackTree, StateTree, ViewTree, WidgetTree, Coordinates};
+use crate::EzContext;
+use crate::run::definitions::{CallbackTree, Coordinates, PixelMap, StateTree, WidgetTree};
+use crate::run::tree::ViewTree;
 use crate::scheduler::scheduler::Scheduler;
-use crate::states::state::{EzState, GenericState};
-use crate::widgets::layout::{Layout};
+use crate::states::ez_state::{EzState, GenericState};
+use crate::widgets::layout::layout::Layout;
 use crate::widgets::label::{Label};
 use crate::widgets::button::{Button};
 use crate::widgets::canvas::{Canvas};
@@ -41,7 +41,7 @@ pub enum EzObjects {
 impl EzObjects {
 
     /// Cast this enum to a generic [EzObject] trait object. As this trait is implemented by both
-    /// [Layout] and [widget], it is safe to call on all variants.
+    /// [layout] and [widget], it is safe to call on all variants.
     pub fn as_ez_object(&self) -> &dyn EzObject {
         match self {
             EzObjects::Label(i) => i,
@@ -59,7 +59,7 @@ impl EzObjects {
     }
 
     /// Cast this enum to a mutable generic [EzObject] trait object. As this trait is implemented
-    /// by both [Layout] and [widget], it is safe to call on all variants.
+    /// by both [layout] and [widget], it is safe to call on all variants.
     pub fn as_ez_object_mut(&mut self) -> &mut dyn EzObject {
         match self {
             EzObjects::Layout(i) => i,
@@ -210,7 +210,7 @@ impl EzObjects {
 
 
 /// Trait representing both widgets and layouts implementing methods which are common to all UI
-/// objects (such as size, position, etc.). If you don't know if an object is a Widget or a Layout
+/// objects (such as size, position, etc.). If you don't know if an object is a Widget or a layout
 /// (or don't care), cast the EzObjects enum into this type using [az_ez_object].
 pub trait EzObject {
 
@@ -228,7 +228,7 @@ pub trait EzObject {
         Ok(())
     }
 
-    /// Load parameters for an object. Overloaded in each Widget/Layout module to load parameters
+    /// Load parameters for an object. Overloaded in each Widget/layout module to load parameters
     /// specific to the respective widget definition.
     fn load_ez_parameter(&mut self, parameter_name: String, parameter_value: String,
                          scheduler: &mut Scheduler);
@@ -269,12 +269,12 @@ pub trait EzObject {
 
     /// Set the content for a widget manually. This is not implemented for most widgets, as they
     /// get their content from their state. E.g. a label gets content from its' current text.
-    fn set_contents(&mut self, _contents: common::definitions::PixelMap) {
+    fn set_contents(&mut self, _contents: PixelMap) {
         panic!("Cannot manually set content color for this widget {}", self.get_id()); }
 
     /// Gets the visual content for this widget. Overloaded by each widget module. E.g. a label
     /// gets its' content from its' text, a checkbox from whether it has been checked, etc.
-    fn get_contents(&self, state_tree: &mut StateTree) -> common::definitions::PixelMap;
+    fn get_contents(&self, state_tree: &mut StateTree) -> PixelMap;
 
     /// Optionally consume an event that was passed to this widget. Return true if the event should
     /// be considered consumed. Simply consults the keymap by default, but can be overloaded for
@@ -289,8 +289,7 @@ pub trait EzObject {
                 let func =
                     callback_tree.get_by_path_mut(&self.get_full_path())
                     .keymap.get_mut(&key.code).unwrap();
-                let context =
-                    common::definitions::EzContext::new(self.get_full_path(),
+                let context = EzContext::new(self.get_full_path(),
                 view_tree, state_tree, widget_tree, scheduler);
                 func(context, key.code);
                 return true
@@ -322,7 +321,7 @@ pub trait EzObject {
 
         if let Some(ref mut i) = callback_tree
             .get_by_path_mut(&self.get_full_path()).on_keyboard_enter {
-            return i(common::definitions::EzContext::new(
+            return i(EzContext::new(
                 self.get_full_path(), view_tree, state_tree, widget_tree, scheduler));
         };
         false
@@ -352,7 +351,7 @@ pub trait EzObject {
 
         if let Some(ref mut i) = callback_tree
             .get_by_path_mut(&self.get_full_path()).on_left_mouse_click {
-            return i(common::definitions::EzContext::new(
+            return i(EzContext::new(
                 self.get_full_path(), view_tree, state_tree, widget_tree, scheduler),
                 mouse_pos);
         };
@@ -377,7 +376,7 @@ pub trait EzObject {
 
         if let Some(ref mut i) = callback_tree
             .get_by_path_mut(&self.get_full_path()).on_press {
-            return i(common::definitions::EzContext::new(
+            return i(EzContext::new(
                 self.get_full_path(), view_tree, state_tree, widget_tree, scheduler));
         };
         false
@@ -403,7 +402,7 @@ pub trait EzObject {
 
         if let Some(ref mut i) = callback_tree
             .get_by_path_mut(&self.get_full_path()).on_right_mouse_click {
-            return i(common::definitions::EzContext::new(
+            return i(EzContext::new(
                 self.get_full_path(), view_tree, state_tree, widget_tree, scheduler),
                      mouse_pos);
         };
@@ -428,7 +427,7 @@ pub trait EzObject {
 
         if let Some(ref mut i) = callback_tree
             .get_by_path_mut(&self.get_full_path()).on_scroll_up {
-            return i(common::definitions::EzContext::new(
+            return i(EzContext::new(
                 self.get_full_path(), view_tree, state_tree, widget_tree, scheduler));
         };
         false
@@ -453,7 +452,7 @@ pub trait EzObject {
 
         if let Some(ref mut i) = callback_tree
             .get_by_path_mut(&self.get_full_path()).on_scroll_down {
-            return i(common::definitions::EzContext::new(
+            return i(EzContext::new(
                 self.get_full_path(), view_tree, state_tree, widget_tree, scheduler));
         };
         false
@@ -477,7 +476,7 @@ pub trait EzObject {
 
         if let Some(ref mut i) = callback_tree
             .get_by_path_mut(&self.get_full_path()).on_value_change {
-            return i(common::definitions::EzContext::new(
+            return i(EzContext::new(
                 self.get_full_path(), view_tree, state_tree, widget_tree, scheduler));
         };
         false
@@ -503,7 +502,7 @@ pub trait EzObject {
 
         if let Some(ref mut i) = callback_tree
             .get_by_path_mut(&self.get_full_path()).on_select {
-            return i(common::definitions::EzContext::new(
+            return i(EzContext::new(
                 self.get_full_path(), view_tree, state_tree, widget_tree, scheduler),
                 mouse_pos);
         };
@@ -528,55 +527,9 @@ pub trait EzObject {
 
         if let Some(ref mut i) = callback_tree
             .get_by_path_mut(&self.get_full_path()).on_deselect {
-            return i(common::definitions::EzContext::new(
+            return i(EzContext::new(
                 self.get_full_path(), view_tree, state_tree, widget_tree, scheduler));
         };
         false
-    }
-}
-
-
-/// Struct representing a single X,Y position on the screen. It has a symbol, colors, and other
-/// properties governing how the position will look on screen.
-#[derive(Clone, Debug)]
-pub struct Pixel {
-
-    /// Symbol drawn on screen.
-    pub symbol: String,
-
-    /// Foreground color in crossterm::style::color
-    pub foreground_color: Color,
-
-    /// Background color in crossterm::style::color
-    pub background_color: Color,
-
-    /// Whether symbol should be underlined
-    pub underline: bool
-}
-impl Pixel {
-    /// Turn into a crossterm StyledContent which can be drawn on screen.
-    pub fn get_pixel(&self) -> StyledContent<String> {
-        let mut pixel = self.symbol.clone()
-            .with(self.foreground_color)
-            .on(self.background_color);
-        if self.underline {
-            pixel = pixel.underlined();
-        }
-        pixel
-    }
-}
-impl Pixel {
-    pub fn new(symbol: String, foreground_color: Color, background_color: Color) -> Self {
-        Pixel { symbol, foreground_color, background_color, underline: false }
-    }
-}
-impl Default for Pixel {
-    fn default() -> Self {
-       Pixel{
-           symbol: " ".to_string(),
-           foreground_color: Color::White,
-           background_color: Color::Blue,
-           underline: false
-       }
     }
 }

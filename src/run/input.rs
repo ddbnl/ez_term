@@ -2,14 +2,17 @@ use std::io::{stdout};
 use std::process::exit;
 use crossterm::{event::{MouseEvent, MouseEventKind, MouseButton, Event, KeyCode, KeyEvent},
                 terminal, QueueableCommand};
+use crate::run::definitions::{CallbackTree, Coordinates, StateTree, WidgetTree};
+use crate::run::select::{deselect_selected_widget, get_selected_widget, get_widget_by_position,
+                         select_next, select_previous};
+use crate::run::terminal::write_to_screen;
+use crate::run::tree::ViewTree;
 use super::terminal::shutdown_terminal;
-use crate::common;
-use crate::common::definitions::{CallbackTree, StateTree, ViewTree, WidgetTree, Coordinates};
-use crate::widgets::layout::Layout;
-use crate::widgets::widget::{EzObject};
+use crate::widgets::layout::layout::Layout;
+use crate::widgets::ez_object::{EzObject};
 use crate::scheduler::scheduler::Scheduler;
-use crate::states::state::EzState;
-use crate::widgets::widget;
+use crate::states::ez_state::EzState;
+use crate::widgets::ez_object;
 
 
 /// Try to handle an event by passing it to the active modal if any. The modal will return whether
@@ -26,7 +29,7 @@ pub fn handle_modal_event (event: Event, view_tree: &mut ViewTree, state_tree: &
         .open_modals.first().unwrap().as_ez_object().get_full_path();
     for (path, widget) in widget_tree.objects.iter() {
         if !path.starts_with(&modal_root) { continue }
-        if let widget::EzObjects::Layout(i) = widget {
+        if let ez_object::EzObjects::Layout(i) = widget {
             for child in i.get_widgets_recursive().values() {
                 consumed = child.as_ez_object().handle_event(
                     event, view_tree, state_tree, widget_tree, callback_tree, scheduler);
@@ -70,18 +73,15 @@ fn handle_key_event(key: KeyEvent, view_tree: &mut ViewTree, state_tree: &mut St
 
     match key.code {
         KeyCode::Down => {
-            common::selection_functions::select_next(
-                view_tree, state_tree, widget_tree, callback_tree, scheduler);
+            select_next(view_tree, state_tree, widget_tree, callback_tree, scheduler);
             true
         },
         KeyCode::Up => {
-            common::selection_functions::select_previous(
-                view_tree, state_tree, widget_tree, callback_tree, scheduler);
+            select_previous(view_tree, state_tree, widget_tree, callback_tree, scheduler);
             true
         },
         KeyCode::Enter => {
-            let selected_widget =
-                common::selection_functions::get_selected_widget(widget_tree, state_tree);
+            let selected_widget = get_selected_widget(widget_tree, state_tree);
             if let Some(widget) = selected_widget {
                 if !state_tree
                     .get_by_path(&widget.get_full_path()).as_generic().get_disabled().value {
@@ -109,7 +109,7 @@ fn handle_mouse_event(event: MouseEvent, view_tree: &mut ViewTree, state_tree: &
     if let MouseEventKind::Down(button) = event.kind {
         let mouse_position = Coordinates::new(
             event.column as usize,event.row as usize);
-        for widget in common::selection_functions::get_widget_by_position(
+        for widget in get_widget_by_position(
             mouse_position, widget_tree, state_tree) {
 
             let abs = state_tree.get_by_path(&widget.get_full_path()).as_generic()
@@ -117,8 +117,9 @@ fn handle_mouse_event(event: MouseEvent, view_tree: &mut ViewTree, state_tree: &
             let relative_position = Coordinates::new(
                 mouse_position.x - abs.x, mouse_position.y - abs.y);
             let consumed = match button {
+
                 MouseButton::Left => {
-                    common::selection_functions::deselect_selected_widget(
+                    deselect_selected_widget(
                         view_tree, state_tree, widget_tree, callback_tree, scheduler);
 
                     let consumed = widget.on_left_mouse_click(view_tree, state_tree, widget_tree,
@@ -140,20 +141,22 @@ fn handle_mouse_event(event: MouseEvent, view_tree: &mut ViewTree, state_tree: &
             if consumed { return true }
         }
     } else if let MouseEventKind::ScrollUp = event.kind {
-        let mouse_position = Coordinates::new(event.column as usize,event.row as usize);
-        for widget in common::selection_functions::get_widget_by_position(
+        let mouse_position =
+            Coordinates::new(event.column as usize,event.row as usize);
+        for widget in get_widget_by_position(
             mouse_position, widget_tree, state_tree) {
-            let consumed = widget.on_scroll_up(view_tree, state_tree, widget_tree, callback_tree,
-                                       scheduler);
+            let consumed = widget.on_scroll_up(view_tree, state_tree, widget_tree,
+                                               callback_tree, scheduler);
             if consumed { return consumed }
         }
     } else if let MouseEventKind::ScrollDown = event.kind {
+
         let mouse_position = Coordinates::new(
         event.column as usize,event.row as usize);
-        for widget in common::selection_functions::get_widget_by_position(
+        for widget in get_widget_by_position(
             mouse_position, widget_tree, state_tree) {
-            let consumed = widget.on_scroll_down(view_tree, state_tree, widget_tree, callback_tree,
-                                       scheduler);
+            let consumed = widget.on_scroll_down(view_tree, state_tree, widget_tree,
+                                                 callback_tree, scheduler);
             if consumed { return consumed }
         }
     }
@@ -182,5 +185,5 @@ pub fn handle_resize(view_tree: &mut ViewTree, state_tree: &mut StateTree, root_
     stdout().queue(terminal::Clear(terminal::ClearType::All)).unwrap();
     view_tree.initialize(new_width, new_height);
     view_tree.write_content(Coordinates::new(0, 0), contents);
-    common::screen_functions::write_to_screen(view_tree);
+    write_to_screen(view_tree);
 }

@@ -3,15 +3,16 @@
 //! same 'group' field value for all. The radio buttons in a group are mutually exlusive, so when
 //! one is selected the others are deselected. Supports on_value_change callback, which is only
 //! called for the radio button that became active.
-use crate::common;
-use crate::common::definitions::{CallbackTree, StateTree, ViewTree, WidgetTree};
 use crate::states::radio_button_state::RadioButtonState;
-use crate::states::state::{EzState, GenericState};
-use crate::widgets::widget::{Pixel, EzObject};
+use crate::states::ez_state::{EzState, GenericState};
+use crate::widgets::ez_object::{EzObject};
 use crate::parser::load_properties::load_common_property;
 use crate::parser::load_base_properties::{load_ez_bool_property, load_ez_string_property};
-use crate::property::values::EzValues;
+use crate::property::ez_values::EzValues;
+use crate::run::definitions::{CallbackTree, Pixel, PixelMap, StateTree, WidgetTree};
+use crate::run::tree::ViewTree;
 use crate::scheduler::scheduler::Scheduler;
+use crate::widgets::helper_functions::{add_border, add_padding};
 
 
 #[derive(Clone, Debug)]
@@ -105,7 +106,7 @@ impl EzObject for RadioButton {
     
     fn get_state_mut(&mut self) -> &mut dyn GenericState { &mut self.state }
     
-    fn get_contents(&self, state_tree: &mut StateTree) -> common::definitions::PixelMap {
+    fn get_contents(&self, state_tree: &mut StateTree) -> PixelMap {
 
         let state = state_tree
             .get_by_path_mut(&self.get_full_path()).as_radio_button_mut();
@@ -127,14 +128,13 @@ impl EzObject for RadioButton {
                 background_color: bg_color, underline: false}),
         );
         if state.get_border_config().enabled.value {
-            contents = common::widget_functions::add_border(
-                contents, state.get_border_config());
+            contents = add_border(contents, state.get_border_config());
         }
         let state = state_tree
             .get_by_path(&self.get_full_path()).as_radio_button();
         let parent_colors = state_tree.get_by_path(self.get_full_path()
             .rsplit_once('/').unwrap().0).as_generic().get_color_config();
-        contents = common::widget_functions::add_padding(
+        contents = add_padding(
             contents, state.get_padding(), parent_colors.background.value,
             parent_colors.foreground.value);
         contents

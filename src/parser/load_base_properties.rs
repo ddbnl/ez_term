@@ -1,8 +1,8 @@
 use crossterm::style::{Color};
-use crate::common::definitions::{EzPropertyUpdater};
 use crate::states::definitions::{HorizontalAlignment, VerticalAlignment};
 use crate::scheduler::scheduler::Scheduler;
 use crate::parser::parse_properties;
+use crate::scheduler::definitions::EzPropertyUpdater;
 
 
 /* Base property loaders */

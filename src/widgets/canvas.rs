@@ -3,13 +3,14 @@
 //! manually by the user using the 'set_content' method.
 use std::fs::File;
 use std::io::prelude::*;
-use crate::widgets::widget::{EzObject, Pixel};
+use crate::widgets::ez_object::{EzObject};
 use crate::states::canvas_state::CanvasState;
-use crate::states::state::{EzState, GenericState};
-use crate::common;
+use crate::states::ez_state::{EzState, GenericState};
 use unicode_segmentation::UnicodeSegmentation;
 use crate::parser::load_properties::load_common_property;
+use crate::run::definitions::{Pixel, PixelMap, StateTree};
 use crate::scheduler::scheduler::Scheduler;
+use crate::widgets::helper_functions::{add_border, add_padding};
 
 #[derive(Clone, Debug)]
 pub struct Canvas {
@@ -23,7 +24,7 @@ pub struct Canvas {
     pub from_file: Option<String>,
 
     /// Grid of pixels that will be written to screen for this widget
-    pub contents: common::definitions::PixelMap,
+    pub contents: PixelMap,
 
     /// Runtime state of this widget, see [CanvasState] and [State]
     pub state: CanvasState,
@@ -72,7 +73,7 @@ impl EzObject for Canvas {
 
     /// Set the content of this Widget. You must manually fill a [PixelMap] of the same
     /// [height] and [width] as this widget and pass it here.
-    fn set_contents(&mut self, contents: common::definitions::PixelMap) {
+    fn set_contents(&mut self, contents: PixelMap) {
        let mut valid_contents = Vec::new();
        for x in 0..self.state.get_size().width.value as usize {
            valid_contents.push(Vec::new());
@@ -83,7 +84,7 @@ impl EzObject for Canvas {
        self.contents = valid_contents
     }
 
-    fn get_contents(&self, state_tree: &mut common::definitions::StateTree) -> common::definitions::PixelMap {
+    fn get_contents(&self, state_tree: &mut StateTree) -> PixelMap {
 
         let state = state_tree
             .get_by_path_mut(&self.get_full_path()).as_canvas_mut();
@@ -111,7 +112,7 @@ impl EzObject for Canvas {
                 }
             }
 
-            let mut widget_content = common::definitions::PixelMap::new();
+            let mut widget_content = PixelMap::new();
             for x in 0..state.get_effective_size().width {
                 widget_content.push(Vec::new());
                 for y in 0..state.get_effective_size().height {
@@ -135,13 +136,12 @@ impl EzObject for Canvas {
             contents = self.contents.clone();
         }
         if state.get_border_config().enabled.value {
-            contents = common::widget_functions::add_border(
-                contents, state.get_border_config());
+            contents = add_border(contents, state.get_border_config());
         }
         let state = state_tree.get_by_path(&self.get_full_path()).as_canvas();
         let parent_colors = state_tree.get_by_path(self.get_full_path()
             .rsplit_once('/').unwrap().0).as_generic().get_color_config();
-        contents = common::widget_functions::add_padding(
+        contents = add_padding(
             contents, state.get_padding(),parent_colors.background.value,
             parent_colors.foreground.value);
         contents

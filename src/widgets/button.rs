@@ -1,15 +1,17 @@
 //! A widget that displays text non-interactively.
 use std::time::Duration;
-use crate::states::state::{EzState, GenericState};
+use crate::EzContext;
+use crate::states::ez_state::{EzState, GenericState};
 use crate::states::definitions::{HorizontalAlignment, VerticalAlignment};
 use crate::states::button_state::ButtonState;
-use crate::common;
-use crate::common::definitions::{CallbackTree, PixelMap, StateTree, ViewTree, WidgetTree};
-use crate::widgets::widget::{Pixel, EzObject};
+use crate::widgets::ez_object::{EzObject};
 use crate::parser::load_properties::load_common_property;
 use crate::parser::load_base_properties::load_ez_string_property;
-use crate::property::values::EzValues;
+use crate::property::ez_values::EzValues;
+use crate::run::definitions::{CallbackTree, Pixel, PixelMap, StateTree, WidgetTree};
+use crate::run::tree::ViewTree;
 use crate::scheduler::scheduler::Scheduler;
+use crate::widgets::helper_functions::{add_border, add_padding, align_content_horizontally, align_content_vertically, wrap_text};
 
 #[derive(Clone, Debug)]
 pub struct Button {
@@ -89,7 +91,7 @@ impl EzObject for Button {
         let write_width = if state.get_size().infinite_width ||
             state.get_auto_scale().width.value { text.len() + 1 }
             else {state.get_effective_size().width };
-        let content_lines = common::widget_functions::wrap_text(text, write_width);
+        let content_lines = wrap_text(text, write_width);
         let write_height =
             if state.get_size().infinite_height || state.get_auto_scale().height.value
             { content_lines.len() }
@@ -114,18 +116,18 @@ impl EzObject for Button {
         if state.get_auto_scale().height.value {
             state.set_effective_height(contents[0].len());
         }
-        (contents, _) = common::widget_functions::align_content_horizontally(
+        (contents, _) = align_content_horizontally(
             contents,HorizontalAlignment::Center,
             state.get_effective_size().width, fg_color, bg_color);
-        (contents, _) = common::widget_functions::align_content_vertically(
+        (contents, _) = align_content_vertically(
             contents,VerticalAlignment::Middle,
             state.get_effective_size().height, fg_color, bg_color);
-        contents = common::widget_functions::add_border(
+        contents = add_border(
             contents, state.get_border_config());
         let state = state_tree.get_by_path(&self.get_full_path()).as_button();
         let parent_colors = state_tree.get_by_path(self.get_full_path()
             .rsplit_once('/').unwrap().0).as_generic().get_color_config();
-        contents = common::widget_functions::add_padding(
+        contents = add_padding(
             contents, state.get_padding(), parent_colors.background.value,
             parent_colors.foreground.value);
         contents
@@ -161,7 +163,7 @@ impl Button {
         state.set_flashing(true);
         state.update(scheduler);
         let scheduled_func =
-            | context: common::definitions::EzContext | {
+            | context: EzContext | {
                 if !context.state_tree.objects.contains_key(&context.widget_path) { return false }
                 let state = context.state_tree.get_by_path_mut(&context.widget_path)
                     .as_button_mut();

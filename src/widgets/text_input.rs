@@ -4,16 +4,17 @@
 use std::cmp::min;
 use std::time::Duration;
 use crossterm::event::{Event, KeyCode};
+use crate::EzContext;
 use crate::states::text_input_state::TextInputState;
-use crate::states::state::{EzState, GenericState};
-use crate::widgets::widget::{Pixel, EzObject};
-use crate::common;
-use crate::common::definitions::{CallbackTree, EzContext, PixelMap, StateTree, ViewTree, WidgetTree};
+use crate::states::ez_state::{EzState, GenericState};
+use crate::widgets::ez_object::{EzObject};
 use crate::scheduler::scheduler::Scheduler;
-use crate::common::definitions::Coordinates;
 use crate::parser::load_properties::load_common_property;
 use crate::parser::load_base_properties::load_ez_string_property;
-use crate::property::values::EzValues;
+use crate::property::ez_values::EzValues;
+use crate::run::definitions::{CallbackTree, Coordinates, Pixel, PixelMap, StateTree, WidgetTree};
+use crate::run::tree::ViewTree;
+use crate::widgets::helper_functions::{add_border, add_padding};
 
 #[derive(Clone, Debug)]
 pub struct TextInput {
@@ -103,7 +104,7 @@ impl EzObject for TextInput {
             let mut new_y = Vec::new();
             for _ in 0..write_height {
                 if !text.is_empty() {
-                    new_y.push(Pixel{
+                    new_y.push(Pixel {
                         symbol: text.pop().unwrap().to_string(),
                         foreground_color: fg_color,
                         background_color: if state.get_blink_switch() &&
@@ -111,7 +112,7 @@ impl EzObject for TextInput {
                         else {bg_color},
                         underline: true})
                 } else {
-                    new_y.push(Pixel{
+                    new_y.push(Pixel {
                         symbol: " ".to_string(),
                         foreground_color: fg_color,
                         background_color: if state.get_blink_switch() &&
@@ -129,13 +130,13 @@ impl EzObject for TextInput {
             state.set_effective_height(1);
         }
         if state.get_border_config().enabled.value {
-            contents = common::widget_functions::add_border(
+            contents = add_border(
                 contents, state.get_border_config());
         }
         let state = state_tree.get_by_path(&self.get_full_path()).as_text_input();
         let parent_colors = state_tree.get_by_path(self.get_full_path()
             .rsplit_once('/').unwrap().0).as_generic().get_color_config();
-        contents = common::widget_functions::add_padding(
+        contents = add_padding(
             contents, state.get_padding(),parent_colors.background.value,
             parent_colors.foreground.value);
         contents

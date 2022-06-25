@@ -1,12 +1,13 @@
+use std::collections::HashMap;
 use crossterm::event::KeyCode;
 use crossterm::style::Color;
-use crate::common;
-use crate::property::property::EzProperty;
+use crate::property::ez_property::EzProperty;
+use crate::scheduler::definitions::{GenericEzFunction, KeyboardCallbackFunction, MouseCallbackFunction, OptionalMouseCallbackFunction};
 use crate::scheduler::scheduler::Scheduler;
 use crate::scheduler::scheduler_funcs::clean_up_property;
 
 
-/// Used with Box mode [Layout], determines whether widgets are placed below or above each other.
+/// Used with Box mode [layout], determines whether widgets are placed below or above each other.
 #[derive(Clone, PartialEq, Debug)]
 pub enum LayoutOrientation {
     Horizontal,
@@ -14,7 +15,7 @@ pub enum LayoutOrientation {
 }
 
 
-/// Different modes determining how widgets are placed in a [Layout].
+/// Different modes determining how widgets are placed in a [layout].
 #[derive(Clone, PartialEq, Debug)]
 pub enum LayoutMode {
 
@@ -36,8 +37,8 @@ pub enum LayoutMode {
 
     ///# Tabbed mode:
     /// This layout can only contain other layouts and presents those as tabs. A tab header will
-    /// automatically be added for each child Layout, so the user can switch between tabs. The tab
-    /// header will display the [id] of the child Layout.
+    /// automatically be added for each child layout, so the user can switch between tabs. The tab
+    /// header will display the [id] of the child layout.
     Tabbed
 
     // todo table
@@ -197,97 +198,97 @@ impl PosHint {
 pub struct CallbackConfig {
 
     /// Function to call when an object is selected.
-    pub on_select: Option<common::definitions::OptionalMouseCallbackFunction> ,
+    pub on_select: Option<OptionalMouseCallbackFunction> ,
 
     /// Function to call when an object is deselected.
-    pub on_deselect: Option<common::definitions::GenericEzFunction>,
+    pub on_deselect: Option<GenericEzFunction>,
 
     /// Function to call when an object is keyboard entered or left clicked,
-    pub on_press: Option<common::definitions::GenericEzFunction>,
+    pub on_press: Option<GenericEzFunction>,
 
     /// Function to call when this widget is right clicked
-    pub on_keyboard_enter: Option<common::definitions::GenericEzFunction>,
+    pub on_keyboard_enter: Option<GenericEzFunction>,
 
     /// Function to call when this widget is right clicked
-    pub on_left_mouse_click: Option<common::definitions::MouseCallbackFunction>,
+    pub on_left_mouse_click: Option<MouseCallbackFunction>,
 
     /// Function to call when this widget is right clicked
-    pub on_right_mouse_click: Option<common::definitions::MouseCallbackFunction>,
+    pub on_right_mouse_click: Option<MouseCallbackFunction>,
 
     /// Function to call when this widget is scrolled up
-    pub on_scroll_up: Option<common::definitions::GenericEzFunction>,
+    pub on_scroll_up: Option<GenericEzFunction>,
 
     /// Function to call when this widget is scrolled down
-    pub on_scroll_down: Option<common::definitions::GenericEzFunction>,
+    pub on_scroll_down: Option<GenericEzFunction>,
 
     /// Function to call when the value of an object changes
-    pub on_value_change: Option<common::definitions::GenericEzFunction>,
+    pub on_value_change: Option<GenericEzFunction>,
 
     /// A Key to callback function lookup used to store keybinds for this widget. See
     /// [KeyboardCallbackFunction] type for callback function signature.
-    pub keymap: common::definitions::KeyMap,
+    pub keymap: KeyMap,
 }
 impl CallbackConfig {
 
-    pub fn bind_key(&mut self, key: KeyCode, func: common::definitions::KeyboardCallbackFunction) {
+    pub fn bind_key(&mut self, key: KeyCode, func: KeyboardCallbackFunction) {
         self.keymap.insert(key, func);
     }
 
-    pub fn from_on_select(func: common::definitions::OptionalMouseCallbackFunction) -> Self {
+    pub fn from_on_select(func: OptionalMouseCallbackFunction) -> Self {
         let mut obj = CallbackConfig::default();
         obj.on_select = Some(func);
         obj
     }
 
-    pub fn from_on_deselect(func: common::definitions::GenericEzFunction) -> Self {
+    pub fn from_on_deselect(func: GenericEzFunction) -> Self {
         let mut obj = CallbackConfig::default();
         obj.on_deselect = Some(func);
         obj
     }
 
-    pub fn from_on_press(func: common::definitions::GenericEzFunction) -> Self {
+    pub fn from_on_press(func: GenericEzFunction) -> Self {
         let mut obj = CallbackConfig::default();
         obj.on_press = Some(func);
         obj
     }
 
-    pub fn from_on_keyboard_enter(func: common::definitions::GenericEzFunction) -> Self {
+    pub fn from_on_keyboard_enter(func: GenericEzFunction) -> Self {
         let mut obj = CallbackConfig::default();
         obj.on_keyboard_enter = Some(func);
         obj
     }
 
-    pub fn from_on_left_mouse_click(func: common::definitions::MouseCallbackFunction) -> Self {
+    pub fn from_on_left_mouse_click(func: MouseCallbackFunction) -> Self {
         let mut obj = CallbackConfig::default();
         obj.on_left_mouse_click = Some(func);
         obj
     }
 
-    pub fn from_on_right_mouse_click(func: common::definitions::MouseCallbackFunction) -> Self {
+    pub fn from_on_right_mouse_click(func: MouseCallbackFunction) -> Self {
         let mut obj = CallbackConfig::default();
         obj.on_right_mouse_click = Some(func);
         obj
     }
 
-    pub fn from_on_scroll_up(func: common::definitions::GenericEzFunction) -> Self {
+    pub fn from_on_scroll_up(func: GenericEzFunction) -> Self {
         let mut obj = CallbackConfig::default();
         obj.on_scroll_up = Some(func);
         obj
     }
 
-    pub fn from_on_scroll_down(func: common::definitions::GenericEzFunction) -> Self {
+    pub fn from_on_scroll_down(func: GenericEzFunction) -> Self {
         let mut obj = CallbackConfig::default();
         obj.on_scroll_down = Some(func);
         obj
     }
 
-    pub fn from_on_value_change(func: common::definitions::GenericEzFunction) -> Self {
+    pub fn from_on_value_change(func: GenericEzFunction) -> Self {
         let mut obj = CallbackConfig::default();
         obj.on_value_change = Some(func);
         obj
     }
 
-    pub fn from_keymap(keymap: common::definitions::KeyMap) -> Self {
+    pub fn from_keymap(keymap: KeyMap) -> Self {
         let mut obj = CallbackConfig::default();
         obj.keymap = keymap;
         obj
@@ -316,6 +317,11 @@ impl CallbackConfig {
     }
 
 }
+
+
+/// ## Key map
+/// A crossterm KeyCode > Callback function lookup. Used for custom user keybinds
+pub type KeyMap = HashMap<KeyCode, KeyboardCallbackFunction>;
 
 
 /// Convenience wrapper around a [LayoutState] scrolling configuration

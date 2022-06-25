@@ -1,13 +1,13 @@
 //! A widget that displays text non-interactively.
-use crate::states::state::{EzState, GenericState};
-use crate::common;
-use crate::common::definitions::{PixelMap, StateTree};
-use crate::widgets::widget::{Pixel, EzObject};
+use crate::states::ez_state::{EzState, GenericState};
+use crate::widgets::ez_object::{EzObject};
 use crate::parser::load_properties::load_common_property;
 use crate::parser::load_base_properties::{load_ez_usize_property};
-use crate::property::values::EzValues;
+use crate::property::ez_values::EzValues;
+use crate::run::definitions::{Pixel, PixelMap, StateTree};
 use crate::scheduler::scheduler::Scheduler;
 use crate::states::progress_bar_state::ProgressBarState;
+use crate::widgets::helper_functions::{add_border, add_padding};
 
 #[derive(Clone, Debug)]
 pub struct ProgressBar {
@@ -89,14 +89,13 @@ impl EzObject for ProgressBar {
                                      state.get_color_config().background.value)));
         }
         if state.get_border_config().enabled.value {
-            contents = common::widget_functions::add_border(
-                contents, state.get_border_config());
+            contents = add_border(contents, state.get_border_config());
         }
         let state = state_tree
             .get_by_path(&self.get_full_path()).as_progress_bar();
         let parent_colors = state_tree.get_by_path(self.get_full_path()
             .rsplit_once('/').unwrap().0).as_generic().get_color_config();
-        contents = common::widget_functions::add_padding(
+        contents = add_padding(
             contents, state.get_padding(), parent_colors.background.value,
             parent_colors.foreground.value);
         contents
