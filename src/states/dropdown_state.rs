@@ -78,16 +78,16 @@ impl DropdownState {
            size: StateSize::new(0, 0, path.clone(), scheduler),
            padding: Padding::new(0, 0, 0, 0, path.clone(), scheduler),
            halign: scheduler.new_horizontal_alignment_property(
-                format!("{}/halign", path), HorizontalAlignment::Left),
+                format!("{}/halign", path).as_str(), HorizontalAlignment::Left),
            valign: scheduler.new_vertical_alignment_property(
-                format!("{}/valign", path), VerticalAlignment::Top),
-           disabled: scheduler.new_bool_property(format!("{}/disabled", path),false),
+                format!("{}/valign", path).as_str(), VerticalAlignment::Top),
+           disabled: scheduler.new_bool_property(format!("{}/disabled", path).as_str(),false),
            selected: false,
            selection_order: scheduler.new_usize_property(
-                format!("{}/selection_order", path), 0),
+                format!("{}/selection_order", path).as_str(), 0),
            options: Vec::new(),
-           allow_none: scheduler.new_bool_property(format!("{}/allow_none", path),true),
-           choice: scheduler.new_string_property(format!("{}/choice", path),
+           allow_none: scheduler.new_bool_property(format!("{}/allow_none", path).as_str(),true),
+           choice: scheduler.new_string_property(format!("{}/choice", path).as_str(),
                                                  String::new()),
            border_config: BorderConfig::new(false, path.clone(), scheduler),
            colors: ColorConfig::new(path, scheduler),
@@ -281,20 +281,20 @@ impl DroppedDownMenuState {
             size: StateSize::new(0, 3, path.clone(), scheduler),
             padding: Padding::new(0, 0, 0, 0, path.clone(), scheduler),
             halign: scheduler.new_horizontal_alignment_property(
-                format!("{}/halign", path), HorizontalAlignment::Left),
+                format!("{}/halign", path).as_str(), HorizontalAlignment::Left),
             valign: scheduler.new_vertical_alignment_property(
-                format!("{}/valign", path), VerticalAlignment::Top),
+                format!("{}/valign", path).as_str(), VerticalAlignment::Top),
             options: Vec::new(),
-            allow_none: scheduler.new_bool_property(format!("{}/allow_none", path),
+            allow_none: scheduler.new_bool_property(format!("{}/allow_none", path).as_str(),
                                                     true),
-            choice: scheduler.new_string_property(format!("{}/choice", path),
+            choice: scheduler.new_string_property(format!("{}/choice", path).as_str(),
                                                   String::new()),
             border_config: BorderConfig::new(false, path.clone(), scheduler),
             colors: ColorConfig::new(path.clone(), scheduler),
             disabled: scheduler.new_bool_property(
-                format!("{}/disabled", path),false),
+                format!("{}/disabled", path).as_str(),false),
             selection_order: scheduler.new_usize_property(
-                format!("{}/selection_order", path), 0),
+                format!("{}/selection_order", path).as_str(), 0),
             dropped_down_selected_row: 0,
         }
     }

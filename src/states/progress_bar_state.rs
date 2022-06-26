@@ -69,9 +69,9 @@ impl ProgressBarState {
 
        ProgressBarState {
            path: path.clone(),
-           max: scheduler.new_usize_property(format!("{}/progress_max", path),
+           max: scheduler.new_usize_property(format!("{}/progress_max", path).as_str(),
                                              100),
-           value: scheduler.new_usize_property(format!("{}/progress_value", path),
+           value: scheduler.new_usize_property(format!("{}/progress_value", path).as_str(),
                                                0),
            position: StateCoordinates::new(0, 0, path.clone(), scheduler),
            absolute_position: Coordinates::default(),
@@ -81,14 +81,14 @@ impl ProgressBarState {
            auto_scale: AutoScale::new(false, false, path.clone(), scheduler),
            padding: Padding::new(0, 0, 0, 0, path.clone(), scheduler),
            halign: scheduler.new_horizontal_alignment_property(
-                format!("{}/halign", path), HorizontalAlignment::Left),
+                format!("{}/halign", path).as_str(), HorizontalAlignment::Left),
            valign: scheduler.new_vertical_alignment_property(
-                format!("{}/valign", path), VerticalAlignment::Top),
+                format!("{}/valign", path).as_str(), VerticalAlignment::Top),
            selected: false,
            disabled: scheduler.new_bool_property(
-               format!("{}/disabled", path),false),
+               format!("{}/disabled", path).as_str(),false),
            selection_order: scheduler.new_usize_property(
-                format!("{}/selection_order", path), 0),
+                format!("{}/selection_order", path).as_str(), 0),
            border_config: BorderConfig::new(false, path.clone(), scheduler),
            colors: ColorConfig::new(path, scheduler),
        }

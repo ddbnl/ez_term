@@ -73,15 +73,16 @@ impl CheckboxState {
            pos_hint: PosHint::new(None, None, path.clone(), scheduler),
            padding: Padding::new(0, 0, 0, 0, path.clone(), scheduler),
            halign: scheduler.new_horizontal_alignment_property(
-                format!("{}/halign", path), HorizontalAlignment::Left),
+                format!("{}/halign", path).as_str(), HorizontalAlignment::Left),
            valign: scheduler.new_vertical_alignment_property(
-                format!("{}/valign", path), VerticalAlignment::Top),
-           active: scheduler.new_bool_property(format!("{}/active", path.clone()),false),
+                format!("{}/valign", path).as_str(), VerticalAlignment::Top),
+           active: scheduler.new_bool_property(format!("{}/active", path.clone()).as_str(),
+                                               false),
            disabled: scheduler.new_bool_property(
-                format!("{}/disabled", path),false),
+                format!("{}/disabled", path).as_str(),false),
            selected: false,
            selection_order: scheduler.new_usize_property(
-                format!("{}/selection_order", path), 0),
+                format!("{}/selection_order", path).as_str(), 0),
            border_config: BorderConfig::new(false, path.clone(), scheduler),
            colors: ColorConfig::new(path, scheduler),
        }

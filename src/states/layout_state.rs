@@ -114,19 +114,19 @@ impl LayoutState {
             mode: LayoutMode::Box,
             padding: Padding::new(0, 0, 0, 0, path.clone(), scheduler),
             halign: scheduler.new_horizontal_alignment_property(
-                format!("{}/halign", path), HorizontalAlignment::Left),
+                format!("{}/halign", path).as_str(), HorizontalAlignment::Left),
             valign: scheduler.new_vertical_alignment_property(
-                format!("{}/valign", path), VerticalAlignment::Top),
+                format!("{}/valign", path).as_str(), VerticalAlignment::Top),
             active_screen: scheduler.new_string_property(
-                format!("{}/active_screen", path), String::new()),
+                format!("{}/active_screen", path).as_str(), String::new()),
             tab_name: scheduler.new_string_property(
-                format!("{}/tab_name", path), "Tab".to_string()),
+                format!("{}/tab_name", path).as_str(), "Tab".to_string()),
             active_tab: scheduler.new_string_property(
-                format!("{}/active_tab", path), String::new()),
+                format!("{}/active_tab", path).as_str(), String::new()),
             selected_tab_header: String::new(),
-            fill: scheduler.new_bool_property(format!("{}/fill", path),false),
+            fill: scheduler.new_bool_property(format!("{}/fill", path).as_str(),false),
             filler_symbol: scheduler.new_string_property(
-                format!("{}/filler_symbol", path), String::new()),
+                format!("{}/filler_symbol", path).as_str(), String::new()),
             scrolling_config: ScrollingConfig::new(false, false, path.clone(),
                                                    scheduler),
             border_config: BorderConfig::new(false, path.clone(), scheduler),
@@ -134,10 +134,10 @@ impl LayoutState {
             open_modals: Vec::new(),
             templates: HashMap::new(),
             disabled: scheduler.new_bool_property(
-                format!("{}/disabled", path),false),
+                format!("{}/disabled", path).as_str(),false),
             selected: false,
             selection_order: scheduler.new_usize_property(
-                format!("{}/selection_order", path), 0),
+                format!("{}/selection_order", path).as_str(), 0),
         }
     }
 }

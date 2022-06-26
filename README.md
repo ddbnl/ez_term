@@ -3,7 +3,7 @@
 A YAML(ish) based terminal GUI framework for- and by Rust, focussed on making it quick and easy to create a
 functional UI for an app or game. Based on Crossterm and inspired by Kivy.
 
-![img.png](img.png)
+![showcase.gif](showcase.gif)
 
 
 # Introduction
@@ -112,7 +112,7 @@ UI). Here is an example:
 let (root_widget, mut scheduler) = ez_term::load_ez_ui("./Examples/full_example.ez");
 
 // Before we start the UI we register a custom property
-let value_property = scheduler.new_usize_property("progress_property".to_string(), 0);
+let progress_property = scheduler.new_usize_property("progress_property", 0);
 
 // Now, in the config file, we bind the progress bar property to our custom property
 - ProgressBar:
@@ -121,9 +121,9 @@ let value_property = scheduler.new_usize_property("progress_property".to_string(
     max: 100
     
 // The following function represents our example app:
-fn progress_example_app(mut properties: HashMap<String, ez_term::EzProperties>) {
+fn progress_example_app(mut properties: EzPropertiesMap) {
 
-    let value_property = properties.get_mut("progress_property").unwrap();
+    let progress_property = properties.get_mut("progress_property").unwrap();
     for x in 1..6 {
         value_property.as_usize_mut().set(x*20);
         std::thread::sleep(Duration::from_secs(1))
@@ -146,7 +146,7 @@ ez_term::run(root_widget, scheduler);
 If this seems useful to you please let me know or star the repo, so I can gauge interest.
 
 # Current state
-Very much a work in progress and still not available on Cargo. See the projects page for what I'm working on. 
+Almost ready to be released on Cargo. See the projects page for what I'm working on. 
 
 Currently supports the following:
 
@@ -175,7 +175,7 @@ Currently supports the following:
   - Position hints
   - Padding
   - Vertical/horizontal alignment
-  - Auto scaling for most widgets (adjust widget size to actual content minimizing size)
+  - Auto scaling for widgets (adjust widget size to actual content minimizing size)
   - Colors and borders.
   - Resize if terminal resizes
 - Callbacks:

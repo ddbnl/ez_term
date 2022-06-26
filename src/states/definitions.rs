@@ -74,9 +74,9 @@ impl StateSize {
     pub fn new(width: usize, height: usize, name: String, scheduler: &mut Scheduler) -> Self {
 
         let width_property = scheduler.new_usize_property(
-            format!("{}/width", name), width);
+            format!("{}/width", name).as_str(), width);
         let height_property = scheduler.new_usize_property(
-            format!("{}/height", name), height);
+            format!("{}/height", name).as_str(), height);
         StateSize {
             width: width_property,
             height: height_property,
@@ -102,9 +102,9 @@ impl StateCoordinates {
     pub fn new(x: usize, y: usize, name: String, scheduler: &mut Scheduler) -> Self {
 
         let x_property =
-            scheduler.new_usize_property(format!("{}/x", name), x);
+            scheduler.new_usize_property(format!("{}/x", name).as_str(), x);
         let y_property =
-            scheduler.new_usize_property(format!("{}/y", name), y);
+            scheduler.new_usize_property(format!("{}/y", name).as_str(), y);
         StateCoordinates{
             x: x_property,
             y: y_property
@@ -128,10 +128,10 @@ impl AutoScale {
 
     pub fn new(width: bool, height: bool, name: String, scheduler: &mut Scheduler) -> Self {
         let width_property =
-            scheduler.new_bool_property(format!("{}/autoscale_width", name),
+            scheduler.new_bool_property(format!("{}/autoscale_width", name).as_str(),
                                         width);
         let height_property =
-            scheduler.new_bool_property(format!("{}/autoscale_height", name),
+            scheduler.new_bool_property(format!("{}/autoscale_height", name).as_str(),
                                         height);
         AutoScale{width: width_property, height: height_property}
     }
@@ -152,10 +152,10 @@ pub struct SizeHint {
 impl SizeHint {
     pub fn new(x: Option<f64>, y: Option<f64>, name: String, scheduler: &mut Scheduler) -> Self {
         let x_property =
-            scheduler.new_size_hint_property(format!("{}/size_hint_width", name),
+            scheduler.new_size_hint_property(format!("{}/size_hint_width", name).as_str(),
                                         x);
         let y_property =
-            scheduler.new_size_hint_property(format!("{}/size_hint_height", name),
+            scheduler.new_size_hint_property(format!("{}/size_hint_height", name).as_str(),
                                         y);
         SizeHint{x: x_property, y: y_property}
     }
@@ -179,10 +179,10 @@ impl PosHint {
                name: String, scheduler: &mut Scheduler) -> Self {
         let x_property =
             scheduler.new_horizontal_pos_hint_property(
-                format!("{}/pos_hint_x", name),x);
+                format!("{}/pos_hint_x", name).as_str(),x);
         let y_property =
             scheduler.new_vertical_pos_hint_property(
-                format!("{}/pos_hint_y", name),y);
+                format!("{}/pos_hint_y", name).as_str(),y);
         PosHint{x: x_property, y: y_property}
     }
 
@@ -359,10 +359,10 @@ impl ScrollingConfig {
     pub fn new(enable_x: bool, enable_y: bool, name: String, scheduler: &mut Scheduler) -> Self {
 
         let x_property =
-            scheduler.new_bool_property(format!("{}/scrolling_enable_x", name),
+            scheduler.new_bool_property(format!("{}/scrolling_enable_x", name).as_str(),
                                         enable_x);
         let y_property =
-            scheduler.new_bool_property(format!("{}/scrolling_enable_y", name),
+            scheduler.new_bool_property(format!("{}/scrolling_enable_y", name).as_str(),
                                         enable_y);
         ScrollingConfig {
             enable_x: x_property,
@@ -419,31 +419,31 @@ impl BorderConfig {
     pub fn new(enable: bool, name: String, scheduler: &mut Scheduler) -> Self {
 
         let enabled_property =
-            scheduler.new_bool_property(format!("{}/border_enabled", name),
+            scheduler.new_bool_property(format!("{}/border_enabled", name).as_str(),
                                         enable);
         let horizontal_symbol =
-            scheduler.new_string_property(format!("{}/border_horizontal", name),
+            scheduler.new_string_property(format!("{}/border_horizontal", name).as_str(),
                                           "━".to_string());
         let vertical_symbol =
-            scheduler.new_string_property(format!("{}/border_vertical", name),
+            scheduler.new_string_property(format!("{}/border_vertical", name).as_str(),
                                           "│".to_string());
         let top_left_symbol =
-            scheduler.new_string_property(format!("{}/border_top_left", name),
+            scheduler.new_string_property(format!("{}/border_top_left", name).as_str(),
                                           "┍".to_string());
         let top_right_symbol =
-            scheduler.new_string_property(format!("{}/border_top_right", name),
+            scheduler.new_string_property(format!("{}/border_top_right", name).as_str(),
                                           "┑".to_string());
         let bottom_left_symbol =
-            scheduler.new_string_property(format!("{}/border_bottom_left", name),
+            scheduler.new_string_property(format!("{}/border_bottom_left", name).as_str(),
                                           "┕".to_string());
         let bottom_right_symbol =
-            scheduler.new_string_property(format!("{}/border_bottom_right", name),
+            scheduler.new_string_property(format!("{}/border_bottom_right", name).as_str(),
                                           "┙".to_string());
         let fg_color =
-            scheduler.new_color_property(format!("{}/border_fg_color", name),
+            scheduler.new_color_property(format!("{}/border_fg_color", name).as_str(),
                                           Color::White);
         let bg_color =
-            scheduler.new_color_property(format!("{}/border_bg_color", name),
+            scheduler.new_color_property(format!("{}/border_bg_color", name).as_str(),
                                          Color::Black);
 
        BorderConfig {
@@ -526,42 +526,42 @@ impl ColorConfig {
     pub fn new(name: String, scheduler: &mut Scheduler) -> Self {
 
         let foreground = scheduler.new_color_property(
-            format!("{}/color_fg", name), Color::White);
+            format!("{}/color_fg", name).as_str(), Color::White);
         let background = scheduler.new_color_property(
-            format!("{}/color_bg", name), Color::Black);
+            format!("{}/color_bg", name).as_str(), Color::Black);
 
         let selection_foreground = scheduler.new_color_property(
-            format!("{}/color_selection_fg", name), Color::Yellow);
+            format!("{}/color_selection_fg", name).as_str(), Color::Yellow);
         let selection_background = scheduler.new_color_property(
-            format!("{}/color_selection_bg", name), Color::Blue);
+            format!("{}/color_selection_bg", name).as_str(), Color::Blue);
 
         let disabled_foreground = scheduler.new_color_property(
-            format!("{}/color_disabled_fg", name), Color::White);
+            format!("{}/color_disabled_fg", name).as_str(), Color::White);
         let disabled_background = scheduler.new_color_property(
-            format!("{}/color_disabled_bg", name), Color::Black);
+            format!("{}/color_disabled_bg", name).as_str(), Color::Black);
 
         let active_foreground = scheduler.new_color_property(
-            format!("{}/color_active_fg", name), Color::Red);
+            format!("{}/color_active_fg", name).as_str(), Color::Red);
         let active_background = scheduler.new_color_property(
-            format!("{}/color_active_bg", name), Color::Black);
+            format!("{}/color_active_bg", name).as_str(), Color::Black);
 
         let flash_foreground = scheduler.new_color_property(
-            format!("{}/color_flash_fg", name), Color::Yellow);
+            format!("{}/color_flash_fg", name).as_str(), Color::Yellow);
         let flash_background = scheduler.new_color_property(
-            format!("{}/color_flash_bg", name), Color::White);
+            format!("{}/color_flash_bg", name).as_str(), Color::White);
 
         let filler_foreground = scheduler.new_color_property(
-            format!("{}/color_filler_fg", name), Color::White);
+            format!("{}/color_filler_fg", name).as_str(), Color::White);
         let filler_background = scheduler.new_color_property(
-            format!("{}/color_filler_bg", name), Color::Black);
+            format!("{}/color_filler_bg", name).as_str(), Color::Black);
 
         let tab_foreground = scheduler.new_color_property(
-            format!("{}/color_tab_fg", name), Color::White);
+            format!("{}/color_tab_fg", name).as_str(), Color::White);
         let tab_background = scheduler.new_color_property(
-            format!("{}/color_tab_bg", name), Color::Black);
+            format!("{}/color_tab_bg", name).as_str(), Color::Black);
 
         let cursor = scheduler.new_color_property(
-            format!("{}/color_cursor", name), Color::DarkYellow);
+            format!("{}/color_cursor", name).as_str(), Color::DarkYellow);
 
         ColorConfig {
             foreground,
@@ -615,13 +615,13 @@ impl Padding {
 
 
         let top_property = scheduler.new_usize_property(
-            format!("{}/padding_top", name), top);
+            format!("{}/padding_top", name).as_str(), top);
         let bottom_property = scheduler.new_usize_property(
-            format!("{}/padding_bottom", name), bottom);
+            format!("{}/padding_bottom", name).as_str(), bottom);
         let left_property = scheduler.new_usize_property(
-            format!("{}/padding_left", name), left);
+            format!("{}/padding_left", name).as_str(), left);
         let right_property = scheduler.new_usize_property(
-            format!("{}/padding_right", name), right);
+            format!("{}/padding_right", name).as_str(), right);
         Padding {
             top: top_property,
             bottom: bottom_property,

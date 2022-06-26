@@ -1,11 +1,9 @@
-use std::io::{stdout};
 use std::process::exit;
-use crossterm::{event::{MouseEvent, MouseEventKind, MouseButton, Event, KeyCode, KeyEvent},
-                terminal, QueueableCommand};
+use crossterm::event::{MouseEvent, MouseEventKind, MouseButton, Event, KeyCode, KeyEvent};
 use crate::run::definitions::{CallbackTree, Coordinates, StateTree, WidgetTree};
 use crate::run::select::{deselect_selected_widget, get_selected_widget, get_widget_by_position,
                          select_next, select_previous};
-use crate::run::terminal::write_to_screen;
+use crate::run::terminal::{initialize_terminal, write_to_screen};
 use crate::run::tree::ViewTree;
 use super::terminal::shutdown_terminal;
 use crate::widgets::layout::layout::Layout;
@@ -182,7 +180,7 @@ pub fn handle_resize(view_tree: &mut ViewTree, state_tree: &mut StateTree, root_
     let contents = root_widget.get_contents(state_tree);
     root_widget.propagate_absolute_positions(state_tree);
     // Cleartype purge is tempting but causes issues on at least Windows
-    stdout().queue(terminal::Clear(terminal::ClearType::All)).unwrap();
+    initialize_terminal().unwrap();
     view_tree.initialize(new_width, new_height);
     view_tree.write_content(Coordinates::new(0, 0), contents);
     write_to_screen(view_tree);

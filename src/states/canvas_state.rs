@@ -69,13 +69,13 @@ impl CanvasState {
             border_config: BorderConfig::new(false, path.clone(), scheduler),
             colors: ColorConfig::new(path.clone(), scheduler),
             halign: scheduler.new_horizontal_alignment_property(
-                format!("{}/halign", path), HorizontalAlignment::Left),
+                format!("{}/halign", path).as_str(), HorizontalAlignment::Left),
             valign: scheduler.new_vertical_alignment_property(
-                format!("{}/valign", path), VerticalAlignment::Top),
+                format!("{}/valign", path).as_str(), VerticalAlignment::Top),
             disabled: scheduler.new_bool_property(
-                format!("{}/disabled", path),false),
+                format!("{}/disabled", path).as_str(),false),
             selection_order: scheduler.new_usize_property(
-                format!("{}/selection_order", path), 0),
+                format!("{}/selection_order", path).as_str(), 0),
         }
     }
 }

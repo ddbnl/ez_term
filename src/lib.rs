@@ -6,7 +6,7 @@ mod property;
 mod parser;
 
 pub use crate::states::definitions::CallbackConfig;
-pub use crate::scheduler::definitions::EzContext;
+pub use crate::scheduler::definitions::{EzContext,EzPropertiesMap};
 pub use crate::run::run::{run, stop};
 pub use crate::parser::parse_lang::{load_ez_file, load_ez_files, load_ez_folder};
 pub use crate::run::run::open_popup;

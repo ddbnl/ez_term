@@ -7,6 +7,10 @@ use crate::run::definitions::{Coordinates, StateTree, WidgetTree};
 use crate::run::tree::ViewTree;
 
 
+/// A <Name, EzProperties> HashMap.
+pub type EzPropertiesMap = HashMap<String, EzProperties>;
+
+
 /// ## Keyboard callback function:
 /// This is used for binding keyboard callbacks to widgets, meaning that any callback functions a
 /// user makes should use this signature.

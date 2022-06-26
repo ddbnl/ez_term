@@ -75,10 +75,10 @@ impl SliderState {
 
        SliderState {
            path: path.clone(),
-           value: scheduler.new_usize_property(format!("{}/value", path), 0),
-           minimum: scheduler.new_usize_property(format!("{}/minimum", path), 0),
-           maximum: scheduler.new_usize_property(format!("{}/maximum", path), 100),
-           step: scheduler.new_usize_property(format!("{}/step", path), 1),
+           value: scheduler.new_usize_property(format!("{}/value", path).as_str(), 0),
+           minimum: scheduler.new_usize_property(format!("{}/minimum", path).as_str(), 0),
+           maximum: scheduler.new_usize_property(format!("{}/maximum", path).as_str(), 100),
+           step: scheduler.new_usize_property(format!("{}/step", path).as_str(), 1),
            position: StateCoordinates::new(0, 0, path.clone(), scheduler),
            absolute_position: Coordinates::default(),
            size: StateSize::new(0, 0, path.clone(), scheduler),
@@ -87,14 +87,14 @@ impl SliderState {
            auto_scale: AutoScale::new(false, false, path.clone(), scheduler),
            padding: Padding::new(0, 0, 0, 0, path.clone(), scheduler),
            halign: scheduler.new_horizontal_alignment_property(
-                format!("{}/halign", path), HorizontalAlignment::Left),
+                format!("{}/halign", path).as_str(), HorizontalAlignment::Left),
            valign: scheduler.new_vertical_alignment_property(
-                format!("{}/valign", path), VerticalAlignment::Top),
+                format!("{}/valign", path).as_str(), VerticalAlignment::Top),
            disabled: scheduler.new_bool_property(
-                format!("{}/disabled", path),false),
+                format!("{}/disabled", path).as_str(),false),
            selected: false,
            selection_order: scheduler.new_usize_property(
-                format!("{}/selection_order", path), 0),
+                format!("{}/selection_order", path).as_str(), 0),
            border_config: BorderConfig::new(false, path.clone(), scheduler),
            colors: ColorConfig::new(path, scheduler),
        }

@@ -83,12 +83,12 @@ impl Scheduler {
     /// you want to bind a value in your app to a widget property, use this func to get a property
     /// and pass it to your app. Then use property.set() to update it. Any widget properties bound
     /// to the property will update automatically.
-    pub fn new_usize_property(&mut self, name: String, value: usize) -> EzProperty<usize> {
+    pub fn new_usize_property(&mut self, name: &str, value: usize) -> EzProperty<usize> {
 
         let (property, receiver) =
-            EzProperty::new(name.clone(), value);
-        self.properties.insert(name.clone(), EzProperties::Usize(property.clone()));
-        self.property_receivers.insert(name, receiver);
+            EzProperty::new(name.to_string(), value);
+        self.properties.insert(name.to_string(), EzProperties::Usize(property.clone()));
+        self.property_receivers.insert(name.to_string(), receiver);
         property
     }
 
@@ -97,12 +97,12 @@ impl Scheduler {
     /// you want to bind a value in your app to a widget property, use this func to get a property
     /// and pass it to your app. Then use property.set() to update it. Any widget properties bound
     /// to the property will update automatically.
-    pub fn new_string_property(&mut self, name: String, value: String) -> EzProperty<String> {
+    pub fn new_string_property(&mut self, name: &str, value: String) -> EzProperty<String> {
 
         let (property, receiver) =
-            EzProperty::new(name.clone(), value);
-        self.properties.insert(name.clone(), EzProperties::String(property.clone()));
-        self.property_receivers.insert(name, receiver);
+            EzProperty::new(name.to_string(), value);
+        self.properties.insert(name.to_string(), EzProperties::String(property.clone()));
+        self.property_receivers.insert(name.to_string(), receiver);
         property
     }
 
@@ -111,12 +111,12 @@ impl Scheduler {
     /// you want to bind a value in your app to a widget property, use this func to get a property
     /// and pass it to your app. Then use property.set() to update it. Any widget properties bound
     /// to the property will update automatically.
-    pub fn new_bool_property(&mut self, name: String, value: bool) -> EzProperty<bool> {
+    pub fn new_bool_property(&mut self, name: &str, value: bool) -> EzProperty<bool> {
 
         let (property, receiver) =
-            EzProperty::new(name.clone(), value);
-        self.properties.insert(name.clone(), EzProperties::Bool(property.clone()));
-        self.property_receivers.insert(name, receiver);
+            EzProperty::new(name.to_string(), value);
+        self.properties.insert(name.to_string(), EzProperties::Bool(property.clone()));
+        self.property_receivers.insert(name.to_string(), receiver);
         property
     }
 
@@ -125,12 +125,12 @@ impl Scheduler {
     /// you want to bind a value in your app to a widget property, use this func to get a property
     /// and pass it to your app. Then use property.set() to update it. Any widget properties bound
     /// to the property will update automatically.
-    pub fn new_color_property(&mut self, name: String, value: Color) -> EzProperty<Color> {
+    pub fn new_color_property(&mut self, name: &str, value: Color) -> EzProperty<Color> {
 
         let (property, receiver) =
-            EzProperty::new(name.clone(), value);
-        self.properties.insert(name.clone(), EzProperties::Color(property.clone()));
-        self.property_receivers.insert(name, receiver);
+            EzProperty::new(name.to_string(), value);
+        self.properties.insert(name.to_string(), EzProperties::Color(property.clone()));
+        self.property_receivers.insert(name.to_string(), receiver);
         property
     }
 
@@ -139,13 +139,13 @@ impl Scheduler {
     /// you want to bind a value in your app to a widget property, use this func to get a property
     /// and pass it to your app. Then use property.set() to update it. Any widget properties bound
     /// to the property will update automatically.
-    pub fn new_vertical_alignment_property(&mut self, name: String, value: VerticalAlignment)
+    pub fn new_vertical_alignment_property(&mut self, name: &str, value: VerticalAlignment)
         -> EzProperty<VerticalAlignment> {
 
         let (property, receiver) =
-            EzProperty::new(name.clone(), value);
-        self.properties.insert(name.clone(), EzProperties::VerticalAlignment(property.clone()));
-        self.property_receivers.insert(name, receiver);
+            EzProperty::new(name.to_string(), value);
+        self.properties.insert(name.to_string(), EzProperties::VerticalAlignment(property.clone()));
+        self.property_receivers.insert(name.to_string(), receiver);
         property
     }
 
@@ -154,13 +154,13 @@ impl Scheduler {
     /// you want to bind a value in your app to a widget property, use this func to get a property
     /// and pass it to your app. Then use property.set() to update it. Any widget properties bound
     /// to the property will update automatically.
-    pub fn new_horizontal_alignment_property(&mut self, name: String, value: HorizontalAlignment) 
+    pub fn new_horizontal_alignment_property(&mut self, name: &str, value: HorizontalAlignment)
         -> EzProperty<HorizontalAlignment> {
 
         let (property, receiver) =
-            EzProperty::new(name.clone(), value);
-        self.properties.insert(name.clone(), EzProperties::HorizontalAlignment(property.clone()));
-        self.property_receivers.insert(name, receiver);
+            EzProperty::new(name.to_string(), value);
+        self.properties.insert(name.to_string(), EzProperties::HorizontalAlignment(property.clone()));
+        self.property_receivers.insert(name.to_string(), receiver);
         property
     }
 
@@ -170,13 +170,13 @@ impl Scheduler {
     /// and pass it to your app. Then use property.set() to update it. Any widget properties bound
     /// to the property will update automatically.
     pub fn new_horizontal_pos_hint_property(
-        &mut self, name: String, value: Option<(HorizontalAlignment, f64)>) 
+        &mut self, name: &str, value: Option<(HorizontalAlignment, f64)>)
         -> EzProperty<Option<(HorizontalAlignment, f64)>> {
 
         let (property, receiver) =
-            EzProperty::new(name.clone(), value);
-        self.properties.insert(name.clone(), EzProperties::HorizontalPosHint(property.clone()));
-        self.property_receivers.insert(name, receiver);
+            EzProperty::new(name.to_string(), value);
+        self.properties.insert(name.to_string(), EzProperties::HorizontalPosHint(property.clone()));
+        self.property_receivers.insert(name.to_string(), receiver);
         property
     }
 
@@ -186,13 +186,13 @@ impl Scheduler {
     /// and pass it to your app. Then use property.set() to update it. Any widget properties bound
     /// to the property will update automatically.
     pub fn new_vertical_pos_hint_property(
-        &mut self, name: String, value: Option<(VerticalAlignment, f64)>)
+        &mut self, name: &str, value: Option<(VerticalAlignment, f64)>)
         -> EzProperty<Option<(VerticalAlignment, f64)>> {
 
         let (property, receiver) =
-            EzProperty::new(name.clone(), value);
-        self.properties.insert(name.clone(), EzProperties::VerticalPosHint(property.clone()));
-        self.property_receivers.insert(name, receiver);
+            EzProperty::new(name.to_string(), value);
+        self.properties.insert(name.to_string(), EzProperties::VerticalPosHint(property.clone()));
+        self.property_receivers.insert(name.to_string(), receiver);
         property
     }
 
@@ -201,13 +201,13 @@ impl Scheduler {
     /// you want to bind a value in your app to a widget property, use this func to get a property
     /// and pass it to your app. Then use property.set() to update it. Any widget properties bound
     /// to the property will update automatically.
-    pub fn new_size_hint_property(&mut self, name: String, value: Option<f64>) 
+    pub fn new_size_hint_property(&mut self, name: &str, value: Option<f64>)
         -> EzProperty<Option<f64>> {
 
         let (property, receiver) =
-            EzProperty::new(name.clone(), value);
-        self.properties.insert(name.clone(), EzProperties::SizeHint(property.clone()));
-        self.property_receivers.insert(name, receiver);
+            EzProperty::new(name.to_string(), value);
+        self.properties.insert(name.to_string(), EzProperties::SizeHint(property.clone()));
+        self.property_receivers.insert(name.to_string(), receiver);
         property
     }
 
@@ -215,12 +215,12 @@ impl Scheduler {
     /// property it is subscribed to on the next frame. An update func is required which will be
     /// called when the property subscribed to changes. The update func receives the new value and
     /// is responsible for setting the appropriate field on the subscriber.
-    pub fn subscribe_to_ez_property(&mut self, name: String, update_func: EzPropertyUpdater) {
+    pub fn subscribe_to_ez_property(&mut self, name: &str, update_func: EzPropertyUpdater) {
 
-        if !self.property_subscribers.contains_key(&name) {
-            self.property_subscribers.insert(name.clone(), Vec::new());
+        if !self.property_subscribers.contains_key(name) {
+            self.property_subscribers.insert(name.to_string(), Vec::new());
         }
-        self.property_subscribers.get_mut(&name).unwrap().push(update_func);
+        self.property_subscribers.get_mut(name).unwrap().push(update_func);
     }
 
     /// Schedule a widget to be updated on the next frame. Can also be called from the widget itself

@@ -1,8 +1,7 @@
 //! # Ez Parser
 //! Module containing structs and functions for paring a .ez file into a root layout.
 use std::collections::HashMap;
-use std::fs;
-use std::fs::{DirEntry, File, read_dir};
+use std::fs::{File, read_dir};
 use std::io::prelude::*;
 use std::io::{Error};
 use std::path::Path;
@@ -31,9 +30,9 @@ pub fn load_ez_files(file_paths: Vec<&str>) -> (Layout, Scheduler) {
     let mut contents = String::new();
     for path in file_paths {
         let mut file = File::open(path)
-            .expect(format!("Unable to open file {}", path).as_str());
+            .unwrap_or_else(|_| panic!("Unable to open file {}", path));
         file.read_to_string(&mut contents)
-            .expect(format!("Unable to read file {}", path).as_str());
+            .unwrap_or_else(|_| panic!("Unable to read file {}", path));
         contents = format!("{}\n", contents);
     }
     let (root_widget, scheduler) = load_ez_text(contents).unwrap();
@@ -61,11 +60,9 @@ fn collect_ez_files(dir: &Path, ez_files: &mut Vec<String>) {
             let path = entry.path();
             if path.is_dir() {
                 collect_ez_files(&path, ez_files);
-            } else {
-                if let Some(extension) = path.extension() {
-                    if extension == "ez" {
-                        ez_files.push(path.to_str().unwrap().to_string());
-                    }
+            } else if let Some(extension) = path.extension() {
+                if extension == "ez" {
+                    ez_files.push(path.to_str().unwrap().to_string());
                 }
             }
         }

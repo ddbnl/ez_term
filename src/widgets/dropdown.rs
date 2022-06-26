@@ -163,26 +163,26 @@ impl EzObject for Dropdown {
                 false, false, modal_path.clone(), scheduler),
             options: state.get_options(),
             allow_none: scheduler.new_bool_property(
-                format!("{}/allow_none", modal_path), state.allow_none.value),
+                format!("{}/allow_none", modal_path).as_str(), state.allow_none.value),
             size_hint: SizeHint::new(None, None,
                                      modal_path.clone(), scheduler),
             position,
             padding: Padding::new(0, 0, 0, 0, modal_path.clone(),
                                   scheduler),
             halign: scheduler.new_horizontal_alignment_property(
-                format!("{}/halign", modal_path), HorizontalAlignment::Left),
+                format!("{}/halign", modal_path).as_str(), HorizontalAlignment::Left),
             valign: scheduler.new_vertical_alignment_property(
-                format!("{}/valign", modal_path), VerticalAlignment::Top),
+                format!("{}/valign", modal_path).as_str(), VerticalAlignment::Top),
             disabled: scheduler.new_bool_property(
-                format!("{}/disabled", modal_path),false),
+                format!("{}/disabled", modal_path).as_str(),false),
             selection_order: scheduler.new_usize_property(
-                format!("{}/selection_order", modal_path), 0),
+                format!("{}/selection_order", modal_path).as_str(), 0),
             absolute_position: state.get_absolute_position(),
             pos_hint: PosHint::new(None, None, modal_path.clone(), scheduler),
             dropped_down_selected_row: 1,
             border_config: state.border_config.clone(),
             colors: state.colors.clone(),
-            choice: scheduler.new_string_property(format!("{}/choice", modal_path),
+            choice: scheduler.new_string_property(format!("{}/choice", modal_path).as_str(),
                                                   state.get_choice().value.clone()),
             parent_path: self.path.clone(),
         };
