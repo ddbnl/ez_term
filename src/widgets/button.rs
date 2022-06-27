@@ -1,4 +1,5 @@
 //! A widget that displays text non-interactively.
+use std::io::{Error, ErrorKind};
 use std::time::Duration;
 use crate::EzContext;
 use crate::states::ez_state::{EzState, GenericState};
@@ -35,32 +36,40 @@ impl Button {
             state: ButtonState::new(path, scheduler),
         }
     }
+
+    pub fn load_text_property(&mut self, parameter_value: &str, scheduler: &mut Scheduler)
+        -> Result<(), Error> {
+
+        let path = self.path.clone();
+        self.state.text.set(load_ez_string_property(
+            parameter_value.trim(), scheduler, self.path.clone(),
+            Box::new(move |state_tree: &mut StateTree, val: EzValues| {
+                let state = state_tree.get_by_path_mut(&path)
+                    .as_button_mut();
+                state.text.set(val.as_string().clone());
+                path.clone()
+            }))?);
+        Ok(())
+    }
 }
 
 
 impl EzObject for Button {
 
     fn load_ez_parameter(&mut self, parameter_name: String, parameter_value: String,
-                         scheduler: &mut Scheduler) {
+                         scheduler: &mut Scheduler) -> Result<(), Error> {
         
         let consumed = load_common_property(
             &parameter_name, parameter_value.clone(),self,
-            scheduler);
-        if consumed { return }
+            scheduler)?;
+        if consumed { return Ok(()) }
         match parameter_name.as_str() {
-            "text" => {
-                let path = self.path.clone();
-                self.state.text.set(load_ez_string_property(
-                    parameter_value.trim(), scheduler, path.clone(),
-                    Box::new(move |state_tree: &mut StateTree, val: EzValues| {
-                        let state = state_tree.get_by_path_mut(&path)
-                            .as_button_mut();
-                        state.text.set(val.as_string().clone());
-                        path.clone()
-                    })))
-            },
-            _ => panic!("Invalid parameter name for button {}", parameter_name)
+            "text" => self.load_text_property(parameter_value.trim(), scheduler)?,
+            _ => return Err(
+                Error::new(ErrorKind::InvalidData,
+                           format!("Invalid parameter name for button: {}", parameter_name)))
         }
+        Ok(())
     }
 
 
@@ -149,11 +158,11 @@ impl EzObject for Button {
 impl Button {
 
     /// Initialize an instance of this object using the passed config coming from [ez_parser]
-    pub fn from_config(config: Vec<String>, id: String, path: String, scheduler: &mut Scheduler)
-        -> Self {
+    pub fn from_config(config: Vec<String>, id: String, path: String, scheduler: &mut Scheduler,
+                       file: String, line: usize) -> Self {
 
         let mut obj = Button::new(id, path, scheduler);
-        obj.load_ez_config(config, scheduler).unwrap();
+        obj.load_ez_config(config, scheduler, file, line).unwrap();
         obj
     }
 

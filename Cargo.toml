@@ -8,18 +8,6 @@ edition = "2021"
 name = "ez_term"
 path = "src/lib.rs"
 
-[[bin]]
-name = "example"
-path = "Examples/FullExample/full_example.rs"
-
-[[bin]]
-name = "example_float"
-path = "Examples/FloatLayout/float_layout_pos_hints.rs"
-
-[[bin]]
-name = "example_box"
-path = "Examples/BoxLayouts/box_layouts.rs"
-
 [dependencies]
 crossterm = "0.23.2"
 unicode-segmentation = "1.9.0"

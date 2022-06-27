@@ -170,8 +170,6 @@ pub fn find_previous_selection(current_selection: usize, state_tree: &StateTree,
             (previous_order == 0 || widget_order > previous_order) &&
             !widget_is_hidden(path.to_string(), state_tree) &&
             is_in_view(path.to_string(), state_tree) {
-                if generic_state.get_selection_order().value - previous_order == 1
-                    { return Some(path.to_string()) }
                 previous_order = generic_state.get_selection_order().value;
                 previous_widget = Some(path.to_string());
         }

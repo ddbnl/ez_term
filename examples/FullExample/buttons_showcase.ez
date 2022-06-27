@@ -1,0 +1,147 @@
+- <ButtonsShowcaseBox@OneThirdBox>:
+    selection_order: 14
+    - LayoutHeader:
+        text: Layout 2:
+    - CheckboxShowcase:
+        id: checkbox_section_box
+    - SliderShowcase:
+        id: slider_section_box
+    - ProgressBarShowcase:
+        id: progress_bar_section_box
+    - RadioButtonShowcase:
+        id: radio_section_box
+    - ButtonShowcase:
+        id: button_section_box
+
+
+- <CheckboxShowcase@CyanScalingBox>:
+    - Label:
+        text: This is a checkbox: a simple on and off switch. Clicking this one triggers a callback that changes the label:
+        auto_scale_height: true
+        padding_x: 1, 1
+    - FullHorizontalBox:
+        id: checkbox_box
+        - CheckBox:
+            id: checkbox
+            selection_order: 15
+            active: False
+            active_symbol: X
+            fg_color: yellow
+            inactive_symbol: -
+            padding_x: 1, 1
+        - Label:
+            id: checkbox_label
+            text: Disabled
+            auto_scale_height: true
+            fg_color: red
+
+
+- <RadioButtonShowcase@CyanScalingBox>:
+    - Label:
+        text: These are radio buttons: a group of mutually exclusive off/on switches, matched to each other by group name. Clicking one of these triggers a callback that changes the label:
+        auto_scale_height: true
+        padding_x: 1, 1
+    - FullHorizontalBox:
+        id: radio_box
+        - RadioButton:
+            id: radio1
+            group: test_radios
+            selection_order: 20
+            active: True
+            padding_right: 1
+            fg_color: red
+        - RadioButton:
+            id: radio2
+            group: parent.radio1.group
+            selection_order: 25
+            padding_right: 1
+            fg_color: green
+        - RadioButton:
+            id: radio3
+            group: parent.radio1.group
+            selection_order: 30
+            fg_color: blue
+        - Label:
+            id: radio_label
+            text: radio1
+            fg_color: red
+            auto_scale: true, true
+            padding_x: 1, 1
+
+- <SliderShowcase@CyanScalingBox>:
+    - Label:
+        text: This is a slider, it allows choosing a value between a minimum and a maximum in steps:
+        auto_scale_height: true
+        padding: 1, 1, 1, 1
+    - Layout:
+        id: slider_float
+        mode: float
+        size_hint_y: none
+        height: 5
+        border: true
+        - Label:
+            id: slider_label
+            text: 10
+            auto_scale_height: true
+            auto_scale_width: true
+            pos_hint: None, None
+            x: parent.slider.value
+            y: 0
+            fg_color: yellow
+        - Slider:
+            id: slider
+            selection_order: 17
+            value: 10
+            pos_hint: None, None
+            x: 0
+            y: 1
+            minimum: 0
+            maximum: 20
+            auto_scale_width: true
+
+
+- <ProgressBarShowcase@CyanScalingBox>:
+    - Label:
+        text: This is a progress bar, it fills up according to its internal value. Click the button to start a scheduled task that increments the value:
+        auto_scale_height: true
+        padding: 1, 1, 1, 1
+    - Button:
+        id: progress_button
+        text: Start
+        auto_scale: True, True
+        selection_order: 18
+        bg_color: red
+        fg_color: yellow
+    - Label:
+        id: progress_label
+        text: 0%
+        auto_scale: True, True
+        halign: center
+    - ProgressBar:
+        id: progress_bar
+        maximum: 100
+        value: properties.progress_property
+        border: true
+
+
+- <ButtonShowcase@CyanScalingBox>:
+    - Label:
+        text: This is a button. We've bound a callback to it that increments a number on the label:
+        auto_scale_height: true
+        padding: 1, 1, 1, 1
+    - FullHorizontalBox:
+        id: button_box
+        - Button:
+            id: button
+            selection_order: 35
+            text: Click me!
+            bg_color: red
+            fg_color: yellow
+            auto_scale: true, true
+        - Label:
+            id: button_label
+            text: Clicked: 0 times
+            auto_scale: true, true
+            padding_top: 1
+            padding_left: 1
+

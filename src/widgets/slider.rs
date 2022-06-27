@@ -1,5 +1,6 @@
 //! A widget that displays text non-interactively.
 use std::cmp::min;
+use std::io::{Error, ErrorKind};
 use crossterm::event::{Event, KeyCode};
 use crate::EzContext;
 use crate::states::ez_state::{EzState, GenericState};
@@ -38,17 +39,44 @@ impl Slider {
 impl EzObject for Slider {
 
     fn load_ez_parameter(&mut self, parameter_name: String, parameter_value: String,
-                         scheduler: &mut Scheduler) {
+                         scheduler: &mut Scheduler) -> Result<(), Error> {
         let consumed = load_common_property(
-            &parameter_name, parameter_value.clone(), self, scheduler);
-        if consumed { return }
+            &parameter_name, parameter_value.clone(), self, scheduler)?;
+        if consumed { return Ok(())}
         match parameter_name.as_str() {
-            "value" => self.state.set_value(parameter_value.trim().parse().unwrap()),
-            "minimum" => self.state.set_minimum(parameter_value.trim().parse().unwrap()),
-            "maximum" => self.state.set_maximum(parameter_value.trim().parse().unwrap()),
-            "step" => self.state.set_step(parameter_value.trim().parse().unwrap()),
-            _ => panic!("Invalid parameter name for slider {}", parameter_name)
+            "value" => self.state.set_value(match parameter_value.trim().parse() {
+                Ok(i) => i,
+                Err(_) => return Err(
+                    Error::new(ErrorKind::InvalidData,
+                    format!("Could not parse value parameter: \"{}\". Should be in format \
+                    \"value: 10\"", parameter_value)))
+            }),
+            "minimum" => self.state.set_minimum(match parameter_value.trim().parse() {
+                Ok(i) => i,
+                Err(_) => return Err(
+                    Error::new(ErrorKind::InvalidData,
+                               format!("Could not parse minimum parameter: \"{}\". \
+                               Should be in format \"minimum: 0\"", parameter_value)))
+            }),
+            "maximum" => self.state.set_maximum(match parameter_value.trim().parse() {
+                Ok(i) => i,
+                Err(_) => return Err(
+                    Error::new(ErrorKind::InvalidData,
+                               format!("Could not parse maximum parameter: \"{}\". \
+                               Should be in format \"maximum: 100\"", parameter_value)))
+            }),
+            "step" => self.state.set_step(match parameter_value.trim().parse() {
+                Ok(i) => i,
+                Err(_) => return Err(
+                    Error::new(ErrorKind::InvalidData,
+                               format!("Could not parse step parameter: \"{}\". \
+                               Should be in format \"step: 1\"", parameter_value)))
+            }),
+            _ => return Err(
+                Error::new(ErrorKind::InvalidData,
+                           format!("Invalid parameter name for slider: {}", parameter_name)))
         }
+        Ok(())
     }
 
     fn set_id(&mut self, id: String) { self.id = id }
@@ -138,11 +166,11 @@ impl EzObject for Slider {
 impl Slider {
 
     /// Initialize an instance of this object using the passed config coming from [ez_parser]
-    pub fn from_config(config: Vec<String>, id: String, path: String, scheduler: &mut Scheduler)
-                       -> Self {
+    pub fn from_config(config: Vec<String>, id: String, path: String, scheduler: &mut Scheduler,
+                       file: String, line: usize) -> Self {
 
         let mut obj = Slider::new(id, path, scheduler);
-        obj.load_ez_config(config, scheduler).unwrap();
+        obj.load_ez_config(config, scheduler, file, line).unwrap();
         obj
     }
 

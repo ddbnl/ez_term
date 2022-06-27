@@ -1,43 +1,60 @@
-//! # Ez Parser
-//! Module containing structs and functions for paring a .ez file into a root layout.
+//! # Ez Definition
+//! This module contains a struct that represents the definition of a single widget or layout in
+//! a .ez file.
+//!
+//! The EzWidgetDefinition is used by [parse_lang] to collect all the defined properties of a
+//! widget. The struct then has methods for parsing the definition into an initialized object. It
+//! functions as a bridge between parsed plain text and the initialized interface.
 use std::collections::HashMap;
 use std::fmt::{Debug, Formatter};
 use std::io::{Error, ErrorKind};
+
 use crossterm::terminal::size;
-use crate::widgets::layout::layout::Layout;
-use crate::widgets::canvas::Canvas;
-use crate::widgets::label::Label;
-use crate::widgets::button::Button;
-use crate::widgets::radio_button::RadioButton;
-use crate::widgets::checkbox::Checkbox;
-use crate::widgets::text_input::TextInput;
-use crate::widgets::dropdown::Dropdown;
-use crate::widgets::ez_object::{EzObjects, EzObject};
-use crate::scheduler::scheduler::Scheduler;
-use crate::widgets::progress_bar::ProgressBar;
-use crate::widgets::slider::Slider;
-use crate::states::ez_state::GenericState;
+
 use crate::parser::parse_lang;
+use crate::scheduler::scheduler::Scheduler;
+use crate::states::ez_state::GenericState;
+use crate::widgets::{
+    ez_object::EzObjects,
+    button::Button,
+    canvas::Canvas,
+    checkbox::Checkbox,
+    dropdown::Dropdown,
+    label::Label,
+    layout::layout::Layout,
+    progress_bar::ProgressBar,
+    radio_button::RadioButton,
+    slider::Slider,
+    text_input::TextInput,
+};
 
 
-/// ## Templates
-/// A hashmap of 'Template Name > [EzWidgetDefinition]'. Used to instantiate widget templates
-/// at runtime. E.g. when spawning popups.
+/// A hashmap to resolve template names to their [EzWidgetDefinition]'.
+///
+/// Used to instantiate widget templates at runtime. E.g. when spawning popups.
 pub type Templates = HashMap<String, EzWidgetDefinition>;
 
 
-/// Struct representing a widget definition in a .ez file. Has methods for parsing the
-/// definition into an initialized widget. The definition of a widget consists of two optional
-/// parts: the config of the widget itself (its' size, color, etc.) and its' sub widgets.
-/// As the definition for a widget might contain sub widgets, it is parsed recursively.
+/// Struct representing a widget definition in a .ez file.
+///
+/// Has methods for parsing the definition into an initialized widget. The definition of a widget
+/// consists of two optional parts: the config of the widget itself (its' size, color, etc.) and
+/// its' sub widgets. As the definition for a widget might contain sub widgets, it is parsed
+/// recursively.
 #[derive(Clone)]
 pub struct EzWidgetDefinition {
 
-    /// Name of widget class, e.g. layout, or textBox
+    /// Name of widget class, e.g. layout, or textBox, or name of template.
     pub type_name: String,
+
+    /// The root widget (always a layout) is treated specially, so we need to when we're parsing it
+    pub is_root: bool,
 
     /// All raw text content belonging to this definition
     pub content: Vec<String>,
+
+    /// File path this definition came from
+    pub file: String,
 
     /// Offset in lines where the content of the widget definition begins in the config file.
     /// Zero-indexed. Indicates the first line AFTER the initial definition starting with '- .
@@ -47,76 +64,39 @@ pub struct EzWidgetDefinition {
     pub indentation_offset: usize,
 }
 impl EzWidgetDefinition {
-    pub fn new(type_name: String, indentation_offset: usize, line_offset: usize) -> Self {
+    /// Create a definition from a type name (Layout, Checkbox, etc.), an indentation offset and a
+    /// line offset. The offsets are needed to provide useful error messages to the end-user in
+    /// regards to config file parsing errors. E.g. line 10 with indentation 4 in this definition
+    /// with offsets '100' and '10', is actually line '110' with indentation 14 in the actual
+    /// config file.
+    pub fn new(type_name: String, file: String, indentation_offset: usize, line_offset: usize)
+        -> Self {
         EzWidgetDefinition {
             type_name,
-            content: Vec::new(),
             indentation_offset,
+            file,
             line_offset,
+            is_root: false,
+            content: Vec::new(),
         }
-    }
-
-    /// Parse a definition as the root layout. The normal parsed method results in a generic
-    /// EzObjects enum, whereas the root widget should be a layout specifically.
-    pub fn parse_as_root(&mut self, mut templates: Templates, scheduler: &mut Scheduler) -> Layout {
-
-        let (config, mut sub_widgets, _) =
-            parse_lang::parse_level(self.content.clone(), self.indentation_offset, self.line_offset)
-                .unwrap();
-        let mut initialized = Layout::new("root".to_string(), "/root".to_string(),
-                                                  scheduler);
-        for line in config {
-            let (parameter_name, parameter_value) = line.split_once(':')
-                .unwrap();
-            initialized.load_ez_parameter(parameter_name.to_string(),
-                                          parameter_value.to_string(),
-                                          scheduler);
-        }
-        for (i, sub_widget) in sub_widgets.iter_mut().enumerate() {
-            let initialized_sub_widget = sub_widget.parse(
-                &mut templates, scheduler, initialized.get_full_path().clone(),
-            i, None);
-            initialized.add_child(initialized_sub_widget, scheduler);
-        }
-        let terminal_size = size().unwrap();
-        if initialized.state.get_size().width.get() == &0  {
-            initialized.state.get_size_mut().width.set(terminal_size.0 as usize);
-        }
-        if initialized.state.get_size().height.get() == &0 {
-            initialized.state.get_size_mut().height.set(terminal_size.1 as usize);
-        }
-        initialized.state.templates = templates;
-        initialized
     }
 
     /// Parse a definition by separating the config lines from the sub widget definitions. Then
     /// apply the config to the initialized widget, then initialize and add sub widgets.
     pub fn parse(&mut self, templates: &mut Templates, scheduler: &mut Scheduler,
-                 parent_path: String, order: usize, merge_config: Option<Vec<String>>)
-                 -> EzObjects {
+                 parent_path: String, order: usize, merge_config: Option<Vec<String>>) -> EzObjects {
 
         let (mut config, mut sub_widgets, _) =
-            parse_lang::parse_level(self.content.clone(), self.indentation_offset, self.line_offset)
-                .unwrap();
+            parse_lang::parse_level(self.content.clone(), self.indentation_offset,
+                                    self.line_offset, self.file.clone()).unwrap();
 
-        // Templates can have options, and instances of templates can also have options. Merge the
-        // configs making sure that the instance config takes precedence.
-        let mut merged_config: Vec<String> = Vec::new();
+        // Templates can have properties, and instances of templates can also have properties.
+        // Merge the configs making sure that the instance config takes precedence.
         if let Some(config_to_merge) = merge_config {
-            let mut existing_options: Vec<String> = Vec::new();
-            for line in config_to_merge {
-                merged_config.push(line.clone());
-                existing_options.push(line.split_once(':').unwrap().0.to_string());
-            }
-            for line in config {
-                if !merged_config.contains(&line.split_once(':').unwrap().0.to_string()) {
-                    merged_config.push(line);
-                }
-            }
-            config = merged_config;
+            config = merge_configs(config_to_merge, config);
         }
         let initialized = self.initialize(config, templates, scheduler,
-                                          parent_path.clone(), order).unwrap();
+                                          parent_path, order).unwrap();
         let parent_path = initialized.as_ez_object().get_full_path();
 
         if let EzObjects::Layout(mut obj) = initialized {
@@ -126,43 +106,85 @@ impl EzWidgetDefinition {
 
                 obj.add_child(initialized_sub_widget, scheduler);
             }
+            if self.is_root {
+                let terminal_size = size().unwrap();
+                if obj.state.get_size().width.get() == &0 {
+                    obj.state.get_size_mut().width.set(terminal_size.0 as usize);
+                }
+                if obj.state.get_size().height.get() == &0 {
+                    obj.state.get_size_mut().height.set(terminal_size.1 as usize);
+                }
+            }
             return EzObjects::Layout(obj)
         }
         initialized
     }
 
     /// Initialize a widget object based on the type specified by the definition.
-    fn initialize(&mut self, config: Vec<String>, templates: &mut Templates,
+    fn initialize(&mut self, mut config: Vec<String>, templates: &mut Templates,
                   scheduler: &mut Scheduler, parent_path: String, order: usize)
         -> Result<EzObjects, Error> {
 
+        if self.is_root {
+            for line_str in config.iter() {
+                if line_str.trim().to_lowercase().starts_with("id:") &&
+                    line_str.split_once(':').unwrap().1.trim() != "root" {
+                    return Err(
+                        Error::new(ErrorKind::InvalidData,
+                                   "Root widget cannot have an ID parameter; \
+                                   it is \"root\" by default"))
+                }
+            }
+            config.push("id: root".to_string());
+        }
         // return new root
         if templates.contains_key(&self.type_name) {
             let mut template =
                 templates.get_mut(&self.type_name).unwrap().clone();
+            template.is_root = self.is_root;
             let object = template.parse(templates, scheduler, parent_path,
                                                     order, Some(config));
             Ok(object)
         } else {
             let mut id = String::new();
-            for line in config.iter() {
-                if line.trim().to_lowercase().starts_with("id:") {
-                    id = line.trim().split_once(':').unwrap().1.to_string();
+            for line_str in config.iter() {
+                if line_str.trim().to_lowercase().starts_with("id:") {
+                    id = line_str.trim().split_once(':').unwrap().1.to_string();
                 }
             }
             if id.is_empty() { id = order.to_string() };
             let path = format!("{}/{}", parent_path, id.trim());
             match self.type_name.as_str() {
-                "Layout" => Ok(EzObjects::Layout(Layout::from_config(config, id, path,  scheduler))),
-                "Canvas" => Ok(EzObjects::CanvasWidget(Canvas::from_config(config, id, path,  scheduler))),
-                "Label" => Ok(EzObjects::Label(Label::from_config(config, id, path,  scheduler))),
-                "Button" => Ok(EzObjects::Button(Button::from_config(config, id, path, scheduler))),
-                "CheckBox" => Ok(EzObjects::Checkbox(Checkbox::from_config(config, id, path,  scheduler))),
-                "RadioButton" => Ok(EzObjects::RadioButton(RadioButton::from_config(config, id, path,  scheduler))),
-                "TextInput" => Ok(EzObjects::TextInput(TextInput::from_config(config, id, path,  scheduler))),
-                "Dropdown" => Ok(EzObjects::Dropdown(Dropdown::from_config(config, id, path,  scheduler))),
-                "Slider" => Ok(EzObjects::Slider(Slider::from_config(config, id, path,  scheduler))),
-                "ProgressBar" => Ok(EzObjects::ProgressBar(ProgressBar::from_config(config, id, path,  scheduler))),
+                "Layout" => Ok(EzObjects::Layout(
+                    Layout::from_config(config, id, path, scheduler, self.file.clone(),
+                                        self.line_offset))),
+                "Canvas" => Ok(EzObjects::CanvasWidget(
+                    Canvas::from_config(config, id, path, scheduler, self.file.clone(),
+                                        self.line_offset))),
+                "Label" => Ok(EzObjects::Label(
+                    Label::from_config(config, id, path, scheduler, self.file.clone(),
+                                       self.line_offset))),
+                "Button" => Ok(EzObjects::Button(
+                    Button::from_config(config, id, path, scheduler, self.file.clone(),
+                                        self.line_offset))),
+                "CheckBox" => Ok(EzObjects::Checkbox(
+                    Checkbox::from_config(config, id, path, scheduler, self.file.clone(),
+                                          self.line_offset))),
+                "RadioButton" => Ok(EzObjects::RadioButton(
+                    RadioButton::from_config(config, id, path, scheduler, self.file.clone(),
+                                             self.line_offset))),
+                "TextInput" => Ok(EzObjects::TextInput(
+                    TextInput::from_config(config, id, path, scheduler, self.file.clone(),
+                                           self.line_offset))),
+                "Dropdown" => Ok(EzObjects::Dropdown(
+                    Dropdown::from_config(config, id, path, scheduler, self.file.clone(),
+                                          self.line_offset))),
+                "Slider" => Ok(EzObjects::Slider(
+                    Slider::from_config(config, id, path, scheduler, self.file.clone(),
+                                        self.line_offset))),
+                "ProgressBar" => Ok(EzObjects::ProgressBar(
+                    ProgressBar::from_config(config, id, path, scheduler, self.file.clone(),
+                                             self.line_offset))),
                 _ => Err(Error::new(ErrorKind::InvalidData,
                                     format!("Invalid widget type {}", self.type_name)))
             }
@@ -171,4 +193,25 @@ impl EzWidgetDefinition {
 }
 impl Debug for EzWidgetDefinition {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result { write!(f, "{}", self.type_name) }
+}
+
+
+/// Merge two configs, where config_1 takes precedence, overwriting any properties it has in common
+/// with config_2. This is used for templates which can have properties, where the instance of a
+/// template may have the same property defined. In that case the instance of the template takes
+/// precedence.
+fn merge_configs(config_1: Vec<String>, config_2: Vec<String>) -> Vec<String>{
+
+    let mut merged_config: Vec<String> = Vec::new();
+    let mut existing_options: Vec<String> = Vec::new();
+    for line in config_1 {
+        merged_config.push(line.clone());
+        existing_options.push(line.split_once(':').unwrap().0.to_string());
+    }
+    for line in config_2 {
+        if !merged_config.contains(&line.split_once(':').unwrap().0.to_string()) {
+            merged_config.push(line);
+        }
+    }
+    merged_config
 }

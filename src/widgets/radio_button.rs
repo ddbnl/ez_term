@@ -3,6 +3,7 @@
 //! same 'group' field value for all. The radio buttons in a group are mutually exlusive, so when
 //! one is selected the others are deselected. Supports on_value_change callback, which is only
 //! called for the radio button that became active.
+use std::io::{Error, ErrorKind};
 use crate::states::radio_button_state::RadioButtonState;
 use crate::states::ez_state::{EzState, GenericState};
 use crate::widgets::ez_object::{EzObject};
@@ -45,7 +46,8 @@ impl RadioButton {
         }
     }
 
-    fn load_group_property(&mut self, parameter_value: &str, scheduler: &mut Scheduler) {
+    fn load_group_property(&mut self, parameter_value: &str, scheduler: &mut Scheduler)
+        -> Result<(), Error> {
 
         let path = self.path.clone();
         self.state.group.set(load_ez_string_property(
@@ -55,10 +57,12 @@ impl RadioButton {
                     .as_radio_button_mut();
                 state.group.set(val.as_string().to_owned());
                 path.clone()
-            })))
+            }))?);
+        Ok(())
     }
 
-    fn load_active_property(&mut self, parameter_value: &str, scheduler: &mut Scheduler) {
+    fn load_active_property(&mut self, parameter_value: &str, scheduler: &mut Scheduler)
+        -> Result<(), Error> {
 
         let path = self.path.clone();
         self.state.set_active(load_ez_bool_property(
@@ -68,7 +72,8 @@ impl RadioButton {
                     .as_radio_button_mut();
                 state.set_active(val.as_bool().to_owned());
                 path.clone()
-            })))
+            }))?);
+        Ok(())
     }
 }
 
@@ -76,22 +81,40 @@ impl RadioButton {
 impl EzObject for RadioButton {
 
     fn load_ez_parameter(&mut self, parameter_name: String, parameter_value: String,
-                         scheduler: &mut Scheduler) {
+                         scheduler: &mut Scheduler) -> Result<(), Error> {
 
         let consumed = load_common_property(
-            &parameter_name, parameter_value.clone(),self, scheduler);
-        if consumed { return }
+            &parameter_name, parameter_value.clone(),self, scheduler)?;
+        if consumed { return Ok(())}
         match parameter_name.as_str() {
             "group" => {
                 let group = parameter_value.trim();
-                if group.is_empty() { panic!("Radio button widget must have a group.") }
-                self.load_group_property(group, scheduler)
+                if group.is_empty() {
+                    return Err(Error::new(ErrorKind::InvalidData,
+                                          format!("Radio button widget must have a group.")))
+                }
+                self.load_group_property(group, scheduler)?;
             },
-            "active" => self.load_active_property(parameter_value.trim(), scheduler),
-            "active_symbol" => self.active_symbol = parameter_value.chars().last().unwrap(),
-            "inactive_symbol" => self.inactive_symbol = parameter_value.chars().last().unwrap(),
-            _ => panic!("Invalid parameter name for radio button {}", parameter_name)
+            "active" => self.load_active_property(parameter_value.trim(), scheduler)?,
+            "active_symbol" => self.active_symbol = match parameter_value.chars().last() {
+                Some(i) => i,
+                None => return Err(
+                    Error::new(ErrorKind::InvalidData,
+                               format!("Invalid value for active_symbol: \"{}\". \
+                               Required format is \"active_symbol: x\"", parameter_value)))
+            },
+            "inactive_symbol" => self.inactive_symbol =
+                match parameter_value.chars().last() {
+                    Some(i) => i,
+                    None => return Err(
+                        Error::new(ErrorKind::InvalidData,
+                                   format!("Invalid value for inactive symbol: \"{}\". \
+                                   Required format \
+                                   is \"inactive_symbol: -\"", parameter_value)))
+                },
+            _ => panic!("Invalid parameter name for radio button: {}", parameter_name)
         }
+        Ok(())
     }
 
     fn set_id(&mut self, id: String) { self.id = id }
@@ -150,11 +173,11 @@ impl EzObject for RadioButton {
 impl RadioButton {
 
     /// Initialize an instance of this object using the passed config coming from [ez_parser]
-    pub fn from_config(config: Vec<String>, id: String, path: String, scheduler: &mut Scheduler)
-                       -> Self {
+    pub fn from_config(config: Vec<String>, id: String, path: String, scheduler: &mut Scheduler,
+                       file: String, line: usize) -> Self {
 
         let mut obj = RadioButton::new(id, path, scheduler);
-        obj.load_ez_config(config, scheduler).unwrap();
+        obj.load_ez_config(config, scheduler, file, line).unwrap();
         obj
     }
 

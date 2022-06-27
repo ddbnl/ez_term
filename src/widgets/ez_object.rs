@@ -216,14 +216,20 @@ pub trait EzObject {
 
     /// Accepts config lines from the ez_parser module and prepares them to be loaded by
     /// load_ez_parameter below.
-    fn load_ez_config(&mut self, config: Vec<String>, scheduler: &mut Scheduler) -> Result<(), Error> {
-        for line in config {
-            let (parameter_name, parameter_value) = line.split_once(':')
+    fn load_ez_config(&mut self, config: Vec<String>, scheduler: &mut Scheduler, file: String,
+                      line: usize) -> Result<(), Error> {
+        for (i, line_str) in config.iter().enumerate() {
+            let total_line = line + i + 1;
+            let (parameter_name, parameter_value) = line_str.split_once(':')
                 .unwrap_or_else(|| panic!("Config parameter must contain a \":\", \
-                e.g. \"parameter: value\". This does not contain one: \"{}\"", line));
+                e.g. \"parameter: value\". This does not contain one: \"{}\"", line_str));
             self.load_ez_parameter(parameter_name.to_string(),
                                    parameter_value.to_string(),
-                                    scheduler);
+                                   scheduler).unwrap_or_else(
+                |e| panic!("Error on line {} of file: \"{}\".\n. \
+                Could not load property \"{}\" with error: \"{}\"",
+                           total_line, file, line_str, e)
+            );
         }
         Ok(())
     }
@@ -231,7 +237,7 @@ pub trait EzObject {
     /// Load parameters for an object. Overloaded in each Widget/layout module to load parameters
     /// specific to the respective widget definition.
     fn load_ez_parameter(&mut self, parameter_name: String, parameter_value: String,
-                         scheduler: &mut Scheduler);
+                         scheduler: &mut Scheduler) -> Result<(), Error>;
 
     /// Set ID of the widget. IDs are used to create widgets paths. E.g.
     /// "/root_layout/sub_layout/widget_1".

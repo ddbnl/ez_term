@@ -190,27 +190,23 @@ impl SliderState {
 
     pub fn set_value(&mut self, value: usize) {
         self.value.set(value);
-        self.validate();
     }
 
     pub fn get_value(&self) -> &EzProperty<usize> { &self.value }
 
     pub fn set_minimum(&mut self, minimum: usize) {
         self.minimum.set(minimum);
-        self.validate();
     }
     pub fn get_minimum(&self) -> &EzProperty<usize> { &self.minimum }
 
     pub fn set_maximum(&mut self, maximum: usize) {
         self.maximum.set(maximum);
-        self.validate();
     }
 
     pub fn get_maximum(&self) -> &EzProperty<usize> { &self.maximum }
 
     pub fn set_step(&mut self, step: usize) {
         self.step.set(step);
-        self.validate();
     }
 
     pub fn get_step(&self) -> &EzProperty<usize> { &self.step }

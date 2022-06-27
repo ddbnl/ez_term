@@ -1,3 +1,4 @@
+use std::io::{Error, ErrorKind};
 use crossterm::style::{Color};
 use crate::states::definitions::{HorizontalAlignment, VerticalAlignment};
 use crate::scheduler::scheduler::Scheduler;
@@ -43,21 +44,24 @@ fn resolve_parent_path(mut path: String, mut value: &str) -> String {
 
 
 pub fn load_ez_usize_property(value: &str, scheduler: &mut Scheduler, path: String,
-                              update_func: EzPropertyUpdater) -> usize {
-
-    if bind_ez_property(value, scheduler, path, update_func) {
-        0
+                              update_func: EzPropertyUpdater) -> Result<usize, Error> {
+    return if bind_ez_property(value, scheduler, path, update_func) {
+        Ok(0)
     } else {
-        value.trim().parse().unwrap()
+        match value.trim().parse() {
+            Ok(i) => Ok(i),
+            Err(e) => Err(Error::new(ErrorKind::InvalidData, format!(
+                "Could not parse usize property with error: {}", e)))
+        }
     }
 }
 
 
 pub fn load_ez_bool_property(value: &str, scheduler: &mut Scheduler, path: String,
-                             update_func: EzPropertyUpdater) -> bool {
+                             update_func: EzPropertyUpdater) -> Result<bool, Error> {
 
     if bind_ez_property(value, scheduler, path, update_func) {
-        false
+        Ok(false)
     } else {
         parse_properties::parse_bool_property(value)
     }
@@ -65,21 +69,21 @@ pub fn load_ez_bool_property(value: &str, scheduler: &mut Scheduler, path: Strin
 
 
 pub fn load_ez_string_property(value: &str, scheduler: &mut Scheduler, path: String,
-                               update_func: EzPropertyUpdater) -> String {
+                               update_func: EzPropertyUpdater) -> Result<String, Error> {
 
     if bind_ez_property(value, scheduler, path, update_func) {
-        String::new()
+        Ok(String::new())
     } else {
-        value.trim().to_string()
+        Ok(value.trim().to_string())
     }
 }
 
 
 pub fn load_ez_color_property(value: &str, scheduler: &mut Scheduler, path: String,
-                              update_func: EzPropertyUpdater) -> Color {
+                              update_func: EzPropertyUpdater) -> Result<Color, Error> {
 
     if bind_ez_property(value, scheduler, path, update_func) {
-        Color::Black
+        Ok(Color::Black)
     } else {
         parse_properties::parse_color_property(value)
     }
@@ -87,10 +91,11 @@ pub fn load_ez_color_property(value: &str, scheduler: &mut Scheduler, path: Stri
 
 
 pub fn load_ez_valign_property(value: &str, scheduler: &mut Scheduler, path: String,
-                               update_func: EzPropertyUpdater) -> VerticalAlignment {
+                               update_func: EzPropertyUpdater)
+    -> Result<VerticalAlignment, Error> {
 
     if bind_ez_property(value, scheduler, path, update_func) {
-        VerticalAlignment::Top
+        Ok(VerticalAlignment::Top)
     } else {
         parse_properties::parse_valign_property(value)
     }
@@ -98,10 +103,11 @@ pub fn load_ez_valign_property(value: &str, scheduler: &mut Scheduler, path: Str
 
 
 pub fn load_ez_halign_property(value: &str, scheduler: &mut Scheduler, path: String,
-                               update_func: EzPropertyUpdater) -> HorizontalAlignment {
+                               update_func: EzPropertyUpdater)
+    -> Result<HorizontalAlignment, Error> {
 
     if bind_ez_property(value, scheduler, path, update_func) {
-        HorizontalAlignment::Left
+        Ok(HorizontalAlignment::Left)
     } else {
         parse_properties::parse_halign_property(value)
     }
@@ -110,10 +116,10 @@ pub fn load_ez_halign_property(value: &str, scheduler: &mut Scheduler, path: Str
 
 pub fn load_ez_horizontal_pos_hint_property(value: &str, scheduler: &mut Scheduler, path: String,
                                             update_func: EzPropertyUpdater)
-                                            -> Option<(HorizontalAlignment, f64)> {
+                                            -> Result<Option<(HorizontalAlignment, f64)>, Error> {
 
     if bind_ez_property(value, scheduler, path, update_func) {
-        None
+        Ok(None)
     } else {
         parse_properties::parse_horizontal_pos_hint_property(value)
     }
@@ -122,10 +128,10 @@ pub fn load_ez_horizontal_pos_hint_property(value: &str, scheduler: &mut Schedul
 
 pub fn load_ez_vertical_pos_hint_property(value: &str, scheduler: &mut Scheduler, path: String,
                                           update_func: EzPropertyUpdater)
-                                          -> Option<(VerticalAlignment, f64)> {
+                                          -> Result<Option<(VerticalAlignment, f64)>, Error> {
 
     if bind_ez_property(value, scheduler, path, update_func) {
-        None
+        Ok(None)
     } else {
         parse_properties::parse_vertical_pos_hint_property(value)
     }
@@ -133,10 +139,9 @@ pub fn load_ez_vertical_pos_hint_property(value: &str, scheduler: &mut Scheduler
 
 
 pub fn load_ez_size_hint_property(value: &str, scheduler: &mut Scheduler, path: String,
-                                  update_func: EzPropertyUpdater) -> Option<f64> {
-
+                                  update_func: EzPropertyUpdater) -> Result<Option<f64>, Error> {
     if bind_ez_property(value, scheduler, path, update_func) {
-        None
+        Ok(None)
     } else {
         parse_properties::parse_size_hint_property(value)
     }

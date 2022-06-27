@@ -1,5 +1,6 @@
 //! A widget that displays text non-interactively.
 use std::fs::File;
+use std::io::Error;
 use std::io::prelude::*;
 use crate::widgets::ez_object::{EzObject};
 use crate::states::label_state::LabelState;
@@ -10,6 +11,7 @@ use crate::property::ez_values::EzValues;
 use crate::run::definitions::{Pixel, PixelMap, StateTree};
 use crate::scheduler::scheduler::Scheduler;
 use crate::widgets::helper_functions::{add_border, add_padding, wrap_text};
+
 
 #[derive(Clone, Debug)]
 pub struct Label {
@@ -42,11 +44,11 @@ impl Label {
 impl EzObject for Label {
 
     fn load_ez_parameter(&mut self, parameter_name: String, parameter_value: String,
-                         scheduler: &mut Scheduler) {
+                         scheduler: &mut Scheduler) -> Result<(), Error> {
 
         let consumed = load_common_property(
-            &parameter_name, parameter_value.clone(),self, scheduler);
-        if consumed { return }
+            &parameter_name, parameter_value.clone(),self, scheduler)?;
+        if consumed { return Ok(()) }
         match parameter_name.as_str() {
             "text" => {
                 let path = self.path.clone();
@@ -57,11 +59,12 @@ impl EzObject for Label {
                             .as_label_mut();
                         state.text.set(val.as_string().clone());
                         path.clone()
-                    })))
+                    }))?)
             },
             "from_file" => self.from_file = Some(parameter_value.trim().to_string()),
-            _ => panic!("Invalid parameter name for label {}", parameter_name)
+            _ => panic!("Invalid parameter name for label: {}", parameter_name)
         }
+        Ok(())
     }
 
     fn set_id(&mut self, id: String) { self.id = id }
@@ -159,12 +162,11 @@ impl EzObject for Label {
 impl Label {
 
     /// Initialize an instance of this object using the passed config coming from [ez_parser]
-
-    pub fn from_config(config: Vec<String>, id: String, path: String, scheduler: &mut Scheduler)
-                       -> Self {
+    pub fn from_config(config: Vec<String>, id: String, path: String, scheduler: &mut Scheduler,
+                       file: String, line: usize) -> Self {
 
         let mut obj = Label::new(id, path, scheduler);
-        obj.load_ez_config(config, scheduler).unwrap();
+        obj.load_ez_config(config, scheduler, file, line).unwrap();
         obj
     }
 }

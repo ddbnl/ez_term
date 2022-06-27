@@ -4,7 +4,6 @@
     auto_scale: true, true
 
 - Layout:
-    id: my_float_layout
     mode: float
     - MyLabelTemplate:
         id: my_upper_left_label

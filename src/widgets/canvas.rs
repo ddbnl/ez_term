@@ -2,6 +2,7 @@
 //! Module defining a canvas widget, which does not generate any content but should be 'painted'
 //! manually by the user using the 'set_content' method.
 use std::fs::File;
+use std::io::{Error, ErrorKind};
 use std::io::prelude::*;
 use crate::widgets::ez_object::{EzObject};
 use crate::states::canvas_state::CanvasState;
@@ -48,15 +49,18 @@ impl Canvas {
 
 impl EzObject for Canvas {
     fn load_ez_parameter(&mut self, parameter_name: String, parameter_value: String,
-                         scheduler: &mut Scheduler) {
+                         scheduler: &mut Scheduler) -> Result<(), Error> {
 
         let consumed = load_common_property(
-            &parameter_name, parameter_value.clone(),self, scheduler);
-        if consumed { return }
+            &parameter_name, parameter_value.clone(),self, scheduler)?;
+        if consumed { return Ok(()) }
         match parameter_name.as_str() {
             "from_file" => self.from_file = Some(parameter_value.trim().to_string()),
-            _ => panic!("Invalid parameter name for canvas widget {}", parameter_name)
+            _ => return Err(
+                Error::new(ErrorKind::InvalidData,
+                           format!("Invalid parameter name for canvas: {}", parameter_name)))
         }
+        Ok(())
     }
 
     fn set_id(&mut self, id: String) { self.id = id }
@@ -149,12 +153,12 @@ impl EzObject for Canvas {
 }
 impl Canvas {
 
-    /// Load this widget from a config vector coming from [ez_parser]
-    pub fn from_config(config: Vec<String>, id: String, path: String, scheduler: &mut Scheduler)
-                       -> Self {
+    /// Initialize an instance of this object using the passed config coming from [ez_parser]
+    pub fn from_config(config: Vec<String>, id: String, path: String, scheduler: &mut Scheduler,
+                       file: String, line: usize) -> Self {
 
         let mut obj = Canvas::new(id, path, scheduler);
-        obj.load_ez_config(config, scheduler).unwrap();
+        obj.load_ez_config(config, scheduler, file, line).unwrap();
         obj
     }
 }

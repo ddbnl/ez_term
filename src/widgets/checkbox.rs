@@ -1,5 +1,6 @@
 //! # Checkbox Widget
 //! Widget which is either on or off and implements an on_value_change callback.
+use std::io::{Error, ErrorKind};
 use crate::widgets::ez_object::{EzObject};
 use crate::states::checkbox_state::CheckboxState;
 use crate::states::ez_state::{EzState, GenericState};
@@ -43,7 +44,8 @@ impl Checkbox {
         }
     }
 
-    fn load_active_property(&mut self, parameter_value: &str, scheduler: &mut Scheduler) {
+    fn load_active_property(&mut self, parameter_value: &str, scheduler: &mut Scheduler)
+        -> Result<(), Error>{
 
         let path = self.path.clone();
         self.state.set_active(load_ez_bool_property(
@@ -52,7 +54,8 @@ impl Checkbox {
                 let state = state_tree.get_by_path_mut(&path).as_checkbox_mut();
                 state.set_active(val.as_bool().to_owned());
                 path.clone()
-            })))
+            }))?);
+        Ok(())
     }
 }
 
@@ -60,17 +63,34 @@ impl Checkbox {
 impl EzObject for Checkbox {
 
     fn load_ez_parameter(&mut self, parameter_name: String, parameter_value: String,
-                         scheduler: &mut Scheduler) {
+                         scheduler: &mut Scheduler) -> Result<(), Error> {
 
         let consumed = load_common_property(
-            &parameter_name, parameter_value.clone(),self, scheduler);
-        if consumed { return }
+            &parameter_name, parameter_value.clone(),self, scheduler)?;
+        if consumed { return Ok(())}
         match parameter_name.as_str() {
-            "active" => self.load_active_property(parameter_value.trim(), scheduler),
-            "active_symbol" => self.active_symbol = parameter_value.chars().last().unwrap(),
-            "inactive_symbol" => self.inactive_symbol = parameter_value.chars().last().unwrap(),
-            _ => panic!("Invalid parameter name for check box {}", parameter_name)
+            "active" => self.load_active_property(parameter_value.trim(), scheduler)?,
+            "active_symbol" => self.active_symbol = match parameter_value.chars().last() {
+                Some(i) => i,
+                None => return Err(
+                    Error::new(ErrorKind::InvalidData,
+                               format!("Invalid value for active_symbol: \"{}\". Required format \
+                                   is \"active_symbol: x\"", parameter_value)))
+            },
+            "inactive_symbol" => self.inactive_symbol =
+                match parameter_value.chars().last() {
+                    Some(i) => i,
+                    None => return Err(
+                        Error::new(ErrorKind::InvalidData,
+                                   format!("Invalid value for inactive symbol: \"{}\". \
+                                   Required format \
+                                   is \"inactive_symbol: -\"", parameter_value)))
+                },
+            _ => return Err(
+                Error::new(ErrorKind::InvalidData,
+                           format!("Invalid parameter name for checkbox: {}", parameter_name)))
         }
+        Ok(())
     }
 
     fn set_id(&mut self, id: String) { self.id = id }
@@ -127,11 +147,11 @@ impl EzObject for Checkbox {
 impl Checkbox {
 
     /// Initialize an instance of this object using the passed config coming from [ez_parser]
-    pub fn from_config(config: Vec<String>, id: String, path: String, scheduler: &mut Scheduler)
-                       -> Self {
+    pub fn from_config(config: Vec<String>, id: String, path: String, scheduler: &mut Scheduler,
+                       file: String, line: usize) -> Self {
 
         let mut obj = Checkbox::new(id, path, scheduler);
-        obj.load_ez_config(config, scheduler).unwrap();
+        obj.load_ez_config(config, scheduler, file, line).unwrap();
         obj
     }
 

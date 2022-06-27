@@ -16,7 +16,7 @@ pub struct ProgressBarState {
     pub path: String,
 
     /// Max value of the slider (i.e. when it's finished)
-    pub max: EzProperty<usize>,
+    pub maximum: EzProperty<usize>,
 
     /// Current value of the slider
     pub value: EzProperty<usize>,
@@ -69,8 +69,8 @@ impl ProgressBarState {
 
        ProgressBarState {
            path: path.clone(),
-           max: scheduler.new_usize_property(format!("{}/progress_max", path).as_str(),
-                                             100),
+           maximum: scheduler.new_usize_property(format!("{}/progress_max", path).as_str(),
+                                                 100),
            value: scheduler.new_usize_property(format!("{}/progress_value", path).as_str(),
                                                0),
            position: StateCoordinates::new(0, 0, path.clone(), scheduler),
@@ -180,7 +180,7 @@ impl GenericState for ProgressBarState {
         self.padding.clean_up_properties(scheduler);
         clean_up_property(scheduler, &self.halign.name);
         clean_up_property(scheduler, &self.valign.name);
-        clean_up_property(scheduler, &self.max.name);
+        clean_up_property(scheduler, &self.maximum.name);
         clean_up_property(scheduler, &self.value.name);
         clean_up_property(scheduler, &self.disabled.name);
         clean_up_property(scheduler, &self.selection_order.name);
@@ -191,24 +191,26 @@ impl GenericState for ProgressBarState {
 impl ProgressBarState {
 
     pub fn set_value(&mut self, mut value: usize) {
-        value = if value > self.max.value {self.max.value} else { value };
+        value = if value > self.maximum.value {self.maximum.value} else { value };
         self.value.set(value);
     }
 
     pub fn get_value(&self) -> &EzProperty<usize> { &self.value }
 
-    pub fn set_max_value(&mut self, max_value: usize) {
+    pub fn set_maximum_value(&mut self, max_value: usize) {
         if self.value > max_value {
             self.set_value(max_value)
         }
-        self.max.set(max_value);
+        self.maximum.set(max_value);
     }
 
-    pub fn get_max_value(&self) -> &EzProperty<usize> { &self.max }
+    pub fn get_maximum_value(&self) -> &EzProperty<usize> { &self.maximum }
 
     /// Convenience func. Set the progress bar based on two numbers: progress and total. For
     /// example when tracking progress of copying files, pass the number of copied files as
     /// 'progress' and the total number of files as 'total'. These values will be normalized to a
     /// number between 0 and 1 and passed to [set_value].
-    pub fn get_normalized_value(&mut self) -> f64 { self.value.value as f64 / self.max.value as f64 }
+    pub fn get_normalized_value(&mut self) -> f64 {
+        self.value.value as f64 / self.maximum.value as f64
+    }
 }

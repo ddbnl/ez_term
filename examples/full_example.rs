@@ -11,8 +11,7 @@ fn main() {
     // subwidgets and make any changes we need before starting the app.
     // We can use the scheduler to schedule any (recurring) functions we need to before starting
     // the app.
-    let (root_widget, mut scheduler) =
-        ez_term::load_ez_folder("./Examples/FullExample");
+    let (root_widget, mut scheduler) = ez_term::load_ui();
 
     // Step 2: Customize widgets where needed. Here are some examples:
 

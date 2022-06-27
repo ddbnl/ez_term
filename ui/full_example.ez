@@ -3,7 +3,9 @@
 // This is the definition of the actual UI that will be displayed. All the non-standard widgets you see in here are
 // templates we define below. Using templates can give us a really clean, flat and short UI definition.
 // A UI must always start with a Layout as the root widget. The root widget ID is always "root"
-- Layout:
+- Root:
+
+- <Root@Layout>:
     mode: screen
     - MenuScreen:
     - MainScreen:

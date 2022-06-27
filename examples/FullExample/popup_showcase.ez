@@ -1,0 +1,34 @@
+- <PopupShowcase@CyanScalingBox>:
+    - Label:
+        text: This button will create a popup through a callback:
+        auto_scale_height: true
+        padding: 1, 1, 1, 1
+    - Button:
+        id: popup_button
+        selection_order: 45
+        text: Popup!
+        bg_color: red
+        fg_color: yellow
+        auto_scale: true, true
+
+
+// This is a widget template we will use as a popup in a callback
+- <TestPopup@Layout>:
+    id: test_popup
+    mode: float
+    size_hint: 0.5, 0.5
+    border: true
+    pos_hint: center, middle
+    - Label:
+        text: This is a test popup.
+        auto_scale: true, true
+        pos_hint: center, top
+    - Button:
+        id: dismiss_button
+        selection_order: 1
+        text: dismiss
+        size_hint_x: 1
+        auto_scale_height: true
+        pos_hint: center, bottom
+        bg_color: red
+        fg_color: yellow

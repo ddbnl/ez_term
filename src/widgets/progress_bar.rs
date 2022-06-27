@@ -1,4 +1,5 @@
 //! A widget that displays text non-interactively.
+use std::io::{Error, ErrorKind};
 use crate::states::ez_state::{EzState, GenericState};
 use crate::widgets::ez_object::{EzObject};
 use crate::parser::load_properties::load_common_property;
@@ -30,33 +31,48 @@ impl ProgressBar {
             state: ProgressBarState::new(path, scheduler),
         }
     }
+
+    fn load_value_property(&mut self, parameter_value: &str, scheduler: &mut Scheduler)
+                            -> Result<(), Error> {
+        let path = self.path.clone();
+        self.state.set_value(
+            load_ez_usize_property(
+                parameter_value.trim(), scheduler,
+                self.path.clone(),
+                Box::new(move |state_tree: &mut StateTree, val: EzValues| {
+                    let state = state_tree.get_by_path_mut(&path)
+                        .as_progress_bar_mut();
+                    state.set_value(*val.as_usize());
+                    path.clone()
+                }))?);
+        Ok(())
+    }
 }
 
 
 impl EzObject for ProgressBar {
 
     fn load_ez_parameter(&mut self, parameter_name: String, parameter_value: String,
-                         scheduler: &mut Scheduler) {
+                         scheduler: &mut Scheduler) -> Result<(), Error> {
         let consumed = load_common_property(
-            &parameter_name, parameter_value.clone(), self, scheduler);
-        if consumed { return }
+            &parameter_name, parameter_value.clone(), self, scheduler)?;
+        if consumed { return Ok(())}
         match parameter_name.as_str() {
-            "value" => {
-                let path = self.path.clone();
-                self.state.set_value(
-                    load_ez_usize_property(
-                        parameter_value.trim(), scheduler,
-                        self.path.clone(),
-                        Box::new(move |state_tree: &mut StateTree, val: EzValues| {
-                            let state = state_tree.get_by_path_mut(&path)
-                                .as_progress_bar_mut();
-                            state.set_value(*val.as_usize());
-                            path.clone()
-                        })))
-            },
+            "value" => self.load_value_property(parameter_value.trim(), scheduler)?,
+            "maximum" => self.state.set_maximum_value(match parameter_value.trim().parse() {
+                Ok(i) => i,
+                Err(_) => return Err(
+                    Error::new(ErrorKind::InvalidData,
+                               format!("Could not parse maximum parameter: \"{}\". \
+                               Should be in format \"maximum: 100\"", parameter_value)))
+            }),
             "max" => self.state.set_value(parameter_value.trim().parse().unwrap()),
-            _ => panic!("Invalid parameter name for progress bar {}", parameter_name)
+            _ => return Err(
+                Error::new(ErrorKind::InvalidData,
+                           format!("Invalid parameter name for progress bar: {}",
+                                   parameter_name)))
         }
+        Ok(())
     }
 
     fn set_id(&mut self, id: String) { self.id = id }
@@ -104,11 +120,11 @@ impl EzObject for ProgressBar {
 impl ProgressBar {
 
     /// Initialize an instance of this object using the passed config coming from [ez_parser]
-    pub fn from_config(config: Vec<String>, id: String, path: String, scheduler: &mut Scheduler)
-                       -> Self {
+    pub fn from_config(config: Vec<String>, id: String, path: String, scheduler: &mut Scheduler,
+                       file: String, line: usize) -> Self {
 
         let mut obj = ProgressBar::new(id, path, scheduler);
-        obj.load_ez_config(config, scheduler).unwrap();
+        obj.load_ez_config(config, scheduler, file, line).unwrap();
         obj
     }
 }

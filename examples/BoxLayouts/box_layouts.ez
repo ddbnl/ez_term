@@ -1,5 +1,4 @@
 - Layout:
-    id: my_horizontal_box
     mode: box
     orientation: horizontal
     - Layout:

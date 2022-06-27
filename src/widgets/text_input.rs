@@ -2,6 +2,7 @@
 //! A widget implementing a field in which the user can input characters. Supports on_value_change
 //! and on_keyboard_enter callbacks.
 use std::cmp::min;
+use std::io::{Error, ErrorKind};
 use std::time::Duration;
 use crossterm::event::{Event, KeyCode};
 use crate::EzContext;
@@ -44,13 +45,22 @@ impl TextInput {
 impl EzObject for TextInput {
 
     fn load_ez_parameter(&mut self, parameter_name: String, parameter_value: String,
-                         scheduler: &mut Scheduler) {
+                         scheduler: &mut Scheduler) -> Result<(), Error>{
 
         let consumed = load_common_property(
-            &parameter_name, parameter_value.clone(),self, scheduler);
-        if consumed { return }
+            &parameter_name, parameter_value.clone(),self, scheduler)?;
+        if consumed { return Ok(()) }
         match parameter_name.as_str() {
-            "max_length" => self.state.set_max_length(parameter_value.trim().parse().unwrap()),
+            "max_length" => {
+                let length = match parameter_value.trim().parse() {
+                    Ok(i) => i,
+                    Err(_) => return Err(
+                        Error::new(ErrorKind::InvalidData,
+                                   format!("Invalid value for max_length: \"{}\". Required \
+                                   format is \"max_length: 10\"", parameter_value)))
+                };
+                self.state.set_max_length(length);
+            },
             "text" => {
                 let path = self.path.clone();
                 self.state.text.set(load_ez_string_property(
@@ -60,10 +70,14 @@ impl EzObject for TextInput {
                             .as_text_input_mut();
                         state.text.set(val.as_string().clone());
                         path.clone()
-                    })))
+                    }))?)
             }
-            _ => panic!("Invalid parameter name for text input {}", parameter_name)
+            _ => return Err(
+                Error::new(ErrorKind::InvalidData,
+                           format!("Invalid parameter name for text input: {}",
+                                   parameter_name)))
         }
+        Ok(())
     }
     fn set_id(&mut self, id: String) { self.id = id }
 
@@ -276,11 +290,11 @@ pub fn handle_char(state: &mut TextInputState, char: char, scheduler: &mut Sched
 impl TextInput {
 
     /// Initialize an instance of this object using the passed config coming from [ez_parser]
-    pub fn from_config(config: Vec<String>, id: String, path: String, scheduler: &mut Scheduler)
-                       -> Self {
+    pub fn from_config(config: Vec<String>, id: String, path: String, scheduler: &mut Scheduler,
+                       file: String, line: usize) -> Self {
 
         let mut obj = TextInput::new(id, path, scheduler);
-        obj.load_ez_config(config, scheduler).unwrap();
+        obj.load_ez_config(config, scheduler, file, line).unwrap();
         obj
     }
 

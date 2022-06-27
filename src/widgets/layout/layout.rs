@@ -1,6 +1,7 @@
 //! # layout
 //! Module implementing the layout struct.
 use std::collections::HashMap;
+use std::io::{Error, ErrorKind};
 use crossterm::event::{Event, KeyCode};
 use crate::parser::load_base_properties::{load_ez_bool_property, load_ez_string_property};
 use crate::parser::load_properties::load_common_property;
@@ -49,7 +50,8 @@ impl Layout {
         }
     }
 
-    fn load_fill_property(&mut self, parameter_value: &str, scheduler: &mut Scheduler) {
+    fn load_fill_property(&mut self, parameter_value: &str, scheduler: &mut Scheduler)
+        -> Result<(), Error> {
 
         let path = self.path.clone();
         self.state.set_fill(load_ez_bool_property(
@@ -59,10 +61,12 @@ impl Layout {
                     .as_layout_mut();
                 state.set_fill(val.as_bool().to_owned());
                 path.clone()
-            })))
+            }))?);
+        Ok(())
     }
 
-    fn load_filler_symbol_property(&mut self, parameter_value: &str, scheduler: &mut Scheduler) {
+    fn load_filler_symbol_property(&mut self, parameter_value: &str, scheduler: &mut Scheduler)
+        -> Result<(), Error> {
 
         let path = self.path.clone();
         self.state.set_filler_symbol(load_ez_string_property(
@@ -72,11 +76,12 @@ impl Layout {
                     .as_layout_mut();
                 state.set_filler_symbol(val.as_string().to_owned());
                 path.clone()
-            })))
+            }))?);
+        Ok(())
     }
 
-    fn load_scrolling_enable_x_property(&mut self, parameter_value: &str,
-                                        scheduler: &mut Scheduler) {
+    fn load_scrolling_enable_x_property(&mut self, parameter_value: &str, scheduler: &mut Scheduler)
+        -> Result<(), Error> {
 
         let path = self.path.clone();
         self.state.get_scrolling_config_mut().enable_x.set(load_ez_bool_property(
@@ -86,11 +91,12 @@ impl Layout {
                     .as_layout_mut();
                 state.get_scrolling_config_mut().enable_x.set(val.as_bool().to_owned());
                 path.clone()
-            })))
+            }))?);
+        Ok(())
     }
 
-    fn load_scrolling_enable_y_property(&mut self, parameter_value: &str,
-                                        scheduler: &mut Scheduler) {
+    fn load_scrolling_enable_y_property(&mut self, parameter_value: &str, scheduler: &mut Scheduler)
+        -> Result<(), Error> {
 
         let path = self.path.clone();
         self.state.get_scrolling_config_mut().enable_y.set(load_ez_bool_property(
@@ -100,7 +106,8 @@ impl Layout {
                     .as_layout_mut();
                 state.get_scrolling_config_mut().enable_y.set(val.as_bool().to_owned());
                 path.clone()
-            })))
+            }))?);
+        Ok(())
     }
 }
 
@@ -108,11 +115,11 @@ impl Layout {
 impl EzObject for Layout {
 
     fn load_ez_parameter(&mut self, parameter_name: String, parameter_value: String,
-                         scheduler: &mut Scheduler) {
+                         scheduler: &mut Scheduler) -> Result<(), Error> {
 
         let consumed = load_common_property(
-            &parameter_name, parameter_value.clone(),self, scheduler);
-        if consumed { return }
+            &parameter_name, parameter_value.clone(),self, scheduler)?;
+        if consumed { return Ok(()) }
         match parameter_name.as_str() {
             "mode" => {
                 match parameter_value.to_lowercase().trim() {
@@ -120,7 +127,10 @@ impl EzObject for Layout {
                     "float" => self.state.mode = LayoutMode::Float,
                     "screen" => self.state.mode = LayoutMode::Screen,
                     "tabbed" => self.state.mode = LayoutMode::Tabbed,
-                    _ => panic!("Invalid parameter value for mode {}", parameter_value)
+                    _ => return Err(
+                        Error::new(ErrorKind::InvalidData,
+                                   format!("Invalid parameter value for mode {}",
+                                           parameter_value)))
                 }
             },
             "orientation" => {
@@ -129,24 +139,36 @@ impl EzObject for Layout {
                         self.state.orientation = LayoutOrientation::Horizontal,
                     "vertical" =>
                         self.state.orientation = LayoutOrientation::Vertical,
-                    _ => panic!("Invalid parameter value for orientation {}",
-                                       parameter_value)
+                    _ => return Err(
+                        Error::new(ErrorKind::InvalidData,
+                                   format!("Invalid parameter value for orientation {}",
+                                           parameter_value)))
                 }
             },
             "scroll" => {
-                let (x, y) = parameter_value.split_once(',').unwrap();
-                self.load_scrolling_enable_x_property(x.trim(), scheduler);
-                self.load_scrolling_enable_y_property(y.trim(), scheduler);
+                let (x, y) = match parameter_value.split_once(',') {
+                    Some((i, j)) => (i, j),
+                    None => return Err(
+                        Error::new(ErrorKind::InvalidData,
+                                   format!("Invalid value for scroll: \"{}\". Required format \
+                                   is \"scroll: true, false\"", parameter_value)))
+                };
+                self.load_scrolling_enable_x_property(x.trim(), scheduler)?;
+                self.load_scrolling_enable_y_property(y.trim(), scheduler)?;
             }
             "scroll_x" => self.load_scrolling_enable_x_property(
-                parameter_value.trim(), scheduler),
+                parameter_value.trim(), scheduler)?,
             "scroll_y" => self.load_scrolling_enable_y_property(
-                parameter_value.trim(), scheduler),
-            "fill" => self.load_fill_property(parameter_value.trim(), scheduler),
+                parameter_value.trim(), scheduler)?,
+            "fill" => self.load_fill_property(parameter_value.trim(), scheduler)?,
             "filler_symbol" =>
-                self.load_filler_symbol_property(parameter_value.trim(), scheduler),
-            _ => panic!("Invalid parameter name for layout {}", parameter_name)
+                self.load_filler_symbol_property(parameter_value.trim(), scheduler)?,
+            _ => return Err(
+                Error::new(ErrorKind::InvalidData,
+                           format!("Invalid parameter name for layout {}",
+                                   parameter_value)))
         }
+        Ok(())
     }
     fn set_id(&mut self, id: String) { self.id = id; }
 
@@ -353,11 +375,12 @@ impl EzObject for Layout {
 }
 
 impl Layout {
-    /// Initialize an instance of a layout with the passed config parsed by [ez_parser]
-    pub fn from_config(config: Vec<String>, id: String, path: String, scheduler: &mut Scheduler)
-                       -> Self {
+    /// Initialize an instance of this object using the passed config coming from [ez_parser]
+    pub fn from_config(config: Vec<String>, id: String, path: String, scheduler: &mut Scheduler,
+                       file: String, line: usize) -> Self {
+
         let mut obj = Layout::new(id, path, scheduler);
-        obj.load_ez_config(config, scheduler).unwrap();
+        obj.load_ez_config(config, scheduler, file, line).unwrap();
         obj
     }
 

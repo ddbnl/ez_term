@@ -2,6 +2,7 @@
 //! Widget which supports and arbitrary amount of possible values of which one can be chosen at any
 //! time. The active value is always displayed, and when selected drops down all other possible
 //! values for the user to select.
+use std::io::{Error, ErrorKind};
 use crossterm::event::{Event, KeyCode, MouseButton, MouseEventKind};
 use crate::EzContext;
 use crate::states::definitions::{StateSize, AutoScale, SizeHint, Padding, PosHint,
@@ -43,7 +44,8 @@ impl Dropdown {
         }
     }
 
-    fn load_allow_none_property(&mut self, parameter_value: &str, scheduler: &mut Scheduler) {
+    fn load_allow_none_property(&mut self, parameter_value: &str, scheduler: &mut Scheduler)
+        -> Result<(), Error>{
 
         let path = self.path.clone();
         self.state.set_allow_none(load_ez_bool_property(
@@ -51,12 +53,14 @@ impl Dropdown {
             Box::new(move |state_tree: &mut StateTree, val: EzValues| {
                 let state = state_tree.get_by_path_mut(&path)
                     .as_dropdown_mut();
-                state.set_allow_none(val.as_bool().to_owned());
+                state.set_allow_none(*val.as_bool());
                 path.clone()
-            })))
+            }))?);
+        Ok(())
     }
 
-    fn load_choice_property(&mut self, parameter_value: &str, scheduler: &mut Scheduler) {
+    fn load_choice_property(&mut self, parameter_value: &str, scheduler: &mut Scheduler)
+        -> Result<(), Error> {
 
         let path = self.path.clone();
         self.state.set_choice(load_ez_string_property(
@@ -64,30 +68,34 @@ impl Dropdown {
             Box::new(move |state_tree: &mut StateTree, val: EzValues| {
                 let state = state_tree.get_by_path_mut(&path)
                     .as_dropdown_mut();
-                state.set_choice(val.as_string().to_owned());
+                state.set_choice(val.as_string().clone());
                 path.clone()
-            })))
+            }))?);
+        Ok(())
     }
 }
 
 impl EzObject for Dropdown {
 
     fn load_ez_parameter(&mut self, parameter_name: String, parameter_value: String,
-                         scheduler: &mut Scheduler) {
+                         scheduler: &mut Scheduler) -> Result<(), Error> {
 
         let consumed = load_common_property(
-            &parameter_name, parameter_value.clone(),self, scheduler);
-        if consumed { return }
+            &parameter_name, parameter_value.clone(),self, scheduler)?;
+        if consumed { return Ok(()) }
         match parameter_name.as_str() {
             "allow_none" => self.load_allow_none_property(parameter_value.trim(),
-                                                          scheduler),
+                                                          scheduler)?,
             "options" => {
                 self.state.options = parameter_value.split(',')
                     .map(|x| x.trim().to_string()).collect();
             },
-            "choice" => self.load_choice_property(parameter_value.trim(), scheduler),
-            _ => panic!("Invalid parameter name for dropdown {}", parameter_name)
+            "choice" => self.load_choice_property(parameter_value.trim(), scheduler)?,
+            _ => return Err(
+                Error::new(ErrorKind::InvalidData,
+                           format!("Invalid parameter name for dropdown: {}", parameter_name)))
         }
+        Ok(())
     }
 
     fn set_id(&mut self, id: String) { self.id = id }
@@ -202,11 +210,12 @@ impl EzObject for Dropdown {
 
 impl Dropdown {
 
-    pub fn from_config(config: Vec<String>, id: String, path: String, scheduler: &mut Scheduler)
-                       -> Self {
+    /// Initialize an instance of this object using the passed config coming from [ez_parser]
+    pub fn from_config(config: Vec<String>, id: String, path: String, scheduler: &mut Scheduler,
+                       file: String, line: usize) -> Self {
 
         let mut obj = Dropdown::new(id, path, scheduler);
-        obj.load_ez_config(config, scheduler).unwrap();
+        obj.load_ez_config(config, scheduler, file, line).unwrap();
         obj
     }
 }
@@ -242,7 +251,7 @@ impl DroppedDownMenu {
 impl EzObject for DroppedDownMenu {
 
     fn load_ez_parameter(&mut self, _parameter_name: String, _parameter_value: String,
-                         _scheduler: &mut Scheduler) { }
+                         _scheduler: &mut Scheduler) -> Result<(), Error> { Ok(()) }
 
     fn set_id(&mut self, id: String) { self.id = id }
 
@@ -358,7 +367,8 @@ impl DroppedDownMenu {
         let state = state_tree.get_by_path_mut("/root").as_layout_mut();
         state.dismiss_modal(scheduler);
         state.update(scheduler);
-        self.on_value_change_callback(view_tree, state_tree, widget_tree, callback_tree,
+        widget_tree.get_by_path(&parent).as_dropdown()
+            .on_value_change_callback(view_tree, state_tree, widget_tree, callback_tree,
                                       scheduler);
     }
 
