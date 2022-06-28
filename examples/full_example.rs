@@ -1,23 +1,22 @@
 use std::time::Duration;
 use crossterm::style::Color;
-use ez_term::{self, GenericState, EzObject, EzContext, EzPropertiesMap};
+use ez_term::*;
 
 
 fn main() {
 
-    // Step 1: Initialize root widget from config
-
+    // Step 1: Load the UI
     // We will get a root widget and a scheduler. We can use the root widget to access all our
     // subwidgets and make any changes we need before starting the app.
     // We can use the scheduler to schedule any (recurring) functions we need to before starting
     // the app.
-    let (root_widget, mut scheduler) = ez_term::load_ui();
+    let (root_widget, mut scheduler) = load_ui();
 
     // Step 2: Customize widgets where needed. Here are some examples:
 
     // We will set up the menu screen buttons with closures.
     scheduler.update_callback_config("start_button",
-        ez_term::CallbackConfig::from_on_press(Box::new(
+        CallbackConfig::from_on_press(Box::new(
             |context: EzContext| {
                 let root_state = context.state_tree.get_by_path_mut("/root")
                     .as_layout_mut();
@@ -27,7 +26,7 @@ fn main() {
             } )));
 
     scheduler.update_callback_config("quit_button",
-        ez_term::CallbackConfig::from_on_press(Box::new(
+        CallbackConfig::from_on_press(Box::new(
                 |context: EzContext| {
                     context.scheduler.exit();
                     true
@@ -37,12 +36,12 @@ fn main() {
 
     // Set a checkbox on value callback
     scheduler.update_callback_config("checkbox",
-        ez_term::CallbackConfig::from_on_value_change(
+        CallbackConfig::from_on_value_change(
             Box::new(test_checkbox_on_value_change)));
 
     // Set a slider on value callback
     scheduler.update_callback_config("slider",
-        ez_term::CallbackConfig::from_on_value_change(
+        CallbackConfig::from_on_value_change(
             Box::new(test_slider_on_value_change)));
 
     // Set a slider on value callback
@@ -59,38 +58,38 @@ fn main() {
     };
     progress_property.bind(Box::new(value_property_callback), &mut scheduler);
     scheduler.update_callback_config("progress_button",
-        ez_term::CallbackConfig::from_on_press(
+        CallbackConfig::from_on_press(
             Box::new(progress_bar_button)));
 
     // Set a radio button group on value callback
     scheduler.update_callback_config("radio1",
-        ez_term::CallbackConfig::from_on_value_change(
+        CallbackConfig::from_on_value_change(
             Box::new(test_radio_button_on_value_change)));
     scheduler.update_callback_config("radio2",
-        ez_term::CallbackConfig::from_on_value_change(
+        CallbackConfig::from_on_value_change(
             Box::new(test_radio_button_on_value_change)));
     scheduler.update_callback_config("radio3",
-        ez_term::CallbackConfig::from_on_value_change(
+        CallbackConfig::from_on_value_change(
             Box::new(test_radio_button_on_value_change)));
 
     // Set a dropdown on value change callback
     scheduler.update_callback_config("dropdown",
-        ez_term::CallbackConfig::from_on_value_change(
+        CallbackConfig::from_on_value_change(
             Box::new(test_dropdown_on_value_change)));
 
     // Set a button callback to create a popup
     scheduler.update_callback_config("popup_button",
-        ez_term::CallbackConfig::from_on_press(
+        CallbackConfig::from_on_press(
             Box::new(test_popup_button_on_press)));
 
     // Set a text input on keyboard enter
     scheduler.update_callback_config("input_3",
-        ez_term::CallbackConfig::from_on_keyboard_enter(
+        CallbackConfig::from_on_keyboard_enter(
             Box::new(test_text_input_on_keyboard_enter)));
 
     // Set a button on press
     scheduler.update_callback_config("button",
-        ez_term::CallbackConfig::from_on_press(
+        CallbackConfig::from_on_press(
             Box::new(test_on_button_press)));
 
     let mut neon = (0, 255, 0);
@@ -127,7 +126,7 @@ fn main() {
 
     // Step 3: Run app
     // Now everything must happen from bindings as root widget is passed over
-    ez_term::run(root_widget, scheduler);
+    run(root_widget, scheduler);
 }
 
 
@@ -189,7 +188,7 @@ fn test_radio_button_on_value_change(context: EzContext) -> bool {
     // get the ID of the widget, because we want to print it to a label.
     // We don't use the state of the widget in this callback to check whether it is active,
     // because a radio button only calls on_value_change if it became active.
-    let name = context.widget_tree
+    let name = context.state_tree
         .get_by_path(&context.widget_path).as_radio_button().get_id();
     // Now we will get the radio button state because we need to know its' color.
     let color = context.state_tree
@@ -253,7 +252,7 @@ fn test_on_button_press(context: EzContext) -> bool {
         label_state.get_text().value.split_once(':')
             .unwrap().1.trim().split_once("times")
             .unwrap().0.trim().parse().unwrap();
-    label_state.get_text_mut().set(format!("Clicked: {} times", number + 1));
+    label_state.set_text(format!("Clicked: {} times", number + 1));
     false
 }
 
@@ -264,8 +263,8 @@ fn test_popup_button_on_press(context: EzContext) -> bool {
     // We will open a popup in this callback. We open a popup by defining a template in the
     // Ez file, and then using the template name with the [common::open_popup] function to
     // spawn the template.
-    let popup_path = ez_term::open_popup("TestPopup".to_string(),
-                                        context.state_tree, context.scheduler);
+    let popup_path = context.scheduler.open_popup("TestPopup".to_string(),
+                                                  context.state_tree);
 
     // We want to bind a callback to the dismiss button that dismisses the popup. In order to allow
     // allow the button to finish its click animation we will create two closures. One closure
@@ -289,7 +288,7 @@ fn test_popup_button_on_press(context: EzContext) -> bool {
 
     context.scheduler.update_callback_config(
         format!("{}/dismiss_button", popup_path).as_str(),
-        ez_term::CallbackConfig::from_on_press(Box::new(dismiss_delay)));
+        CallbackConfig::from_on_press(Box::new(dismiss_delay)));
     false
 }
 
@@ -298,7 +297,8 @@ fn test_popup_button_on_press(context: EzContext) -> bool {
 fn progress_bar_button(context: EzContext) -> bool {
 
     // We disable the progress bar button first so it cannot be pressed twice.
-    let state = context.state_tree.get_by_path_mut(&context.widget_path).as_generic_mut();
+    let state = context.state_tree.get_by_path_mut(&context.widget_path)
+        .as_generic_mut();
     state.set_disabled(true);
     state.update(context.scheduler);
     context.scheduler.schedule_threaded(Box::new(progress_example_app),

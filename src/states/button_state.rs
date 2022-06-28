@@ -181,6 +181,8 @@ impl ButtonState {
     pub fn get_text(&self) -> &EzProperty<String> { &self.text }
 
     pub fn get_text_mut(&mut self) -> &mut EzProperty<String> { &mut self.text }
+    
+    pub fn set_text(&mut self, text: String) { self.get_text_mut().set(text) }
 
     pub fn set_flashing(&mut self, flashing: bool) {
         self.flashing = flashing;

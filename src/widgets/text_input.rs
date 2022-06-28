@@ -10,11 +10,10 @@ use crate::states::text_input_state::TextInputState;
 use crate::states::ez_state::{EzState, GenericState};
 use crate::widgets::ez_object::{EzObject};
 use crate::scheduler::scheduler::Scheduler;
-use crate::parser::load_properties::load_common_property;
+use crate::parser::load_common_properties::load_common_property;
 use crate::parser::load_base_properties::load_ez_string_property;
 use crate::property::ez_values::EzValues;
-use crate::run::definitions::{CallbackTree, Coordinates, Pixel, PixelMap, StateTree, WidgetTree};
-use crate::run::tree::ViewTree;
+use crate::run::definitions::{CallbackTree, Coordinates, Pixel, PixelMap, StateTree};
 use crate::widgets::helper_functions::{add_border, add_padding};
 
 #[derive(Clone, Debug)]
@@ -156,8 +155,7 @@ impl EzObject for TextInput {
         contents
     }
 
-    fn handle_event(&self, event: Event, view_tree: &mut ViewTree,
-                    state_tree: &mut StateTree, widget_tree: &WidgetTree,
+    fn handle_event(&self, event: Event, state_tree: &mut StateTree,
                     callback_tree: &mut CallbackTree, scheduler: &mut Scheduler) -> bool {
 
         let state = state_tree.get_by_path_mut(&self.get_full_path())
@@ -166,14 +164,12 @@ impl EzObject for TextInput {
         if let Event::Key(key) = event {
             if key.code == KeyCode::Backspace {
                 handle_backspace(state, scheduler);
-                self.check_changed_text(view_tree, state_tree, widget_tree, callback_tree,
-                                        scheduler,current_text.value);
+                self.check_changed_text(state_tree, callback_tree, scheduler,current_text.value);
                 return true
             }
             else if key.code == KeyCode::Delete {
                 handle_delete(state, scheduler);
-                self.check_changed_text(view_tree, state_tree, widget_tree, callback_tree,
-                                        scheduler,current_text.value);
+                self.check_changed_text(state_tree,  callback_tree, scheduler,current_text.value);
                 return true
             }
             else if key.code == KeyCode::Left {
@@ -186,23 +182,20 @@ impl EzObject for TextInput {
             }
             else if let KeyCode::Char(c) = key.code {
                 handle_char(state, c, scheduler);
-                self.check_changed_text(view_tree, state_tree, widget_tree, callback_tree,
-                                        scheduler,current_text.value);
+                self.check_changed_text(state_tree, callback_tree, scheduler,current_text.value);
                 return true
             }
         }
         false
     }
 
-    fn on_left_mouse_click(&self, _view_tree: &mut ViewTree, _state_tree: &mut StateTree,
-                           _widget_tree: &WidgetTree, _callback_tree: &mut CallbackTree,
+    fn on_left_mouse_click(&self, _state_tree: &mut StateTree, _callback_tree: &mut CallbackTree,
                            _scheduler: &mut Scheduler, _mouse_pos: Coordinates) -> bool {
         // Return true to consume left click event. On_select will handle the rest.
         true
     }
 
-    fn on_select(&self, view_tree: &mut ViewTree, state_tree: &mut StateTree,
-                 widget_tree: &WidgetTree, callback_tree: &mut CallbackTree,
+    fn on_select(&self, state_tree: &mut StateTree, callback_tree: &mut CallbackTree,
                  scheduler: &mut Scheduler, mouse_pos: Option<Coordinates>) -> bool {
 
         let state = state_tree.get_by_path_mut(
@@ -232,8 +225,7 @@ impl EzObject for TextInput {
         }
 
         // Call user callback if any
-        self.on_select_callback(view_tree, state_tree, widget_tree, callback_tree,
-                                scheduler, mouse_pos);
+        self.on_select_callback(state_tree, callback_tree, scheduler, mouse_pos);
         true
     }
 }
@@ -299,15 +291,12 @@ impl TextInput {
     }
 
     /// Check if text has changed to call on_value_change.
-    fn check_changed_text(&self, view_tree: &mut ViewTree,
-                          state_tree: &mut StateTree, widget_tree: &WidgetTree,
-                          callback_tree: &mut CallbackTree, scheduler: &mut Scheduler,
-                          old_text: String) {
+    fn check_changed_text(&self, state_tree: &mut StateTree, callback_tree: &mut CallbackTree,
+                          scheduler: &mut Scheduler, old_text: String) {
 
         let state = state_tree.get_by_path(&self.path).as_text_input();
         if state.text != old_text {
-            self.on_value_change_callback(view_tree, state_tree, widget_tree, callback_tree,
-                                          scheduler);
+            self.on_value_change_callback(state_tree,callback_tree, scheduler);
         }
     }
 }

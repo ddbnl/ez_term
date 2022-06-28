@@ -1,18 +1,26 @@
+//! # Scheduler funcs
+//! 
+//! This module contains supporting functions for the [Scheduler] struct.
 use std::thread::{JoinHandle, spawn};
-use std::time::{Instant};
-use crate::{EzContext};
-use crate::run::definitions::{CallbackTree, StateTree, WidgetTree};
-use crate::run::tree::ViewTree;
+use std::time::Instant;
+
+use crate::EzContext;
+use crate::run::definitions::{CallbackTree, StateTree};
+
 use super::scheduler::Scheduler;
 
 
-pub fn update_threads(scheduler: &mut Scheduler, view_tree: &mut ViewTree,
-                      state_tree: &mut StateTree, widget_tree: &WidgetTree) {
+/// Check if any new thread are ready to be spawned, or if any spawned threads are ready to be 
+/// joined.
+pub fn update_threads(scheduler: &mut Scheduler, state_tree: &mut StateTree) {
 
     start_new_threads(scheduler);
-    check_finished_threads(scheduler, view_tree, state_tree, widget_tree)
+    check_finished_threads(scheduler, state_tree)
 }
 
+
+/// Any threads that are scheduled to be started will be spawned. Threads can be scheduled by the
+/// user.
 pub fn start_new_threads(scheduler: &mut Scheduler) {
 
     while !scheduler.threads_to_start.is_empty() {
@@ -25,8 +33,9 @@ pub fn start_new_threads(scheduler: &mut Scheduler) {
     }
 }
 
-pub fn check_finished_threads(scheduler: &mut Scheduler, view_tree: &mut ViewTree,
-                              state_tree: &mut StateTree, widget_tree: &WidgetTree) {
+
+/// Check if any threads have finished running. Joined them if so and remove all references.
+pub fn check_finished_threads(scheduler: &mut Scheduler, state_tree: &mut StateTree) {
 
     let mut finished = Vec::new();
     for (i, (handle, _)) in scheduler.thread_handles.iter_mut().enumerate() {
@@ -37,22 +46,22 @@ pub fn check_finished_threads(scheduler: &mut Scheduler, view_tree: &mut ViewTre
     for i in finished {
         let (handle, on_finish) = scheduler.thread_handles.remove(i);
         if let Some(mut func) = on_finish {
-            let context = EzContext::new(String::new(), view_tree,
-                                         state_tree, widget_tree, scheduler);
+            let context = EzContext::new(String::new(), state_tree, scheduler);
             func(context);
         }
         handle.join().unwrap();
     }
 }
 
-pub fn run_tasks(scheduler: &mut Scheduler, view_tree: &mut ViewTree, state_tree: &mut StateTree,
-                 widget_tree: &WidgetTree) {
+
+/// Check if any scheduled tasks are ready to be run, or if any RunOnce tasks were scheduled by the
+/// user. 
+pub fn run_tasks(scheduler: &mut Scheduler, state_tree: &mut StateTree) {
 
     let mut remaining_tasks = Vec::new();
     while !scheduler.tasks.is_empty() {
         let mut task = scheduler.tasks.pop().unwrap();
-        let context = EzContext::new(task.widget.clone(), view_tree,
-                                     state_tree, widget_tree, scheduler);
+        let context = EzContext::new(task.widget.clone(), state_tree, scheduler);
 
         if let Some(time) = task.last_execution {
             let elapsed = time.elapsed();
@@ -76,6 +85,8 @@ pub fn run_tasks(scheduler: &mut Scheduler, view_tree: &mut ViewTree, state_tree
     scheduler.tasks = remaining_tasks;
 }
 
+
+/// Check if any callback configs were scheduled to be updated or replaced.
 pub fn update_callback_configs(scheduler: &mut Scheduler, callback_tree: &mut CallbackTree) {
 
     while !scheduler.new_callback_configs.is_empty() {
@@ -96,8 +107,7 @@ pub fn update_callback_configs(scheduler: &mut Scheduler, callback_tree: &mut Ca
 
 /// Check all EzProperty that have at least one subscriber and check if they've send a new
 /// value. If so, call the update func of all subsribers and any registered user callbacks.
-pub fn update_properties(scheduler: &mut Scheduler, view_tree: &mut ViewTree,
-                         state_tree: &mut StateTree, widget_tree: &WidgetTree,
+pub fn update_properties(scheduler: &mut Scheduler, state_tree: &mut StateTree,
                          callback_tree: &mut CallbackTree) {
 
     let mut to_update = Vec::new();
@@ -121,8 +131,7 @@ pub fn update_properties(scheduler: &mut Scheduler, view_tree: &mut ViewTree,
     for name in to_callback {
         if callback_tree.objects.contains_key(&name) {
             let context =
-                EzContext::new(name.clone(), view_tree, state_tree,
-                               widget_tree,scheduler);
+                EzContext::new(name.clone(), state_tree, scheduler);
             if let Some(ref mut callback) =
                     callback_tree.get_by_path_mut(&name).on_value_change {
                 callback(context);

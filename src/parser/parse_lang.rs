@@ -1,11 +1,15 @@
-//! # Ez Parser
-//! Module containing structs and functions for paring a .ez file into a root layout.
+//! # Parse Ez Language
+//! Module containing functions to parse .ez files and generate [EzWidgetDefinition] objects that
+//! can be used to initialize actual widgets.
 use std::collections::HashMap;
-use std::io::{Error};
+use std::io::Error;
+
 use unicode_segmentation::UnicodeSegmentation;
-use crate::widgets::layout::layout::Layout;
-use crate::scheduler::scheduler::Scheduler;
+
 use crate::parser::ez_definition::{EzWidgetDefinition, Templates};
+use crate::scheduler::scheduler::Scheduler;
+use crate::widgets::layout::layout::Layout;
+
 include!(concat!(env!("OUT_DIR"), "/ez_file_gen.rs"));
 
 

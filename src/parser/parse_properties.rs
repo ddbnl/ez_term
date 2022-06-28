@@ -1,8 +1,12 @@
-//! # Ez Parser
-//! Module containing structs and functions for paring a .ez file into a root layout.
-use std::io::{ErrorKind, Error};
-use crossterm::style::{Color};
+//! # Parse properties
+//!
+//! Module containing functions to parse base property values into their respective type. E.g.
+//! loading 'black' to a Crossterm Color::Black object.
+use std::io::{Error, ErrorKind};
 use std::str::FromStr;
+
+use crossterm::style::Color;
+
 use crate::states::definitions::{HorizontalAlignment, VerticalAlignment};
 
 

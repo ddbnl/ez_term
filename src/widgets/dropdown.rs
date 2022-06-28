@@ -10,11 +10,10 @@ use crate::states::definitions::{StateSize, AutoScale, SizeHint, Padding, PosHin
 use crate::states::dropdown_state::{DropdownState, DroppedDownMenuState};
 use crate::states::ez_state::{EzState, GenericState};
 use crate::widgets::ez_object::{self, EzObject};
-use crate::parser::load_properties::load_common_property;
+use crate::parser::load_common_properties::load_common_property;
 use crate::parser::load_base_properties::{load_ez_bool_property, load_ez_string_property};
 use crate::property::ez_values::EzValues;
-use crate::run::definitions::{CallbackTree, Coordinates, Pixel, PixelMap, StateTree, WidgetTree};
-use crate::run::tree::ViewTree;
+use crate::run::definitions::{CallbackTree, Coordinates, Pixel, PixelMap, StateTree};
 use crate::scheduler::scheduler::Scheduler;
 use crate::widgets::helper_functions::{add_border, add_padding};
 
@@ -150,8 +149,7 @@ impl EzObject for Dropdown {
 
 
     /// Called when the widgets is not dropped down and enter/left mouse click occurs on it.
-    fn on_press(&self, _view_tree: &mut ViewTree, state_tree: &mut StateTree,
-                _widget_tree: &WidgetTree, _callback_tree: &mut CallbackTree,
+    fn on_press(&self, state_tree: &mut StateTree, _callback_tree: &mut CallbackTree,
                 scheduler: &mut Scheduler) -> bool {
 
         let state = state_tree.get_by_path(&self.get_full_path())
@@ -302,9 +300,8 @@ impl EzObject for DroppedDownMenu {
         contents
     }
 
-    fn handle_event(&self, event: Event, view_tree: &mut ViewTree, state_tree: &mut StateTree,
-                    widget_tree: &WidgetTree, callback_tree: &mut CallbackTree,
-                    scheduler: &mut Scheduler) -> bool {
+    fn handle_event(&self, event: Event, state_tree: &mut StateTree,
+                    callback_tree: &mut CallbackTree, scheduler: &mut Scheduler) -> bool {
 
         let state = state_tree.get_by_path_mut(&self.get_full_path())
             .as_dropped_down_menu_mut();
@@ -313,7 +310,7 @@ impl EzObject for DroppedDownMenu {
                 match key.code {
                     KeyCode::Enter => {
                         self.handle_enter(
-                            view_tree, state_tree, widget_tree, callback_tree, scheduler);
+                            state_tree, callback_tree, scheduler);
                         return true
                     }
                     KeyCode::Down => {
@@ -332,7 +329,7 @@ impl EzObject for DroppedDownMenu {
                     event.column as usize,event.row as usize);
                 if let MouseEventKind::Down(button) = event.kind {
                     if button == MouseButton::Left {
-                        self.handle_left_click(view_tree, state_tree, widget_tree, callback_tree,
+                        self.handle_left_click(state_tree, callback_tree,
                                                scheduler,mouse_position);
                         return true
                     }
@@ -350,8 +347,7 @@ impl EzObject for DroppedDownMenu {
 impl DroppedDownMenu {
 
     /// Called when this widget is already dropped down and enter is pressed
-    pub fn handle_enter(&self, view_tree: &mut ViewTree, state_tree: &mut StateTree,
-                        widget_tree: &WidgetTree, callback_tree: &mut CallbackTree,
+    pub fn handle_enter(&self, state_tree: &mut StateTree, callback_tree: &mut CallbackTree,
                         scheduler: &mut Scheduler) {
 
         let selected = state_tree.get_by_path(&self.get_full_path())
@@ -367,9 +363,11 @@ impl DroppedDownMenu {
         let state = state_tree.get_by_path_mut("/root").as_layout_mut();
         state.dismiss_modal(scheduler);
         state.update(scheduler);
-        widget_tree.get_by_path(&parent).as_dropdown()
-            .on_value_change_callback(view_tree, state_tree, widget_tree, callback_tree,
-                                      scheduler);
+        if let Some(ref mut i) =
+        callback_tree.get_by_path_mut(&parent).on_value_change {
+            let context = EzContext::new(parent.clone(), state_tree, scheduler);
+            i(context);
+        }
     }
 
     /// Called when this widget is already dropped down and up is pressed
@@ -392,8 +390,7 @@ impl DroppedDownMenu {
     }
 
     /// Called when this widget is already dropped down and widget is left clicked
-    pub fn handle_left_click(&self, view_tree: &mut ViewTree, state_tree: &mut StateTree,
-                             widget_tree: &WidgetTree, callback_tree: &mut CallbackTree,
+    pub fn handle_left_click(&self, state_tree: &mut StateTree, callback_tree: &mut CallbackTree,
                              scheduler: &mut Scheduler, pos: Coordinates) {
 
         let state = state_tree.get_by_path(&self.get_full_path())
@@ -413,8 +410,7 @@ impl DroppedDownMenu {
                 state.update(scheduler);
                 if let Some(ref mut i) = callback_tree
                     .get_by_path_mut(&parent).on_value_change {
-                    let context = EzContext::new(
-                        parent, view_tree, state_tree, widget_tree, scheduler);
+                    let context = EzContext::new(parent, state_tree, scheduler);
                     i(context);
                 }
             }

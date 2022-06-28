@@ -6,7 +6,7 @@ use crate::widgets::ez_object::{EzObject};
 use crate::states::label_state::LabelState;
 use crate::states::ez_state::{EzState, GenericState};
 use crate::parser::load_base_properties::load_ez_string_property;
-use crate::parser::load_properties::load_common_property;
+use crate::parser::load_common_properties::load_common_property;
 use crate::property::ez_values::EzValues;
 use crate::run::definitions::{Pixel, PixelMap, StateTree};
 use crate::scheduler::scheduler::Scheduler;

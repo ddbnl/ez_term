@@ -4,10 +4,11 @@ use std::thread::{JoinHandle};
 use std::time::{Duration, Instant};
 use crossterm::style::Color;
 use crate::{CallbackConfig, EzContext};
-use crate::run::run::stop;
+use crate::run::run::{open_popup, stop};
 use crate::property::ez_properties::EzProperties;
 use crate::property::ez_values::EzValues;
 use crate::property::ez_property::EzProperty;
+use crate::run::definitions::StateTree;
 use crate::scheduler::definitions::{EzPropertyUpdater, EzThread, GenericEzTask};
 use crate::states::definitions::{HorizontalAlignment, VerticalAlignment};
 
@@ -40,16 +41,52 @@ pub struct Task {
 
 impl Scheduler {
 
-    pub fn schedule_once(&mut self, widget: String, func: GenericEzTask,
-                         after: Duration) {
+    /// Schedule a [GenericEzTask] to be executed once, after the passed duration. The duration can
+    /// be 0. A [GenericEzTask] is any FnMut that accepts an [EzContext] parameter. The [EzContext]
+    /// allows you to access the [StateTree] and [Scheduler] from within the function, so you can
+    /// make changes to the UI. Your closure should look like this:
+    /// ```
+    /// use ez_term::EzContext;
+    /// let my_closure = |context: EzContext| { };
+    /// ```
+    /// Or if you prefer an explicit function:
+    /// ```
+    /// fn my_func(context: EzContext) { };
+    /// ```
+    /// Closures are recommended for most use cases, as they allow capturing variables. You can
+    /// use a [GenericEzTask] in many ways:
+    /// # Changing a widget state
+    /// ```
+    /// let my_closure = |context: EzContext| {
+    ///     let state = context.state_tree.get_by_id_mut("my_label").as_label_mut();
+    ///     state.set_text("New text!".to_string());
+    ///     state.update(context.scheduler);
+    /// };
+    /// scheduler.schedule_once(state.get_id(), Box::new(my_closure), Duration::from_secs(0));
+    /// ```
+    /// # Starting a scheduled task after a delay
+    /// Note that we will now use the 'move' keyword to move our counting variable into our task.
+    /// ```
+    /// let increment: usize = 1;
+    /// let my_counter = move |context: EzContext| {
+    ///     let state = context.state_tree.get_by_id_mut("my_label").as_label_mut();
+    ///     state.set_text(format!("Counting {}", increment));
+    ///     state.update(context.scheduler);
+    /// };
+    /// let my_scheduler = |context: EzContext| {
+    ///     context.scheduler.schedule_interval("my_label".to_string(), Box::new(my_counter),
+    ///     Duration::from_secs(1))
+    /// };
+    /// scheduler.schedule_once(state.get_id(), Box::new(my_scheduler), Duration::from_secs(5));
+    /// ```
+    pub fn schedule_once(&mut self, widget: String, func: GenericEzTask, after: Duration) {
 
         let task = Task::new(widget, func, false, after,
                              Some(Instant::now()));
         self.tasks.push(task);
     }
 
-    pub fn schedule_interval(&mut self, widget: String,  func: GenericEzTask,
-                             interval: Duration)
+    pub fn schedule_interval(&mut self, widget: String,  func: GenericEzTask, interval: Duration)
         -> &mut Task {
         let task = Task::new(widget, func, true, interval, None);
         self.tasks.push(task);
@@ -63,6 +100,10 @@ impl Scheduler {
         self.threads_to_start.push((threaded_func, on_finish));
     }
 
+    pub fn open_popup(&mut self, template: String, state_tree: &mut StateTree) -> String {
+        open_popup(template, state_tree, self)
+    }
+
     /// Pass a callback config that will be set verbatim on the object on the next frame.
     pub fn set_callback_config(&mut self, widget_path: &str, callback_config: CallbackConfig) {
         self.new_callback_configs.push((widget_path.to_string(), callback_config));
@@ -74,9 +115,6 @@ impl Scheduler {
         self.updated_callback_configs.push((widget_path.to_string(), callback_config));
 
     }
-
-    /// Gracefully exit the app.
-    pub fn exit(&self) { stop(); }
 
     /// Register a new property and return it. After a property has been registered it's possible
     /// for widget properties to subscribed to it, meaning their values will be kept in sync. If
@@ -255,6 +293,8 @@ impl Scheduler {
         callbacks.push(callback);
     }
 
+    /// Gracefully exit the app.
+    pub fn exit(&self) { stop(); }
 }
 
 impl Task {

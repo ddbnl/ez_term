@@ -120,24 +120,27 @@ impl EzWidgetDefinition {
         initialized
     }
 
-    /// Initialize a widget object based on the type specified by the definition.
+    /// Initialize a widget object based on the type specified by the definition. The type can be
+    /// a template defined by the user.
     fn initialize(&mut self, mut config: Vec<String>, templates: &mut Templates,
                   scheduler: &mut Scheduler, parent_path: String, order: usize)
         -> Result<EzObjects, Error> {
 
+        // If this is the root layout, validate that
         if self.is_root {
-            for line_str in config.iter() {
-                if line_str.trim().to_lowercase().starts_with("id:") &&
-                    line_str.split_once(':').unwrap().1.trim() != "root" {
-                    return Err(
-                        Error::new(ErrorKind::InvalidData,
-                                   "Root widget cannot have an ID parameter; \
-                                   it is \"root\" by default"))
+            let id = peek_id_from_config(&config);
+            if !id.is_empty() {
+                if id != "root" {
+                    return Err(Error::new(ErrorKind::InvalidData,
+                                          "Root widget cannot have an ID parameter; \
+                                          it is \"root\" by default"))
                 }
+            }  else {
+                config.push("id: root".to_string());
             }
-            config.push("id: root".to_string());
         }
-        // return new root
+        // If this is a template, clone the template definition and parse that instead; we want to
+        // keep the original template definition intact as it might be used multiple times.
         if templates.contains_key(&self.type_name) {
             let mut template =
                 templates.get_mut(&self.type_name).unwrap().clone();
@@ -145,13 +148,10 @@ impl EzWidgetDefinition {
             let object = template.parse(templates, scheduler, parent_path,
                                                     order, Some(config));
             Ok(object)
+        // If this is a base widget definition initialize a widget of that type from the config of
+        // this widget definition.
         } else {
-            let mut id = String::new();
-            for line_str in config.iter() {
-                if line_str.trim().to_lowercase().starts_with("id:") {
-                    id = line_str.trim().split_once(':').unwrap().1.to_string();
-                }
-            }
+            let mut id = peek_id_from_config(&config);
             if id.is_empty() { id = order.to_string() };
             let path = format!("{}/{}", parent_path, id.trim());
             match self.type_name.as_str() {
@@ -193,6 +193,19 @@ impl EzWidgetDefinition {
 }
 impl Debug for EzWidgetDefinition {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result { write!(f, "{}", self.type_name) }
+}
+
+
+/// Check if a widget definition config contains an ID. If so, return an ID and path from it.
+fn peek_id_from_config(config: &[String]) -> String {
+
+    let mut id = String::new();
+    for line_str in config.iter() {
+        if line_str.trim().to_lowercase().starts_with("id:") {
+            id = line_str.trim().split_once(':').unwrap().1.trim().to_string();
+        }
+    }
+    id
 }
 
 

@@ -1,17 +1,18 @@
-//! # Ez Parser
-//! Module containing structs and functions for paring a .ez file into a root layout.
+//! # Load common properties
+//!
+//! Functions to load properties common to all widgets (such as size, color, position, etc.). These
+//! functions do two things:
+//! - Initialize the property with the user passed value or a default value
+//! - Pass an update closure, which is used if that property is bound to another property
 use std::io::{Error, ErrorKind};
-use crate::widgets::ez_object::{EzObject};
+
+use crate::parser::load_base_properties;
 use crate::property::ez_values::EzValues;
+use crate::run::definitions::StateTree;
 use crate::scheduler::scheduler::Scheduler;
 use crate::states::ez_state::GenericState;
-use crate::parser::load_base_properties;
-use crate::run::definitions::StateTree;
+use crate::widgets::ez_object::EzObject;
 
-
-/* Specific property loaders */
-/// Convenience function use by widgets to load a selection order property defined in a .ez file.
-/// Looks like "4".
 pub fn load_full_pos_hint_property(state: &mut dyn GenericState, property_value: &str,
                                    scheduler: &mut Scheduler, path: String) -> Result<(), Error> {
 
@@ -127,7 +128,7 @@ pub fn load_auto_scale_height_property(state: &mut dyn GenericState, property_va
         Box::new(move |state_tree: &mut StateTree, val: EzValues| {
             let state = state_tree.get_by_path_mut(&path.clone())
                 .as_generic_mut();
-            state.set_auto_scale_height(val.as_bool().clone());
+            state.set_auto_scale_height(*val.as_bool());
             path.clone()
         }))?);
     Ok(())
@@ -142,7 +143,7 @@ pub fn load_border_enable_property(state: &mut dyn GenericState, property_value:
         Box::new(move |state_tree: &mut StateTree, val: EzValues| {
             let state = state_tree.get_by_path_mut(&path.clone())
                 .as_generic_mut();
-            state.get_border_config_mut().enabled.set(val.as_bool().clone());
+            state.get_border_config_mut().enabled.set(*val.as_bool());
             path.clone()
         }))?);
     Ok(())
@@ -157,7 +158,7 @@ pub fn load_x_property(state: &mut dyn GenericState, property_value: &str,
         Box::new(move |state_tree: &mut StateTree, val: EzValues| {
             let state = state_tree.get_by_path_mut(&path.clone())
                 .as_generic_mut();
-            state.set_x(val.as_usize().clone());
+            state.set_x(*val.as_usize());
             path.clone()
         }))?);
     Ok(())
@@ -172,7 +173,7 @@ pub fn load_y_property(state: &mut dyn GenericState, property_value: &str,
         Box::new(move |state_tree: &mut StateTree, val: EzValues| {
             let state = state_tree.get_by_path_mut(&path.clone())
                 .as_generic_mut();
-            state.set_y(val.as_usize().clone());
+            state.set_y(*val.as_usize());
             path.clone()
         }))?);
     Ok(())
@@ -187,7 +188,7 @@ pub fn load_width_property(state: &mut dyn GenericState, property_value: &str,
         Box::new(move |state_tree: &mut StateTree, val: EzValues| {
             let state = state_tree.get_by_path_mut(&path.clone())
                 .as_generic_mut();
-            state.set_width(val.as_usize().clone());
+            state.set_width(*val.as_usize());
             path.clone()
         }))?);
     Ok(())
@@ -202,7 +203,7 @@ pub fn load_height_property(state: &mut dyn GenericState, property_value: &str,
         Box::new(move |state_tree: &mut StateTree, val: EzValues| {
             let state = state_tree.get_by_path_mut(&path.clone())
                 .as_generic_mut();
-            state.set_height(val.as_usize().clone());
+            state.set_height(*val.as_usize());
             path.clone()
         }))?);
     Ok(())
@@ -217,7 +218,7 @@ pub fn load_padding_top_property(state: &mut dyn GenericState, property_value: &
         Box::new(move |state_tree: &mut StateTree, val: EzValues| {
             let state = state_tree.get_by_path_mut(&path.clone())
                 .as_generic_mut();
-            state.set_padding_top(val.as_usize().clone());
+            state.set_padding_top(*val.as_usize());
             path.clone()
         }))?);
     Ok(())
@@ -232,7 +233,7 @@ pub fn load_padding_bottom_property(state: &mut dyn GenericState, property_value
         Box::new(move |state_tree: &mut StateTree, val: EzValues| {
             let state = state_tree.get_by_path_mut(&path.clone())
                 .as_generic_mut();
-            state.set_padding_bottom(val.as_usize().clone());
+            state.set_padding_bottom(*val.as_usize());
             path.clone()
         }))?);
     Ok(())
@@ -247,7 +248,7 @@ pub fn load_padding_left_property(state: &mut dyn GenericState, property_value: 
         Box::new(move |state_tree: &mut StateTree, val: EzValues| {
             let state = state_tree.get_by_path_mut(&path.clone())
                 .as_generic_mut();
-            state.set_padding_left(val.as_usize().clone());
+            state.set_padding_left(*val.as_usize());
             path.clone()
         }))?);
     Ok(())
@@ -262,7 +263,7 @@ pub fn load_padding_right_property(state: &mut dyn GenericState, property_value:
         Box::new(move |state_tree: &mut StateTree, val: EzValues| {
             let state = state_tree.get_by_path_mut(&path.clone())
                 .as_generic_mut();
-            state.set_padding_right(val.as_usize().clone());
+            state.set_padding_right(*val.as_usize());
             path.clone()
         }))?);
     Ok(())
@@ -657,7 +658,7 @@ pub fn load_common_property(property_name: &str, property_value: String,
                               obj: &mut dyn EzObject, scheduler: &mut Scheduler)
     -> Result<bool, Error> {
 
-    let path = obj.get_full_path().clone();
+    let path = obj.get_full_path();
     let state = obj.get_state_mut();
     match property_name {
         "id" => obj.set_id(property_value.trim().to_string()),
@@ -718,11 +719,9 @@ pub fn load_common_property(property_name: &str, property_value: String,
                                        scheduler,path)?;
         },
         "disabled" =>
-            load_disabled_property(state, property_value.trim(), scheduler,
-                                   path.clone())?,
+            load_disabled_property(state, property_value.trim(), scheduler, path)?,
         "selection_order" =>
-            load_selection_order_property(state, property_value.trim(), scheduler,
-                                          path.clone())?,
+            load_selection_order_property(state, property_value.trim(), scheduler, path)?,
         "padding_x" => {
             let (left, right) = match property_value.split_once(',') {
                 Some((i, j)) => (i, j),
@@ -747,21 +746,15 @@ pub fn load_common_property(property_name: &str, property_value: String,
             load_padding_right_property(state, bottom.trim(), scheduler,path)?;
         },
         "padding_top" =>
-            load_padding_top_property(state, property_value.trim(), scheduler,
-                                      path.clone())?,
+            load_padding_top_property(state, property_value.trim(), scheduler, path)?,
         "padding_bottom" =>
-            load_padding_bottom_property(state, property_value.trim(), scheduler,
-                                         path.clone())?,
+            load_padding_bottom_property(state, property_value.trim(), scheduler, path)?,
         "padding_left" =>
-            load_padding_left_property(state, property_value.trim(), scheduler,
-                                       path.clone())?,
+            load_padding_left_property(state, property_value.trim(), scheduler, path)?,
         "padding_right" =>
-            load_padding_right_property(state, property_value.trim(), scheduler,
-                                        path.clone())?,
-        "halign" => load_halign_property(state, property_value.trim(), scheduler,
-                                         path)?,
-        "valign" => load_valign_property(state, property_value.trim(), scheduler,
-                                         path)?,
+            load_padding_right_property(state, property_value.trim(), scheduler, path)?,
+        "halign" => load_halign_property(state, property_value.trim(), scheduler, path)?,
+        "valign" => load_valign_property(state, property_value.trim(), scheduler, path)?,
         "fg_color" => load_foreground_color_property(
             state, property_value.trim(), scheduler, path)?,
         "bg_color" => load_background_color_property(

@@ -2,12 +2,10 @@
 use std::cmp::min;
 use std::io::{Error, ErrorKind};
 use crossterm::event::{Event, KeyCode};
-use crate::EzContext;
 use crate::states::ez_state::{EzState, GenericState};
 use crate::widgets::ez_object::{EzObject};
-use crate::parser::load_properties::load_common_property;
-use crate::run::definitions::{CallbackTree, Coordinates, Pixel, PixelMap, StateTree, WidgetTree};
-use crate::run::tree::ViewTree;
+use crate::parser::load_common_properties::load_common_property;
+use crate::run::definitions::{CallbackTree, Coordinates, Pixel, PixelMap, StateTree};
 use crate::scheduler::scheduler::Scheduler;
 use crate::states::slider_state::SliderState;
 use crate::widgets::helper_functions::add_padding;
@@ -130,24 +128,22 @@ impl EzObject for Slider {
         contents
     }
 
-    fn handle_event(&self, event: Event, view_tree: &mut ViewTree, state_tree: &mut StateTree,
-                    widget_tree: &WidgetTree, callback_tree: &mut CallbackTree,
-                    scheduler: &mut Scheduler) -> bool {
+    fn handle_event(&self, event: Event, state_tree: &mut StateTree,
+                    callback_tree: &mut CallbackTree, scheduler: &mut Scheduler) -> bool {
 
         if let Event::Key(key) = event {
             if key.code == KeyCode::Left {
-                self.handle_left(view_tree, state_tree, widget_tree, callback_tree, scheduler);
+                self.handle_left(state_tree, callback_tree, scheduler);
                 return true
             } else if key.code == KeyCode::Right {
-                self.handle_right(view_tree, state_tree, widget_tree, callback_tree, scheduler);
+                self.handle_right(state_tree, callback_tree, scheduler);
                 return true
             }
         }
         false
     }
 
-    fn on_left_mouse_click(&self, view_tree: &mut ViewTree, state_tree: &mut StateTree,
-                           widget_tree: &WidgetTree, callback_tree: &mut CallbackTree,
+    fn on_left_mouse_click(&self, state_tree: &mut StateTree, callback_tree: &mut CallbackTree,
                            scheduler: &mut Scheduler, mouse_pos: Coordinates) -> bool {
 
         let state = state_tree.get_by_path_mut(&self.path).as_slider_mut();
@@ -158,8 +154,7 @@ impl EzObject for Slider {
         value = min(value, state.maximum.value);
         state.set_value(value);
         state.update(scheduler);
-        self.on_value_change_callback(view_tree, state_tree, widget_tree, callback_tree,
-                                      scheduler);
+        self.on_value_change_callback(state_tree, callback_tree, scheduler);
         true
     }
 }
@@ -174,28 +169,22 @@ impl Slider {
         obj
     }
 
-    fn handle_left(&self, view_tree: &mut ViewTree, state_tree: &mut StateTree,
-                   widget_tree: &WidgetTree, callback_tree: &mut CallbackTree,
+    fn handle_left(&self, state_tree: &mut StateTree, callback_tree: &mut CallbackTree,
                    scheduler: &mut Scheduler) {
+
         let state = state_tree.get_by_path_mut(&self.path).as_slider_mut();
         if state.value == state.minimum { return }
         state.set_value(state.get_value().value - state.get_step().value);
         state.update(scheduler);
-        if let Some(ref mut i ) = callback_tree
-            .get_by_path_mut(&self.get_full_path()).on_value_change {
-            i(EzContext::new(self.get_full_path(),
-                             view_tree, state_tree, widget_tree, scheduler));
-        }
+        self.on_value_change_callback(state_tree, callback_tree, scheduler);
     }
-    fn handle_right(&self, view_tree: &mut ViewTree, state_tree: &mut StateTree,
-                   widget_tree: &WidgetTree, callback_tree: &mut CallbackTree,
-                   scheduler: &mut Scheduler) {
+    fn handle_right(&self, state_tree: &mut StateTree, callback_tree: &mut CallbackTree,
+                    scheduler: &mut Scheduler) {
 
         let state = state_tree.get_by_path_mut(&self.path).as_slider_mut();
         if state.value == state.maximum { return }
         state.set_value(state.get_value().value + state.get_step().value);
         state.update(scheduler);
-        self.on_value_change_callback(view_tree, state_tree, widget_tree, callback_tree,
-                                      scheduler);
+        self.on_value_change_callback(state_tree, callback_tree, scheduler);
     }
 }

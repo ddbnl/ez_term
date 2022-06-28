@@ -2,7 +2,7 @@
 use std::io::{Error, ErrorKind};
 use crate::states::ez_state::{EzState, GenericState};
 use crate::widgets::ez_object::{EzObject};
-use crate::parser::load_properties::load_common_property;
+use crate::parser::load_common_properties::load_common_property;
 use crate::parser::load_base_properties::{load_ez_usize_property};
 use crate::property::ez_values::EzValues;
 use crate::run::definitions::{Pixel, PixelMap, StateTree};

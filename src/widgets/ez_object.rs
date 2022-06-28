@@ -4,7 +4,7 @@
 use std::io::{Error};
 use crossterm::event::Event;
 use crate::EzContext;
-use crate::run::definitions::{CallbackTree, Coordinates, PixelMap, StateTree, WidgetTree};
+use crate::run::definitions::{CallbackTree, Coordinates, PixelMap, StateTree};
 use crate::run::tree::ViewTree;
 use crate::scheduler::scheduler::Scheduler;
 use crate::states::ez_state::{EzState, GenericState};
@@ -285,9 +285,8 @@ pub trait EzObject {
     /// Optionally consume an event that was passed to this widget. Return true if the event should
     /// be considered consumed. Simply consults the keymap by default, but can be overloaded for
     /// more complex circumstances.
-    fn handle_event(&self, event: Event, view_tree: &mut ViewTree, state_tree: &mut StateTree,
-                    widget_tree: &WidgetTree, callback_tree: &mut CallbackTree,
-                    scheduler: &mut Scheduler) -> bool {
+    fn handle_event(&self, event: Event, state_tree: &mut StateTree,
+                    callback_tree: &mut CallbackTree, scheduler: &mut Scheduler) -> bool {
 
         if let Event::Key(key) = event {
             if callback_tree.get_by_path(&self.get_full_path())
@@ -295,8 +294,8 @@ pub trait EzObject {
                 let func =
                     callback_tree.get_by_path_mut(&self.get_full_path())
                     .keymap.get_mut(&key.code).unwrap();
-                let context = EzContext::new(self.get_full_path(),
-                view_tree, state_tree, widget_tree, scheduler);
+                let context = EzContext::new(
+                    self.get_full_path(), state_tree, scheduler);
                 func(context, key.code);
                 return true
             }
@@ -307,28 +306,25 @@ pub trait EzObject {
     /// Called on an object when it is selected and the user presses enter on the keyboard. This
     /// default implementation only calls the appropriate callback. Objects can overwrite this
     /// function but must remember to also call the callback.
-    fn on_keyboard_enter(&self, view_tree: &mut ViewTree, state_tree: &mut StateTree,
-                         widget_tree: &WidgetTree, callback_tree: &mut CallbackTree,
+    fn on_keyboard_enter(&self, state_tree: &mut StateTree, callback_tree: &mut CallbackTree,
                          scheduler: &mut Scheduler) -> bool {
 
-        let consumed = self.on_keyboard_enter_callback(view_tree, state_tree, widget_tree,
-                                                             callback_tree, scheduler);
+        let consumed = self.on_keyboard_enter_callback(state_tree, callback_tree, scheduler);
         if !consumed {
-            return self.on_press(view_tree, state_tree, widget_tree, callback_tree, scheduler)
+            return self.on_press(state_tree, callback_tree, scheduler)
         }
         false
     }
 
     /// Call the bound callback if there is any. This method can always be called safely. Used to
     /// prevent a lot of duplicate ```if let Some(i)``` code.
-    fn on_keyboard_enter_callback(&self, view_tree: &mut ViewTree, state_tree: &mut StateTree,
-                                  widget_tree: &WidgetTree, callback_tree: &mut CallbackTree,
-                                  scheduler: &mut Scheduler) -> bool {
+    fn on_keyboard_enter_callback(&self, state_tree: &mut StateTree,
+                                  callback_tree: &mut CallbackTree, scheduler: &mut Scheduler)
+        -> bool {
 
         if let Some(ref mut i) = callback_tree
             .get_by_path_mut(&self.get_full_path()).on_keyboard_enter {
-            return i(EzContext::new(
-                self.get_full_path(), view_tree, state_tree, widget_tree, scheduler));
+            return i(EzContext::new(self.get_full_path(), state_tree, scheduler));
         };
         false
     }
@@ -336,29 +332,25 @@ pub trait EzObject {
     /// Called on an object when it is left clicked. This default implementation only calls the
     /// appropriate callback. Objects can overwrite this function but must remember to also
     /// call the callback.
-    fn on_left_mouse_click(&self, view_tree: &mut ViewTree, state_tree: &mut StateTree,
-                           widget_tree: &WidgetTree, callback_tree: &mut CallbackTree,
-                           scheduler: &mut Scheduler, mouse_pos: Coordinates)
-        -> bool {
+    fn on_left_mouse_click(&self, state_tree: &mut StateTree, callback_tree: &mut CallbackTree,
+                           scheduler: &mut Scheduler, mouse_pos: Coordinates) -> bool {
 
-        let consumed = self.on_left_mouse_click_callback(view_tree, state_tree, widget_tree,
-                                                     callback_tree, scheduler, mouse_pos);
+        let consumed = self.on_left_mouse_click_callback(state_tree, callback_tree, scheduler, mouse_pos);
         if !consumed {
-            return self.on_press(view_tree, state_tree, widget_tree, callback_tree, scheduler)
+            return self.on_press(state_tree, callback_tree, scheduler)
         }
         false
     }
 
     /// Call the bound callback if there is any. This method can always be called safely. Used to
     /// prevent a lot of duplicate ```if let Some(i)``` code.
-    fn on_left_mouse_click_callback(&self, view_tree: &mut ViewTree, state_tree: &mut StateTree,
-                                  widget_tree: &WidgetTree, callback_tree: &mut CallbackTree,
-                                  scheduler: &mut Scheduler, mouse_pos: Coordinates) -> bool {
+    fn on_left_mouse_click_callback(&self, state_tree: &mut StateTree,
+                                    callback_tree: &mut CallbackTree, scheduler: &mut Scheduler,
+                                    mouse_pos: Coordinates) -> bool {
 
         if let Some(ref mut i) = callback_tree
             .get_by_path_mut(&self.get_full_path()).on_left_mouse_click {
-            return i(EzContext::new(
-                self.get_full_path(), view_tree, state_tree, widget_tree, scheduler),
+            return i(EzContext::new(self.get_full_path(), state_tree, scheduler),
                 mouse_pos);
         };
         false
@@ -367,23 +359,20 @@ pub trait EzObject {
     /// Called on an object when it is selected and the user presses enter on the keyboard or
     /// when an object is left clicked. Default implementation only calls the appropriate callback.
     /// Objects can overwrite this function but must remember to also call the callback.
-    fn on_press(&self, view_tree: &mut ViewTree, state_tree: &mut StateTree,
-                widget_tree: &WidgetTree, callback_tree: &mut CallbackTree,
+    fn on_press(&self, state_tree: &mut StateTree, callback_tree: &mut CallbackTree,
                 scheduler: &mut Scheduler) -> bool {
 
-        self.on_press_callback(view_tree, state_tree, widget_tree, callback_tree, scheduler)
+        self.on_press_callback(state_tree, callback_tree, scheduler)
     }
 
     /// Call the bound callback if there is any. This method can always be called safely. Used to
     /// prevent a lot of duplicate ```if let Some(i)``` code.
-    fn on_press_callback(&self, view_tree: &mut ViewTree, state_tree: &mut StateTree,
-                                  widget_tree: &WidgetTree, callback_tree: &mut CallbackTree,
-                                  scheduler: &mut Scheduler) -> bool {
+    fn on_press_callback(&self, state_tree: &mut StateTree, callback_tree: &mut CallbackTree,
+                         scheduler: &mut Scheduler) -> bool {
 
         if let Some(ref mut i) = callback_tree
             .get_by_path_mut(&self.get_full_path()).on_press {
-            return i(EzContext::new(
-                self.get_full_path(), view_tree, state_tree, widget_tree, scheduler));
+            return i(EzContext::new(self.get_full_path(), state_tree, scheduler));
         };
         false
     }
@@ -391,25 +380,21 @@ pub trait EzObject {
     /// Called on an object when it is right clicked. This  default implementation only calls the
     /// appropriate callback. Objects can overwrite this function but must remember to also call
     /// the callback.
-    fn on_right_mouse_click(&self, view_tree: &mut ViewTree, state_tree: &mut StateTree,
-                            widget_tree: &WidgetTree, callback_tree: &mut CallbackTree,
-                            scheduler: &mut Scheduler, mouse_pos: Coordinates)
-        -> bool {
+    fn on_right_mouse_click(&self, state_tree: &mut StateTree, callback_tree: &mut CallbackTree,
+                            scheduler: &mut Scheduler, mouse_pos: Coordinates) -> bool {
 
-        self.on_right_mouse_click_callback(view_tree, state_tree, widget_tree, callback_tree,
-                                           scheduler, mouse_pos)
+        self.on_right_mouse_click_callback(state_tree, callback_tree, scheduler, mouse_pos)
     }
 
     /// Call the bound callback if there is any. This method can always be called safely. Used to
     /// prevent a lot of duplicate ```if let Some(i)``` code.
-    fn on_right_mouse_click_callback(&self, view_tree: &mut ViewTree, state_tree: &mut StateTree,
-                                    widget_tree: &WidgetTree, callback_tree: &mut CallbackTree,
-                                    scheduler: &mut Scheduler, mouse_pos: Coordinates) -> bool {
+    fn on_right_mouse_click_callback(&self, state_tree: &mut StateTree,
+                                     callback_tree: &mut CallbackTree, scheduler: &mut Scheduler,
+                                     mouse_pos: Coordinates) -> bool {
 
         if let Some(ref mut i) = callback_tree
             .get_by_path_mut(&self.get_full_path()).on_right_mouse_click {
-            return i(EzContext::new(
-                self.get_full_path(), view_tree, state_tree, widget_tree, scheduler),
+            return i(EzContext::new(self.get_full_path(), state_tree, scheduler),
                      mouse_pos);
         };
         false
@@ -417,24 +402,20 @@ pub trait EzObject {
     /// Called on an object when it is mouse scrolled up. This default implementation only calls the
     /// appropriate callback. Objects can overwrite this function but must remember to also call
     /// the callback.
-    fn on_scroll_up(&self, view_tree: &mut ViewTree, state_tree: &mut StateTree,
-                            widget_tree: &WidgetTree, callback_tree: &mut CallbackTree,
-                            scheduler: &mut Scheduler)
-                            -> bool {
+    fn on_scroll_up(&self, state_tree: &mut StateTree, callback_tree: &mut CallbackTree,
+                    scheduler: &mut Scheduler) -> bool {
 
-        self.on_scroll_up_callback(view_tree, state_tree, widget_tree, callback_tree, scheduler)
+        self.on_scroll_up_callback(state_tree, callback_tree, scheduler)
     }
 
     /// Call the bound callback if there is any. This method can always be called safely. Used to
     /// prevent a lot of duplicate ```if let Some(i)``` code.
-    fn on_scroll_up_callback(&self, view_tree: &mut ViewTree, state_tree: &mut StateTree,
-                         widget_tree: &WidgetTree, callback_tree: &mut CallbackTree,
-                         scheduler: &mut Scheduler) -> bool {
+    fn on_scroll_up_callback(&self, state_tree: &mut StateTree, callback_tree: &mut CallbackTree,
+                             scheduler: &mut Scheduler) -> bool {
 
         if let Some(ref mut i) = callback_tree
             .get_by_path_mut(&self.get_full_path()).on_scroll_up {
-            return i(EzContext::new(
-                self.get_full_path(), view_tree, state_tree, widget_tree, scheduler));
+            return i(EzContext::new(self.get_full_path(), state_tree, scheduler));
         };
         false
     }
@@ -442,24 +423,20 @@ pub trait EzObject {
     /// Called on an object when it is mouse scrolled down. This default implementation only calls
     /// the appropriate callback. Objects can overwrite this function but must remember to also call
     /// the callback.
-    fn on_scroll_down(&self, view_tree: &mut ViewTree, state_tree: &mut StateTree,
-                    widget_tree: &WidgetTree, callback_tree: &mut CallbackTree,
-                    scheduler: &mut Scheduler)
-                    -> bool {
+    fn on_scroll_down(&self, state_tree: &mut StateTree, callback_tree: &mut CallbackTree,
+                      scheduler: &mut Scheduler) -> bool {
 
-        self.on_scroll_down_callback(view_tree, state_tree, widget_tree, callback_tree, scheduler)
+        self.on_scroll_down_callback(state_tree, callback_tree, scheduler)
     }
 
     /// Call the bound callback if there is any. This method can always be called safely. Used to
     /// prevent a lot of duplicate ```if let Some(i)``` code.
-    fn on_scroll_down_callback(&self, view_tree: &mut ViewTree, state_tree: &mut StateTree,
-                             widget_tree: &WidgetTree, callback_tree: &mut CallbackTree,
-                             scheduler: &mut Scheduler) -> bool {
+    fn on_scroll_down_callback(&self, state_tree: &mut StateTree, callback_tree: &mut CallbackTree,
+                               scheduler: &mut Scheduler) -> bool {
 
         if let Some(ref mut i) = callback_tree
             .get_by_path_mut(&self.get_full_path()).on_scroll_down {
-            return i(EzContext::new(
-                self.get_full_path(), view_tree, state_tree, widget_tree, scheduler));
+            return i(EzContext::new(self.get_full_path(), state_tree, scheduler));
         };
         false
     }
@@ -467,23 +444,20 @@ pub trait EzObject {
     /// Called on an object when its' value changes. This default implementation only calls the
     /// appropriate callback. Objects can overwrite this function but must remember to also call
     /// the callback.
-    fn on_value_change(&self, view_tree: &mut ViewTree, state_tree: &mut StateTree,
-                       widget_tree: &WidgetTree, callback_tree: &mut CallbackTree,
+    fn on_value_change(&self, state_tree: &mut StateTree, callback_tree: &mut CallbackTree,
                        scheduler: &mut Scheduler) -> bool {
 
-        self.on_value_change_callback(view_tree, state_tree, widget_tree, callback_tree, scheduler)
+        self.on_value_change_callback(state_tree, callback_tree, scheduler)
     }
 
     /// Call the bound callback if there is any. This method can always be called safely. Used to
     /// prevent a lot of duplicate ```if let Some(i)``` code.
-    fn on_value_change_callback(&self, view_tree: &mut ViewTree, state_tree: &mut StateTree,
-                             widget_tree: &WidgetTree, callback_tree: &mut CallbackTree,
-                             scheduler: &mut Scheduler) -> bool {
+    fn on_value_change_callback(&self, state_tree: &mut StateTree, callback_tree: &mut CallbackTree,
+                                scheduler: &mut Scheduler) -> bool {
 
         if let Some(ref mut i) = callback_tree
             .get_by_path_mut(&self.get_full_path()).on_value_change {
-            return i(EzContext::new(
-                self.get_full_path(), view_tree, state_tree, widget_tree, scheduler));
+            return i(EzContext::new(self.get_full_path(), state_tree, scheduler));
         };
         false
     }
@@ -491,25 +465,20 @@ pub trait EzObject {
     /// Called on an object when it is selected. This default implementation only calls the
     /// appropriate callback. Objects can overwrite this function but must remember to also call
     /// the callback.
-    fn on_select(&self, view_tree: &mut ViewTree, state_tree: &mut StateTree,
-                 widget_tree: &WidgetTree, callback_tree: &mut CallbackTree,
-                 scheduler: &mut Scheduler, mouse_pos: Option<Coordinates>)
-        -> bool {
+    fn on_select(&self, state_tree: &mut StateTree, callback_tree: &mut CallbackTree,
+                 scheduler: &mut Scheduler, mouse_pos: Option<Coordinates>) -> bool {
 
-        self.on_select_callback(view_tree, state_tree, widget_tree, callback_tree, scheduler,
-                                mouse_pos)
+        self.on_select_callback(state_tree, callback_tree, scheduler, mouse_pos)
     }
 
     /// Call the bound callback if there is any. This method can always be called safely. Used to
     /// prevent a lot of duplicate ```if let Some(i)``` code.
-    fn on_select_callback(&self, view_tree: &mut ViewTree, state_tree: &mut StateTree,
-                             widget_tree: &WidgetTree, callback_tree: &mut CallbackTree,
-                             scheduler: &mut Scheduler, mouse_pos: Option<Coordinates>) -> bool {
+    fn on_select_callback(&self, state_tree: &mut StateTree, callback_tree: &mut CallbackTree,
+                          scheduler: &mut Scheduler, mouse_pos: Option<Coordinates>) -> bool {
 
         if let Some(ref mut i) = callback_tree
             .get_by_path_mut(&self.get_full_path()).on_select {
-            return i(EzContext::new(
-                self.get_full_path(), view_tree, state_tree, widget_tree, scheduler),
+            return i(EzContext::new(self.get_full_path(), state_tree, scheduler),
                 mouse_pos);
         };
         false
@@ -518,23 +487,20 @@ pub trait EzObject {
     /// Called on an object when it is deselected. This default implementation only calls the
     /// appropriate callback. Objects can overwrite this function but must remember to also call
     /// the callback.
-    fn on_deselect(&self, view_tree: &mut ViewTree, state_tree: &mut StateTree,
-                   widget_tree: &WidgetTree, callback_tree: &mut CallbackTree,
+    fn on_deselect(&self, state_tree: &mut StateTree, callback_tree: &mut CallbackTree,
                    scheduler: &mut Scheduler) -> bool {
 
-        self.on_deselect_callback(view_tree, state_tree, widget_tree, callback_tree, scheduler)
+        self.on_deselect_callback(state_tree, callback_tree, scheduler)
     }
 
     /// Call the bound callback if there is any. This method can always be called safely. Used to
     /// prevent a lot of duplicate ```if let Some(i)``` code.
-    fn on_deselect_callback(&self, view_tree: &mut ViewTree, state_tree: &mut StateTree,
-                          widget_tree: &WidgetTree, callback_tree: &mut CallbackTree,
-                          scheduler: &mut Scheduler) -> bool {
+    fn on_deselect_callback(&self, state_tree: &mut StateTree, callback_tree: &mut CallbackTree,
+                            scheduler: &mut Scheduler) -> bool {
 
         if let Some(ref mut i) = callback_tree
             .get_by_path_mut(&self.get_full_path()).on_deselect {
-            return i(EzContext::new(
-                self.get_full_path(), view_tree, state_tree, widget_tree, scheduler));
+            return i(EzContext::new(self.get_full_path(), state_tree, scheduler));
         };
         false
     }

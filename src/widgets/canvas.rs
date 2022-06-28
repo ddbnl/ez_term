@@ -8,7 +8,7 @@ use crate::widgets::ez_object::{EzObject};
 use crate::states::canvas_state::CanvasState;
 use crate::states::ez_state::{EzState, GenericState};
 use unicode_segmentation::UnicodeSegmentation;
-use crate::parser::load_properties::load_common_property;
+use crate::parser::load_common_properties::load_common_property;
 use crate::run::definitions::{Pixel, PixelMap, StateTree};
 use crate::scheduler::scheduler::Scheduler;
 use crate::widgets::helper_functions::{add_border, add_padding};

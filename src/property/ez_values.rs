@@ -1,7 +1,20 @@
+//! Ez Values
+//! 
+//! This module implements the [EzValues] enum.
 use crossterm::style::Color;
+
 use crate::states::definitions::{HorizontalAlignment, VerticalAlignment};
 
 
+/// An enum containing a variant for each value type an [EzProperty] may have.
+/// 
+/// This is used to make it possible to write generic callbacks. When a callback receives an
+/// EzValues it can be downcast to a specific value type, because it's always known what type a 
+/// value is (e.g. a callback received from a "Height" property will always be usize). Use the
+/// "as_*" methods to downcast to a specific type. E.g. 
+/// ```
+/// let number: usize = *ez_values.as_usize();
+/// ```
 #[derive(Clone, Debug)]
 pub enum EzValues {
     Usize(usize),

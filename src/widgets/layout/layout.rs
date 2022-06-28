@@ -4,15 +4,14 @@ use std::collections::HashMap;
 use std::io::{Error, ErrorKind};
 use crossterm::event::{Event, KeyCode};
 use crate::parser::load_base_properties::{load_ez_bool_property, load_ez_string_property};
-use crate::parser::load_properties::load_common_property;
+use crate::parser::load_common_properties::load_common_property;
 use crate::widgets::ez_object::{EzObject, EzObjects};
 use crate::states::layout_state::LayoutState;
 use crate::states::ez_state::{EzState, GenericState};
 use crate::scheduler::scheduler::Scheduler;
 use crate::states::definitions::{LayoutMode, LayoutOrientation};
 use crate::property::ez_values::EzValues;
-use crate::run::definitions::{CallbackTree, Coordinates, Pixel, PixelMap, StateTree, WidgetTree};
-use crate::run::tree::ViewTree;
+use crate::run::definitions::{CallbackTree, Coordinates, Pixel, PixelMap, StateTree};
 use crate::widgets::helper_functions::{add_border, add_padding, reposition_with_pos_hint,
                                        resize_with_size_hint};
 
@@ -236,9 +235,8 @@ impl EzObject for Layout {
         merged_content
     }
 
-    fn handle_event(&self, event: Event, _view_tree: &mut ViewTree, state_tree: &mut StateTree,
-                    _widget_tree: &WidgetTree, _callback_tree: &mut CallbackTree,
-                    scheduler: &mut Scheduler) -> bool {
+    fn handle_event(&self, event: Event, state_tree: &mut StateTree,
+                    _callback_tree: &mut CallbackTree, scheduler: &mut Scheduler) -> bool {
 
         let state = state_tree.get_by_path_mut(&self.get_full_path())
             .as_layout_mut();
@@ -268,9 +266,9 @@ impl EzObject for Layout {
         false
     }
 
-    fn on_keyboard_enter(&self, _view_tree: &mut ViewTree, state_tree: &mut StateTree,
-                         _widget_tree: &WidgetTree, _callback_tree: &mut CallbackTree,
+    fn on_keyboard_enter(&self, state_tree: &mut StateTree, _callback_tree: &mut CallbackTree,
                          scheduler: &mut Scheduler) -> bool {
+
         let state = state_tree.get_by_path_mut(&self.path).as_layout_mut();
         if !state.selected_tab_header.is_empty() {
             state.set_active_tab(state.get_selected_tab_header()
@@ -281,8 +279,7 @@ impl EzObject for Layout {
         false
     }
 
-    fn on_left_mouse_click(&self, _view_tree: &mut ViewTree, state_tree: &mut StateTree,
-                           _widget_tree: &WidgetTree, _callback_tree: &mut CallbackTree,
+    fn on_left_mouse_click(&self, state_tree: &mut StateTree, _callback_tree: &mut CallbackTree,
                            scheduler: &mut Scheduler, mouse_pos: Coordinates) -> bool {
 
         let state = state_tree.get_by_path_mut(&self.path).as_layout_mut();
@@ -324,8 +321,7 @@ impl EzObject for Layout {
         false
     }
 
-    fn on_scroll_up(&self, _view_tree: &mut ViewTree, state_tree: &mut StateTree,
-                    _widget_tree: &WidgetTree, _callback_tree: &mut CallbackTree,
+    fn on_scroll_up(&self, state_tree: &mut StateTree, _callback_tree: &mut CallbackTree,
                     scheduler: &mut Scheduler) -> bool {
 
         let state = state_tree.get_by_path_mut(&self.path).as_layout_mut();
@@ -336,8 +332,7 @@ impl EzObject for Layout {
         false
     }
 
-    fn on_scroll_down(&self, _view_tree: &mut ViewTree, state_tree: &mut StateTree,
-                      _widget_tree: &WidgetTree, _callback_tree: &mut CallbackTree,
+    fn on_scroll_down(&self, state_tree: &mut StateTree, _callback_tree: &mut CallbackTree,
                       scheduler: &mut Scheduler) -> bool {
 
         let state = state_tree.get_by_path_mut(&self.path).as_layout_mut();
@@ -348,8 +343,7 @@ impl EzObject for Layout {
         false
     }
 
-    fn on_select(&self, _view_tree: &mut ViewTree, state_tree: &mut StateTree,
-                 _widget_tree: &WidgetTree, _callback_tree: &mut CallbackTree,
+    fn on_select(&self, state_tree: &mut StateTree, _callback_tree: &mut CallbackTree,
                  scheduler: &mut Scheduler, _mouse_pos: Option<Coordinates>) -> bool {
 
         for child in self.children.iter() {
@@ -363,9 +357,8 @@ impl EzObject for Layout {
         true
     }
 
-    fn on_deselect(&self, _view_tree: &mut ViewTree, state_tree: &mut StateTree,
-                 _widget_tree: &WidgetTree, _callback_tree: &mut CallbackTree,
-                 scheduler: &mut Scheduler) -> bool {
+    fn on_deselect(&self, state_tree: &mut StateTree, _callback_tree: &mut CallbackTree,
+                   scheduler: &mut Scheduler) -> bool {
 
         let state = state_tree.get_by_path_mut(&self.path).as_layout_mut();
         state.selected_tab_header.clear();

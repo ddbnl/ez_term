@@ -1,15 +1,16 @@
-//! # Common:
-//! A module containing common static functions used by other modules, as well as common types.
-use crate::scheduler::scheduler::Scheduler;
+//! # Select:
+//! A module containing functions to select widgets.
+//! 
+//! Widgets can be selected by keyboard (next/previous widget) or mouse (widget under mouse_pos).
+//! This module provides functions to handle that.
 use crate::run::definitions::{CallbackTree, Coordinates, StateTree, WidgetTree};
-use crate::run::tree::ViewTree;
+use crate::scheduler::scheduler::Scheduler;
 use crate::states::definitions::LayoutMode;
-use crate::states::ez_state::{GenericState, EzState};
-use crate::widgets::ez_object::{EzObject};
+use crate::states::ez_state::{EzState, GenericState};
+use crate::widgets::ez_object::EzObject;
 
 
-
-/// Return the widget that is currently selected. Can be none.
+/// Return the widget that is currently selected. Can be None.
 pub fn get_selected_widget<'a>(widget_tree: &'a WidgetTree, state_tree: &mut StateTree)
     -> Option<&'a dyn EzObject> {
 
@@ -36,8 +37,8 @@ pub fn get_selected_widget<'a>(widget_tree: &'a WidgetTree, state_tree: &mut Sta
 
 /// If any widget is currently selected, deselect it. Can always be called safely. Returns the
 /// [selection_order] of the widget that was selected, or 0 if nothing was selected.
-pub fn deselect_selected_widget(view_tree: &mut ViewTree, state_tree: &mut StateTree,
-                                widget_tree: &WidgetTree, callback_tree: &mut CallbackTree,
+pub fn deselect_selected_widget(state_tree: &mut StateTree, widget_tree: &WidgetTree,
+                                callback_tree: &mut CallbackTree,
                                 scheduler: &mut Scheduler) -> usize {
 
     let selected_widget = get_selected_widget(widget_tree, state_tree);
@@ -47,19 +48,20 @@ pub fn deselect_selected_widget(view_tree: &mut ViewTree, state_tree: &mut State
         state.set_selected(false);
         state.update(scheduler);
         let order = state.get_selection_order().value;
-        i.on_deselect(view_tree, state_tree, widget_tree, callback_tree, scheduler);
+        i.on_deselect(state_tree,callback_tree, scheduler);
         return order
     }
     0
 }
 
 
-pub fn select_widget(path: String, view_tree: &mut ViewTree, state_tree: &mut StateTree,
-                     widget_tree: &WidgetTree,callback_tree: &mut CallbackTree,
-                     scheduler: &mut Scheduler) {
+/// Handle a widget being selected by keyboard.
+pub fn select_widget_by_keyboard(path: String, state_tree: &mut StateTree,
+                                 widget_tree: &WidgetTree, callback_tree: &mut CallbackTree,
+                                 scheduler: &mut Scheduler) {
 
     widget_tree.get_by_path(&path).as_ez_object().on_select(
-        view_tree,state_tree, widget_tree, callback_tree,scheduler, None);
+        state_tree, callback_tree,scheduler, None);
     let state =
         state_tree.get_by_path_mut(&path).as_generic_mut();
     state.set_selected(true);
@@ -70,7 +72,7 @@ pub fn select_widget(path: String, view_tree: &mut ViewTree, state_tree: &mut St
 /// Select the next widget by selection order as defined in each selectable widget. If the last
 /// widget is currently selected wrap around and select the first. This function can always be
 /// called safely.
-pub fn select_next(view_tree: &mut ViewTree, state_tree: &mut StateTree, widget_tree: &WidgetTree,
+pub fn select_next(state_tree: &mut StateTree, widget_tree: &WidgetTree,
                    callback_tree: &mut CallbackTree, scheduler: &mut Scheduler) {
 
     let modals = state_tree.get_by_path("/root").as_layout().get_modals();
@@ -80,17 +82,18 @@ pub fn select_next(view_tree: &mut ViewTree, state_tree: &mut StateTree, widget_
         modals.first().unwrap().as_ez_object().get_full_path()
     };
 
-    let mut current_selection = deselect_selected_widget(view_tree, state_tree, widget_tree,
-                                                               callback_tree, scheduler);
+    let mut current_selection = deselect_selected_widget(
+        state_tree, widget_tree, callback_tree, scheduler);
     let result = find_next_selection(current_selection, state_tree, &path_prefix);
     if let Some(i) = result {
-        select_widget(i, view_tree, state_tree, widget_tree, callback_tree, scheduler);
+        select_widget_by_keyboard(
+            i, state_tree, widget_tree, callback_tree, scheduler);
     } else  {
         // There's no next widget. Reset to 0 to cycle back to first widget (if any)
         current_selection = 0;
         let result = find_next_selection(current_selection, state_tree, &path_prefix);
         if let Some(i) = result {
-            select_widget(i, view_tree, state_tree, widget_tree, callback_tree, scheduler);
+            select_widget_by_keyboard(i, state_tree, widget_tree, callback_tree, scheduler);
         }
     }
 }
@@ -124,9 +127,8 @@ pub fn find_next_selection(current_selection: usize, state_tree: &StateTree, pat
 /// Select the previous widget by selection order as defined in each selectable widget. If the first
 /// widget is currently selected wrap around and select the last. This function can always be
 /// called safely.
-pub fn select_previous(view_tree: &mut ViewTree, state_tree: &mut StateTree,
-                       widget_tree: &WidgetTree, callback_tree: &mut CallbackTree,
-                       scheduler: &mut Scheduler) {
+pub fn select_previous(state_tree: &mut StateTree, widget_tree: &WidgetTree,
+                       callback_tree: &mut CallbackTree, scheduler: &mut Scheduler) {
 
     let modals = state_tree.get_by_path("/root").as_layout().get_modals();
     let path_prefix = if modals.is_empty() {
@@ -135,20 +137,20 @@ pub fn select_previous(view_tree: &mut ViewTree, state_tree: &mut StateTree,
         modals.first().unwrap().as_ez_object().get_full_path()
     };
 
-    let mut current_selection = deselect_selected_widget(view_tree, state_tree, widget_tree,
-                                                               callback_tree, scheduler);
+    let mut current_selection = deselect_selected_widget(
+        state_tree, widget_tree, callback_tree, scheduler);
     let result = find_previous_selection(current_selection, state_tree, &path_prefix);
     if let Some( previous_widget) = result {
-        select_widget(previous_widget, view_tree, state_tree, widget_tree, callback_tree,
-                      scheduler);
+        select_widget_by_keyboard(previous_widget, state_tree, widget_tree, callback_tree,
+                                  scheduler);
     } else {
         // There's no previous widget. Try again with 0 to cycle back to last widget
         current_selection = 0;
         let result = find_previous_selection(
             current_selection, state_tree, &path_prefix);
         if let Some( previous_widget) = result {
-            select_widget(previous_widget, view_tree, state_tree, widget_tree,
-                          callback_tree, scheduler);
+            select_widget_by_keyboard(previous_widget, state_tree, widget_tree,
+                                      callback_tree, scheduler);
         }
     }
 }
@@ -176,7 +178,6 @@ pub fn find_previous_selection(current_selection: usize, state_tree: &StateTree,
     }
     previous_widget
 }
-
 
 
 /// Find a widget by a screen position coordinate. Used e.g. by mouse event handlers. If a modal
@@ -327,6 +328,7 @@ pub fn is_in_view(path: String, state_tree: &StateTree) -> bool {
 }
 
 
+/// Check if a widget is hidden, for example if it belongs to a tab or screan that is not active.
 pub fn widget_is_hidden(widget_path: String, state_tree: &StateTree) -> bool {
 
     if widget_path.starts_with("/modal") { return false }

@@ -1,32 +1,40 @@
 //! # Run:
 //! A module containing the functions to start and stop the main App run loop. The exposed "Run"
-//! functions allows starting the app based on a root layout.
+//! function allows starting the app based on a root layout and scheduler.
 use std::process::exit;
 use std::time::{Duration, Instant};
-use crossterm::{Result, event::{MouseEventKind, poll, read, Event}};
+
+use crossterm::{event::{Event, MouseEventKind, poll, read}, Result};
+
 use crate::CallbackConfig;
 use crate::run::definitions::{CallbackTree, Coordinates, StateTree};
 use crate::run::select::get_selected_widget;
 use crate::run::terminal::{redraw_changed_widgets, write_to_screen};
 use crate::run::tree::{clean_trees, initialize_callback_tree, initialize_state_tree, ViewTree};
-use super::terminal::{initialize_terminal, shutdown_terminal};
-use super::input::{handle_resize, handle_modal_event, handle_global_event};
-use crate::states::ez_state::GenericState;
-use crate::widgets::layout::layout::Layout;
-use crate::widgets::ez_object::{EzObject, EzObjects};
 use crate::scheduler::scheduler::Scheduler;
 use crate::scheduler::scheduler_funcs;
 use crate::scheduler::scheduler_funcs::{run_tasks, update_callback_configs, update_properties,
                                         update_threads};
+use crate::states::ez_state::GenericState;
+use crate::widgets::ez_object::{EzObject, EzObjects};
+use crate::widgets::layout::layout::Layout;
+
+use super::input::{handle_global_event, handle_modal_event, handle_resize};
+use super::terminal::{initialize_terminal, shutdown_terminal};
 
 
-/// # Call this to start the terminal app.
+/// This function starts the terminal app.
+///
 /// Make sure you load a root layout from a .ez file first and pass it to this func, like this:
 /// ```
-/// let mut root_widget = ez_parser::load_ez_ui("root.ez");
+/// let (root_widget, scheduler) = load_ui("root.ez");
+///
 /// ```
 /// After loading the root layout, make all the manual changes you require, such as setting
 /// keybindings or binding callbacks to events. Then call this function.
+/// ```
+/// run(root_widget, scheduler);
+/// ```
 pub fn run(root_widget: Layout, scheduler: Scheduler) {
 
     initialize_terminal().unwrap();
@@ -35,6 +43,7 @@ pub fn run(root_widget: Layout, scheduler: Scheduler) {
 }
 
 
+/// Gracefully stop the app, restoring the terminal to its' original state.
 pub fn stop() {
     shutdown_terminal().unwrap();
     exit(0);
@@ -63,6 +72,9 @@ fn initialize_widgets(root_widget: &mut Layout) -> (ViewTree, StateTree) {
 }
 
 
+/// Support function for opening a popup. After opening the actual popup in the root layout the
+/// state tree is extended with the new modal widget state, and the same is done for the callback
+/// tree.
 pub fn open_popup(template: String, state_tree: &mut StateTree,
                   scheduler: &mut Scheduler) -> String {
 
@@ -103,7 +115,7 @@ pub fn open_popup(template: String, state_tree: &mut StateTree,
 /// # Widget tree:
 /// The widget tree is a Vec<EzWidget> vector, basically a list of every widget. These are used to
 /// gain read-only access to a widget to any information from it that is not stored in its' state
-/// (i.e. static things). EzWidget enums can be downcast to UxObject or EzWidget trait objects to
+/// (i.e. static callbacks). EzWidget enums can be downcast to EzObject trait objects to
 /// access common functions, or downcast to their specific widget type if you know for sure what it
 /// is.
 fn run_loop(mut root_widget: Layout, mut callback_tree: CallbackTree, mut scheduler: Scheduler) 
@@ -116,7 +128,7 @@ fn run_loop(mut root_widget: Layout, mut callback_tree: CallbackTree, mut schedu
     let mut cleanup_timer = 0;
     loop {
 
-        // Now we check for and deal with a possible event
+        // We check for and deal with a possible event
         if poll(Duration::from_millis(32))? {
 
             // Get the event; it can only be consumed once
@@ -155,17 +167,18 @@ fn run_loop(mut root_widget: Layout, mut callback_tree: CallbackTree, mut schedu
             // Modals get top priority in consuming events
             if !consumed {
                 consumed = handle_modal_event(
-                    event, &mut view_tree, &mut state_tree, &widget_tree, &mut callback_tree,
-                    &mut scheduler, &root_widget);
+                    event, &mut state_tree, &widget_tree, &mut callback_tree, &mut scheduler,
+                    &root_widget);
             }
 
+            // Only find the selected widget if event not already consumed as an optimization
             let selected_widget = if consumed {None}
             else {get_selected_widget(&widget_tree, &mut state_tree)};
 
-            // Try to handle event as global
+            // Try to handle event as a global event
             if !consumed {
-                consumed = handle_global_event(event, &mut view_tree, &mut state_tree, &widget_tree,
-                                    &mut callback_tree, &mut scheduler);
+                consumed = handle_global_event(event, &mut state_tree, &widget_tree,
+                                               &mut callback_tree, &mut scheduler);
             }
             // Try to let currently selected widget handle and consume the event
             if !consumed {
@@ -173,8 +186,7 @@ fn run_loop(mut root_widget: Layout, mut callback_tree: CallbackTree, mut schedu
                     if !state_tree.get_by_path(&i.get_full_path())
                         .as_generic().get_disabled().value {
                         consumed = i.handle_event(
-                            event, &mut view_tree, &mut state_tree, &widget_tree,
-                            &mut callback_tree, &mut scheduler);
+                            event, &mut state_tree, &mut callback_tree, &mut scheduler);
 
                     }
                 };
@@ -193,22 +205,29 @@ fn run_loop(mut root_widget: Layout, mut callback_tree: CallbackTree, mut schedu
             }
 
         }
+
+        // We only update the screen if the tick timer has elapsed
         if last_update.elapsed() < Duration::from_millis(32) { continue }
+
+        // Update scheduler
         {
-            let widget_tree = root_widget.get_widget_tree();
             update_callback_configs(&mut scheduler, &mut callback_tree);
-            run_tasks(&mut scheduler, &mut view_tree, &mut state_tree, &widget_tree);
-            update_threads(&mut scheduler, &mut view_tree, &mut state_tree, &widget_tree);
-            update_properties(&mut scheduler, &mut view_tree, &mut state_tree, &widget_tree,
-                              &mut callback_tree);
+            run_tasks(&mut scheduler, &mut state_tree);
+            update_threads(&mut scheduler, &mut state_tree);
+            update_properties(&mut scheduler, &mut state_tree, &mut callback_tree);
         }
+        // Update root widget state as it might contain new modals it need to access internally
         root_widget.state = state_tree.get_by_path("/root").as_layout().clone();
 
-        // Update the state tree for each widget, redrawing any that changed. If a global
-        // forced redraw was issued by a widget we'll perform one.
-        let forced_redraw = redraw_changed_widgets(
-            &mut view_tree, &mut state_tree,  &mut root_widget,
-            &mut scheduler.widgets_to_update, scheduler.force_redraw);
+        // Redraw individual widgets or the entire screen in case of forced_redraw. If the entire
+        // Screen is redrawn individual widgets are not redrawn.
+        let forced_redraw = if !scheduler.force_redraw {
+            redraw_changed_widgets(
+                &mut view_tree, &mut state_tree,  &mut root_widget,
+                &mut scheduler.widgets_to_update, scheduler.force_redraw)
+        } else {
+            true
+        };
         if forced_redraw {
             let contents = root_widget.get_contents(&mut state_tree);
             view_tree.write_content(Coordinates::new(0, 0), contents);
@@ -216,8 +235,12 @@ fn run_loop(mut root_widget: Layout, mut callback_tree: CallbackTree, mut schedu
         write_to_screen(&mut view_tree);
         scheduler.force_redraw = false;
 
-
+        // We only care about handling mouse moved events if a modal is open, otherwise skip it
+        // as an optimization.
         track_mouse_pos = !root_widget.state.open_modals.is_empty();
+
+        // Every now and then we perform cleanup of orphaned states (e.g. modals that were closed)
+        // and their properties.
         if cleanup_timer == 100 {
             clean_trees(&mut root_widget, &mut state_tree, &mut callback_tree, &mut scheduler);
             scheduler_funcs::drain_property_channels(&mut scheduler);

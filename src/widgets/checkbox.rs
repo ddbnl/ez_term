@@ -4,11 +4,10 @@ use std::io::{Error, ErrorKind};
 use crate::widgets::ez_object::{EzObject};
 use crate::states::checkbox_state::CheckboxState;
 use crate::states::ez_state::{EzState, GenericState};
-use crate::parser::load_properties::load_common_property;
+use crate::parser::load_common_properties::load_common_property;
 use crate::parser::load_base_properties::load_ez_bool_property;
 use crate::property::ez_values::EzValues;
-use crate::run::definitions::{CallbackTree, Pixel, PixelMap, StateTree, WidgetTree};
-use crate::run::tree::ViewTree;
+use crate::run::definitions::{CallbackTree, Pixel, PixelMap, StateTree};
 use crate::scheduler::scheduler::Scheduler;
 use crate::widgets::helper_functions::{add_border, add_padding};
 
@@ -137,10 +136,10 @@ impl EzObject for Checkbox {
         contents
     }
 
-    fn on_press(&self, view_tree: &mut ViewTree, state_tree: &mut StateTree,
-                widget_tree: &WidgetTree, callback_tree: &mut CallbackTree,
+    fn on_press(&self, state_tree: &mut StateTree, callback_tree: &mut CallbackTree,
                 scheduler: &mut Scheduler) -> bool {
-        self.handle_toggle(view_tree, state_tree, widget_tree, callback_tree, scheduler);
+
+        self.handle_toggle(state_tree, callback_tree, scheduler);
         true
     }
 }
@@ -155,15 +154,13 @@ impl Checkbox {
         obj
     }
 
-    fn handle_toggle(&self, view_tree: &mut ViewTree, state_tree: &mut StateTree,
-                           widget_tree: &WidgetTree, callback_tree: &mut CallbackTree,
-                           scheduler: &mut Scheduler) {
+    fn handle_toggle(&self, state_tree: &mut StateTree, callback_tree: &mut CallbackTree,
+                     scheduler: &mut Scheduler) {
 
         let state = state_tree.get_by_path_mut(&self.get_full_path())
             .as_checkbox_mut();
         state.set_active(!state.get_active().value);
         state.update(scheduler);
-        self.on_value_change_callback(view_tree, state_tree, widget_tree, callback_tree,
-                                      scheduler);
+        self.on_value_change_callback(state_tree, callback_tree, scheduler);
     }
 }

@@ -1,5 +1,10 @@
+//! # Tree
+//!
+//! This module contains implementations for the various runtime trees.
 use std::collections::HashMap;
+
 use crossterm::style::StyledContent;
+
 use crate::CallbackConfig;
 use crate::run::definitions::{CallbackTree, Coordinates, Pixel, PixelMap, StateTree};
 use crate::scheduler::scheduler::Scheduler;
@@ -7,7 +12,7 @@ use crate::widgets::ez_object::EzObject;
 use crate::widgets::layout::layout::Layout;
 
 /// Convenience wrapper for [StateTree], [WidgetTree] and [CallbackTree]. Allows getting objects
-/// by ID of a widget instead of full path.
+/// by the ID of a widget as well as full path.
 #[derive(Default)]
 pub struct Tree<T> {
 
@@ -26,6 +31,8 @@ impl<T> Tree<T> {
         Tree { name, objects: HashMap::new(), cache: HashMap::new() }
     }
 
+    /// Insert a key/value. The key must be a full widget path. The ID is taken from the path
+    /// and cached to allow efficient lookup by ID later.
     pub fn insert(&mut self, k: String, v: T) {
         if k.contains('/') {
             self.cache.insert(k.rsplit_once('/').unwrap().1.to_string(), k.clone());
@@ -35,26 +42,33 @@ impl<T> Tree<T> {
         self.objects.insert(k, v);
     }
 
+    /// Extern the wrapped hashmap with another.
     pub fn extend(&mut self, other: Tree<T>) {
         for (k, v) in other.objects.into_iter() {
             self.insert(k, v);
         }
     }
 
+    /// Remove a key/value by key.
     pub fn remove(&mut self, k: &str) {
         self.cache.remove(k.rsplit_once('/').unwrap().1);
         self.objects.remove(k);
     }
 
+    /// Get a ref by full widget path, starting from root.
     pub fn get_by_path(&self, path: &str) -> &T {
         self.objects.get(path).unwrap_or_else(|| panic!("Object {} not in {}", path, self.name))
     }
 
+    /// Get a mut ref by full widget path, starting from root.
     pub fn get_by_path_mut(&mut self, path: &str) -> &mut T {
         self.objects.get_mut(path)
             .unwrap_or_else(|| panic!("Object {} not in {}", path, self.name))
     }
 
+    /// Get a ref by full widget ID. If the widget ID is not globally unique it will panic in
+    /// order to prevent unexpected behavior. If you want to find widgets by ID make sure the ID
+    /// is unique.
     pub fn get_by_id(&self, id: &str) -> &T {
 
         if let Some(path) = self.cache.get(id) {
@@ -65,6 +79,9 @@ impl<T> Tree<T> {
         }
     }
 
+    /// Get a mut ref by full widget ID. If the widget ID is not globally unique it will panic in
+    /// order to prevent unexpected behavior. If you want to find widgets by ID make sure the ID
+    /// is unique.
     pub fn get_by_id_mut(&mut self, id: &str) -> &mut T {
 
         let full_path;
@@ -80,9 +97,9 @@ impl<T> Tree<T> {
 
 
 
-/// ## View tree:
-/// Grid of StyledContent representing the entire screen currently being displayed. After each frame
-/// an updated ViewTree is diffed to the old one, and only changed parts of the screen are updated.
+/// Wrapper around a grid of StyledContent representing the entire screen currently being displayed.
+/// After each frame an updated ViewTree is diffed to the old one, and only changed parts of the
+/// screen are updated.
 #[derive(Clone, Default, Debug)]
 pub struct ViewTree {
     screen: Vec<Vec<StyledContent<String>>>,
@@ -90,6 +107,8 @@ pub struct ViewTree {
 }
 impl ViewTree {
 
+    /// Get a Coordinate and the corresponding content for each screen position that has changred
+    /// since the last frame.
     pub fn get_changed(&self) -> Vec<(&Coordinates, &StyledContent<String>)>{
         let mut results = Vec::new();
         for coord in self.changed.iter() {
@@ -98,13 +117,14 @@ impl ViewTree {
         results
     }
 
+    /// Clear the cache of changed positions.
     pub fn clear_changed(&mut self) {
         self.changed.clear();
     }
 
-    /// Write content to a [ViewTree]. Only writes differences. By writing to a view tree first and then
-    /// only writing the [ViewTree] to screen at the end of a frame cycle, we avoid unnecessary
-    /// expensive screen writing operations.
+    /// Write content to a [ViewTree]. Only writes differences. By writing to a view tree first
+    /// and then only writing the [ViewTree] to screen at the end of a frame cycle, we avoid 
+    /// unnecessary expensive screen writing operations.
     pub fn write_content(&mut self, base_position: Coordinates, content: PixelMap) {
         for x in 0..content.len() {
             for y in 0..content[x].len() {
@@ -117,6 +137,7 @@ impl ViewTree {
         }
     }
 
+    /// Write a pixel to the ViewTree. To write [PixelMap]s use [write_content].
     pub fn write_pixel(&mut self, position: Coordinates, content: StyledContent<String>) {
         if self.screen[position.x][position.y] != content {
             self.screen[position.x][position.y] = content;
@@ -124,14 +145,13 @@ impl ViewTree {
         }
     }
 
-    pub fn width(&self) -> usize {
-        return self.screen.len()
-    }
+    /// Get the current width of the view tree.
+    pub fn width(&self) -> usize { return self.screen.len() }
 
-    pub fn height(&self, width: usize) -> usize {
-        return self.screen[width].len()
-    }
+    /// Get the height of the highest row in the view treee.
+    pub fn height(&self, width: usize) -> usize { return self.screen[width].len() }
 
+    /// Initialize the view tree with empty pixel based on a passed with and height.
     pub fn initialize(&mut self, width: usize, height: usize) {
 
         self.screen.clear();
@@ -164,8 +184,7 @@ pub fn initialize_callback_tree(root_layout: &Layout) -> CallbackTree {
     for (child_path, _child) in root_layout.get_widgets_recursive() {
         callback_tree.insert(child_path, CallbackConfig::default());
     }
-    callback_tree.insert(root_layout.get_full_path(),
-                         CallbackConfig::default());
+    callback_tree.insert(root_layout.get_full_path(),CallbackConfig::default());
     callback_tree
 }
 

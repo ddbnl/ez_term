@@ -1,12 +1,14 @@
-//! # Run:
-//! A module containing the functions to start and stop the main App run loop. The exposed "Run"
-//! functions allows starting the app based on a root layout.
+//! # Terminal:
+//!
+//! A module containing functions that interact with the terminal or draw things on screen.
 use std::io::{stdout, Write};
-use crossterm::{ExecutableCommand, execute, Result, QueueableCommand,
-                cursor::{Hide, Show, self},
-                event::{DisableMouseCapture, EnableMouseCapture},
-                terminal::{disable_raw_mode, enable_raw_mode, Clear, ClearType}};
+
+use crossterm::{cursor::{self, Hide, Show}, event::{DisableMouseCapture, EnableMouseCapture}, ExecutableCommand, execute,
+                QueueableCommand,
+                Result,
+                terminal::{Clear, ClearType, disable_raw_mode, enable_raw_mode}};
 use crossterm::style::PrintStyledContent;
+
 use crate::run::definitions::StateTree;
 use crate::run::select::widget_is_hidden;
 use crate::run::tree::ViewTree;
@@ -14,7 +16,7 @@ use crate::widgets::ez_object::EzObject;
 use crate::widgets::layout::layout::Layout;
 
 
-/// Set initial state of the terminal
+/// Prepare state of the terminal for drawing the UI.
 pub fn initialize_terminal() -> Result<()> {
 
     enable_raw_mode()?;
@@ -25,7 +27,7 @@ pub fn initialize_terminal() -> Result<()> {
 }
 
 
-/// Set terminal to initial state before exit
+/// Set terminal to original state.
 pub fn shutdown_terminal() -> Result<()>{
 
     stdout().queue(DisableMouseCapture)?.queue(Show)?.flush()?;
@@ -35,8 +37,7 @@ pub fn shutdown_terminal() -> Result<()>{
 }
 
 
-/// Write content to screen. Only writes differences between an old [ViewTree] (previous frame) and
-/// a new [ViewTree] (current frame) are written.
+/// Write content to screen. Only writes differences between an frame and the new frame.
 pub fn write_to_screen(view_tree: &mut ViewTree) {
 
     stdout().execute(cursor::SavePosition).unwrap();
@@ -50,19 +51,12 @@ pub fn write_to_screen(view_tree: &mut ViewTree) {
 }
 
 
-/// Check each widget state tree for two things:
-/// 1. If the state of the widget in the passed StateTree differs from the current widget state.
-/// In this case the widget state should be updated with the new one, and the widget should be
-/// redrawn.
-/// 2. If the state of the widget contains a forced redraw. In this case the entire screen will
-/// be redrawn, and widgets will not be redrawn individually. Their state will still be updated.
+/// Redraw widgets to the ViewTree (ViewTree diffs are written to screen at each frame). If
+/// a forced_redraw (global screen rewrite) is queued, widgets are not redrawn.
 pub fn redraw_changed_widgets(view_tree: &mut ViewTree, state_tree: &mut StateTree,
                               root_widget: &mut Layout, changed_states: &mut Vec<String>,
                               mut force_redraw: bool) -> bool {
 
-    // We update the root widgets' state only. It's a special case because it can hold new
-    // modals it might need to access internally.
-    root_widget.state = state_tree.get_by_path_mut("/root").as_layout().clone();
     if !state_tree.get_by_path("/root").as_layout().open_modals.is_empty() &&
         !changed_states.is_empty(){
         force_redraw = true;
@@ -74,7 +68,7 @@ pub fn redraw_changed_widgets(view_tree: &mut ViewTree, state_tree: &mut StateTr
 }
 
 
-/// Redraw a list of widgets.
+/// Redraw a list of widgets to a ViewTree.
 pub fn redraw_widgets(paths: &mut Vec<String>, view_tree: &mut ViewTree,
                       state_tree: &mut StateTree, root_widget: &mut Layout) {
 

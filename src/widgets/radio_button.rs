@@ -7,11 +7,10 @@ use std::io::{Error, ErrorKind};
 use crate::states::radio_button_state::RadioButtonState;
 use crate::states::ez_state::{EzState, GenericState};
 use crate::widgets::ez_object::{EzObject};
-use crate::parser::load_properties::load_common_property;
+use crate::parser::load_common_properties::load_common_property;
 use crate::parser::load_base_properties::{load_ez_bool_property, load_ez_string_property};
 use crate::property::ez_values::EzValues;
-use crate::run::definitions::{CallbackTree, Pixel, PixelMap, StateTree, WidgetTree};
-use crate::run::tree::ViewTree;
+use crate::run::definitions::{CallbackTree, Pixel, PixelMap, StateTree};
 use crate::scheduler::scheduler::Scheduler;
 use crate::widgets::helper_functions::{add_border, add_padding};
 
@@ -163,10 +162,10 @@ impl EzObject for RadioButton {
         contents
     }
 
-    fn on_press(&self, view_tree: &mut ViewTree, state_tree: &mut StateTree,
-                widget_tree: &WidgetTree, callback_tree: &mut CallbackTree,
+    fn on_press(&self, state_tree: &mut StateTree, callback_tree: &mut CallbackTree,
                 scheduler: &mut Scheduler) -> bool {
-        self.handle_press(view_tree, state_tree, widget_tree, callback_tree, scheduler);
+
+        self.handle_press(state_tree, callback_tree, scheduler);
         true
     }
 }
@@ -182,8 +181,7 @@ impl RadioButton {
     }
 
     /// Function that handles this RadioButton being pressed (mouse clicked/keyboard entered).
-    fn handle_press(&self, view_tree: &mut ViewTree, state_tree: &mut StateTree,
-                    widget_tree: &WidgetTree, callback_tree: &mut CallbackTree,
+    fn handle_press(&self, state_tree: &mut StateTree, callback_tree: &mut CallbackTree,
                     scheduler: &mut Scheduler) {
 
         // Find all other radio buttons in same group and make them inactive (mutual exclusivity)
@@ -202,8 +200,7 @@ impl RadioButton {
         if !state.active.value {
             state.set_active(true);
             state.update(scheduler);
-            self.on_value_change_callback(view_tree, state_tree, widget_tree, callback_tree,
-                                          scheduler);
+            self.on_value_change_callback(state_tree, callback_tree, scheduler);
         } else {
             return // Nothing to do
         }

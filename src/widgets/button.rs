@@ -6,11 +6,10 @@ use crate::states::ez_state::{EzState, GenericState};
 use crate::states::definitions::{HorizontalAlignment, VerticalAlignment};
 use crate::states::button_state::ButtonState;
 use crate::widgets::ez_object::{EzObject};
-use crate::parser::load_properties::load_common_property;
+use crate::parser::load_common_properties::load_common_property;
 use crate::parser::load_base_properties::load_ez_string_property;
 use crate::property::ez_values::EzValues;
-use crate::run::definitions::{CallbackTree, Pixel, PixelMap, StateTree, WidgetTree};
-use crate::run::tree::ViewTree;
+use crate::run::definitions::{CallbackTree, Pixel, PixelMap, StateTree};
 use crate::scheduler::scheduler::Scheduler;
 use crate::widgets::helper_functions::{add_border, add_padding, align_content_horizontally, align_content_vertically, wrap_text};
 
@@ -142,12 +141,10 @@ impl EzObject for Button {
         contents
     }
 
-    fn on_press(&self, view_tree: &mut ViewTree, state_tree: &mut StateTree,
-                widget_tree: &WidgetTree, callback_tree: &mut CallbackTree,
+    fn on_press(&self, state_tree: &mut StateTree, callback_tree: &mut CallbackTree,
                 scheduler: &mut Scheduler) -> bool {
 
-        let consumed = self.on_press_callback(view_tree, state_tree, widget_tree,
-                                                        callback_tree, scheduler);
+        let consumed = self.on_press_callback(state_tree, callback_tree, scheduler);
         if !consumed {
             self.handle_on_press(state_tree, scheduler);
             return true
