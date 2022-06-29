@@ -8,13 +8,11 @@ use crossterm::{event::{Event, MouseEventKind, poll, read}, Result};
 
 use crate::CallbackConfig;
 use crate::run::definitions::{CallbackTree, Coordinates, StateTree};
-use crate::run::select::get_selected_widget;
 use crate::run::terminal::{redraw_changed_widgets, write_to_screen};
 use crate::run::tree::{clean_trees, initialize_callback_tree, initialize_state_tree, ViewTree};
 use crate::scheduler::scheduler::Scheduler;
 use crate::scheduler::scheduler_funcs;
-use crate::scheduler::scheduler_funcs::{run_tasks, update_callback_configs, update_properties,
-                                        update_threads};
+use crate::scheduler::scheduler_funcs::{handle_next_selection, run_tasks, update_callback_configs, update_properties, update_threads};
 use crate::states::ez_state::GenericState;
 use crate::widgets::ez_object::{EzObject, EzObjects};
 use crate::widgets::layout::layout::Layout;
@@ -28,7 +26,6 @@ use super::terminal::{initialize_terminal, shutdown_terminal};
 /// Make sure you load a root layout from a .ez file first and pass it to this func, like this:
 /// ```
 /// let (root_widget, scheduler) = load_ui("root.ez");
-///
 /// ```
 /// After loading the root layout, make all the manual changes you require, such as setting
 /// keybindings or binding callbacks to events. Then call this function.
@@ -75,8 +72,8 @@ fn initialize_widgets(root_widget: &mut Layout) -> (ViewTree, StateTree) {
 /// Support function for opening a popup. After opening the actual popup in the root layout the
 /// state tree is extended with the new modal widget state, and the same is done for the callback
 /// tree.
-pub fn open_popup(template: String, state_tree: &mut StateTree,
-                  scheduler: &mut Scheduler) -> String {
+pub fn open_popup(template: String, state_tree: &mut StateTree, scheduler: &mut Scheduler)
+    -> String {
 
     let state = state_tree.get_by_path_mut("/root").as_layout_mut();
     state.update(scheduler);
@@ -124,12 +121,13 @@ fn run_loop(mut root_widget: Layout, mut callback_tree: CallbackTree, mut schedu
     let (mut view_tree, mut state_tree) = initialize_widgets(&mut root_widget);
     let last_update = Instant::now();
     let mut last_mouse_pos: (u16, u16) = (0, 0);
-    let mut track_mouse_pos = false;
     let mut cleanup_timer = 0;
+    let mut selected_widget = String::new();
+    let tick_rate = (1/60) as u64;
     loop {
 
         // We check for and deal with a possible event
-        if poll(Duration::from_millis(32))? {
+        if poll(Duration::from_millis(tick_rate))? {
 
             // Get the event; it can only be consumed once
             let mut consumed = false;
@@ -139,57 +137,46 @@ fn run_loop(mut root_widget: Layout, mut callback_tree: CallbackTree, mut schedu
             // events as possible before the next frame, then check if it moved position.
             if let Event::Mouse(mouse_event) = event {
                 if let MouseEventKind::Moved = mouse_event.kind {
-                    if !track_mouse_pos { continue }
-                    let mut pos = (mouse_event.column, mouse_event.row);
+                    let pos = (mouse_event.column, mouse_event.row);
                     while let Ok(true) = poll(Duration::from_millis(1)) {
                         let spam_event = read();
                         if let Ok(Event::Mouse(spam_mouse_event)) = spam_event {
                             if let MouseEventKind::Moved = spam_mouse_event.kind {
-                                pos = (spam_mouse_event.column, spam_mouse_event.row);
                                 event = spam_event.unwrap();
+                                if last_mouse_pos != pos {
+                                    last_mouse_pos = pos;
+                                    break
+                                }
                             }
                         } else {
                             event = spam_event.unwrap();
                             break
                         }
                     }
-                    if last_mouse_pos != pos {
-                        last_mouse_pos = pos;
-                    } else {
-                        consumed = true;
-                    }
+
                 } else if let MouseEventKind::Drag(_) = mouse_event.kind{
                     continue
                 }
             }
-
-            let widget_tree = root_widget.get_widget_tree();
             // Modals get top priority in consuming events
             if !consumed {
                 consumed = handle_modal_event(
-                    event, &mut state_tree, &widget_tree, &mut callback_tree, &mut scheduler,
-                    &root_widget);
+                    event, &mut state_tree, &root_widget, &mut callback_tree, &mut scheduler);
             }
-
-            // Only find the selected widget if event not already consumed as an optimization
-            let selected_widget = if consumed {None}
-            else {get_selected_widget(&widget_tree, &mut state_tree)};
 
             // Try to handle event as a global event
             if !consumed {
-                consumed = handle_global_event(event, &mut state_tree, &widget_tree,
-                                               &mut callback_tree, &mut scheduler);
+                consumed = handle_global_event(event, &mut state_tree, &root_widget,
+                                               &mut callback_tree, &mut scheduler,
+                                               &mut selected_widget);
             }
             // Try to let currently selected widget handle and consume the event
-            if !consumed {
-                if let Some(i) = selected_widget {
-                    if !state_tree.get_by_path(&i.get_full_path())
-                        .as_generic().get_disabled().value {
-                        consumed = i.handle_event(
-                            event, &mut state_tree, &mut callback_tree, &mut scheduler);
-
-                    }
-                };
+            if !consumed && !selected_widget.is_empty() &&
+                !state_tree.get_by_path(&selected_widget).as_generic().get_disabled().value {
+                let widget = root_widget.get_child_by_path(&selected_widget)
+                    .unwrap().as_ez_object();
+                consumed = widget.handle_event(
+                    event, &mut state_tree, &mut callback_tree, &mut scheduler);
             }
             if !consumed {
                 if let Event::Resize(width, height) = event {
@@ -207,15 +194,15 @@ fn run_loop(mut root_widget: Layout, mut callback_tree: CallbackTree, mut schedu
         }
 
         // We only update the screen if the tick timer has elapsed
-        if last_update.elapsed() < Duration::from_millis(32) { continue }
+        if last_update.elapsed() < Duration::from_millis(tick_rate) { continue }
 
         // Update scheduler
-        {
-            update_callback_configs(&mut scheduler, &mut callback_tree);
-            run_tasks(&mut scheduler, &mut state_tree);
-            update_threads(&mut scheduler, &mut state_tree);
-            update_properties(&mut scheduler, &mut state_tree, &mut callback_tree);
-        }
+        selected_widget = handle_next_selection(&mut scheduler, &mut state_tree, &root_widget,
+                                                &mut callback_tree, selected_widget);
+        update_callback_configs(&mut scheduler, &mut callback_tree);
+        run_tasks(&mut scheduler, &mut state_tree);
+        update_threads(&mut scheduler, &mut state_tree);
+        update_properties(&mut scheduler, &mut state_tree, &mut callback_tree);
         // Update root widget state as it might contain new modals it need to access internally
         root_widget.state = state_tree.get_by_path("/root").as_layout().clone();
 
@@ -234,10 +221,6 @@ fn run_loop(mut root_widget: Layout, mut callback_tree: CallbackTree, mut schedu
         }
         write_to_screen(&mut view_tree);
         scheduler.force_redraw = false;
-
-        // We only care about handling mouse moved events if a modal is open, otherwise skip it
-        // as an optimization.
-        track_mouse_pos = !root_widget.state.open_modals.is_empty();
 
         // Every now and then we perform cleanup of orphaned states (e.g. modals that were closed)
         // and their properties.

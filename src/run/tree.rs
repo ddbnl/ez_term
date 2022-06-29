@@ -194,17 +194,16 @@ pub fn initialize_callback_tree(root_layout: &Layout) -> CallbackTree {
 pub fn clean_trees(root_widget: &mut Layout, state_tree: &mut StateTree,
                    callback_tree: &mut CallbackTree, scheduler: &mut Scheduler) {
 
-    let widget_tree = root_widget.get_widget_tree();
     let state_paths: Vec<String> = state_tree.objects.keys().into_iter().cloned().collect();
     for path in state_paths {
-        if path != "/root" && !widget_tree.objects.contains_key(&path) {
+        if path != "/root" && root_widget.get_child_by_path(&path).is_none() {
             state_tree.get_by_path(&path).as_generic().clean_up_properties(scheduler);
             state_tree.remove(&path);
         }
     }
     let callback_paths: Vec<String> = callback_tree.objects.keys().into_iter().cloned().collect();
     for path in callback_paths {
-        if path != "/root" && !widget_tree.objects.contains_key(&path)
+        if path != "/root" && root_widget.get_child_by_path(&path).is_none()
             && !scheduler.properties.contains_key(&path) {
             callback_tree.remove(&path);
         }

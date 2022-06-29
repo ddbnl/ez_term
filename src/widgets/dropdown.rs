@@ -4,7 +4,7 @@
 //! values for the user to select.
 use std::io::{Error, ErrorKind};
 use crossterm::event::{Event, KeyCode, MouseButton, MouseEventKind};
-use crate::EzContext;
+use crate::{CallbackConfig, EzContext};
 use crate::states::definitions::{StateSize, AutoScale, SizeHint, Padding, PosHint,
                                  StateCoordinates, HorizontalAlignment, VerticalAlignment};
 use crate::states::dropdown_state::{DropdownState, DroppedDownMenuState};
@@ -194,7 +194,7 @@ impl EzObject for Dropdown {
         };
         let new_modal = DroppedDownMenu {
             id: modal_id,
-            path: modal_path,
+            path: modal_path.clone(),
             state: new_modal_state,
         };
         let root_state = state_tree.get_by_path_mut("/root").as_layout_mut();
@@ -202,6 +202,15 @@ impl EzObject for Dropdown {
             .open_modal(ez_object::EzObjects::DroppedDownMenu(new_modal));
         root_state.update(scheduler);
         state_tree.extend(extra_state_tree);
+        scheduler.set_callback_config(&modal_path, CallbackConfig::default());
+        true
+    }
+
+    fn on_hover(&self, state_tree: &mut StateTree, callback_tree: &mut CallbackTree,
+                scheduler: &mut Scheduler, mouse_pos: Coordinates) -> bool {
+
+        scheduler.set_selected_widget(&self.path, Some(mouse_pos));
+        self.on_hover_callback(state_tree, callback_tree, scheduler, mouse_pos);
         true
     }
 }

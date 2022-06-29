@@ -14,6 +14,7 @@ use crate::parser::load_common_properties::load_common_property;
 use crate::parser::load_base_properties::load_ez_string_property;
 use crate::property::ez_values::EzValues;
 use crate::run::definitions::{CallbackTree, Coordinates, Pixel, PixelMap, StateTree};
+use crate::run::tree::ViewTree;
 use crate::widgets::helper_functions::{add_border, add_padding};
 
 #[derive(Clone, Debug)]
@@ -189,9 +190,10 @@ impl EzObject for TextInput {
         false
     }
 
-    fn on_left_mouse_click(&self, _state_tree: &mut StateTree, _callback_tree: &mut CallbackTree,
-                           _scheduler: &mut Scheduler, _mouse_pos: Coordinates) -> bool {
-        // Return true to consume left click event. On_select will handle the rest.
+    fn on_left_mouse_click(&self, state_tree: &mut StateTree, callback_tree: &mut CallbackTree,
+                           scheduler: &mut Scheduler, mouse_pos: Coordinates) -> bool {
+
+        scheduler.set_selected_widget(&self.path, Some(mouse_pos));
         true
     }
 
@@ -226,6 +228,13 @@ impl EzObject for TextInput {
 
         // Call user callback if any
         self.on_select_callback(state_tree, callback_tree, scheduler, mouse_pos);
+        true
+    }
+
+    fn on_hover(&self, state_tree: &mut StateTree, callback_tree: &mut CallbackTree,
+                scheduler: &mut Scheduler, mouse_pos: Coordinates) -> bool {
+
+        self.on_hover_callback(state_tree, callback_tree, scheduler, mouse_pos);
         true
     }
 }

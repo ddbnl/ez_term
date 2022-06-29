@@ -6,7 +6,6 @@ use crossterm::style::{Color, StyledContent, Stylize};
 use crate::CallbackConfig;
 use crate::run::tree::Tree;
 use crate::states::ez_state::EzState;
-use crate::widgets::ez_object::EzObjects;
 
 
 /// Convenience wrapper around an XY tuple, represents coordinates. Makes reading code more clear
@@ -96,10 +95,3 @@ pub type StateTree = Tree<EzState>;
 /// A wrapper around a <WidgetPath, [CallbackConfig]> HashMap. Can be used to access callbacks
 /// bound to a widget. A [CallbackConfig] for a wiget can be updated through the [Scheduler].
 pub type CallbackTree = Tree<CallbackConfig>;
-
-
-/// A read-only list of all widgets, passed to callbacks. Can be used to access static information
-/// of a widget that is not in its' State. Widgets are represented by the EzWidget enum, but
-/// can be cast to the generic UxObject or IsWidget trait. If you are sure of the type of widget
-/// you are dealing with it can also be cast to specific widget types.
-pub type WidgetTree<'a> = Tree<&'a EzObjects>;

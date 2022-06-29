@@ -479,8 +479,8 @@ pub trait GenericState {
     fn collides(&self, pos: Coordinates) -> bool {
         let starting_pos = self.get_effective_absolute_position();
         let end_pos = Coordinates::new(
-            starting_pos.x + self.get_size().width.value - 1,
-             starting_pos.y + self.get_size().height.value - 1);
+            starting_pos.x + self.get_effective_size().width - 1,
+             starting_pos.y + self.get_effective_size().height - 1);
         pos.x >= starting_pos.x && pos.x <= end_pos.x &&
             pos.y >= starting_pos.y && pos.y <= end_pos.y
     }

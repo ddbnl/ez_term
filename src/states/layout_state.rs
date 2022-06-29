@@ -364,8 +364,10 @@ impl LayoutState {
     
     /// Dismiss the current modal
     pub fn dismiss_modal(&mut self, scheduler: &mut Scheduler) {
+
         self.open_modals.remove(0);
         self.update(scheduler);
+        scheduler.deselect_widget();
         scheduler.force_redraw();
     }
 
@@ -374,6 +376,7 @@ impl LayoutState {
 
         self.open_modals.clear();
         self.update(scheduler);
+        scheduler.deselect_widget();
         scheduler.force_redraw();
     }
     

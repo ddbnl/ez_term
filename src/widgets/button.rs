@@ -9,7 +9,7 @@ use crate::widgets::ez_object::{EzObject};
 use crate::parser::load_common_properties::load_common_property;
 use crate::parser::load_base_properties::load_ez_string_property;
 use crate::property::ez_values::EzValues;
-use crate::run::definitions::{CallbackTree, Pixel, PixelMap, StateTree};
+use crate::run::definitions::{CallbackTree, Coordinates, Pixel, PixelMap, StateTree};
 use crate::scheduler::scheduler::Scheduler;
 use crate::widgets::helper_functions::{add_border, add_padding, align_content_horizontally, align_content_vertically, wrap_text};
 
@@ -151,6 +151,15 @@ impl EzObject for Button {
         }
         false
     }
+
+    fn on_hover(&self, state_tree: &mut StateTree, callback_tree: &mut CallbackTree,
+                scheduler: &mut Scheduler, mouse_pos: Coordinates) -> bool {
+
+        scheduler.set_selected_widget(&self.path, Some(mouse_pos));
+        self.on_hover_callback(state_tree, callback_tree, scheduler, mouse_pos);
+        true
+    }
+
 }
 impl Button {
 

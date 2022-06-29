@@ -12,7 +12,7 @@ use crate::{CallbackConfig, EzContext, EzPropertiesMap};
 use crate::property::ez_properties::EzProperties;
 use crate::property::ez_property::EzProperty;
 use crate::property::ez_values::EzValues;
-use crate::run::definitions::StateTree;
+use crate::run::definitions::{Coordinates, StateTree};
 use crate::run::run::{open_popup, stop};
 use crate::scheduler::definitions::{EzPropertyUpdater, EzThread, GenericEzTask};
 use crate::states::definitions::{HorizontalAlignment, VerticalAlignment};
@@ -21,7 +21,7 @@ use crate::states::definitions::{HorizontalAlignment, VerticalAlignment};
 /// A struct with methods for managing the UI indirectly.
 ///
 /// The Scheduler is a key component of the framework. It, along with the [StateTree], gives
-/// yoy control over the UI at runtime.
+/// you control over the UI at runtime.
 /// # Features of the scheduler
 /// - Scheduling to redraw a widget on the next frame, or force a global screen redraw
 /// - scheduling functions/closures to run once or on an interval
@@ -29,6 +29,7 @@ use crate::states::definitions::{HorizontalAlignment, VerticalAlignment};
 /// - set a new [CallbackConfig] for a widget, or update the existing one
 /// - Bind a callback to an [EzProperty] (to be called on value change)
 /// - Creating custom [EzProperty]s
+/// - Set the selected widget
 /// - Stop the app
 #[derive(Default)]
 pub struct Scheduler {
@@ -82,6 +83,14 @@ pub struct Scheduler {
     /// A <Widget path, user_callback> HashMap, used to store callbacks the user has registered to
     /// the changing of a value of an [EzProperty]. When the value changes, the callback is called.
     pub property_callbacks: HashMap<String, Vec<Box<dyn FnMut(EzContext)>>>,
+    
+    /// The widget (ID or path) set here will be selected on the next frame, deselecting the current
+    /// selection if any and calling the appropriate callbacks. The optional mouse_position will be
+    /// passed to the on_select callback.
+    pub next_selection: Option<(String, Option<Coordinates>)>,
+
+    /// If true, deselect the currently selection widget (if any) on the next frame.
+    pub deselect: bool,
 }
 
 /// A struct representing a run-once- or recurring task. This struct is not directly used by the
@@ -515,6 +524,16 @@ impl Scheduler {
             self.property_callbacks.entry(name.to_string()).or_insert(Vec::new());
         callbacks.push(callback);
     }
+    
+    /// Set the passed widget (can be ID or path) as selected. Automatically deselects the current
+    /// selection if any, and calls the appropriate callbacks.
+    pub fn set_selected_widget(&mut self, widget: &str, mouse_pos: Option<Coordinates>) {
+        self.next_selection = Some((widget.to_string(), mouse_pos));
+    }
+
+    /// Set the passed widget (can be ID or path) as selected. Automatically deselects the current
+    /// selection if any, and calls the appropriate callbacks.
+    pub fn deselect_widget(&mut self) { self.deselect = true }
 
     /// Gracefully exit the app.
     pub fn exit(&self) { stop(); }

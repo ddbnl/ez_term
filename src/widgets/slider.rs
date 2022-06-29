@@ -149,12 +149,27 @@ impl EzObject for Slider {
         let state = state_tree.get_by_path_mut(&self.path).as_slider_mut();
         let ratio = (state.maximum.value - state.minimum.value) as f64
             / state.get_effective_size().width as f64;
-        let mut value = (ratio * mouse_pos.x as f64) as usize + state.minimum.value;
-        value -= value % state.step.value;
+        let mut value = (ratio * mouse_pos.x as f64).round() as usize + state.minimum.value;
+
+        // Make sure the set value is a multiple of step
+        if value >= state.maximum.value - state.step.value {
+            value = state.maximum.value;
+        } else {
+            value -= value % state.step.value;
+        }
+        
         value = min(value, state.maximum.value);
         state.set_value(value);
         state.update(scheduler);
         self.on_value_change_callback(state_tree, callback_tree, scheduler);
+        true
+    }
+
+    fn on_hover(&self, state_tree: &mut StateTree, callback_tree: &mut CallbackTree,
+                scheduler: &mut Scheduler, mouse_pos: Coordinates) -> bool {
+
+        scheduler.set_selected_widget(&self.path, Some(mouse_pos));
+        self.on_hover_callback(state_tree, callback_tree, scheduler, mouse_pos);
         true
     }
 }

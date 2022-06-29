@@ -5,7 +5,7 @@ mod input;
 mod terminal;
 
 /// A module containing functions that handle selecting widgets
-mod select;
+pub mod select;
 
 /// A module containing the run loop and supporting functions
 pub mod run;

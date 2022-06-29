@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 use crate::{CallbackConfig, EzContext, EzObject};
-use crate::run::definitions::{Coordinates, PixelMap, StateTree, WidgetTree};
+use crate::run::definitions::{Coordinates, PixelMap, StateTree};
 use crate::scheduler::scheduler::Scheduler;
 use crate::states::ez_state::GenericState;
 use crate::states::definitions::{LayoutMode, LayoutOrientation};
@@ -10,6 +10,8 @@ use crate::widgets::helper_functions::{offset_scrolled_absolute_position, resize
 use crate::widgets::layout::layout::Layout;
 
 impl Layout {
+
+
     /// Set the sizes of children that use size_hint(s) using own proportions.
     pub fn set_child_sizes(&self, state_tree: &mut StateTree) {
         let own_state = state_tree.get_by_path_mut(&self.get_full_path())
@@ -188,25 +190,6 @@ impl Layout {
         }
     }
 
-    /// Get an EzWidget trait object for each child [EzWidget] and return it in a
-    /// <[path], [EzObject]> HashMap.
-    pub fn get_widget_tree(&self) -> WidgetTree {
-        let mut widget_tree = WidgetTree::new("widget_tree".to_string());
-        for (child_path, child) in self.get_widgets_recursive() {
-            widget_tree.insert(child_path, child);
-        }
-        for i in 0..self.state.open_modals.len() {
-            if let EzObjects::Layout(ref layout) = self.state.open_modals[i] {
-                for (child_path, child) in layout.get_widgets_recursive() {
-                    widget_tree.insert(child_path, child);
-                }
-            }
-            widget_tree.insert(
-                self.state.open_modals[i].as_ez_object().get_full_path(),
-                &self.state.open_modals[i]);
-        }
-        widget_tree
-    }
     /// Get a list of children non-recursively. Can be [layout] or [EzWidget]
     pub fn get_children(&self) -> &Vec<EzObjects> { &self.children }
 
@@ -214,48 +197,76 @@ impl Layout {
     pub fn get_children_mut(&mut self) -> &mut Vec<EzObjects> { &mut self.children }
 
     /// Get a specific child ref by its' [id]
-    pub fn get_child(&self, id: &str) -> &EzObjects {
-        let index = self.child_lookup.get(id)
-            .unwrap_or_else(|| panic!("No child: {} in {}", id, self.get_id()));
-        self.children.get(*index).unwrap()
+    pub fn get_child(&self, id: &str) -> Option<&EzObjects> {
+
+        if let Some(index) = self.child_lookup.get(id) {
+            Some(self.children.get(*index).unwrap())
+        } else {
+            None
+        }
     }
 
     /// Get a specific child mutable ref by its'[id]
-    pub fn get_child_mut(&mut self, id: &str) -> &mut EzObjects {
-        let index = self.child_lookup.get(id)
-            .unwrap_or_else(|| panic!("No child: {} in {}", id, self.get_id()));
-        self.children.get_mut(*index).unwrap()
+    pub fn get_child_mut(&mut self, id: &str) -> Option<&mut EzObjects> {
+
+        if let Some(index) = self.child_lookup.get(id) {
+            Some(self.children.get_mut(*index).unwrap())
+        } else {
+            None
+        }
     }
 
     /// Get a specific child ref by its' [path]. Call on root layout to find any EzObject that
     /// exists
     pub fn get_child_by_path(&self, path: &str) -> Option<&EzObjects> {
+
         let mut paths: Vec<&str> = path.split('/').filter(|x| !x.is_empty()).collect();
         // If user passed a path starting with this layout, take it off first.
-        if *paths.first().unwrap() == self.get_id() {
+        if paths.first().unwrap() == &self.get_id() {
             paths.remove(0);
         }
         paths.reverse();
-        let mut root = self.get_child(paths.pop().unwrap());
+
+        let first = paths.pop().unwrap();
+        let mut root = if first == "modal" {
+            if let Some(i) = self.state.open_modals.first() { paths.pop();  i }
+            else { return None }
+        } else {
+            if let Some(i) = self.get_child(first) { i }
+            else { return None }
+        };
         while !paths.is_empty() {
-            if let EzObjects::Layout(i) = root {
-                root = i.get_child(paths.pop().unwrap());
+            if let Some(i) = root.as_layout().get_child(paths.pop().unwrap()) {
+                root = i;
+            } else {
+                return None
             }
         }
         Some(root)
     }
+
     /// Get a specific child mutable ref by its' [path]. Call on root layout to find any
     /// [EzObject] that exists
     pub fn get_child_by_path_mut(&mut self, path: &str) -> Option<&mut EzObjects> {
+
         let mut paths: Vec<&str> = path.split('/').filter(|x| !x.is_empty()).collect();
         if paths.first().unwrap() == &self.get_id() {
             paths.remove(0);
         }
         paths.reverse();
-        let mut root = self.get_child_mut(paths.pop().unwrap());
+
+        let first = paths.pop().unwrap();
+        let mut root = if first == "modal" {
+            if let Some(i) = self.state.open_modals.first_mut() { i }
+            else { return None }
+        } else {
+            if let Some(i) = self.get_child_mut(first) { i }
+            else { return None } };
         while !paths.is_empty() {
-            if let EzObjects::Layout(i) = root {
-                root = i.get_child_mut(paths.pop().unwrap());
+            if let Some(i) = root.as_layout_mut().get_child_mut(paths.pop().unwrap()) {
+                root = i
+            } else {
+                return None
             }
         }
         Some(root)

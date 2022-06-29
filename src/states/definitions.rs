@@ -215,6 +215,9 @@ pub struct CallbackConfig {
     /// Function to call when this widget is right clicked
     pub on_right_mouse_click: Option<MouseCallbackFunction>,
 
+    /// Function to call when this widget is mouse hovered
+    pub on_hover: Option<MouseCallbackFunction>,
+
     /// Function to call when this widget is scrolled up
     pub on_scroll_up: Option<GenericEzFunction>,
 

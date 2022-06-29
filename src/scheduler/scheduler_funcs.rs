@@ -6,6 +6,8 @@ use std::time::Instant;
 
 use crate::EzContext;
 use crate::run::definitions::{CallbackTree, StateTree};
+use crate::run::select::{deselect_widget, select_widget};
+use crate::widgets::layout::layout::Layout;
 
 use super::scheduler::Scheduler;
 
@@ -156,4 +158,32 @@ pub fn clean_up_property(scheduler: &mut Scheduler, name: &str) {
     scheduler.property_callbacks.remove(name);
     scheduler.property_receivers.remove(name);
     scheduler.property_subscribers.remove(name);
+}
+
+
+pub fn handle_next_selection(scheduler: &mut Scheduler, state_tree: &mut StateTree,
+                             root_widget: &Layout, callback_tree: &mut CallbackTree,
+                             mut current_selection: String) -> String {
+
+    if scheduler.deselect && !current_selection.is_empty() {
+        deselect_widget(&current_selection, state_tree, root_widget, callback_tree,
+                        scheduler);
+        current_selection.clear();
+    }
+    scheduler.deselect = false;
+
+    if let Some((selection, mouse_pos)) = scheduler.next_selection.clone() {
+        if selection != current_selection {
+            if !current_selection.is_empty() {
+                deselect_widget(&current_selection, state_tree, root_widget, callback_tree,
+                                scheduler);
+            }
+            select_widget(&selection, state_tree, root_widget, callback_tree,
+                          scheduler, mouse_pos);
+        }
+        scheduler.next_selection = None;
+        selection
+    } else {
+        current_selection
+    }
 }

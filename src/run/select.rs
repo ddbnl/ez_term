@@ -3,77 +3,47 @@
 //! 
 //! Widgets can be selected by keyboard (next/previous widget) or mouse (widget under mouse_pos).
 //! This module provides functions to handle that.
-use crate::run::definitions::{CallbackTree, Coordinates, StateTree, WidgetTree};
+use crate::run::definitions::{CallbackTree, Coordinates, StateTree};
 use crate::scheduler::scheduler::Scheduler;
 use crate::states::definitions::LayoutMode;
 use crate::states::ez_state::{EzState, GenericState};
 use crate::widgets::ez_object::EzObject;
+use crate::widgets::layout::layout::Layout;
 
 
-/// Return the widget that is currently selected. Can be None.
-pub fn get_selected_widget<'a>(widget_tree: &'a WidgetTree, state_tree: &mut StateTree)
-    -> Option<&'a dyn EzObject> {
+/// Handle a widget being selected.
+pub fn select_widget(path: &str, state_tree: &mut StateTree,
+                     root_widget: &Layout, callback_tree: &mut CallbackTree,
+                     scheduler: &mut Scheduler, mouse_pos: Option<Coordinates>) {
 
-
-    let modals = state_tree.get_by_path("/root").as_layout().get_modals();
-    let path_prefix = if modals.is_empty() {
-        "/root".to_string()
-    } else {
-        modals.first().unwrap().as_ez_object().get_full_path()
-    };
-
-    for widget in widget_tree.objects.values() {
-        let generic_widget = widget.as_ez_object();
-        if !generic_widget.get_full_path().starts_with(&path_prefix) { continue }
-        let state = state_tree
-            .get_by_path(&generic_widget.get_full_path()).as_generic();
-        if state.is_selectable() && state.get_selected() {
-            return Some(generic_widget)
-        }
-    }
-    None
-}
-
-
-/// If any widget is currently selected, deselect it. Can always be called safely. Returns the
-/// [selection_order] of the widget that was selected, or 0 if nothing was selected.
-pub fn deselect_selected_widget(state_tree: &mut StateTree, widget_tree: &WidgetTree,
-                                callback_tree: &mut CallbackTree,
-                                scheduler: &mut Scheduler) -> usize {
-
-    let selected_widget = get_selected_widget(widget_tree, state_tree);
-    if let Some(i) = selected_widget {
-        let state =
-            state_tree.get_by_path_mut(&i.get_full_path()).as_generic_mut();
-        state.set_selected(false);
-        state.update(scheduler);
-        let order = state.get_selection_order().value;
-        i.on_deselect(state_tree,callback_tree, scheduler);
-        return order
-    }
-    0
-}
-
-
-/// Handle a widget being selected by keyboard.
-pub fn select_widget_by_keyboard(path: String, state_tree: &mut StateTree,
-                                 widget_tree: &WidgetTree, callback_tree: &mut CallbackTree,
-                                 scheduler: &mut Scheduler) {
-
-    widget_tree.get_by_path(&path).as_ez_object().on_select(
-        state_tree, callback_tree,scheduler, None);
-    let state =
-        state_tree.get_by_path_mut(&path).as_generic_mut();
+    let state = state_tree.get_by_path_mut(path).as_generic_mut();
     state.set_selected(true);
     state.update(scheduler);
+    root_widget.get_child_by_path(path).unwrap().as_ez_object().on_select(
+        state_tree, callback_tree,scheduler, mouse_pos);
 }
+
+/// Handle a widget being deselected.
+pub fn deselect_widget(path: &str, state_tree: &mut StateTree,
+                       root_widget: &Layout, callback_tree: &mut CallbackTree,
+                       scheduler: &mut Scheduler) {
+
+    let state = state_tree.get_by_path_mut(&path).as_generic_mut();
+    state.set_selected(false);
+    state.update(scheduler);
+    if let Some(widget) = root_widget.get_child_by_path(path) {
+        widget.as_ez_object().on_deselect(state_tree, callback_tree, scheduler);
+    }
+}
+
 
 
 /// Select the next widget by selection order as defined in each selectable widget. If the last
 /// widget is currently selected wrap around and select the first. This function can always be
 /// called safely.
-pub fn select_next(state_tree: &mut StateTree, widget_tree: &WidgetTree,
-                   callback_tree: &mut CallbackTree, scheduler: &mut Scheduler) {
+pub fn select_next(state_tree: &mut StateTree, root_widget: &Layout,
+                   callback_tree: &mut CallbackTree, scheduler: &mut Scheduler,
+                   current_selection: &mut String) {
 
     let modals = state_tree.get_by_path("/root").as_layout().get_modals();
     let path_prefix = if modals.is_empty() {
@@ -82,18 +52,22 @@ pub fn select_next(state_tree: &mut StateTree, widget_tree: &WidgetTree,
         modals.first().unwrap().as_ez_object().get_full_path()
     };
 
-    let mut current_selection = deselect_selected_widget(
-        state_tree, widget_tree, callback_tree, scheduler);
-    let result = find_next_selection(current_selection, state_tree, &path_prefix);
-    if let Some(i) = result {
-        select_widget_by_keyboard(
-            i, state_tree, widget_tree, callback_tree, scheduler);
+    let mut current_selection_order = if !current_selection.is_empty() {
+        state_tree.get_by_path_mut(&current_selection)
+            .as_generic().get_selection_order().value
+    } else { 0 };
+
+    let result = find_next_selection(current_selection_order,
+                                     state_tree, &path_prefix);
+    if let Some(next_widget) = result {
+        scheduler.set_selected_widget(&next_widget, None);
     } else  {
         // There's no next widget. Reset to 0 to cycle back to first widget (if any)
-        current_selection = 0;
-        let result = find_next_selection(current_selection, state_tree, &path_prefix);
-        if let Some(i) = result {
-            select_widget_by_keyboard(i, state_tree, widget_tree, callback_tree, scheduler);
+        current_selection_order = 0;
+        let result = find_next_selection(current_selection_order,
+                                         state_tree, &path_prefix);
+        if let Some(next_widget) = result {
+            scheduler.set_selected_widget(&next_widget, None);
         }
     }
 }
@@ -127,8 +101,9 @@ pub fn find_next_selection(current_selection: usize, state_tree: &StateTree, pat
 /// Select the previous widget by selection order as defined in each selectable widget. If the first
 /// widget is currently selected wrap around and select the last. This function can always be
 /// called safely.
-pub fn select_previous(state_tree: &mut StateTree, widget_tree: &WidgetTree,
-                       callback_tree: &mut CallbackTree, scheduler: &mut Scheduler) {
+pub fn select_previous(state_tree: &mut StateTree, root_widget: &Layout,
+                       callback_tree: &mut CallbackTree, scheduler: &mut Scheduler,
+                       current_selection: &mut String) {
 
     let modals = state_tree.get_by_path("/root").as_layout().get_modals();
     let path_prefix = if modals.is_empty() {
@@ -137,20 +112,22 @@ pub fn select_previous(state_tree: &mut StateTree, widget_tree: &WidgetTree,
         modals.first().unwrap().as_ez_object().get_full_path()
     };
 
-    let mut current_selection = deselect_selected_widget(
-        state_tree, widget_tree, callback_tree, scheduler);
-    let result = find_previous_selection(current_selection, state_tree, &path_prefix);
+    let mut current_selection_order = if !current_selection.is_empty() {
+        state_tree.get_by_path_mut(&current_selection)
+            .as_generic().get_selection_order().value
+    } else { 0 };
+
+    let result = find_previous_selection(current_selection_order,
+                                         state_tree, &path_prefix);
     if let Some( previous_widget) = result {
-        select_widget_by_keyboard(previous_widget, state_tree, widget_tree, callback_tree,
-                                  scheduler);
+        scheduler.set_selected_widget(&previous_widget, None);
     } else {
         // There's no previous widget. Try again with 0 to cycle back to last widget
-        current_selection = 0;
+        current_selection_order = 0;
         let result = find_previous_selection(
-            current_selection, state_tree, &path_prefix);
+            current_selection_order, state_tree, &path_prefix);
         if let Some( previous_widget) = result {
-            select_widget_by_keyboard(previous_widget, state_tree, widget_tree,
-                                      callback_tree, scheduler);
+            scheduler.set_selected_widget(&previous_widget, None);
         }
     }
 }
@@ -182,7 +159,7 @@ pub fn find_previous_selection(current_selection: usize, state_tree: &StateTree,
 
 /// Find a widget by a screen position coordinate. Used e.g. by mouse event handlers. If a modal
 /// if active only the modal is searched.
-pub fn get_widget_by_position<'a>(pos: Coordinates, widget_tree: &'a WidgetTree,
+pub fn get_widget_by_position<'a>(pos: Coordinates, root_widget: &'a Layout,
                                   state_tree: &StateTree) -> Vec<&'a dyn EzObject> {
 
     let modals = state_tree.get_by_path("/root").as_layout().get_modals();
@@ -199,8 +176,7 @@ pub fn get_widget_by_position<'a>(pos: Coordinates, widget_tree: &'a WidgetTree,
             continue
         }
         if state.as_generic().collides(pos) {
-            results.push(widget_tree.get_by_path(&widget_path).as_ez_object());
-        } else {
+            results.push(root_widget.get_child_by_path(&widget_path).unwrap().as_ez_object());
         }
     }
     results

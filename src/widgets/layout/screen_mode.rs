@@ -14,7 +14,7 @@ impl Layout{
             state_tree.get_by_path_mut(&self.path).as_layout_mut().active_screen
                 .set(active_screen.clone());
         }
-        self.get_child(&active_screen).as_layout().get_contents(state_tree)
+        self.get_child(&active_screen).unwrap().as_layout().get_contents(state_tree)
     }
 }
 
