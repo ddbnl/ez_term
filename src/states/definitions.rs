@@ -7,42 +7,50 @@ use crate::scheduler::scheduler::Scheduler;
 use crate::scheduler::scheduler_funcs::clean_up_property;
 
 
-/// Used with Box mode [layout], determines whether widgets are placed below or above each other.
-#[derive(Clone, PartialEq, Debug)]
-pub enum LayoutOrientation {
-    Horizontal,
-    Vertical
-}
-
-
 /// Different modes determining how widgets are placed in a [layout].
 #[derive(Clone, PartialEq, Debug)]
 pub enum LayoutMode {
 
-    /// # Box mode:
     /// Widgets are placed next to each other or under one another depending on orientation.
     /// In horizontal orientation widgets always use the full height of the layout, and in
     /// vertical position they always use the full with.
     Box,
 
-    /// Float mode:
     /// Widgets are placed according to [PositionHint] or in their hardcoded XY positions.
     Float,
 
-    /// # Screen mode:
-    /// This layout can only contain other layouts. Only the root widget may be a Screen layout.
+    /// Widgets are placed evenly in a number of rows and columns. It is recommended to either set
+    /// the amount of rows or columns manually, otherwise widgets will be placed in a single row
+    /// or column.
+    Table,
+
+    /// This layout can only contain other layouts and only the root widget may be a Screen layout.
     /// Only the contents of the active screen will be shown. Active screen is controlled through
     /// [LayoutState.active_screen].
     Screen,
 
-    ///# Tabbed mode:
     /// This layout can only contain other layouts and presents those as tabs. A tab header will
     /// automatically be added for each child layout, so the user can switch between tabs. The tab
     /// header will display the [id] of the child layout.
-    Tabbed
+    Tabbed,
 
-    // todo table
     // todo stack
+}
+
+
+/// Used with Box mode [layout], determines whether widgets are placed below or above each other.
+#[derive(Clone, PartialEq, Debug)]
+pub enum LayoutOrientation {
+    Horizontal,
+    Vertical,
+    LeftRightTopBottom,
+    TopBottomLeftRight,
+    RightLeftTopBottom,
+    TopBottomRightLeft,
+    LeftRightBottomTop,
+    BottomTopLeftRight,
+    RightLeftBottomTop,
+    BottomTopRightLeft,
 }
 
 
@@ -59,6 +67,75 @@ pub enum VerticalAlignment {
     Top,
     Bottom,
     Middle
+}
+
+/// Convenience wrapper around settings for Layout Table mode.
+#[derive(PartialEq, Clone, Debug)]
+pub struct TableConfig {
+
+    /// Maximum amount of rows. Usually you want to set either the maximum amount of rows or the
+    /// maximum amount of columns, and let the other one grow with the amount of content
+    pub rows: EzProperty<usize>,
+
+    /// Maximum amount of columns. Usually you want to set either the maximum amount of rows or the
+    /// maximum amount of columns, and let the other one grow with the amount of content
+    pub columns: EzProperty<usize>,
+
+    /// Default height of rows. If kept at 0, it will be set to the height of the parent divided by
+    /// the amount of rows. If force_default_height is false, widgets are allowed to be larger
+    /// than default_height, in which case each row will grow to its' largest widget.
+    pub default_height: EzProperty<usize>,
+
+    /// Default width of columns. If kept at 0, it will be set to the width of the parent divided by
+    /// the amount of columns. If force_default_width is false, widgets are allowed to be larger
+    /// than default_width, in which case each column will grow to its' largest widget.
+    pub default_width: EzProperty<usize>,
+
+    /// Each row will be exactly default_height. If default_height is 0, it will be set to the
+    /// height of the parent divided by the amount of rows.
+    pub force_default_height: EzProperty<bool>,
+
+    /// Each column will be exactly default_width. If default_width is 0, it will be set to the
+    /// width of the parent divided by the amount of columns.
+    pub force_default_width: EzProperty<bool>,
+}
+impl TableConfig {
+
+    pub fn new(name: String, scheduler: &mut Scheduler) -> Self {
+
+        let rows_property = scheduler.new_usize_property(
+            format!("{}/table_rows", name).as_str(), 0);
+        let columns_property = scheduler.new_usize_property(
+            format!("{}/table_columns", name).as_str(), 4);
+
+        let default_height_property = scheduler.new_usize_property(
+            format!("{}/table_default_height", name).as_str(), 0);
+        let default_width_property = scheduler.new_usize_property(
+            format!("{}/table_default_width", name).as_str(), 0);
+
+        let force_default_height_property = scheduler.new_bool_property(
+            format!("{}/table_default_row_height", name).as_str(),
+            false);
+        let force_default_width_property = scheduler.new_bool_property(
+            format!("{}/table_default_column_width", name).as_str(),
+            false);
+
+        TableConfig {
+            rows: rows_property,
+            columns: columns_property,
+            default_height: default_height_property,
+            default_width: default_width_property,
+            force_default_height: force_default_height_property,
+            force_default_width: force_default_width_property,
+        }
+    }
+
+    pub fn clean_up_properties(&self, scheduler: &mut Scheduler) {
+        clean_up_property(scheduler, &self.rows.name);
+        clean_up_property(scheduler, &self.columns.name);
+        clean_up_property(scheduler, &self.force_default_height.name);
+        clean_up_property(scheduler, &self.force_default_width.name);
+    }
 }
 
 

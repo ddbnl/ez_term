@@ -41,8 +41,8 @@ pub fn deselect_widget(path: &str, state_tree: &mut StateTree,
 /// Select the next widget by selection order as defined in each selectable widget. If the last
 /// widget is currently selected wrap around and select the first. This function can always be
 /// called safely.
-pub fn select_next(state_tree: &mut StateTree, root_widget: &Layout,
-                   callback_tree: &mut CallbackTree, scheduler: &mut Scheduler,
+pub fn select_next(state_tree: &mut StateTree, _root_widget: &Layout,
+                   _callback_tree: &mut CallbackTree, scheduler: &mut Scheduler,
                    current_selection: &mut String) {
 
     let modals = state_tree.get_by_path("/root").as_layout().get_modals();
@@ -101,8 +101,8 @@ pub fn find_next_selection(current_selection: usize, state_tree: &StateTree, pat
 /// Select the previous widget by selection order as defined in each selectable widget. If the first
 /// widget is currently selected wrap around and select the last. This function can always be
 /// called safely.
-pub fn select_previous(state_tree: &mut StateTree, root_widget: &Layout,
-                       callback_tree: &mut CallbackTree, scheduler: &mut Scheduler,
+pub fn select_previous(state_tree: &mut StateTree, _root_widget: &Layout,
+                       _callback_tree: &mut CallbackTree, scheduler: &mut Scheduler,
                        current_selection: &mut String) {
 
     let modals = state_tree.get_by_path("/root").as_layout().get_modals();

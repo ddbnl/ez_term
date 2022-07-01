@@ -6,7 +6,7 @@ use std::process::exit;
 use crossterm::event::{Event, KeyCode, KeyEvent, MouseButton, MouseEvent, MouseEventKind};
 
 use crate::run::definitions::{CallbackTree, Coordinates, StateTree};
-use crate::run::select::{deselect_widget, get_widget_by_position, select_next, select_previous};
+use crate::run::select::{get_widget_by_position, select_next, select_previous};
 use crate::run::terminal::{initialize_terminal, write_to_screen};
 use crate::run::tree::ViewTree;
 use crate::scheduler::scheduler::Scheduler;

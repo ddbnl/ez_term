@@ -93,7 +93,7 @@ impl EzWidgetDefinition {
         // Templates can have properties, and instances of templates can also have properties.
         // Merge the configs making sure that the instance config takes precedence.
         if let Some(config_to_merge) = merge_config {
-            config = merge_configs(config_to_merge, config);
+            config = merge_configs(config, config_to_merge);
         }
         let initialized = self.initialize(config, templates, scheduler,
                                           parent_path, order).unwrap();

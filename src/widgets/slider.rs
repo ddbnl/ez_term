@@ -157,7 +157,7 @@ impl EzObject for Slider {
         } else {
             value -= value % state.step.value;
         }
-        
+
         value = min(value, state.maximum.value);
         state.set_value(value);
         state.update(scheduler);

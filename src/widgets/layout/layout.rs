@@ -3,7 +3,7 @@
 use std::collections::HashMap;
 use std::io::{Error, ErrorKind};
 use crossterm::event::{Event, KeyCode};
-use crate::parser::load_base_properties::{load_ez_bool_property, load_ez_string_property};
+use crate::parser::load_base_properties::{load_ez_bool_property, load_ez_string_property, load_ez_usize_property};
 use crate::parser::load_common_properties::load_common_property;
 use crate::widgets::ez_object::{EzObject, EzObjects};
 use crate::states::layout_state::LayoutState;
@@ -108,6 +108,96 @@ impl Layout {
             }))?);
         Ok(())
     }
+
+    fn load_table_rows_property(&mut self, parameter_value: &str,
+                                      scheduler: &mut Scheduler) -> Result<(), Error> {
+
+        let path = self.path.clone();
+        self.state.get_table_config_mut().rows.set(load_ez_usize_property(
+            parameter_value.trim(), scheduler, path.clone(),
+            Box::new(move |state_tree: &mut StateTree, val: EzValues| {
+                let state = state_tree.get_by_path_mut(&path)
+                    .as_layout_mut();
+                state.get_table_config_mut().rows.set(val.as_usize().to_owned());
+                path.clone()
+            }))?);
+        Ok(())
+    }
+
+    fn load_table_columns_property(&mut self, parameter_value: &str,
+                                   scheduler: &mut Scheduler) -> Result<(), Error> {
+
+        let path = self.path.clone();
+        self.state.get_table_config_mut().columns.set(load_ez_usize_property(
+            parameter_value.trim(), scheduler, path.clone(),
+            Box::new(move |state_tree: &mut StateTree, val: EzValues| {
+                let state = state_tree.get_by_path_mut(&path)
+                    .as_layout_mut();
+                state.get_table_config_mut().columns.set(val.as_usize().to_owned());
+                path.clone()
+            }))?);
+        Ok(())
+    }
+
+    fn load_table_default_height_property(&mut self, parameter_value: &str,
+                                          scheduler: &mut Scheduler) -> Result<(), Error> {
+
+        let path = self.path.clone();
+        self.state.get_table_config_mut().default_height.set(load_ez_usize_property(
+            parameter_value.trim(), scheduler, path.clone(),
+            Box::new(move |state_tree: &mut StateTree, val: EzValues| {
+                let state = state_tree.get_by_path_mut(&path)
+                    .as_layout_mut();
+                state.get_table_config_mut().default_height.set(val.as_usize().to_owned());
+                path.clone()
+            }))?);
+        Ok(())
+    }
+
+    fn load_table_default_width_property(&mut self, parameter_value: &str,
+                                         scheduler: &mut Scheduler) -> Result<(), Error> {
+
+        let path = self.path.clone();
+        self.state.get_table_config_mut().default_width.set(load_ez_usize_property(
+            parameter_value.trim(), scheduler, path.clone(),
+            Box::new(move |state_tree: &mut StateTree, val: EzValues| {
+                let state = state_tree.get_by_path_mut(&path)
+                    .as_layout_mut();
+                state.get_table_config_mut().default_width.set(val.as_usize().to_owned());
+                path.clone()
+            }))?);
+        Ok(())
+    }
+
+    fn load_table_force_default_height_property(&mut self, parameter_value: &str,
+                                              scheduler: &mut Scheduler) -> Result<(), Error> {
+
+        let path = self.path.clone();
+        self.state.get_table_config_mut().force_default_height.set(load_ez_bool_property(
+            parameter_value.trim(), scheduler, path.clone(),
+            Box::new(move |state_tree: &mut StateTree, val: EzValues| {
+                let state = state_tree.get_by_path_mut(&path)
+                    .as_layout_mut();
+                state.get_table_config_mut().force_default_height.set(val.as_bool().to_owned());
+                path.clone()
+            }))?);
+        Ok(())
+    }
+
+    fn load_table_force_default_width_property(&mut self, parameter_value: &str,
+                                                scheduler: &mut Scheduler) -> Result<(), Error> {
+
+        let path = self.path.clone();
+        self.state.get_table_config_mut().force_default_width.set(load_ez_bool_property(
+            parameter_value.trim(), scheduler, path.clone(),
+            Box::new(move |state_tree: &mut StateTree, val: EzValues| {
+                let state = state_tree.get_by_path_mut(&path)
+                    .as_layout_mut();
+                state.get_table_config_mut().force_default_width.set(val.as_bool().to_owned());
+                path.clone()
+            }))?);
+        Ok(())
+    }
 }
 
 
@@ -124,6 +214,7 @@ impl EzObject for Layout {
                 match parameter_value.to_lowercase().trim() {
                     "box" => self.state.mode = LayoutMode::Box,
                     "float" => self.state.mode = LayoutMode::Float,
+                    "table" => self.state.mode = LayoutMode::Table,
                     "screen" => self.state.mode = LayoutMode::Screen,
                     "tabbed" => self.state.mode = LayoutMode::Tabbed,
                     _ => return Err(
@@ -134,10 +225,16 @@ impl EzObject for Layout {
             },
             "orientation" => {
                 match parameter_value.trim() {
-                    "horizontal" =>
-                        self.state.orientation = LayoutOrientation::Horizontal,
-                    "vertical" =>
-                        self.state.orientation = LayoutOrientation::Vertical,
+                    "horizontal" => self.state.orientation = LayoutOrientation::Horizontal,
+                    "vertical" => self.state.orientation = LayoutOrientation::Vertical,
+                    "lr-tb" => self.state.orientation = LayoutOrientation::LeftRightTopBottom,
+                    "tb-lr" => self.state.orientation = LayoutOrientation::TopBottomLeftRight,
+                    "rl-tb" => self.state.orientation = LayoutOrientation::RightLeftTopBottom,
+                    "tb-rl" => self.state.orientation = LayoutOrientation::TopBottomRightLeft,
+                    "lr-bt" => self.state.orientation = LayoutOrientation::LeftRightBottomTop,
+                    "bt-lr" => self.state.orientation = LayoutOrientation::BottomTopLeftRight,
+                    "rl-bt" => self.state.orientation = LayoutOrientation::RightLeftBottomTop,
+                    "bt-rl" => self.state.orientation = LayoutOrientation::BottomTopRightLeft,
                     _ => return Err(
                         Error::new(ErrorKind::InvalidData,
                                    format!("Invalid parameter value for orientation {}",
@@ -155,6 +252,18 @@ impl EzObject for Layout {
                 self.load_scrolling_enable_x_property(x.trim(), scheduler)?;
                 self.load_scrolling_enable_y_property(y.trim(), scheduler)?;
             }
+            "rows" => self.load_table_rows_property(
+                parameter_value.trim(), scheduler)?,
+            "cols" => self.load_table_columns_property(
+                parameter_value.trim(), scheduler)?,
+            "row_default_height" => self.load_table_default_height_property(
+                parameter_value.trim(), scheduler)?,
+            "col_default_width" => self.load_table_default_width_property(
+                parameter_value.trim(), scheduler)?,
+            "force_default_row_height" => self.load_table_force_default_height_property(
+                parameter_value.trim(), scheduler)?,
+            "force_default_col_width" => self.load_table_force_default_width_property(
+                parameter_value.trim(), scheduler)?,
             "scroll_x" => self.load_scrolling_enable_x_property(
                 parameter_value.trim(), scheduler)?,
             "scroll_y" => self.load_scrolling_enable_y_property(
@@ -198,11 +307,16 @@ impl EzObject for Layout {
                         merged_content =
                             self.get_box_mode_vertical_orientation_contents(state_tree);
                     },
+                    _ => panic!("Error in layout: {}, mode \"Box\" requires orientation \
+                        \"Horizontal\" or \"Vertical\"", self.id),
                 }
             },
             LayoutMode::Float => {
                 merged_content =
                     self.get_float_mode_contents(merged_content, state_tree);
+            },
+            LayoutMode::Table => {
+                merged_content = self.get_table_mode_contents(state_tree);
             },
             LayoutMode::Screen => {
                 merged_content = self.get_screen_mode_contents(state_tree);

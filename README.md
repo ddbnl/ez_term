@@ -146,7 +146,7 @@ ez_term::run(root_widget, scheduler);
 If this seems useful to you please let me know or star the repo, so I can gauge interest.
 
 # Current state
-Almost ready to be released on Cargo. See the projects page for what I'm working on. 
+Planned to be released on cargo before August 2022. See the projects page for what I'm working on. 
 
 Currently supports the following:
 
@@ -160,6 +160,7 @@ Currently supports the following:
   - Tabbed layout
   - Box layout (automatically place widgets next to each other or below each
     other)
+  - Table layout (automatically place widths in a table/grid)
   - Float layout (use size hints and position hints, or hard code positions/sizes)
   - Label 
   - Text input

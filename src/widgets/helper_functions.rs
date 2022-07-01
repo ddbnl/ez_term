@@ -161,6 +161,7 @@ pub fn align_content_horizontally(mut content: PixelMap, halign: HorizontalAlign
                                   total_width: usize, fg_color: Color, bg_color: Color)
                                   -> (PixelMap, usize) {
 
+    if content.len() >= total_width { return (content, 0 ) }
     let empty_pixel = Pixel { symbol: " ".to_string(), foreground_color: fg_color,
         background_color: bg_color, underline: false};
     let mut offset = 0;
@@ -214,6 +215,8 @@ pub fn align_content_horizontally(mut content: PixelMap, halign: HorizontalAlign
 pub fn align_content_vertically(mut content: PixelMap, valign: VerticalAlignment,
                                 total_height: usize, fg_color: Color, bg_color: Color)
                                 -> (PixelMap, usize){
+
+    if content[0].len() >= total_height { return (content, 0 ) }
 
     let empty_pixel = Pixel { symbol: " ".to_string(), foreground_color: fg_color,
         background_color: bg_color, underline: false};

@@ -23,8 +23,8 @@ impl Layout {
         // that case give them '1 / number_of_children'. That way the user can add
         // multiple children in a Box layout and have them distributed equally automatically. Any
         // kind of asymmetry breaks this behavior.
-        if self.children.len() > 1 && own_state.mode != LayoutMode::Tabbed &&
-            own_state.mode != LayoutMode::Screen {
+        if self.children.len() > 1 && own_state.mode != LayoutMode::Table &&
+            own_state.mode != LayoutMode::Tabbed && own_state.mode != LayoutMode::Screen {
             let (all_default_size_hint_x, all_default_size_hint_y) =
                 self.check_default_size_hints(state_tree);
             if all_default_size_hint_x {
@@ -154,6 +154,7 @@ impl Layout {
 
     /// Add a child ([layout] or [EzWidget]) to this layout.
     pub fn add_child(&mut self, mut child: EzObjects, scheduler: &mut Scheduler) {
+        
         let generic_child = child.as_ez_object_mut();
         let id = generic_child.get_id();
         let path = generic_child.get_full_path();

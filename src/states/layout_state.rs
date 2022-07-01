@@ -1,7 +1,5 @@
 use std::collections::HashMap;
-use crate::states::definitions::{StateCoordinates, SizeHint, PosHint, StateSize, AutoScale, Padding,
-                                 HorizontalAlignment, VerticalAlignment, BorderConfig, ColorConfig,
-                                 LayoutMode, LayoutOrientation, ScrollingConfig};
+use crate::states::definitions::{StateCoordinates, SizeHint, PosHint, StateSize, AutoScale, Padding, HorizontalAlignment, VerticalAlignment, BorderConfig, ColorConfig, LayoutMode, LayoutOrientation, ScrollingConfig, TableConfig};
 use crate::{EzProperty};
 use crate::parser::ez_definition::Templates;
 use crate::run::definitions::{Coordinates, Size, StateTree};
@@ -46,11 +44,14 @@ pub struct LayoutState {
     /// Amount of space to leave between sides of the widget and other widgets
     pub padding: Padding,
 
-    /// Horizontal alignment of this widget
+    /// Horizontal alignment of this layout
     pub halign: EzProperty<HorizontalAlignment>,
 
-    /// Vertical alignment of this widget
+    /// Vertical alignment of this layout
     pub valign: EzProperty<VerticalAlignment>,
+
+    /// [TableConfig] of this layout
+    pub table_config: TableConfig,
 
     /// ID of the child that is the active screen (i.e. its content is visible)
     pub active_screen: EzProperty<String>,
@@ -77,7 +78,7 @@ pub struct LayoutState {
     /// Object containing colors to be used by this widget in different situations
     pub colors: ColorConfig,
 
-    /// [ScrollingConfig] of this layout.
+    /// See [ScrollingConfig]
     pub scrolling_config: ScrollingConfig,
 
     /// A list of open modals. Modals are widgets that overlap other content; in other words, they
@@ -117,6 +118,7 @@ impl LayoutState {
                 format!("{}/halign", path).as_str(), HorizontalAlignment::Left),
             valign: scheduler.new_vertical_alignment_property(
                 format!("{}/valign", path).as_str(), VerticalAlignment::Top),
+            table_config: TableConfig::new(path.clone(), scheduler),
             active_screen: scheduler.new_string_property(
                 format!("{}/active_screen", path).as_str(), String::new()),
             tab_name: scheduler.new_string_property(
@@ -318,6 +320,12 @@ impl LayoutState {
     pub fn get_scrolling_config_mut(&mut self) -> &mut ScrollingConfig {
         &mut self.scrolling_config
     }
+
+    /// Get a ref to the [TableConfig] active for this layout
+    pub fn get_table_config(&self) -> &TableConfig { &self.table_config  }
+
+    /// Get a mutable ref to the [TableConfig] active for this layout
+    pub fn get_table_config_mut(&mut self) -> &mut TableConfig { &mut self.table_config }
 
     /// Set [fill]
     pub fn set_fill(&mut self, enable: bool) { self.fill.set(enable); }

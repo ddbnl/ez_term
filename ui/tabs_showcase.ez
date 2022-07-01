@@ -7,7 +7,7 @@
     tab_fg_color: yellow
     tab_bg_color: red
     - Layout:
-        id: Tab 1
+        id: Scrolling
         mode: box
         orientation: horizontal
         scroll_y: true
@@ -17,11 +17,26 @@
             size_hint_y: none
             from_file: ./Examples/FullExample/dummy.txt
     - Layout:
-        id: Tab 2
+        id: Tables
         mode: box
         orientation: vertical
-        - Label:
-            text: This is a label on a second tab.
+        scroll_y: true
+        - TableShowcase:
+            orientation: lr-tb
+        - TableShowcase:
+            orientation: lr-bt
+        - TableShowcase:
+            orientation: rl-tb
+        - TableShowcase:
+            orientation: rl-bt
+        - TableShowcase:
+            orientation: tb-lr
+        - TableShowcase:
+            orientation: tb-rl
+        - TableShowcase:
+            orientation: bt-lr
+        - TableShowcase:
+            orientation: bt-rl
     - Layout:
         id: Tab 3
         mode: box
@@ -40,3 +55,38 @@
         orientation: vertical
         - Label:
             text: This is a label on a fifth tab.
+
+
+- <TableCell@Label>:
+    text: 1
+    auto_scale: true, true
+    halign: center
+    valign: middle
+
+- <TableShowcase@Layout>:
+    mode: table
+    auto_scale: true, true
+    cols: 3
+    row_default_height: 3
+    col_default_width: 3
+    padding_bottom: 1
+    border: true
+    halign: center
+    - TableCell:
+        text: 1
+    - TableCell:
+        text: 2
+    - TableCell:
+        text: 3
+    - TableCell:
+        text: 4
+    - TableCell:
+        text: 5
+    - TableCell:
+        text: 6
+    - TableCell:
+        text: 7
+    - TableCell:
+        text: 8
+    - TableCell:
+        text: 9
