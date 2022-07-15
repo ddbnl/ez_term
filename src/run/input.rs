@@ -80,7 +80,7 @@ fn handle_key_event(key: KeyEvent, state_tree: &mut StateTree,
             true
         },
         KeyCode::Enter => {
-            if !selected_widget.is_empty() & !state_tree
+            if !selected_widget.is_empty() && !state_tree
                     .get_by_path(&selected_widget).as_generic().get_disabled().value {
                 root_widget.get_child_by_path(selected_widget).unwrap().as_ez_object()
                     .on_keyboard_enter(state_tree, callback_tree, scheduler);
@@ -151,7 +151,6 @@ fn handle_mouse_hover_event(event: MouseEvent, state_tree: &mut StateTree,
                             root_widget: &Layout, callback_tree: &mut CallbackTree,
                             scheduler: &mut Scheduler) -> bool {
 
-    let mut consumed = false;
     let mouse_position = Coordinates::new(
         event.column as usize,event.row as usize);
 
@@ -160,8 +159,9 @@ fn handle_mouse_hover_event(event: MouseEvent, state_tree: &mut StateTree,
             .as_generic().get_absolute_position();
         let relative_position = Coordinates::new(
             mouse_position.x - abs.x, mouse_position.y - abs.y);
-        consumed = widget.on_hover(state_tree, callback_tree, scheduler,relative_position);
-        if consumed { return true }
+        if widget.on_hover(state_tree, callback_tree, scheduler,relative_position) {
+            return true
+        }
     }
     scheduler.deselect_widget();
     true
@@ -213,7 +213,6 @@ pub fn handle_resize(view_tree: &mut ViewTree, state_tree: &mut StateTree, root_
     let state = state_tree.get_by_path_mut(&root_widget.path).as_generic_mut();
     state.get_size_mut().width.set(new_width as usize);
     state.get_size_mut().height.set(new_height as usize);
-    root_widget.set_child_sizes(state_tree);
     let contents = root_widget.get_contents(state_tree);
     root_widget.propagate_absolute_positions(state_tree);
     // We need to re-initialize the terminal, because on Windows the hidden cursor will come back

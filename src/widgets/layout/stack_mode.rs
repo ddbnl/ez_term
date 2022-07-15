@@ -1,0 +1,503 @@
+use crate::GenericState;
+use crate::run::definitions::{Coordinates, Pixel, PixelMap, Size, StateTree};
+use crate::states::definitions::{AutoScale, ColorConfig, LayoutOrientation, ScrollingConfig,
+                                 StateSize};
+use crate::widgets::ez_object::EzObject;
+use crate::widgets::layout::layout::Layout;
+
+// Box mode implementations
+impl Layout {
+    /// Used by [get_contents] when the [LayoutMode] is set to [Box] and [LayoutOrientation] is
+    /// set to [Horizontal]. Merges contents of sub layouts and/or widgets horizontally, using
+    /// own [height] for each.
+    pub fn get_stack_mode_contents(&self, state_tree: &mut StateTree) -> PixelMap {
+
+        let state = state_tree.get_by_path_mut(&self.get_full_path()).as_layout();
+
+        let own_orientation = state.orientation.clone();
+        let own_auto_scaling = state.auto_scale.clone();
+        if own_orientation == LayoutOrientation::Vertical ||
+            own_orientation == LayoutOrientation::Horizontal {
+            panic!("Error in layout: {}. When in table mode, orientation must be one of: \
+            ‘lr-tb’, ‘tb-lr’, ‘rl-tb’, ‘tb-rl’, ‘lr-bt’, ‘bt-lr’, ‘rl-bt’ and ‘bt-rl’.",
+                   self.id)
+        }
+
+        let own_effective_size = state.get_effective_size();
+        let own_size = state.get_size().clone();
+        let own_colors = state.get_color_config().clone();
+        let own_scrolling = state.get_scrolling_config().clone();
+
+        let content_list = self.get_stack_mode_child_content(
+            state_tree, &own_size, &own_scrolling, &own_effective_size);
+        self.get_orientated_content(own_orientation, state_tree, &content_list,
+                                    &own_effective_size, &own_colors, &own_auto_scaling)
+    }
+
+    fn get_orientated_content(&self, orientation: LayoutOrientation, state_tree: &mut StateTree,
+                              content_list: &[PixelMap], effective_size: &Size,
+                              colors: &ColorConfig, auto_scaling: &AutoScale) -> PixelMap {
+
+        match orientation {
+            LayoutOrientation::LeftRightTopBottom =>
+                self.get_left_right_top_bottom_content(state_tree, content_list, effective_size,
+                                                       colors, auto_scaling),
+            LayoutOrientation::LeftRightBottomTop =>
+                self.get_left_right_bottom_top_content(state_tree, content_list, effective_size,
+                                                       colors, auto_scaling),
+            LayoutOrientation::RightLeftTopBottom =>
+                self.get_right_left_top_bottom_content(state_tree, content_list, effective_size,
+                                                       colors, auto_scaling),
+            LayoutOrientation::RightLeftBottomTop =>
+                self.get_right_left_bottom_top_content(state_tree, content_list, effective_size,
+                                                       colors, auto_scaling),
+            LayoutOrientation::TopBottomLeftRight =>
+                self.top_bottom_left_right_content(state_tree, content_list, effective_size,
+                                                   colors, auto_scaling),
+            LayoutOrientation::TopBottomRightLeft =>
+                self.top_bottom_right_left_content(state_tree, content_list, effective_size,
+                                                   colors, auto_scaling),
+            LayoutOrientation::BottomTopLeftRight =>
+                self.bottom_top_left_right_content(state_tree, content_list, effective_size,
+                                                   colors, auto_scaling),
+            LayoutOrientation::BottomTopRightLeft =>
+                self.bottom_top_right_left_content(state_tree, content_list, effective_size,
+                                                   colors, auto_scaling),
+            _ => panic!("Invalid orientation for stack"),
+        }
+    }
+
+    /// Get the content of each child
+    fn get_stack_mode_child_content(&self, state_tree: &mut StateTree, size: &StateSize,
+                                    scrolling_config: &ScrollingConfig, effective_size: &Size)
+                                    -> Vec<PixelMap> {
+
+        let mut content_list = Vec::new();
+        for child in self.get_children() {
+            let generic_child = child.as_ez_object();
+            let state = state_tree
+                .get_by_path_mut(&generic_child.get_full_path().clone()).as_generic_mut();
+
+            if size.infinite_width || scrolling_config.enable_x.value {
+                state.get_size_mut().infinite_width = true;
+            }
+            if size.infinite_height || scrolling_config.enable_y.value {
+                state.get_size_mut().infinite_height = true;
+            }
+
+            // If autoscaling is enabled set child size to max width. It is then expected to scale
+            // itself according to its' content
+            if state.get_auto_scale().width.value {
+                state.get_size_mut().width.set(effective_size.width + 1);
+            }
+            if state.get_auto_scale().height.value {
+                state.get_size_mut().height.set(effective_size.height + 1);
+            }
+
+            let child_content = generic_child.get_contents(state_tree);
+            if child_content.is_empty() { continue }  // handle empty widget
+            let state =
+                state_tree.get_by_path_mut(&generic_child.get_full_path()).as_generic_mut(); // re-borrow
+            if state.get_size().infinite_width {
+                state.get_size_mut().width.set(child_content.len())
+            }
+            if state.get_size().infinite_height {
+                state.get_size_mut().height.set(child_content[0].len())
+            }
+            content_list.push(child_content);
+        }
+        content_list
+    }
+
+    fn get_left_right_top_bottom_content(
+        &self, state_tree: &mut StateTree, content_list: &[PixelMap],
+        effective_size: &Size, colors: &ColorConfig, auto_scaling: &AutoScale) -> PixelMap {
+
+        let mut merged_content = vec!(
+            vec!(Pixel::new(" ".to_string(),
+                            colors.foreground.value,
+                            colors.background.value
+            ); effective_size.height); effective_size.width);
+
+        let (mut largest_x, mut largest_y) = (0, 0);
+        let mut pos = Coordinates::default();
+        for (i, content) in content_list.iter().enumerate() {
+            if content.len() > effective_size.width + 1 { break }
+            if content.len() > effective_size.width - pos.x {
+                if pos.y + largest_y >= effective_size.height { break }
+                pos.y = largest_y + 1;
+                let largest = content.iter().map(|x| x.len()).max().unwrap();
+                if largest > effective_size.height - pos.y { break }
+                pos.x = 0;
+            }
+
+            let state = state_tree.get_by_path_mut(
+                &self.children[i].as_ez_object().get_full_path()).as_generic_mut();
+            state.set_x(pos.x);
+            state.set_y(pos.y);
+            for child_x in 0..content.len() {
+                for child_y in 0..content[child_x].len() {
+                    if pos.y + child_y >= effective_size.height { continue }
+                    if pos.x + child_x > largest_x { largest_x = pos.x + child_x }
+                    if pos.y + child_y > largest_y { largest_y = pos.y + child_y }
+                    merged_content[pos.x + child_x][pos.y + child_y] =
+                        content[child_x][child_y].clone();
+                }
+            }
+            pos.x += content.len();
+        }
+
+        if auto_scaling.width.value {
+            merged_content = merged_content[0..=largest_x].to_vec();
+        }
+        if auto_scaling.height.value {
+            merged_content = merged_content.iter()
+                .map(|x| x[0..=largest_y].to_vec()).collect();
+        }
+        merged_content
+    }
+
+    fn get_left_right_bottom_top_content(
+        &self, state_tree: &mut StateTree, content_list: &[PixelMap],
+        effective_size: &Size, colors: &ColorConfig, auto_scaling: &AutoScale) -> PixelMap {
+
+        let mut merged_content = vec!(
+            vec!(Pixel::new(" ".to_string(),
+                            colors.foreground.value,
+                            colors.background.value
+            ); effective_size.height); effective_size.width);
+
+        let (mut largest_x, mut smallest_y) = (0, effective_size.height - 1);
+        let mut pos = Coordinates::new(0, effective_size.height - 1);
+        for (i, content) in content_list.iter().enumerate() {
+            if content.len() > effective_size.width + 1 { break }
+            if i == 0 || content.len() > effective_size.width - pos.x {
+                let largest = content.iter().map(|x| x.len()).max().unwrap();
+                if pos.y < largest { break }
+                if pos.y == effective_size.height - 1 { pos.y -= largest - 1 }
+                    else { pos.y -= largest };
+                pos.x = 0;
+            }
+
+            let state = state_tree.get_by_path_mut(
+                &self.children[i].as_ez_object().get_full_path()).as_generic_mut();
+            state.set_x(pos.x);
+            state.set_y(pos.y);
+            for child_x in 0..content.len() {
+                for child_y in 0..content[child_x].len() {
+                    if pos.y + child_y > effective_size.height { continue }
+                    if pos.x + child_x > largest_x { largest_x = pos.x + child_x }
+                    if pos.y + child_y < smallest_y { smallest_y = pos.y + child_y }
+                    merged_content[pos.x + child_x][pos.y + child_y] =
+                        content[child_x][child_y].clone();
+                }
+            }
+            pos.x += content.len();
+        }
+        if auto_scaling.width.value {
+            merged_content = merged_content[0..=largest_x].to_vec();
+        }
+        if auto_scaling.height.value {
+            merged_content = merged_content.iter()
+                .map(|x| x[smallest_y..].to_vec()).collect();
+        }
+        merged_content
+    }
+
+    fn get_right_left_top_bottom_content(
+        &self, state_tree: &mut StateTree, content_list: &[PixelMap],
+        effective_size: &Size, colors: &ColorConfig, auto_scaling: &AutoScale) -> PixelMap {
+
+        let mut merged_content = vec!(
+            vec!(Pixel::new(" ".to_string(),
+                            colors.foreground.value,
+                            colors.background.value
+            ); effective_size.height); effective_size.width);
+
+        let (mut smallest_x, mut largest_y) = (effective_size.width - 1, 0);
+        let mut pos = Coordinates::new(effective_size.width - 1, 0);
+        for (i, content) in content_list.iter().enumerate() {
+            if content.len() > effective_size.width + 1 { break }
+            if content.len() > pos.x {
+                if pos.y + largest_y >= effective_size.height { break }
+                pos.y = largest_y + 1;
+                let largest = content.iter().map(|x| x.len()).max().unwrap();
+                if largest > effective_size.height - pos.y { break }
+                pos.x = effective_size.width - 1;
+            }
+            pos.x -= content.len();
+
+            let state = state_tree.get_by_path_mut(
+                &self.children[i].as_ez_object().get_full_path()).as_generic_mut();
+            state.set_x(pos.x);
+            state.set_y(pos.y);
+            for child_x in 0..content.len() {
+                for child_y in 0..content[child_x].len() {
+                    if pos.y + child_y >= effective_size.height { continue }
+                    if pos.x + child_x < smallest_x { smallest_x = pos.x + child_x }
+                    if pos.y + child_y > largest_y { largest_y = pos.y + child_y }
+                    merged_content[pos.x + child_x][pos.y + child_y] =
+                        content[child_x][child_y].clone();
+                }
+            }
+        }
+        if auto_scaling.width.value {
+            merged_content = merged_content[smallest_x..].to_vec();
+        }
+        if auto_scaling.height.value {
+            merged_content = merged_content.iter()
+                .map(|x| x[0..=largest_y].to_vec()).collect();
+        }
+        merged_content
+    }
+
+    fn get_right_left_bottom_top_content(
+        &self, state_tree: &mut StateTree, content_list: &[PixelMap],
+        effective_size: &Size, colors: &ColorConfig, auto_scaling: &AutoScale) -> PixelMap {
+
+        let mut merged_content = vec!(
+            vec!(Pixel::new(" ".to_string(),
+                            colors.foreground.value,
+                            colors.background.value
+            ); effective_size.height); effective_size.width);
+
+        let (mut smallest_x, mut smallest_y) =
+            (effective_size.width - 1, effective_size.height - 1);
+        let mut pos =
+            Coordinates::new(effective_size.width - 1, effective_size.height - 1);
+        for (i, content) in content_list.iter().enumerate() {
+            if content.len() > effective_size.width + 1 { break }
+            if i == 0 || content.len() > pos.x {
+                let largest = content.iter().map(|x| x.len()).max().unwrap();
+                if pos.y < largest { break }
+                if pos.y == effective_size.height - 1 { pos.y -= largest - 1 }
+                    else { pos.y -= largest };
+                pos.x = effective_size.width - 1;
+            }
+
+            pos.x -= content.len();
+
+            let state = state_tree.get_by_path_mut(
+                &self.children[i].as_ez_object().get_full_path()).as_generic_mut();
+            state.set_x(pos.x);
+            state.set_y(pos.y);
+            for child_x in 0..content.len() {
+                for child_y in 0..content[child_x].len() {
+                    if pos.y + child_y >= effective_size.height { continue }
+                    if pos.x + child_x < smallest_x { smallest_x = pos.x + child_x }
+                    if pos.y + child_y < smallest_y { smallest_y = pos.y + child_y }
+                    merged_content[pos.x + child_x][pos.y + child_y] =
+                        content[child_x][child_y].clone();
+                }
+            }
+        }
+        if auto_scaling.width.value {
+            merged_content = merged_content[smallest_x..].to_vec();
+        }
+        if auto_scaling.height.value {
+            merged_content = merged_content.iter()
+                .map(|x| x[smallest_y..].to_vec()).collect();
+        }
+        merged_content
+    }
+
+    fn top_bottom_left_right_content(
+        &self, state_tree: &mut StateTree, content_list: &[PixelMap],
+        effective_size: &Size, colors: &ColorConfig, auto_scaling: &AutoScale) -> PixelMap {
+
+        let mut merged_content = vec!(
+            vec!(Pixel::new(" ".to_string(),
+                            colors.foreground.value,
+                            colors.background.value
+            ); effective_size.height); effective_size.width);
+
+        let (mut largest_x, mut largest_y) = (0, 0);
+        let mut pos = Coordinates::default();
+        for (i, content) in content_list.iter().enumerate() {
+            let largest = content.iter().map(|x| x.len()).max().unwrap();
+            if largest > effective_size.height + 1 { break }
+            if largest > effective_size.height - pos.y {
+                if pos.x + largest_x >= effective_size.width { break }
+                pos.x = largest_x + 1;
+                if content.len() > effective_size.width - pos.x { break }
+                pos.y = 0;
+            }
+
+            let state = state_tree.get_by_path_mut(
+                &self.children[i].as_ez_object().get_full_path()).as_generic_mut();
+            state.set_x(pos.x);
+            state.set_y(pos.y);
+            for child_x in 0..content.len() {
+                for child_y in 0..content[child_x].len() {
+                    if pos.x + child_x >= effective_size.width { continue }
+                    if pos.x + child_x > largest_x { largest_x = pos.x + child_x }
+                    if pos.y + child_y > largest_y { largest_y = pos.y + child_y }
+                    merged_content[pos.x + child_x][pos.y + child_y] =
+                        content[child_x][child_y].clone();
+                }
+            }
+            pos.y += largest;
+        }
+
+        if auto_scaling.width.value {
+            merged_content = merged_content[0..=largest_x].to_vec();
+        }
+        if auto_scaling.height.value {
+            merged_content = merged_content.iter()
+                .map(|x| x[0..=largest_y].to_vec()).collect();
+        }
+        merged_content
+    }
+
+    fn top_bottom_right_left_content(
+        &self, state_tree: &mut StateTree, content_list: &[PixelMap],
+        effective_size: &Size, colors: &ColorConfig, auto_scaling: &AutoScale) -> PixelMap {
+
+        let mut merged_content = vec!(
+            vec!(Pixel::new(" ".to_string(),
+                            colors.foreground.value,
+                            colors.background.value
+            ); effective_size.height); effective_size.width);
+
+        let (mut smallest_x, mut largest_y) = (effective_size.width - 1, 0);
+        let mut pos = Coordinates::new(effective_size.width - 1, 0);
+        for (i, content) in content_list.iter().enumerate() {
+            let largest = content.iter().map(|x| x.len()).max().unwrap();
+            if largest > effective_size.height { break }
+            if i == 0 || largest > effective_size.height - pos.y {
+                if content.len() >= pos.x { break }
+                pos.x -= content.len();
+                pos.y = 0;
+            }
+
+            let state = state_tree.get_by_path_mut(
+                &self.children[i].as_ez_object().get_full_path()).as_generic_mut();
+            state.set_x(pos.x);
+            state.set_y(pos.y);
+            for child_x in 0..content.len() {
+                for child_y in 0..content[child_x].len() {
+                    if pos.x + child_x >= effective_size.width ||
+                        pos.y + child_y >= effective_size.height { continue }
+                    if pos.x + child_x < smallest_x { smallest_x = pos.x + child_x }
+                    if pos.y + child_y > largest_y { largest_y = pos.y + child_y }
+                    merged_content[pos.x + child_x][pos.y + child_y] =
+                        content[child_x][child_y].clone();
+                }
+            }
+            pos.y += largest;
+        }
+
+        if auto_scaling.width.value {
+            merged_content = merged_content[smallest_x..].to_vec();
+        }
+        if auto_scaling.height.value {
+            merged_content = merged_content.iter()
+                .map(|x| x[0..=largest_y].to_vec()).collect();
+        }
+        merged_content
+    }
+
+    fn bottom_top_left_right_content(
+        &self, state_tree: &mut StateTree, content_list: &[PixelMap],
+        effective_size: &Size, colors: &ColorConfig, auto_scaling: &AutoScale) -> PixelMap {
+
+        let mut merged_content = vec!(
+            vec!(Pixel::new(" ".to_string(),
+                            colors.foreground.value,
+                            colors.background.value
+            ); effective_size.height); effective_size.width);
+
+        let (mut largest_x, mut smallest_y) = (0, effective_size.height - 1);
+        let mut pos = Coordinates::new(0,effective_size.height - 1);
+        for (i, content) in content_list.iter().enumerate() {
+            let largest = content.iter().map(|x| x.len()).max().unwrap();
+            if largest > pos.y + 1 {
+                if content.len() > effective_size.width - pos.x { break }
+                pos.x = content.len();
+                pos.y = effective_size.height - 1;
+            }
+            if pos.y == effective_size.height - 1 {
+                pos.y -= largest - 1
+            } else {
+                pos.y -= largest
+            };
+
+            let state = state_tree.get_by_path_mut(
+                &self.children[i].as_ez_object().get_full_path()).as_generic_mut();
+            state.set_x(pos.x);
+            state.set_y(pos.y);
+            for child_x in 0..content.len() {
+                for child_y in 0..content[child_x].len() {
+                    if pos.x + child_x >= effective_size.width ||
+                        pos.y + child_y >= effective_size.height { continue }
+                    if pos.x + child_x > largest_x { largest_x = pos.x + child_x }
+                    if pos.y + child_y < smallest_y { smallest_y = pos.y + child_y }
+                    merged_content[pos.x + child_x][pos.y + child_y] =
+                        content[child_x][child_y].clone();
+                }
+            }
+        }
+
+        if auto_scaling.width.value {
+            merged_content = merged_content[0..=largest_x].to_vec();
+        }
+        if auto_scaling.height.value {
+            merged_content = merged_content.iter()
+                .map(|x| x[smallest_y..].to_vec()).collect();
+        }
+        merged_content
+    }
+    fn bottom_top_right_left_content(
+        &self, state_tree: &mut StateTree, content_list: &[PixelMap],
+        effective_size: &Size, colors: &ColorConfig, auto_scaling: &AutoScale) -> PixelMap {
+
+        let mut merged_content = vec!(
+            vec!(Pixel::new(" ".to_string(),
+                            colors.foreground.value,
+                            colors.background.value
+            ); effective_size.height); effective_size.width);
+
+        let (mut smallest_x, mut smallest_y) = (effective_size.width - 1,
+                                                effective_size.height - 1);
+        let mut pos = Coordinates::new(effective_size.width - 1,
+                                                  effective_size.height - 1);
+        for (i, content) in content_list.iter().enumerate() {
+            let largest = content.iter().map(|x| x.len()).max().unwrap();
+            if largest > effective_size.height { break }
+            if i == 0 || largest > pos.y + 1 {
+                if content.len() >= pos.x { break }
+                pos.x -= content.len();
+                pos.y = effective_size.height - 1;
+            }
+            if pos.y == effective_size.height - 1 {
+                pos.y -= largest - 1
+            } else {
+                pos.y -= largest
+            };
+
+            let state = state_tree.get_by_path_mut(
+                &self.children[i].as_ez_object().get_full_path()).as_generic_mut();
+            state.set_x(pos.x);
+            state.set_y(pos.y);
+            for child_x in 0..content.len() {
+                for child_y in 0..content[child_x].len() {
+                    if pos.x + child_x >= effective_size.width ||
+                        pos.y + child_y >= effective_size.height { continue }
+                    if pos.x + child_x < smallest_x { smallest_x = pos.x + child_x }
+                    if pos.y + child_y < smallest_y { smallest_y = pos.y + child_y }
+                    merged_content[pos.x + child_x][pos.y + child_y] =
+                        content[child_x][child_y].clone();
+                }
+            }
+        }
+
+        if auto_scaling.width.value {
+            merged_content = merged_content[smallest_x..].to_vec();
+        }
+        if auto_scaling.height.value {
+            merged_content = merged_content.iter()
+                .map(|x| x[smallest_y..].to_vec()).collect();
+        }
+        merged_content
+    }
+}

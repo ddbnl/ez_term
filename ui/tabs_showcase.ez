@@ -21,28 +21,203 @@
         mode: box
         orientation: vertical
         scroll_y: true
-        - TableShowcase:
-            orientation: lr-tb
-        - TableShowcase:
-            orientation: lr-bt
-        - TableShowcase:
-            orientation: rl-tb
-        - TableShowcase:
-            orientation: rl-bt
-        - TableShowcase:
-            orientation: tb-lr
-        - TableShowcase:
-            orientation: tb-rl
-        - TableShowcase:
-            orientation: bt-lr
-        - TableShowcase:
-            orientation: bt-rl
+        - Layout:
+            mode: box
+            orientation: vertical
+            auto_scale: true, true
+            halign: center
+            border: true
+            - Label:
+                text: Left-right, top-bottom
+                halign: center
+                auto_scale: true, true
+            - TableShowcase:
+                orientation: lr-tb
+        - Layout:
+            mode: box
+            orientation: vertical
+            auto_scale: true, true
+            halign: center
+            border: true
+            - Label:
+                text: Left-right, bottom-top
+                halign: center
+                auto_scale: true, true
+            - TableShowcase:
+                orientation: lr-bt
+        - Layout:
+            mode: box
+            orientation: vertical
+            auto_scale: true, true
+            halign: center
+            border: true
+            - Label:
+                text: Right-left, top-bottom
+                halign: center
+                auto_scale: true, true
+            - TableShowcase:
+                orientation: rl-tb
+        - Layout:
+            mode: box
+            orientation: vertical
+            auto_scale: true, true
+            halign: center
+            border: true
+            - Label:
+                text: Right-left, bottom-top
+                halign: center
+                auto_scale: true, true
+            - TableShowcase:
+                orientation: rl-bt
+        - Layout:
+            mode: box
+            orientation: vertical
+            auto_scale: true, true
+            halign: center
+            border: true
+            - Label:
+                text: Top-bottom, left-right
+                halign: center
+                auto_scale: true, true
+            - TableShowcase:
+                orientation: tb-lr
+        - Layout:
+            mode: box
+            orientation: vertical
+            auto_scale: true, true
+            halign: center
+            border: true
+            - Label:
+                text: Top-bottom, right-left
+                halign: center
+                auto_scale: true, true
+            - TableShowcase:
+                orientation: tb-rl
+        - Layout:
+            mode: box
+            orientation: vertical
+            auto_scale: true, true
+            halign: center
+            border: true
+            - Label:
+                text: Bottom-top, left-right
+                halign: center
+                auto_scale: true, true
+            - TableShowcase:
+                orientation: bt-lr
+        - Layout:
+            mode: box
+            orientation: vertical
+            auto_scale: true, true
+            halign: center
+            border: true
+            - Label:
+                text: Bottom-top, right-left
+                halign: center
+                auto_scale: true, true
+            - TableShowcase:
+                orientation: bt-rl
     - Layout:
-        id: Tab 3
+        id: Stacks
         mode: box
         orientation: vertical
-        - Label:
-            text: This is a label on a third tab.
+        scroll_y: true
+        - Layout:
+            mode: box
+            orientation: vertical
+            auto_scale: true, true
+            halign: center
+            border: true
+            - Label:
+                text: Left-right, top-bottom
+                halign: center
+                auto_scale: true, true
+            - StackShowcase:
+                orientation: lr-tb
+        - Layout:
+            mode: box
+            orientation: vertical
+            auto_scale: true, true
+            halign: center
+            border: true
+            - Label:
+                text: Right-left, top-bottom
+                halign: center
+                auto_scale: true, true
+            - StackShowcase:
+                orientation: rl-tb
+        - Layout:
+            mode: box
+            orientation: vertical
+            auto_scale: true, true
+            halign: center
+            border: true
+            - Label:
+                text: Left-right, bottom-top
+                halign: center
+                auto_scale: true, true
+            - StackShowcase:
+                orientation: lr-bt
+        - Layout:
+            mode: box
+            orientation: vertical
+            auto_scale: true, true
+            halign: center
+            border: true
+            - Label:
+                text: Left-right, top-bottom
+                halign: center
+                auto_scale: true, true
+            - StackShowcase:
+                orientation: rl-bt
+        - Layout:
+            mode: box
+            orientation: vertical
+            auto_scale: true, true
+            halign: center
+            border: true
+            - Label:
+                text: Top-bottom, left-right
+                halign: center
+                auto_scale: true, true
+            - StackShowcase:
+                orientation: tb-lr
+        - Layout:
+            mode: box
+            orientation: vertical
+            auto_scale: true, true
+            halign: center
+            border: true
+            - Label:
+                text: Top-bottom, right-left
+                halign: center
+                auto_scale: true, true
+            - StackShowcase:
+                orientation: tb-rl
+        - Layout:
+            mode: box
+            orientation: vertical
+            auto_scale: true, true
+            halign: center
+            border: true
+            - Label:
+                text: Bottom-top, left-right
+                halign: center
+                auto_scale: true, true
+            - StackShowcase:
+                orientation: bt-lr
+        - Layout:
+            mode: box
+            orientation: vertical
+            auto_scale: true, true
+            halign: center
+            border: true
+            - Label:
+                text: Bottom-top, right-left
+                halign: center
+                auto_scale: true, true
+            - StackShowcase:
+                orientation: bt-rl
     - Layout:
         id: Tab 4
         mode: box
@@ -70,7 +245,6 @@
     row_default_height: 3
     col_default_width: 3
     padding_bottom: 1
-    border: true
     halign: center
     - TableCell:
         text: 1
@@ -90,3 +264,29 @@
         text: 8
     - TableCell:
         text: 9
+
+
+
+- <StackLabel@Label>:
+    text: Stack test
+    border: true
+    auto_scale_height: true
+    size_hint_x: 0.4
+
+- <StackShowcase@Layout>:
+    mode: stack
+    auto_scale_width: true
+    size_hint_y: None
+    height: 9
+    - StackLabel:
+        text: 1
+    - StackLabel:
+        text: 2
+    - StackLabel:
+        text: 3
+    - StackLabel:
+        text: 4
+    - StackLabel:
+        text: 5
+
+

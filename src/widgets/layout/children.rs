@@ -14,6 +14,7 @@ impl Layout {
 
     /// Set the sizes of children that use size_hint(s) using own proportions.
     pub fn set_child_sizes(&self, state_tree: &mut StateTree) {
+
         let own_state = state_tree.get_by_path_mut(&self.get_full_path())
             .as_layout();
         let own_width = own_state.get_effective_size().width;
@@ -23,7 +24,7 @@ impl Layout {
         // that case give them '1 / number_of_children'. That way the user can add
         // multiple children in a Box layout and have them distributed equally automatically. Any
         // kind of asymmetry breaks this behavior.
-        if self.children.len() > 1 && own_state.mode != LayoutMode::Table &&
+        if self.children.len() > 1 &&
             own_state.mode != LayoutMode::Tabbed && own_state.mode != LayoutMode::Screen {
             let (all_default_size_hint_x, all_default_size_hint_y) =
                 self.check_default_size_hints(state_tree);
@@ -60,6 +61,7 @@ impl Layout {
     /// Check if all chrildren employ default size_hints (i.e. size_hint=1) for x and y
     /// separately.
     fn check_default_size_hints(&self, state_tree: &StateTree) -> (bool, bool) {
+
         let mut all_default_size_hint_x = true;
         let mut all_default_size_hint_y = true;
         let own_orientation = state_tree.get_by_path(&self.path)

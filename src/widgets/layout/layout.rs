@@ -213,8 +213,9 @@ impl EzObject for Layout {
             "mode" => {
                 match parameter_value.to_lowercase().trim() {
                     "box" => self.state.mode = LayoutMode::Box,
-                    "float" => self.state.mode = LayoutMode::Float,
+                    "stack" => self.state.mode = LayoutMode::Stack,
                     "table" => self.state.mode = LayoutMode::Table,
+                    "float" => self.state.mode = LayoutMode::Float,
                     "screen" => self.state.mode = LayoutMode::Screen,
                     "tabbed" => self.state.mode = LayoutMode::Tabbed,
                     _ => return Err(
@@ -274,7 +275,7 @@ impl EzObject for Layout {
             _ => return Err(
                 Error::new(ErrorKind::InvalidData,
                            format!("Invalid parameter name for layout {}",
-                                   parameter_value)))
+                                   parameter_name)))
         }
         Ok(())
     }
@@ -294,37 +295,16 @@ impl EzObject for Layout {
 
         let mut merged_content = PixelMap::new();
         let mode = state_tree.get_by_path(&self.path).as_layout().mode.clone();
-        let orientation =
-            state_tree.get_by_path(&self.path).as_layout().orientation.clone();
-        match mode {
-            LayoutMode::Box => {
-                match orientation {
-                    LayoutOrientation::Horizontal => {
-                        merged_content =
-                            self.get_box_mode_horizontal_orientation_contents(state_tree);
-                    },
-                    LayoutOrientation::Vertical => {
-                        merged_content =
-                            self.get_box_mode_vertical_orientation_contents(state_tree);
-                    },
-                    _ => panic!("Error in layout: {}, mode \"Box\" requires orientation \
-                        \"Horizontal\" or \"Vertical\"", self.id),
-                }
-            },
-            LayoutMode::Float => {
-                merged_content =
-                    self.get_float_mode_contents(merged_content, state_tree);
-            },
-            LayoutMode::Table => {
-                merged_content = self.get_table_mode_contents(state_tree);
-            },
-            LayoutMode::Screen => {
-                merged_content = self.get_screen_mode_contents(state_tree);
-            },
-            LayoutMode::Tabbed => {
-                merged_content = self.get_tabbed_mode_contents(state_tree);
-            }
-        }
+
+        self.set_child_sizes(state_tree);
+        merged_content = match mode {
+            LayoutMode::Box => self.get_box_mode_contents(state_tree),
+            LayoutMode::Stack => self.get_stack_mode_contents(state_tree),
+            LayoutMode::Table => self.get_table_mode_contents(state_tree),
+            LayoutMode::Float => self.get_float_mode_contents(merged_content, state_tree),
+            LayoutMode::Screen => self.get_screen_mode_contents(state_tree),
+            LayoutMode::Tabbed => self.get_tabbed_mode_contents(state_tree),
+        };
 
         merged_content = self.add_user_filler(state_tree, merged_content);
         merged_content = self.auto_scale_to_content(state_tree, merged_content);
@@ -493,16 +473,15 @@ impl Layout {
 
     /// Scale size down to the size of the actual content of the layout.
     fn auto_scale_to_content(&self, state_tree: &mut StateTree, contents: PixelMap) -> PixelMap {
+
         let state = state_tree.get_by_path_mut(&self.get_full_path())
             .as_layout_mut();
-        // If user wants to autoscale width we set width to length of content
         if state.get_auto_scale().width.value {
             let auto_scale_width = contents.len();
             if auto_scale_width < state.get_effective_size().width {
                 state.set_effective_width(auto_scale_width);
             }
         }
-        // If user wants to autoscale height we set height to the highest column
         if state.get_auto_scale().height.value {
             let auto_scale_height = contents.iter()
                 .map(|x| x.len()).max().unwrap_or(0);
@@ -539,7 +518,6 @@ impl Layout {
         //Get contents
         let modal_content;
         if let EzObjects::Layout(ref i) = modal {
-            i.set_child_sizes(state_tree);
             modal_content = i.get_contents(state_tree);
             i.propagate_absolute_positions(state_tree);
         } else {

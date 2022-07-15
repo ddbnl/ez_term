@@ -1,12 +1,28 @@
 use crate::GenericState;
 use crate::run::definitions::{Coordinates, Pixel, PixelMap, StateTree};
-use crate::states::definitions::ColorConfig;
+use crate::states::definitions::{ColorConfig, LayoutOrientation};
 use crate::widgets::helper_functions::{align_content_horizontally, align_content_vertically};
 use crate::widgets::ez_object::EzObject;
 use crate::widgets::layout::layout::Layout;
 
 // Box mode implementations
 impl Layout{
+
+    /// Returns [get_box_mode_horizontal_orientation_contents] or
+    /// [get_box_mode_vertical_orientation_contents] depending on orientation
+    pub fn get_box_mode_contents(&self, state_tree: &mut StateTree) -> PixelMap {
+
+        match state_tree.get_by_path(&self.path).as_layout().orientation {
+            LayoutOrientation::Horizontal => {
+                self.get_box_mode_horizontal_orientation_contents(state_tree)
+            },
+            LayoutOrientation::Vertical => {
+                self.get_box_mode_vertical_orientation_contents(state_tree)
+            },
+            _ => panic!("Error in layout: {}, mode \"Box\" requires orientation \
+                        \"Horizontal\" or \"Vertical\"", self.id),
+        }
+    }
 
     /// Used by [get_contents] when the [LayoutMode] is set to [Box] and [LayoutOrientation] is
     /// set to [Horizontal]. Merges contents of sub layouts and/or widgets horizontally, using

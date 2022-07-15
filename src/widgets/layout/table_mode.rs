@@ -45,7 +45,7 @@ impl Layout{
             if own_table_config.default_width == 0 { own_effective_size.width / cols }
             else { own_table_config.default_width.value };
 
-        let content_list = self.get_child_content(
+        let content_list = self.get_table_mode_child_content(
             state_tree, &own_size, &own_scrolling, &own_effective_size);
 
         self.draw_table(&child_table, content_list, rows, cols, &own_table_config, default_width,
@@ -245,9 +245,9 @@ impl Layout{
     }
 
     /// Get the content of each child, so we can draw it in a table after.
-    fn get_child_content(&self, state_tree: &mut StateTree, size: &StateSize,
-                         scrolling_config: &ScrollingConfig, effective_size: &Size)
-        -> Vec<PixelMap> {
+    fn get_table_mode_child_content(&self, state_tree: &mut StateTree, size: &StateSize,
+                                    scrolling_config: &ScrollingConfig, effective_size: &Size)
+                                    -> Vec<PixelMap> {
 
         let mut content_list = Vec::new();
         for child in self.get_children() {

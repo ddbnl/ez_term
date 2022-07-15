@@ -16,13 +16,19 @@ pub enum LayoutMode {
     /// vertical position they always use the full with.
     Box,
 
-    /// Widgets are placed according to [PositionHint] or in their hardcoded XY positions.
-    Float,
+    /// Widgets are stacked in the primary orientation until no more space is left, then along
+    /// the secondary orientation. For example with orientation "left-right, top-bottom", widgets
+    /// are placed from left to right until there is no more width left, then the next widgets
+    /// will be placed below that, also left-to-right.
+    Stack,
 
     /// Widgets are placed evenly in a number of rows and columns. It is recommended to either set
     /// the amount of rows or columns manually, otherwise widgets will be placed in a single row
     /// or column.
     Table,
+
+    /// Widgets are placed according to [PositionHint] or in their hardcoded XY positions.
+    Float,
 
     /// This layout can only contain other layouts and only the root widget may be a Screen layout.
     /// Only the contents of the active screen will be shown. Active screen is controlled through
@@ -33,8 +39,6 @@ pub enum LayoutMode {
     /// automatically be added for each child layout, so the user can switch between tabs. The tab
     /// header will display the [id] of the child layout.
     Tabbed,
-
-    // todo stack
 }
 
 

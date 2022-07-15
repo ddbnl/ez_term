@@ -54,7 +54,6 @@ fn initialize_widgets(root_widget: &mut Layout) -> (ViewTree, StateTree) {
     // Get initial state tree, then convert all size_hints into actual sizes. After that we can
     // set absolute positions for all children as sizes are now known.
     let mut state_tree = initialize_state_tree(&root_widget);
-    root_widget.set_child_sizes(&mut state_tree);
     let all_content = root_widget.get_contents(&mut state_tree);
     root_widget.propagate_absolute_positions(&mut state_tree);
 
