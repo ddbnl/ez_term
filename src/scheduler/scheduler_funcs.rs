@@ -146,7 +146,7 @@ pub fn update_properties(scheduler: &mut Scheduler, state_tree: &mut StateTree,
 /// Drain channel values. Called occasionally to drain channels which have no subscribers.
 pub fn drain_property_channels(scheduler: &mut Scheduler) {
     for receiver in scheduler.property_receivers.values() {
-        while let Ok(_) = receiver.try_recv() {}
+        while receiver.try_recv().is_ok() {}
     }
 }
 

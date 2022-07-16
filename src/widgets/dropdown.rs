@@ -408,7 +408,7 @@ impl DroppedDownMenu {
         if state.collides(pos) {
             let clicked_row = pos.y - state.absolute_position.y;
             // Check if not click on border
-            if clicked_row != 0 && clicked_row <= state.get_effective_size().height - 2 {
+            if clicked_row != 0 && clicked_row <= state.get_effective_size().height {
                 let choice = state.get_dropped_down_options()[clicked_row - 1]
                     .clone();
                 let state = state_tree.get_by_path_mut(&parent).as_dropdown_mut();

@@ -89,7 +89,7 @@ impl DropdownState {
            allow_none: scheduler.new_bool_property(format!("{}/allow_none", path).as_str(),true),
            choice: scheduler.new_string_property(format!("{}/choice", path).as_str(),
                                                  String::new()),
-           border_config: BorderConfig::new(false, path.clone(), scheduler),
+           border_config: BorderConfig::new(true, path.clone(), scheduler),
            colors: ColorConfig::new(path, scheduler),
        }
     }
@@ -155,15 +155,12 @@ impl GenericState for DropdownState {
 
     fn get_selection_order(&self) -> &EzProperty<usize> { &self.selection_order }
 
-    fn set_selection_order(&mut self, order: usize) {
-        self.selection_order.set(order);
-    }
+    fn set_selection_order(&mut self, order: usize) { self.selection_order.set(order); }
 
-    fn set_selected(&mut self, state: bool) {
-        self.selected = state;
-    }
+    fn set_selected(&mut self, state: bool) { self.selected = state; }
 
     fn get_selected(&self) -> bool { self.selected }
+
     fn clean_up_properties(&self, scheduler: &mut Scheduler) {
 
         self.position.clean_up_properties(scheduler);

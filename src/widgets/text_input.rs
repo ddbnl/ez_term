@@ -192,6 +192,7 @@ impl EzObject for TextInput {
     fn on_left_mouse_click(&self, _state_tree: &mut StateTree, _callback_tree: &mut CallbackTree,
                            scheduler: &mut Scheduler, mouse_pos: Coordinates) -> bool {
 
+        scheduler.deselect_widget(); // We deselect first to allow re-selecting in a different pos
         scheduler.set_selected_widget(&self.path, Some(mouse_pos));
         true
     }

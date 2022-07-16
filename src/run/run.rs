@@ -172,10 +172,11 @@ fn run_loop(mut root_widget: Layout, mut callback_tree: CallbackTree, mut schedu
             // Try to let currently selected widget handle and consume the event
             if !consumed && !selected_widget.is_empty() &&
                 !state_tree.get_by_path(&selected_widget).as_generic().get_disabled().value {
-                let widget = root_widget.get_child_by_path(&selected_widget)
-                    .unwrap().as_ez_object();
-                consumed = widget.handle_event(
-                    event, &mut state_tree, &mut callback_tree, &mut scheduler);
+                if let Some(widget) =
+                root_widget.get_child_by_path(&selected_widget) {
+                    consumed = widget.as_ez_object().handle_event(
+                        event, &mut state_tree, &mut callback_tree, &mut scheduler);
+                }
             }
             if !consumed {
                 if let Event::Resize(width, height) = event {

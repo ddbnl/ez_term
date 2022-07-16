@@ -26,7 +26,6 @@
             orientation: vertical
             auto_scale: true, true
             halign: center
-            border: true
             - Label:
                 text: Left-right, top-bottom
                 halign: center
@@ -38,7 +37,6 @@
             orientation: vertical
             auto_scale: true, true
             halign: center
-            border: true
             - Label:
                 text: Left-right, bottom-top
                 halign: center
@@ -50,7 +48,6 @@
             orientation: vertical
             auto_scale: true, true
             halign: center
-            border: true
             - Label:
                 text: Right-left, top-bottom
                 halign: center
@@ -62,7 +59,6 @@
             orientation: vertical
             auto_scale: true, true
             halign: center
-            border: true
             - Label:
                 text: Right-left, bottom-top
                 halign: center
@@ -74,7 +70,6 @@
             orientation: vertical
             auto_scale: true, true
             halign: center
-            border: true
             - Label:
                 text: Top-bottom, left-right
                 halign: center
@@ -86,7 +81,6 @@
             orientation: vertical
             auto_scale: true, true
             halign: center
-            border: true
             - Label:
                 text: Top-bottom, right-left
                 halign: center
@@ -98,7 +92,6 @@
             orientation: vertical
             auto_scale: true, true
             halign: center
-            border: true
             - Label:
                 text: Bottom-top, left-right
                 halign: center
@@ -110,7 +103,6 @@
             orientation: vertical
             auto_scale: true, true
             halign: center
-            border: true
             - Label:
                 text: Bottom-top, right-left
                 halign: center
@@ -127,7 +119,6 @@
             orientation: vertical
             auto_scale: true, true
             halign: center
-            border: true
             - Label:
                 text: Left-right, top-bottom
                 halign: center
@@ -139,7 +130,6 @@
             orientation: vertical
             auto_scale: true, true
             halign: center
-            border: true
             - Label:
                 text: Right-left, top-bottom
                 halign: center
@@ -151,7 +141,6 @@
             orientation: vertical
             auto_scale: true, true
             halign: center
-            border: true
             - Label:
                 text: Left-right, bottom-top
                 halign: center
@@ -163,7 +152,6 @@
             orientation: vertical
             auto_scale: true, true
             halign: center
-            border: true
             - Label:
                 text: Left-right, top-bottom
                 halign: center
@@ -175,7 +163,6 @@
             orientation: vertical
             auto_scale: true, true
             halign: center
-            border: true
             - Label:
                 text: Top-bottom, left-right
                 halign: center
@@ -187,7 +174,6 @@
             orientation: vertical
             auto_scale: true, true
             halign: center
-            border: true
             - Label:
                 text: Top-bottom, right-left
                 halign: center
@@ -199,7 +185,6 @@
             orientation: vertical
             auto_scale: true, true
             halign: center
-            border: true
             - Label:
                 text: Bottom-top, left-right
                 halign: center
@@ -211,7 +196,6 @@
             orientation: vertical
             auto_scale: true, true
             halign: center
-            border: true
             - Label:
                 text: Bottom-top, right-left
                 halign: center
