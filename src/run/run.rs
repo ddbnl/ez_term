@@ -5,6 +5,7 @@ use std::process::exit;
 use std::time::{Duration, Instant};
 
 use crossterm::{event::{Event, MouseEventKind, poll, read}, Result};
+use crossterm::event::MouseButton;
 
 use crate::CallbackConfig;
 use crate::run::definitions::{CallbackTree, Coordinates, StateTree};
@@ -118,11 +119,13 @@ fn run_loop(mut root_widget: Layout, mut callback_tree: CallbackTree, mut schedu
     -> Result<()>{
 
     let (mut view_tree, mut state_tree) = initialize_widgets(&mut root_widget);
-    let last_update = Instant::now();
-    let mut last_mouse_pos: (u16, u16) = (0, 0);
-    let mut cleanup_timer = 0;
-    let mut selected_widget = String::new();
-    let tick_rate = (1/60) as u64;
+    let last_update = Instant::now(); // Time of last screen update,
+    let tick_rate = (1/60) as u64; // Screen update interval
+    let mut last_mouse_pos: (u16, u16) = (0, 0); // To ignore move events if pos is not different
+    let mut cleanup_timer = 0; // Interval for cleaning up orphaned states and callbacks
+    let mut selected_widget = String::new(); // Currently selected widget
+    let mut dragging: Option<String> = None; // Widget currently being dragged if any
+    let mut last_dragging_pos = Coordinates::new(0, 0);
     loop {
 
         // We check for and deal with a possible event
@@ -136,6 +139,7 @@ fn run_loop(mut root_widget: Layout, mut callback_tree: CallbackTree, mut schedu
             // events as possible before the next frame, then check if it moved position.
             if let Event::Mouse(mouse_event) = event {
                 if let MouseEventKind::Moved = mouse_event.kind {
+                    dragging = None;
                     let pos = (mouse_event.column, mouse_event.row);
                     while let Ok(true) = poll(Duration::from_millis(1)) {
                         let spam_event = read();
@@ -152,11 +156,32 @@ fn run_loop(mut root_widget: Layout, mut callback_tree: CallbackTree, mut schedu
                             break
                         }
                     }
-
-                } else if let MouseEventKind::Drag(_) = mouse_event.kind{
-                    continue
                 }
             }
+            if let Event::Mouse(mouse_event) = event {
+                if let MouseEventKind::Drag(_) = mouse_event.kind {
+                    let pos = (mouse_event.column, mouse_event.row);
+                    while let Ok(true) = poll(Duration::from_millis(1)) {
+                        let spam_event = read();
+                        if let Ok(Event::Mouse(spam_mouse_event)) = spam_event {
+                            if let MouseEventKind::Drag(button) = spam_mouse_event.kind {
+                                event = spam_event.unwrap();
+                                if last_mouse_pos != pos {
+                                    last_mouse_pos = pos;
+                                    if button != MouseButton::Left { consumed = true }
+                                    break
+                                }
+                            }
+                        } else {
+                            event = spam_event.unwrap();
+                            break
+                        }
+                    }
+                }
+            } else {
+                dragging = None;
+            }
+
             // Modals get top priority in consuming events
             if !consumed {
                 consumed = handle_modal_event(
@@ -165,9 +190,9 @@ fn run_loop(mut root_widget: Layout, mut callback_tree: CallbackTree, mut schedu
 
             // Try to handle event as a global event
             if !consumed {
-                consumed = handle_global_event(event, &mut state_tree, &root_widget,
-                                               &mut callback_tree, &mut scheduler,
-                                               &mut selected_widget);
+                consumed = handle_global_event(
+                    event, &mut state_tree, &root_widget, &mut callback_tree, &mut scheduler,
+                    &mut selected_widget, &mut dragging, &mut last_dragging_pos);
             }
             // Try to let currently selected widget handle and consume the event
             if !consumed && !selected_widget.is_empty() &&

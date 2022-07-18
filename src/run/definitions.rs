@@ -5,6 +5,7 @@ use crossterm::style::{Color, StyledContent, Stylize};
 
 use crate::CallbackConfig;
 use crate::run::tree::Tree;
+use crate::states::definitions::StateSize;
 use crate::states::ez_state::EzState;
 
 
@@ -29,7 +30,15 @@ pub struct Size {
     pub height: usize,
 }
 impl Size {
+
     pub fn new(width: usize, height: usize) -> Self { Size{width, height}}
+
+    pub fn from_state_size(other: &StateSize) -> Self {
+        Size {
+            width: other.width.value,
+            height: other.height.value,
+        }
+    }
 }
 
 

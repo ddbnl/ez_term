@@ -413,13 +413,37 @@ pub trait EzObject {
     /// Call the bound callback if there is any. This method can always be called safely. Used to
     /// prevent a lot of duplicate ```if let Some(i)``` code.
     fn on_hover_callback(&self, state_tree: &mut StateTree,
-                                     callback_tree: &mut CallbackTree, scheduler: &mut Scheduler,
-                                     mouse_pos: Coordinates) -> bool {
+                         callback_tree: &mut CallbackTree, scheduler: &mut Scheduler,
+                         mouse_pos: Coordinates) -> bool {
 
         if let Some(ref mut i) = callback_tree
             .get_by_path_mut(&self.get_full_path()).on_hover {
             return i(EzContext::new(self.get_full_path(), state_tree, scheduler),
                      mouse_pos);
+        };
+        false
+    }
+
+    /// Called on an object when it is left mouse dragged. This default implementation only calls 
+    /// the appropriate callback. Objects can overwrite this function but must remember to also 
+    /// call the callback.
+    fn on_drag(&self, state_tree: &mut StateTree, callback_tree: &mut CallbackTree,
+                scheduler: &mut Scheduler, previous_pos: Option<Coordinates>, 
+               mouse_pos: Coordinates) -> bool {
+
+        self.on_drag_callback(state_tree, callback_tree, scheduler, previous_pos, mouse_pos)
+    }
+
+    /// Call the bound callback if there is any. This method can always be called safely. Used to
+    /// prevent a lot of duplicate ```if let Some(i)``` code.
+    fn on_drag_callback(&self, state_tree: &mut StateTree,
+                         callback_tree: &mut CallbackTree, scheduler: &mut Scheduler,
+                         previous_pos: Option<Coordinates>, mouse_pos: Coordinates) -> bool {
+
+        if let Some(ref mut i) = callback_tree
+            .get_by_path_mut(&self.get_full_path()).on_drag {
+            return i(EzContext::new(self.get_full_path(), state_tree, scheduler),
+                     previous_pos, mouse_pos);
         };
         false
     }

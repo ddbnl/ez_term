@@ -175,8 +175,14 @@ pub fn get_widget_by_position<'a>(pos: Coordinates, root_widget: &'a Layout,
             widget_is_hidden(widget_path.clone(),  state_tree) {
             continue
         }
-        if state.as_generic().collides(pos) {
-            results.push(root_widget.get_child_by_path(&widget_path).unwrap().as_ez_object());
+        if let EzState::Layout(i) = state {
+            if i.collides(pos) {
+                results.push(
+                    root_widget.get_child_by_path(widget_path).unwrap().as_ez_object());
+            }
+        } else if state.as_generic().collides_effective(pos) {
+                results.push(
+                    root_widget.get_child_by_path(widget_path).unwrap().as_ez_object());
         }
     }
     results

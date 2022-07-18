@@ -1,5 +1,6 @@
 //! # layout
 //! Module implementing the layout struct.
+use std::arch::x86_64::_mm_or_si128;
 use std::collections::HashMap;
 use std::io::{Error, ErrorKind};
 use crossterm::event::{Event, KeyCode};
@@ -378,8 +379,11 @@ impl EzObject for Layout {
 
         let state = state_tree.get_by_path_mut(&self.path).as_layout_mut();
 
+        let v_edge = if state.border_config.enabled.value
+        { state.get_effective_size().height + 1 }
+        else { state.get_effective_size().height };
         if state.scrolling_config.is_scrolling_x &&
-            mouse_pos.y == state.get_effective_size().height + 1 {
+            mouse_pos.y == v_edge {
 
             let (scrollbar_size, scrollbar_pos) =
                 self.get_horizontal_scrollbar_parameters(
@@ -396,9 +400,11 @@ impl EzObject for Layout {
             }
         }
 
+        let h_edge = if state.border_config.enabled.value
+            { state.get_effective_size().width + 1 }
+            else { state.get_effective_size().width };
         if state.scrolling_config.is_scrolling_y &&
-            mouse_pos.x == state.get_size().width.value - 1 {
-
+            mouse_pos.x == h_edge {
             let (scrollbar_size, scrollbar_pos) = self.get_vertical_scrollbar_parameters(
                 state.get_scrolling_config().original_height,
                 state.get_effective_size().height,
@@ -413,6 +419,84 @@ impl EzObject for Layout {
             }
         }
         false
+    }
+
+    fn on_drag(&self, state_tree: &mut StateTree, callback_tree: &mut CallbackTree,
+               scheduler: &mut Scheduler, previous_pos: Option<Coordinates>,
+               mouse_pos: Coordinates) -> bool {
+
+        let mut consumed =
+            self.on_drag_callback(state_tree, callback_tree, scheduler, previous_pos, mouse_pos);
+
+        let state = state_tree.get_by_path_mut(&self.path).as_layout_mut();
+
+        if state.scrolling_config.is_scrolling_x &&
+            mouse_pos.y + 2 == state.get_size().height.value {
+
+            let (scrollbar_size, scrollbar_pos) =
+                self.get_horizontal_scrollbar_parameters(
+                    state.get_scrolling_config().original_width,
+                    state.get_effective_size().width,
+                    state.get_scrolling_config().view_start_x);
+
+            if previous_pos.is_none() {
+                if mouse_pos.x >= scrollbar_pos && mouse_pos.x <= scrollbar_pos + scrollbar_size {
+                    return true
+                } else {
+                    return false
+                }
+            }
+            if previous_pos.unwrap().x > mouse_pos.x &&
+                (mouse_pos.x as isize).abs_diff(previous_pos.unwrap().x as isize)
+                    > state.scrolling_config.view_start_x {
+                state.scrolling_config.view_start_x = 0;
+            } else if previous_pos.unwrap().x < mouse_pos.x &&
+                state.scrolling_config.view_start_x + (mouse_pos.x - previous_pos.unwrap().x) >
+                    state.scrolling_config.original_width - state.get_effective_size().width {
+                state.scrolling_config.view_start_x = state.scrolling_config.original_width -
+                    state.get_effective_size().width
+            } else {
+                state.scrolling_config.view_start_x =
+                    (state.scrolling_config.view_start_x as isize + mouse_pos.x as isize -
+                        previous_pos.unwrap().x as isize) as usize;
+            }
+            consumed = true;
+
+        } else if state.scrolling_config.is_scrolling_y &&
+            mouse_pos.x + 2 == state.get_size().width.value {
+
+            let (scrollbar_size, scrollbar_pos) =
+                self.get_vertical_scrollbar_parameters(
+                    state.get_scrolling_config().original_height,
+                    state.get_effective_size().height,
+                    state.get_scrolling_config().view_start_y);
+
+            if previous_pos.is_none() {
+                if mouse_pos.y >= scrollbar_pos && mouse_pos.y <= scrollbar_pos + scrollbar_size {
+                    return true
+                } else {
+                    return false
+                }
+            }
+            if previous_pos.unwrap().y > mouse_pos.y &&
+                (mouse_pos.y as isize).abs_diff(previous_pos.unwrap().y as isize)
+                    > state.scrolling_config.view_start_y {
+                state.scrolling_config.view_start_y = 0;
+            } else if previous_pos.unwrap().y < mouse_pos.y &&
+                state.scrolling_config.view_start_y + (mouse_pos.y - previous_pos.unwrap().y) >
+                    state.scrolling_config.original_height - state.get_effective_size().height {
+                state.scrolling_config.view_start_y = state.scrolling_config.original_height -
+                    state.get_effective_size().height
+            } else {
+                state.scrolling_config.view_start_y =
+                    (state.scrolling_config.view_start_y as isize + mouse_pos.y as isize -
+                        previous_pos.unwrap().y as isize) as usize;
+            }
+            consumed = true;
+        }
+        state.update(scheduler);
+        self.propagate_absolute_positions(state_tree);
+        consumed
     }
 
     fn on_scroll_up(&self, state_tree: &mut StateTree, _callback_tree: &mut CallbackTree,

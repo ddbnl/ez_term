@@ -475,12 +475,26 @@ pub trait GenericState {
         true
     }
 
+    /// Returns a bool representing whether a single point collides with a widget using its
+    /// effective size, meaning its borders, padding, etc. are ignored
+    fn collides_effective(&self, pos: Coordinates) -> bool {
+        let size = self.get_effective_size();
+        self._collides(pos, &size)
+    }
+
     /// Returns a bool representing whether a single point collides with a widget.
     fn collides(&self, pos: Coordinates) -> bool {
+        let size = Size::from_state_size(self.get_size());
+        self._collides(pos, &size)
+    }
+
+    /// Base func for whether a single point collides with a widget. Use [collides] or
+    /// [collides_effective] depending on the situation.
+    fn _collides(&self, pos: Coordinates, size: &Size) -> bool {
+
         let starting_pos = self.get_effective_absolute_position();
-        let end_pos = Coordinates::new(
-            starting_pos.x + self.get_effective_size().width - 1,
-             starting_pos.y + self.get_effective_size().height - 1);
+        let end_pos = Coordinates::new(starting_pos.x + size.width - 1,
+                                                  starting_pos.y + size.height - 1);
         pos.x >= starting_pos.x && pos.x <= end_pos.x &&
             pos.y >= starting_pos.y && pos.y <= end_pos.y
     }

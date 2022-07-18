@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use crossterm::event::KeyCode;
 use crossterm::style::Color;
 use crate::property::ez_property::EzProperty;
-use crate::scheduler::definitions::{GenericEzFunction, KeyboardCallbackFunction, MouseCallbackFunction, OptionalMouseCallbackFunction};
+use crate::scheduler::definitions::{GenericEzFunction, KeyboardCallbackFunction, MouseCallbackFunction, MouseDragCallbackFunction, OptionalMouseCallbackFunction};
 use crate::scheduler::scheduler::Scheduler;
 use crate::scheduler::scheduler_funcs::clean_up_property;
 
@@ -152,6 +152,7 @@ pub struct StateSize {
     pub infinite_height: bool,
 }
 impl StateSize {
+
     pub fn new(width: usize, height: usize, name: String, scheduler: &mut Scheduler) -> Self {
 
         let width_property = scheduler.new_usize_property(
@@ -299,6 +300,9 @@ pub struct CallbackConfig {
     /// Function to call when this widget is mouse hovered
     pub on_hover: Option<MouseCallbackFunction>,
 
+    /// Function to call when this widget is left mouse dragged
+    pub on_drag: Option<MouseDragCallbackFunction>,
+
     /// Function to call when this widget is scrolled up
     pub on_scroll_up: Option<GenericEzFunction>,
 
@@ -372,6 +376,18 @@ impl CallbackConfig {
         obj
     }
 
+    pub fn from_on_hover(func: MouseCallbackFunction) -> Self {
+        let mut obj = CallbackConfig::default();
+        obj.on_hover = Some(func);
+        obj
+    }
+
+    pub fn from_on_drag(func: MouseDragCallbackFunction) -> Self {
+        let mut obj = CallbackConfig::default();
+        obj.on_drag = Some(func);
+        obj
+    }
+
     pub fn from_keymap(keymap: KeyMap) -> Self {
         let mut obj = CallbackConfig::default();
         obj.keymap = keymap;
@@ -397,6 +413,10 @@ impl CallbackConfig {
             else { self.on_scroll_down = other.on_scroll_down};
         if let None = other.on_keyboard_enter {}
             else { self.on_keyboard_enter = other.on_keyboard_enter};
+        if let None = other.on_hover {}
+            else { self.on_hover = other.on_hover};
+        if let None = other.on_drag {}
+            else { self.on_drag = other.on_drag};
         self.keymap.extend(other.keymap);
     }
 

@@ -30,6 +30,12 @@ pub type MouseCallbackFunction = Box<dyn FnMut(EzContext, Coordinates) -> bool>;
 pub type OptionalMouseCallbackFunction = Box<dyn FnMut(EzContext, Option<Coordinates>) -> bool>;
 
 
+/// This is used for binding mouse event callbacks to widgets, meaning that any callback functions
+/// user makes should use this signature.
+pub type MouseDragCallbackFunction = Box<dyn FnMut(EzContext, Option<Coordinates>, Coordinates)
+    -> bool>;
+
+
 /// Used for callbacks and scheduled tasks that don't require special parameter such as KeyCodes
 /// or mouse positions. Used e.g. for [on_value_change] and [on_keyboard_enter].
 pub type GenericEzFunction = Box<dyn FnMut(EzContext) -> bool>;

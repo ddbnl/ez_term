@@ -343,7 +343,7 @@ impl EzObject for DroppedDownMenu {
                         return true
                     }
                 } else if event.kind == MouseEventKind::Moved &&
-                    state.collides(mouse_position) {
+                    state.collides_effective(mouse_position) {
                     return self.handle_hover(state, mouse_position)
                 }
             },
@@ -405,7 +405,7 @@ impl DroppedDownMenu {
         let state = state_tree.get_by_path(&self.get_full_path())
             .as_dropped_down_menu();
         let parent = state.parent_path.clone();
-        if state.collides(pos) {
+        if state.collides_effective(pos) {
             let clicked_row = pos.y - state.absolute_position.y;
             // Check if not click on border
             if clicked_row != 0 && clicked_row <= state.get_effective_size().height {

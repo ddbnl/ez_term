@@ -47,7 +47,8 @@ pub fn handle_modal_event (event: Event, state_tree: &mut StateTree,
 /// left/right clicks, etc. If the event is bound globally, it will be consumed.
 pub fn handle_global_event(event: Event, state_tree: &mut StateTree,
                        root_widget: &Layout, callback_tree: &mut CallbackTree,
-                       scheduler: &mut Scheduler, selected_widget: &mut String) -> bool {
+                       scheduler: &mut Scheduler, selected_widget: &mut String,
+                       dragging: &mut Option<String>, last_dragging_pos: &mut Coordinates) -> bool {
 
     match event {
         Event::Key(key) => {
@@ -55,7 +56,8 @@ pub fn handle_global_event(event: Event, state_tree: &mut StateTree,
                              selected_widget)
         }
         Event::Mouse(event) => {
-            handle_mouse_event(event, state_tree, root_widget, callback_tree, scheduler)
+            handle_mouse_event(event, state_tree, root_widget, callback_tree, scheduler,
+                               dragging, last_dragging_pos)
         }
         _ => false,
     }
@@ -101,10 +103,15 @@ fn handle_key_event(key: KeyEvent, state_tree: &mut StateTree,
 /// layout the button lives in.
 fn handle_mouse_event(event: MouseEvent, state_tree: &mut StateTree,
                       root_widget: &Layout, callback_tree: &mut CallbackTree,
-                      scheduler: &mut Scheduler) -> bool {
+                      scheduler: &mut Scheduler, dragging: &mut Option<String>,
+                      last_dragging_pos: &mut Coordinates) -> bool {
 
     if let MouseEventKind::Moved = event.kind {
         return handle_mouse_hover_event(event, state_tree, root_widget, callback_tree, scheduler);
+    }
+    if let MouseEventKind::Drag(_) = event.kind {
+        return handle_mouse_drag_event(event, state_tree, root_widget, callback_tree, scheduler,
+                                       dragging, last_dragging_pos);
     }
     else if let MouseEventKind::Down(button) = event.kind {
         return handle_mouse_press_event(event, button, state_tree, root_widget, callback_tree,
@@ -116,13 +123,14 @@ fn handle_mouse_event(event: MouseEvent, state_tree: &mut StateTree,
     }
     false
 }
+
+
 fn handle_mouse_press_event(event: MouseEvent, button: MouseButton, state_tree: &mut StateTree,
                       root_widget: &Layout, callback_tree: &mut CallbackTree,
                       scheduler: &mut Scheduler) -> bool {
 
     let consumed = false;
-    let mouse_position = Coordinates::new(
-        event.column as usize,event.row as usize);
+    let mouse_position = Coordinates::new(event.column as usize,event.row as usize);
     for widget in get_widget_by_position(
         mouse_position, root_widget, state_tree) {
 
@@ -151,8 +159,7 @@ fn handle_mouse_hover_event(event: MouseEvent, state_tree: &mut StateTree,
                             root_widget: &Layout, callback_tree: &mut CallbackTree,
                             scheduler: &mut Scheduler) -> bool {
 
-    let mouse_position = Coordinates::new(
-        event.column as usize,event.row as usize);
+    let mouse_position = Coordinates::new(event.column as usize,event.row as usize);
 
     for widget in get_widget_by_position(mouse_position, root_widget, state_tree) {
         let abs = state_tree.get_by_path(&widget.get_full_path())
@@ -164,6 +171,39 @@ fn handle_mouse_hover_event(event: MouseEvent, state_tree: &mut StateTree,
         }
     }
     scheduler.deselect_widget();
+    true
+}
+
+
+fn handle_mouse_drag_event(event: MouseEvent, state_tree: &mut StateTree,
+                           root_widget: &Layout, callback_tree: &mut CallbackTree,
+                           scheduler: &mut Scheduler, dragging: &mut Option<String>,
+                           last_dragging_pos: &mut Coordinates) -> bool {
+
+    let mouse_position = Coordinates::new(event.column as usize,event.row as usize);
+
+    for widget in get_widget_by_position(mouse_position, root_widget, state_tree) {
+        if let Some(ref path) = dragging {
+            if path != &widget.get_full_path() { continue }
+        }
+        let abs = state_tree.get_by_path(&widget.get_full_path())
+            .as_generic().get_absolute_position();
+        let relative_position = Coordinates::new(
+            mouse_position.x - abs.x, mouse_position.y - abs.y);
+        let consumed = if dragging.is_some() {
+            widget.on_drag(state_tree, callback_tree, scheduler,
+                           Some(*last_dragging_pos), relative_position)
+        } else {
+            widget.on_drag(state_tree, callback_tree, scheduler,
+                           None, relative_position)
+        };
+        if consumed {
+            dragging.replace(widget.get_full_path());
+            last_dragging_pos.x = relative_position.x;
+            last_dragging_pos.y = relative_position.y;
+            return true
+        }
+    }
     true
 }
 
@@ -198,6 +238,7 @@ fn handle_mouse_scroll_down_event(event: MouseEvent, state_tree: &mut StateTree,
     }
     consumed
 }
+
 
 /// Handle a resize event by setting the size of the root widget to the new window size, updating
 /// the sizes/positions of all children and generating a new view tree of the right size.

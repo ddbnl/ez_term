@@ -1,7 +1,7 @@
 //! A widget that displays text non-interactively.
 use std::cmp::min;
 use std::io::{Error, ErrorKind};
-use crossterm::event::{Event, KeyCode};
+use crossterm::event::{Event, KeyCode, poll};
 use crate::states::ez_state::{EzState, GenericState};
 use crate::widgets::ez_object::{EzObject};
 use crate::parser::load_common_properties::load_common_property;
@@ -147,18 +147,7 @@ impl EzObject for Slider {
                            scheduler: &mut Scheduler, mouse_pos: Coordinates) -> bool {
 
         let state = state_tree.get_by_path_mut(&self.path).as_slider_mut();
-        let ratio = (state.maximum.value - state.minimum.value) as f64
-            / state.get_effective_size().width as f64;
-        let mut value = (ratio * mouse_pos.x as f64).round() as usize + state.minimum.value;
-
-        // Make sure the set value is a multiple of step
-        if value >= state.maximum.value - state.step.value {
-            value = state.maximum.value;
-        } else {
-            value -= value % state.step.value;
-        }
-
-        value = min(value, state.maximum.value);
+        let value = self.value_from_mouse_pos(state, mouse_pos);
         state.set_value(value);
         state.update(scheduler);
         self.on_value_change_callback(state_tree, callback_tree, scheduler);
@@ -172,6 +161,18 @@ impl EzObject for Slider {
         self.on_hover_callback(state_tree, callback_tree, scheduler, mouse_pos);
         true
     }
+
+    fn on_drag(&self, state_tree: &mut StateTree, callback_tree: &mut CallbackTree,
+               scheduler: &mut Scheduler, previous_pos: Option<Coordinates>,
+               mouse_pos: Coordinates) -> bool {
+
+        let state = state_tree.get_by_path_mut(&self.path).as_slider_mut();
+        let value = self.value_from_mouse_pos(state, mouse_pos);
+        state.set_value(value);
+        state.update(scheduler);
+        self.on_drag_callback(state_tree, callback_tree, scheduler, previous_pos, mouse_pos);
+        true
+    }
 }
 impl Slider {
 
@@ -182,6 +183,21 @@ impl Slider {
         let mut obj = Slider::new(id, path, scheduler);
         obj.load_ez_config(config, scheduler, file, line).unwrap();
         obj
+    }
+
+    fn value_from_mouse_pos(&self, state: &mut SliderState, mouse_pos: Coordinates) -> usize {
+        let ratio = (state.maximum.value - state.minimum.value) as f64
+            / state.get_effective_size().width as f64;
+        let mut value = (ratio * mouse_pos.x as f64).round() as usize + state.minimum.value;
+
+        // Make sure the set value is a multiple of step
+        if value >= state.maximum.value - state.step.value {
+            value = state.maximum.value;
+        } else {
+            value -= value % state.step.value;
+        }
+
+        min(value, state.maximum.value)
     }
 
     fn handle_left(&self, state_tree: &mut StateTree, callback_tree: &mut CallbackTree,
