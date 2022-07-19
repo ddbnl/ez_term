@@ -12,6 +12,7 @@ fn main() {
     let dest_path = Path::new(&out_dir).join("ez_file_gen.rs");
 
     let ez_folder = get_ez_folder();
+    println!("cargo:rerun-if-changed={}", ez_folder);
 
     let files = load_ez_folder(ez_folder.as_str());
     let mut gen = "\
@@ -37,12 +38,13 @@ fn get_ez_folder() -> String {
     if env::var("EZ_FOLDER").is_ok() {
         env::var("EZ_FOLDER").unwrap()
     } else {
-        let path = env::var_os("CARGO_MANIFEST_DIR").unwrap().into_string().unwrap();
-        let new_path = Path::new(&path);
-        new_path.join(Path::new("ui")).to_str().unwrap().to_string()
+        panic!("Environment variable \'EZ_FOLDER\' is mandatory and must point to your .ez files.\n\
+        On linux: \n \
+        export EZ_FOLDER=\"/path/to/ez/files\"\n\
+        On Windows:\n\
+        $env:EZ_FOLDER=\"/path/to/ez/files\"")
     }
 }
-
 
 
 /// Load all '.ez' files from a folder recursively. There can only be one root widget, so when

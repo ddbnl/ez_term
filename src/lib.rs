@@ -64,8 +64,9 @@
 //!
 //! When you compile your project, the .ez files are automatically merged into your binary, so you
 //! do not have to ship them alongside your executable. In order to merge the .ez files into your
-//! binary cargo needs to know where they are. By default they are looked for under the 'ui' folder
-//! in the root of your project:
+//! binary, cargo needs to know where they are. You declare this in an environment variable before
+//! you compile (EZ_FOLDER). Let's say you put the .ez files in your project root in a folder
+//! called 'ui':
 //! ```
 //! /project_root
 //!   /cargo.toml
@@ -73,16 +74,16 @@
 //!   /ui
 //!     /my_ui.ez
 //! ```
-//! If you want to put them somewhere else you can, just make sure you declare that in an
-//! environment variable before you compile:
-//! - Linux:
+//! Then you would declare the environment variable like this:
+//! - On Linux:
 //! ```
-//! export EZ_FOLDER="./path/to/my_ui_folder"
+//! export EZ_FOLDER="/path/to/project/ui"
 //! ```
-//! - Windows:
+//! - On Windows:
 //! ```
-//! $env:EZ_FOLDER="./path/to/my_ui_folder"
+//! $env:EZ_FOLDER="C:\path\to\project\ui"
 //! ```
+
 //!  #### 1.1.2 Project structure: UI Rust module(s)
 //!
 //! We now have our .ez files describing what our UI should look like. Now we need a rust module
@@ -177,6 +178,7 @@
 //!         border: true
 //!     - Label:
 //!         text: World!
+//!         border: true
 //! ```
 //!
 //! **Step 3: Create the UI rust module**
@@ -195,7 +197,16 @@
 //!
 //! **Step 4: Compile and run the project**
 //!
-//! Run the following cargo command in any OS terminal:
+//! First let cargo know where your .ez files are through the environment variable:
+//! - On Linux:
+//! ```
+//! export EZ_FOLDER="/path/to/ez_term_test/ui"
+//! ```
+//! - On Windows:
+//! ```
+//! $env:EZ_FOLDER="C:\path\to\ez_term_test\ui"
+//! ```
+//! Now run the following cargo command in any OS terminal:
 //! ```
 //! cargo run
 //! ```
