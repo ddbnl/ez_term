@@ -122,7 +122,8 @@ impl EzObject for Button {
             state.set_effective_width(contents.len());
         }
         if state.get_auto_scale().height.value {
-            state.set_effective_height(contents[0].len());
+            let height = if !contents.is_empty() { contents[0].len() } else { 0 };
+            state.set_effective_height(height);
         }
         (contents, _) = align_content_horizontally(
             contents,HorizontalAlignment::Center,

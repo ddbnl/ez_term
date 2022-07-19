@@ -302,7 +302,7 @@ impl Layout {
         if state.auto_scale.height.value {
             state.set_effective_height(
                 content_list.iter().map(
-                    |child| child.iter().map(|x| x.len()).max().unwrap())
+                    |child| child.iter().map(|x| x.len()).max().unwrap_or(0))
                     .max().unwrap());
         }
     }

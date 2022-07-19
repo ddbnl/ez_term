@@ -216,6 +216,7 @@ pub fn align_content_vertically(mut content: PixelMap, valign: VerticalAlignment
                                 total_height: usize, fg_color: Color, bg_color: Color)
                                 -> (PixelMap, usize){
 
+    if content.is_empty() { return (content, 0) }
     if content[0].len() >= total_height { return (content, 0 ) }
 
     let empty_pixel = Pixel { symbol: " ".to_string(), foreground_color: fg_color,

@@ -9,10 +9,10 @@
 //! 1. [How to use](#how_to_use)
 //!     1. [Project structure](#structure)
 //!     2. [Small example](#small_example)
-//!     2. [Ez language](#)
-//!     3. [Scheduler](#)
-//!     4. [Ez properties](#)
-//!     5. [Global bindings](#)
+//!     3. [Ez language](#)
+//!     4. [Scheduler](#)
+//!     5. [Ez properties](#)
+//!     6. [Global bindings](#)
 //! 2. Examples
 //! 3. Layouts
 //!     1. [General]
