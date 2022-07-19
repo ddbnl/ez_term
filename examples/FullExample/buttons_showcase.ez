@@ -119,7 +119,7 @@
         halign: center
     - ProgressBar:
         id: progress_bar
-        maximum: 100
+        max: 100
         value: properties.progress_property
         border: true
 

@@ -361,6 +361,7 @@ impl EzObject for Layout {
         false
     }
 
+    /// Implement user keyboard enter to select a new tab after it's already selected.
     fn on_keyboard_enter(&self, state_tree: &mut StateTree, _callback_tree: &mut CallbackTree,
                          scheduler: &mut Scheduler) -> bool {
 
@@ -374,6 +375,7 @@ impl EzObject for Layout {
         false
     }
 
+    // Implement clicking under are above the scrollbar to move it down or up respectively.
     fn on_left_mouse_click(&self, state_tree: &mut StateTree, _callback_tree: &mut CallbackTree,
                            scheduler: &mut Scheduler, mouse_pos: Coordinates) -> bool {
 
@@ -421,6 +423,7 @@ impl EzObject for Layout {
         false
     }
 
+    /// Implement clicking on the scrollbar and dragging it down or up.
     fn on_drag(&self, state_tree: &mut StateTree, callback_tree: &mut CallbackTree,
                scheduler: &mut Scheduler, previous_pos: Option<Coordinates>,
                mouse_pos: Coordinates) -> bool {

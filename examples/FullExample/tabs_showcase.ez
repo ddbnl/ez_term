@@ -7,7 +7,7 @@
     tab_fg_color: yellow
     tab_bg_color: red
     - Layout:
-        id: Tab 1
+        id: Scrolling
         mode: box
         orientation: horizontal
         scroll_y: true
@@ -17,17 +17,191 @@
             size_hint_y: none
             from_file: ./Examples/FullExample/dummy.txt
     - Layout:
-        id: Tab 2
+        id: Tables
         mode: box
         orientation: vertical
-        - Label:
-            text: This is a label on a second tab.
+        scroll_y: true
+        - Layout:
+            mode: box
+            orientation: vertical
+            auto_scale: true, true
+            halign: center
+            - Label:
+                text: Left-right, top-bottom
+                halign: center
+                auto_scale: true, true
+            - TableShowcase:
+                orientation: lr-tb
+        - Layout:
+            mode: box
+            orientation: vertical
+            auto_scale: true, true
+            halign: center
+            - Label:
+                text: Left-right, bottom-top
+                halign: center
+                auto_scale: true, true
+            - TableShowcase:
+                orientation: lr-bt
+        - Layout:
+            mode: box
+            orientation: vertical
+            auto_scale: true, true
+            halign: center
+            - Label:
+                text: Right-left, top-bottom
+                halign: center
+                auto_scale: true, true
+            - TableShowcase:
+                orientation: rl-tb
+        - Layout:
+            mode: box
+            orientation: vertical
+            auto_scale: true, true
+            halign: center
+            - Label:
+                text: Right-left, bottom-top
+                halign: center
+                auto_scale: true, true
+            - TableShowcase:
+                orientation: rl-bt
+        - Layout:
+            mode: box
+            orientation: vertical
+            auto_scale: true, true
+            halign: center
+            - Label:
+                text: Top-bottom, left-right
+                halign: center
+                auto_scale: true, true
+            - TableShowcase:
+                orientation: tb-lr
+        - Layout:
+            mode: box
+            orientation: vertical
+            auto_scale: true, true
+            halign: center
+            - Label:
+                text: Top-bottom, right-left
+                halign: center
+                auto_scale: true, true
+            - TableShowcase:
+                orientation: tb-rl
+        - Layout:
+            mode: box
+            orientation: vertical
+            auto_scale: true, true
+            halign: center
+            - Label:
+                text: Bottom-top, left-right
+                halign: center
+                auto_scale: true, true
+            - TableShowcase:
+                orientation: bt-lr
+        - Layout:
+            mode: box
+            orientation: vertical
+            auto_scale: true, true
+            halign: center
+            - Label:
+                text: Bottom-top, right-left
+                halign: center
+                auto_scale: true, true
+            - TableShowcase:
+                orientation: bt-rl
     - Layout:
-        id: Tab 3
+        id: Stacks
         mode: box
         orientation: vertical
-        - Label:
-            text: This is a label on a third tab.
+        scroll_y: true
+        - Layout:
+            mode: box
+            orientation: vertical
+            auto_scale: true, true
+            halign: center
+            - Label:
+                text: Left-right, top-bottom
+                halign: center
+                auto_scale: true, true
+            - StackShowcase:
+                orientation: lr-tb
+        - Layout:
+            mode: box
+            orientation: vertical
+            auto_scale: true, true
+            halign: center
+            - Label:
+                text: Right-left, top-bottom
+                halign: center
+                auto_scale: true, true
+            - StackShowcase:
+                orientation: rl-tb
+        - Layout:
+            mode: box
+            orientation: vertical
+            auto_scale: true, true
+            halign: center
+            - Label:
+                text: Left-right, bottom-top
+                halign: center
+                auto_scale: true, true
+            - StackShowcase:
+                orientation: lr-bt
+        - Layout:
+            mode: box
+            orientation: vertical
+            auto_scale: true, true
+            halign: center
+            - Label:
+                text: Left-right, top-bottom
+                halign: center
+                auto_scale: true, true
+            - StackShowcase:
+                orientation: rl-bt
+        - Layout:
+            mode: box
+            orientation: vertical
+            auto_scale: true, true
+            halign: center
+            - Label:
+                text: Top-bottom, left-right
+                halign: center
+                auto_scale: true, true
+            - StackShowcase:
+                orientation: tb-lr
+        - Layout:
+            mode: box
+            orientation: vertical
+            auto_scale: true, true
+            halign: center
+            - Label:
+                text: Top-bottom, right-left
+                halign: center
+                auto_scale: true, true
+            - StackShowcase:
+                orientation: tb-rl
+        - Layout:
+            mode: box
+            orientation: vertical
+            auto_scale: true, true
+            halign: center
+            - Label:
+                text: Bottom-top, left-right
+                halign: center
+                auto_scale: true, true
+            - StackShowcase:
+                orientation: bt-lr
+        - Layout:
+            mode: box
+            orientation: vertical
+            auto_scale: true, true
+            halign: center
+            - Label:
+                text: Bottom-top, right-left
+                halign: center
+                auto_scale: true, true
+            - StackShowcase:
+                orientation: bt-rl
     - Layout:
         id: Tab 4
         mode: box
@@ -40,3 +214,63 @@
         orientation: vertical
         - Label:
             text: This is a label on a fifth tab.
+
+
+- <TableCell@Label>:
+    text: 1
+    auto_scale: true, true
+    halign: center
+    valign: middle
+
+- <TableShowcase@Layout>:
+    mode: table
+    auto_scale: true, true
+    cols: 3
+    row_default_height: 3
+    col_default_width: 3
+    padding_bottom: 1
+    halign: center
+    - TableCell:
+        text: 1
+    - TableCell:
+        text: 2
+    - TableCell:
+        text: 3
+    - TableCell:
+        text: 4
+    - TableCell:
+        text: 5
+    - TableCell:
+        text: 6
+    - TableCell:
+        text: 7
+    - TableCell:
+        text: 8
+    - TableCell:
+        text: 9
+
+
+
+- <StackLabel@Label>:
+    text: Stack test
+    border: true
+    auto_scale_height: true
+    size_hint_x: 0.4
+
+- <StackShowcase@Layout>:
+    mode: stack
+    auto_scale_width: true
+    size_hint_y: None
+    height: 9
+    - StackLabel:
+        text: 1
+    - StackLabel:
+        text: 2
+    - StackLabel:
+        text: 3
+    - StackLabel:
+        text: 4
+    - StackLabel:
+        text: 5
+
+
