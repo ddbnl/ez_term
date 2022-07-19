@@ -7,6 +7,8 @@ use std::io::Error;
 use unicode_segmentation::UnicodeSegmentation;
 
 use crate::parser::ez_definition::{EzWidgetDefinition, Templates};
+use crate::run::definitions::StateTree;
+use crate::run::tree::initialize_state_tree;
 use crate::scheduler::scheduler::Scheduler;
 use crate::widgets::layout::layout::Layout;
 
@@ -15,11 +17,12 @@ include!(concat!(env!("OUT_DIR"), "/ez_file_gen.rs"));
 
 /// Load a file path into a root layout. Return the root widget and a new scheduler. Both will
 /// be needed to run an [App].
-pub fn load_ui() -> (Layout, Scheduler) {
+pub fn load_ui() -> (Layout, StateTree, Scheduler) {
 
     let contents = ez_config(); // ez_config is generated from build.rs
     let (root_widget, scheduler) = load_ez_text(contents).unwrap();
-    (root_widget, scheduler)
+    let state_tree = initialize_state_tree(&root_widget);
+    (root_widget, state_tree, scheduler)
 }
 
 

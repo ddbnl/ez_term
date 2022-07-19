@@ -26,18 +26,18 @@ use super::terminal::{initialize_terminal, shutdown_terminal};
 ///
 /// Make sure you load a root layout from a .ez file first and pass it to this func, like this:
 /// ```
-/// let (root_widget, scheduler) = load_ui("root.ez");
+/// let (root_widget, state_tree, scheduler) = load_ui("root.ez");
 /// ```
 /// After loading the root layout, make all the manual changes you require, such as setting
 /// keybindings or binding callbacks to events. Then call this function.
 /// ```
-/// run(root_widget, scheduler);
+/// run(root_widget, state_tree, scheduler);
 /// ```
-pub fn run(root_widget: Layout, scheduler: Scheduler) {
+pub fn run(root_widget: Layout, state_tree: StateTree, scheduler: Scheduler) {
 
     initialize_terminal().unwrap();
     let callback_tree = initialize_callback_tree(&root_widget);
-    run_loop(root_widget, callback_tree, scheduler).unwrap();
+    run_loop(root_widget, state_tree, callback_tree, scheduler).unwrap();
 }
 
 
@@ -50,13 +50,10 @@ pub fn stop() {
 
 /// Called just before [run]. Creates initial view- and state trees and writes initial content
 /// to the screen.
-fn initialize_widgets(root_widget: &mut Layout) -> (ViewTree, StateTree) {
+fn initialize_widgets(root_widget: &mut Layout, state_tree: &mut StateTree) -> ViewTree {
 
-    // Get initial state tree, then convert all size_hints into actual sizes. After that we can
-    // set absolute positions for all children as sizes are now known.
-    let mut state_tree = initialize_state_tree(&root_widget);
-    let all_content = root_widget.get_contents(&mut state_tree);
-    root_widget.propagate_absolute_positions(&mut state_tree);
+    let all_content = root_widget.get_contents(state_tree);
+    root_widget.propagate_absolute_positions(state_tree);
 
     // Create an initial view tree so we can diff all future changes against it.
     let mut view_tree = ViewTree::default();
@@ -64,7 +61,7 @@ fn initialize_widgets(root_widget: &mut Layout) -> (ViewTree, StateTree) {
                          root_widget.state.size.height.value);
     view_tree.write_content(Coordinates::new(0, 0), all_content);
     write_to_screen(&mut view_tree);
-    (view_tree, state_tree)
+    view_tree
 
 }
 
@@ -115,10 +112,10 @@ pub fn open_popup(template: String, state_tree: &mut StateTree, scheduler: &mut 
 /// (i.e. static callbacks). EzWidget enums can be downcast to EzObject trait objects to
 /// access common functions, or downcast to their specific widget type if you know for sure what it
 /// is.
-fn run_loop(mut root_widget: Layout, mut callback_tree: CallbackTree, mut scheduler: Scheduler) 
-    -> Result<()>{
+fn run_loop(mut root_widget: Layout, mut state_tree: StateTree, mut callback_tree: CallbackTree,
+            mut scheduler: Scheduler) -> Result<()>{
 
-    let (mut view_tree, mut state_tree) = initialize_widgets(&mut root_widget);
+    let mut view_tree = initialize_widgets(&mut root_widget, &mut state_tree);
     let last_update = Instant::now(); // Time of last screen update,
     let tick_rate = (1/60) as u64; // Screen update interval
     let mut last_mouse_pos: (u16, u16) = (0, 0); // To ignore move events if pos is not different

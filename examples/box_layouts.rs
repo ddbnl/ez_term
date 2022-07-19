@@ -1,4 +1,6 @@
+use ez_term::*;
+
 fn main () {
-    let (root_layout, scheduler) = ez_term::load_ez_file("./Examples/BoxLayouts/box_layouts.ez");
-    ez_term::run(root_layout, scheduler);
+    let (root_widget, state_tree, mut scheduler) = load_ui();
+    run(root_widget, state_tree, scheduler);
 }

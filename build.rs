@@ -26,10 +26,6 @@ pub fn ez_config() -> HashMap<String, String> {
     files\n\
     }}", gen);
     fs::write(&dest_path, gen).unwrap();
-
-    // Hack to always rebuild, as cargo might nog recognize changes in only .ez files
-    env::set_var("REBUILD", format!("{:?}", std::time::Instant::now()));
-    println!("cargo:rerun-if-env-changed=REBUILD");
 }
 
 

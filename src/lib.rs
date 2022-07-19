@@ -219,8 +219,8 @@ mod property;
 mod parser;
 
 
-pub use crate::parser::parse_lang::{load_ui};
-pub use crate::run::run::{run};
+pub use crate::parser::parse_lang::load_ui;
+pub use crate::run::run::run;
 
 pub use crate::scheduler::definitions::{EzContext, EzPropertiesMap};
 

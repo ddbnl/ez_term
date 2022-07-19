@@ -290,7 +290,7 @@ impl LayoutState {
     pub fn get_orientation(&self) -> &LayoutOrientation { &self.orientation }
 
     /// Set the ID of the child that is the currently active screen (i.e. content is showing)
-    pub fn set_active_screen(&mut self, id: String) { self.active_screen.set(id); }
+    pub fn set_active_screen(&mut self, id: &str) { self.active_screen.set(id.to_string()); }
 
     /// Get the ID of the child that is the currently active screen (i.e. content is showing)
     pub fn get_active_screen(&self) -> &EzProperty<String> { &self.active_screen }

@@ -10,7 +10,7 @@ fn main() {
     // subwidgets and make any changes we need before starting the app.
     // We can use the scheduler to schedule any (recurring) functions we need to before starting
     // the app.
-    let (root_widget, mut scheduler) = load_ui();
+    let (root_widget, state_tree, mut scheduler) = load_ui();
 
     // Step 2: Customize widgets where needed. Here are some examples:
 
@@ -20,7 +20,7 @@ fn main() {
             |context: EzContext| {
                 let root_state = context.state_tree.get_by_path_mut("/root")
                     .as_layout_mut();
-                root_state.set_active_screen("main_screen".to_string());
+                root_state.set_active_screen("main_screen");
                 root_state.update(context.scheduler);
                 false
             } )));
@@ -126,7 +126,7 @@ fn main() {
 
     // Step 3: Run app
     // Now everything must happen from bindings as root widget is passed over
-    run(root_widget, scheduler);
+    run(root_widget, state_tree, scheduler);
 }
 
 
