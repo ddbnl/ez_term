@@ -197,6 +197,13 @@ impl EzObject for TextInput {
         true
     }
 
+    fn on_hover(&self, state_tree: &mut StateTree, callback_tree: &mut CallbackTree,
+                scheduler: &mut Scheduler, mouse_pos: Coordinates) -> bool {
+
+        self.on_hover_callback(state_tree, callback_tree, scheduler, mouse_pos);
+        true
+    }
+
     fn on_select(&self, state_tree: &mut StateTree, callback_tree: &mut CallbackTree,
                  scheduler: &mut Scheduler, mouse_pos: Option<Coordinates>) -> bool {
 
@@ -228,13 +235,6 @@ impl EzObject for TextInput {
 
         // Call user callback if any
         self.on_select_callback(state_tree, callback_tree, scheduler, mouse_pos);
-        true
-    }
-
-    fn on_hover(&self, state_tree: &mut StateTree, callback_tree: &mut CallbackTree,
-                scheduler: &mut Scheduler, mouse_pos: Coordinates) -> bool {
-
-        self.on_hover_callback(state_tree, callback_tree, scheduler, mouse_pos);
         true
     }
 }

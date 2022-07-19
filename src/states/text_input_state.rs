@@ -1,3 +1,4 @@
+use crossterm::style::Color;
 use crate::property::ez_property::EzProperty;
 use crate::run::definitions::Coordinates;
 use crate::scheduler::scheduler_funcs::clean_up_property;
@@ -79,7 +80,7 @@ impl TextInputState {
 
     pub fn new(path: String, scheduler: &mut Scheduler) -> Self {
 
-        TextInputState {
+        let mut state = TextInputState {
             path: path.clone(),
             position: StateCoordinates::new(0, 0, path.clone(), scheduler),
             absolute_position: Coordinates::default(),
@@ -107,7 +108,9 @@ impl TextInputState {
                 format!("{}/max_length", path).as_str(), 0),
             border_config: BorderConfig::new(false, path.clone(), scheduler),
             colors: ColorConfig::new(path, scheduler),
-        }
+        };
+        state.colors.background.value = Color::Blue;
+        state
     }
 }
 
