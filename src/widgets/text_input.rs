@@ -136,6 +136,7 @@ impl EzObject for TextInput {
             }
             contents.push(new_y);
         }
+        state.set_effective_height(1); // Hack until multiline implementation
         if state.get_auto_scale().width.value {
             state.set_effective_width(contents.len());
         }
