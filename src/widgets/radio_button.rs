@@ -24,12 +24,6 @@ pub struct RadioButton {
     /// Full path to this widget, e.g. "/root_layout/layout_2/THIS_ID"
     pub path: String,
 
-    /// [Pixel.symbol] used when the Checkbox is active
-    pub active_symbol: char,
-
-    /// [Pixel.symbol] used when the Checkbox is not active
-    pub inactive_symbol: char,
-
     /// Runtime state of this widget, see [RadioButtonState] and [State]
     pub state: RadioButtonState,
 }
@@ -39,8 +33,7 @@ impl RadioButton {
         RadioButton {
             id,
             path: path.clone(),
-            active_symbol: 'X',
-            inactive_symbol: ' ',
+
             state: RadioButtonState::new(path, scheduler),
         }
     }
@@ -61,7 +54,7 @@ impl RadioButton {
     }
 
     fn load_active_property(&mut self, parameter_value: &str, scheduler: &mut Scheduler)
-        -> Result<(), Error> {
+                            -> Result<(), Error> {
 
         let path = self.path.clone();
         self.state.set_active(load_ez_bool_property(
@@ -70,6 +63,34 @@ impl RadioButton {
                 let state = state_tree.get_by_path_mut(&path)
                     .as_radio_button_mut();
                 state.set_active(val.as_bool().to_owned());
+                path.clone()
+            }))?);
+        Ok(())
+    }
+
+    fn load_active_symbol_property(&mut self, parameter_value: &str, scheduler: &mut Scheduler)
+                                   -> Result<(), Error>{
+
+        let path = self.path.clone();
+        self.state.set_active_symbol(load_ez_string_property(
+            parameter_value.trim(), scheduler, path.clone(),
+            Box::new(move |state_tree: &mut StateTree, val: EzValues| {
+                let state = state_tree.get_by_path_mut(&path).as_checkbox_mut();
+                state.set_active_symbol(val.as_string().to_owned());
+                path.clone()
+            }))?);
+        Ok(())
+    }
+
+    fn load_inactive_symbol_property(&mut self, parameter_value: &str, scheduler: &mut Scheduler)
+                                     -> Result<(), Error>{
+
+        let path = self.path.clone();
+        self.state.set_inactive_symbol(load_ez_string_property(
+            parameter_value.trim(), scheduler, path.clone(),
+            Box::new(move |state_tree: &mut StateTree, val: EzValues| {
+                let state = state_tree.get_by_path_mut(&path).as_checkbox_mut();
+                state.set_inactive_symbol(val.as_string().to_owned());
                 path.clone()
             }))?);
         Ok(())
@@ -95,22 +116,10 @@ impl EzObject for RadioButton {
                 self.load_group_property(group, scheduler)?;
             },
             "active" => self.load_active_property(parameter_value.trim(), scheduler)?,
-            "active_symbol" => self.active_symbol = match parameter_value.chars().last() {
-                Some(i) => i,
-                None => return Err(
-                    Error::new(ErrorKind::InvalidData,
-                               format!("Invalid value for active_symbol: \"{}\". \
-                               Required format is \"active_symbol: x\"", parameter_value)))
-            },
-            "inactive_symbol" => self.inactive_symbol =
-                match parameter_value.chars().last() {
-                    Some(i) => i,
-                    None => return Err(
-                        Error::new(ErrorKind::InvalidData,
-                                   format!("Invalid value for inactive symbol: \"{}\". \
-                                   Required format \
-                                   is \"inactive_symbol: -\"", parameter_value)))
-                },
+            "active_symbol" => self.load_active_symbol_property(
+                &parameter_value.chars().last().unwrap().to_string(), scheduler)?,
+            "inactive_symbol" => self.load_inactive_symbol_property(
+                &parameter_value.chars().last().unwrap().to_string(), scheduler)?,
             _ => panic!("Invalid parameter name for radio button: {}", parameter_name)
         }
         Ok(())
@@ -134,8 +143,8 @@ impl EzObject for RadioButton {
             .get_by_path_mut(&self.get_full_path()).as_radio_button_mut();
         state.set_width(5);
         state.set_height(1);
-        let active_symbol = { if state.active.value {self.active_symbol}
-                                    else {self.inactive_symbol} };
+        let active_symbol = { if state.active.value { state.active_symbol.value.clone() }
+                                    else { state.inactive_symbol.value.clone() }};
         let (fg_color, bg_color) = state.get_context_colors();
         let mut contents = vec!(
             vec!(Pixel {symbol: "(".to_string(), foreground_color: fg_color,

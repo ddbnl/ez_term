@@ -48,6 +48,12 @@ pub struct RadioButtonState {
     /// Bool representing whether this widget is currently active (i.e. checkbox is checked)
     pub active: EzProperty<bool>,
 
+    /// [Pixel.symbol] used when the Checkbox is active
+    pub active_symbol: EzProperty<String>,
+
+    /// [Pixel.symbol] used when the Checkbox is not active
+    pub inactive_symbol: EzProperty<String>,
+
     /// [BorderConfig] object that will be used to draw the border if enabled
     pub border_config: BorderConfig,
 
@@ -84,6 +90,10 @@ impl RadioButtonState {
                 format!("{}/valign", path).as_str(), VerticalAlignment::Top),
            active: scheduler.new_bool_property(
                format!("{}/active", path).as_str(),false),
+           active_symbol: scheduler.new_string_property(format!("{}/active_symbol",
+                                                                path).as_str(),"X".to_string()),
+           inactive_symbol: scheduler.new_string_property(format!("{}/active_symbol",
+                                                                  path).as_str(),"-".to_string()),
            disabled: scheduler.new_bool_property(
                 format!("{}/disabled", path).as_str(),false),
            selected: false,
@@ -190,4 +200,11 @@ impl RadioButtonState {
 
     pub fn get_active(&self) -> &EzProperty<bool> { &self.active }
 
+    pub fn set_active_symbol(&mut self, symbol: String) { self.active_symbol.set(symbol); }
+
+    pub fn get_active_symbol(&self) -> &EzProperty<String> { &self.active_symbol }
+
+    pub fn set_inactive_symbol(&mut self, symbol: String) { self.inactive_symbol.set(symbol); }
+
+    pub fn get_inactive_symbol(&self) -> &EzProperty<String> { &self.inactive_symbol }
 }

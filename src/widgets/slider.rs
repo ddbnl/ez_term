@@ -1,7 +1,7 @@
 //! A widget that displays text non-interactively.
 use std::cmp::min;
 use std::io::{Error, ErrorKind};
-use crossterm::event::{Event, KeyCode, poll};
+use crossterm::event::{Event, KeyCode};
 use crate::states::ez_state::{EzState, GenericState};
 use crate::widgets::ez_object::{EzObject};
 use crate::parser::load_common_properties::load_common_property;

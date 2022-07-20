@@ -10,7 +10,7 @@ use crossterm::event::MouseButton;
 use crate::CallbackConfig;
 use crate::run::definitions::{CallbackTree, Coordinates, StateTree};
 use crate::run::terminal::{redraw_changed_widgets, write_to_screen};
-use crate::run::tree::{clean_trees, initialize_callback_tree, initialize_state_tree, ViewTree};
+use crate::run::tree::{clean_trees, initialize_callback_tree, ViewTree};
 use crate::scheduler::scheduler::Scheduler;
 use crate::scheduler::scheduler_funcs;
 use crate::scheduler::scheduler_funcs::{handle_next_selection, run_tasks, update_callback_configs, update_properties, update_threads};

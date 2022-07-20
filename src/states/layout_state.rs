@@ -167,12 +167,12 @@ impl GenericState for LayoutState {
 
         let width_result: isize = self.size.width.value as isize
             -if self.get_border_config().enabled.value {2} else {0}
-            -if self.scrolling_config.enable_y.value {1} else {0}
+            -if self.scrolling_config.is_scrolling_y {1} else {0}
             -self.get_padding().left.value as isize - self.get_padding().right.value as isize;
         let width = if width_result < 0 {0} else { width_result};
         let height_result: isize = self.size.height.value as isize
             -if self.get_border_config().enabled.value {2} else {0}
-            -if self.scrolling_config.enable_x.value {1} else {0}
+            -if self.scrolling_config.is_scrolling_x {1} else {0}
             -self.get_padding().top.value as isize - self.get_padding().bottom.value as isize;
         let height = if height_result < 0 {0} else { height_result};
         Size::new(width as usize, height as usize)

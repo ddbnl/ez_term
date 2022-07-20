@@ -17,6 +17,12 @@ pub struct CheckboxState {
     /// Bool representing whether this widget is currently active (i.e. checkbox is checked)
     pub active: EzProperty<bool>,
 
+    /// [Pixel.symbol] used when the Checkbox is active
+    pub active_symbol: EzProperty<String>,
+
+    /// [Pixel.symbol] used when the Checkbox is not active
+    pub inactive_symbol: EzProperty<String>,
+
     /// Position of this widget relative to its' parent [layout]
     pub position: StateCoordinates,
 
@@ -78,6 +84,10 @@ impl CheckboxState {
                 format!("{}/valign", path).as_str(), VerticalAlignment::Top),
            active: scheduler.new_bool_property(format!("{}/active", path.clone()).as_str(),
                                                false),
+           active_symbol: scheduler.new_string_property(format!("{}/active_symbol",
+                                                                path).as_str(),"X".to_string()),
+           inactive_symbol: scheduler.new_string_property(format!("{}/active_symbol",
+                                                                path).as_str(),"-".to_string()),
            disabled: scheduler.new_bool_property(
                 format!("{}/disabled", path).as_str(),false),
            selected: false,
@@ -183,9 +193,15 @@ impl GenericState for CheckboxState {
 }
 impl CheckboxState {
 
-    pub fn set_active(&mut self, active: bool) {
-        self.active.set(active);
-    }
+    pub fn set_active(&mut self, active: bool) { self.active.set(active); }
 
     pub fn get_active(&self) -> &EzProperty<bool> { &self.active }
+
+    pub fn set_active_symbol(&mut self, symbol: String) { self.active_symbol.set(symbol); }
+
+    pub fn get_active_symbol(&self) -> &EzProperty<String> { &self.active_symbol }
+
+    pub fn set_inactive_symbol(&mut self, symbol: String) { self.inactive_symbol.set(symbol); }
+
+    pub fn get_inactive_symbol(&self) -> &EzProperty<String> { &self.inactive_symbol }
 }

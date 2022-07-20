@@ -310,8 +310,8 @@ impl Layout{
             for y in 0..rows {
                 if x >= child_table.len() || y >= child_table[x].len() { continue }
                 let state = state_tree.get_by_path_mut(
-                    &self.children.get(y).unwrap().as_ez_object().get_full_path())
-                    .as_generic_mut();
+                    &self.children.get(child_table[x][y]).unwrap().as_ez_object()
+                        .get_full_path()).as_generic_mut();
                 let child_content =
                     std::mem::take(&mut content_list[child_table[x][y]]);
 

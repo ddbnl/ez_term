@@ -297,13 +297,23 @@ impl Layout {
         let state = state_tree.get_by_path_mut(&self.path).as_layout_mut();
         if state.auto_scale.width.value {
             state.set_effective_width(
-                content_list.iter().map(|x| x.len()).max().unwrap());
+                if state.orientation == LayoutOrientation::Vertical {
+                    content_list.iter().map(|x| x.len()).max().unwrap_or(0)
+                } else {
+                    content_list.iter().map(|x| x.len()).sum()
+                });
         }
         if state.auto_scale.height.value {
             state.set_effective_height(
-                content_list.iter().map(
-                    |child| child.iter().map(|x| x.len()).max().unwrap_or(0))
-                    .max().unwrap());
+                if state.orientation == LayoutOrientation::Horizontal {
+                    content_list.iter().map(
+                        |child| child.iter().map(|x| x.len()).max().unwrap_or(0))
+                        .max().unwrap_or(0)
+                } else {
+                    content_list.iter().map(
+                        |child| child.iter().map(|x| x.len()).max().unwrap_or(0))
+                        .sum()
+                });
         }
     }
 }

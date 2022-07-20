@@ -1,6 +1,5 @@
 //! # layout
 //! Module implementing the layout struct.
-use std::arch::x86_64::_mm_or_si128;
 use std::collections::HashMap;
 use std::io::{Error, ErrorKind};
 use crossterm::event::{Event, KeyCode};

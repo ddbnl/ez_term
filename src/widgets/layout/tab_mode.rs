@@ -73,9 +73,9 @@ impl Layout {
                 let child_state = state_tree
                     .get_by_path_mut(&child.as_ez_object().get_full_path()).as_generic_mut();
                 child_state.set_effective_height(
-                    if own_effective_size.height >= 3 { own_effective_size.height - 3} else {0});
+                    if own_effective_size.height >= 3 { own_effective_size.height - 5} else {0});
                 child_state.set_effective_width(
-                    if own_effective_size.width >= 1 { own_effective_size.width - 1} else {0});
+                    if own_effective_size.width >= 1 { own_effective_size.width - 2} else {0});
                 child_state.get_position_mut().x.set(0);
                 child_state.get_position_mut().y.set(3);
                 child_state.set_absolute_position(Coordinates::new(own_pos.x, own_pos.y + 3));

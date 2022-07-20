@@ -5,7 +5,7 @@ use crate::widgets::ez_object::{EzObject};
 use crate::states::checkbox_state::CheckboxState;
 use crate::states::ez_state::{EzState, GenericState};
 use crate::parser::load_common_properties::load_common_property;
-use crate::parser::load_base_properties::load_ez_bool_property;
+use crate::parser::load_base_properties::{load_ez_bool_property, load_ez_string_property};
 use crate::property::ez_values::EzValues;
 use crate::run::definitions::{CallbackTree, Coordinates, Pixel, PixelMap, StateTree};
 use crate::scheduler::scheduler::Scheduler;
@@ -20,12 +20,6 @@ pub struct Checkbox {
     /// Full path to this widget, e.g. "/root_layout/layout_2/THIS_ID"
     pub path: String,
 
-    /// [Pixel.symbol] used when the Checkbox is active
-    pub active_symbol: char,
-
-    /// [Pixel.symbol] used when the Checkbox is not active
-    pub inactive_symbol: char,
-
     /// Runtime state of this widget, see [CheckboxState] and [State]
     pub state: CheckboxState,
 }
@@ -37,8 +31,6 @@ impl Checkbox {
         Checkbox {
             id,
             path: path.clone(),
-            active_symbol: 'X',
-            inactive_symbol: ' ',
             state: CheckboxState::new(path, scheduler),
         }
     }
@@ -56,6 +48,34 @@ impl Checkbox {
             }))?);
         Ok(())
     }
+
+    fn load_active_symbol_property(&mut self, parameter_value: &str, scheduler: &mut Scheduler)
+        -> Result<(), Error>{
+
+        let path = self.path.clone();
+        self.state.set_active_symbol(load_ez_string_property(
+            parameter_value.trim(), scheduler, path.clone(),
+            Box::new(move |state_tree: &mut StateTree, val: EzValues| {
+                let state = state_tree.get_by_path_mut(&path).as_checkbox_mut();
+                state.set_active_symbol(val.as_string().to_owned());
+                path.clone()
+            }))?);
+        Ok(())
+    }
+
+    fn load_inactive_symbol_property(&mut self, parameter_value: &str, scheduler: &mut Scheduler)
+                                   -> Result<(), Error>{
+
+        let path = self.path.clone();
+        self.state.set_inactive_symbol(load_ez_string_property(
+            parameter_value.trim(), scheduler, path.clone(),
+            Box::new(move |state_tree: &mut StateTree, val: EzValues| {
+                let state = state_tree.get_by_path_mut(&path).as_checkbox_mut();
+                state.set_inactive_symbol(val.as_string().to_owned());
+                path.clone()
+            }))?);
+        Ok(())
+    }
 }
 
 
@@ -69,22 +89,10 @@ impl EzObject for Checkbox {
         if consumed { return Ok(())}
         match parameter_name.as_str() {
             "active" => self.load_active_property(parameter_value.trim(), scheduler)?,
-            "active_symbol" => self.active_symbol = match parameter_value.chars().last() {
-                Some(i) => i,
-                None => return Err(
-                    Error::new(ErrorKind::InvalidData,
-                               format!("Invalid value for active_symbol: \"{}\". Required format \
-                                   is \"active_symbol: x\"", parameter_value)))
-            },
-            "inactive_symbol" => self.inactive_symbol =
-                match parameter_value.chars().last() {
-                    Some(i) => i,
-                    None => return Err(
-                        Error::new(ErrorKind::InvalidData,
-                                   format!("Invalid value for inactive symbol: \"{}\". \
-                                   Required format \
-                                   is \"inactive_symbol: -\"", parameter_value)))
-                },
+            "active_symbol" => self.load_active_symbol_property(
+                &parameter_value.chars().last().unwrap().to_string(), scheduler)?,
+            "inactive_symbol" => self.load_inactive_symbol_property(
+                &parameter_value.chars().last().unwrap().to_string(), scheduler)?,
             _ => return Err(
                 Error::new(ErrorKind::InvalidData,
                            format!("Invalid parameter name for checkbox: {}", parameter_name)))
@@ -110,8 +118,8 @@ impl EzObject for Checkbox {
             .as_checkbox_mut();
         state.set_width(5);
         state.set_height(1);
-        let active_symbol = { if state.active.value {self.active_symbol}
-                              else {self.inactive_symbol} };
+        let active_symbol = { if state.active.value { state.active_symbol.value.clone() }
+                              else { state.inactive_symbol.value.clone() } };
 
         let (fg_color, bg_color) = state.get_context_colors();
         let mut contents = vec!(
