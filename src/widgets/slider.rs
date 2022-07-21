@@ -170,6 +170,7 @@ impl EzObject for Slider {
         let value = self.value_from_mouse_pos(state, mouse_pos);
         state.set_value(value);
         state.update(scheduler);
+        self.on_value_change_callback(state_tree, callback_tree, scheduler);
         self.on_drag_callback(state_tree, callback_tree, scheduler, previous_pos, mouse_pos);
         true
     }
@@ -191,7 +192,8 @@ impl Slider {
         let mut value = (ratio * mouse_pos.x as f64).round() as usize + state.minimum.value;
 
         // Make sure the set value is a multiple of step
-        if value >= state.maximum.value - state.step.value {
+        if value >= state.maximum.value - state.step.value ||
+            mouse_pos.x == state.get_effective_size().width - 1 {
             value = state.maximum.value;
         } else {
             value -= value % state.step.value;
