@@ -93,6 +93,11 @@ impl EzObject for Slider {
 
         let state = state_tree.get_by_path_mut(&self.get_full_path())
             .as_slider_mut();
+
+        if state.get_effective_size().width == 0 { return PixelMap::new() }
+        if state.value.value < state.minimum.value { state.value.set(state.minimum.value )}
+        if state.value.value > state.maximum.value { state.value.set(state.maximum.value )}
+
         state.size.height.set(1);
         if state.auto_scale.width.value {
             state.set_effective_width(((state.maximum.value - state.minimum.value) /
@@ -195,6 +200,8 @@ impl Slider {
         if value >= state.maximum.value - state.step.value ||
             mouse_pos.x == state.get_effective_size().width - 1 {
             value = state.maximum.value;
+        } else if mouse_pos.x == 0 {
+            value = state.minimum.value;
         } else {
             value -= value % state.step.value;
         }
