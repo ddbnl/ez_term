@@ -270,7 +270,7 @@ pub trait EzObject {
         let state = state_tree.get_by_path(&self.get_full_path()).as_generic();
         let pos = state.get_absolute_position();
         let content = self.get_contents(state_tree);
-        view_tree.write_content(pos, content);
+        view_tree.write_content(pos.as_coordinates(), content);
     }
 
     /// Set the content for a widget manually. This is not implemented for most widgets, as they
@@ -428,7 +428,7 @@ pub trait EzObject {
     /// the appropriate callback. Objects can overwrite this function but must remember to also 
     /// call the callback.
     fn on_drag(&self, state_tree: &mut StateTree, callback_tree: &mut CallbackTree,
-                scheduler: &mut Scheduler, previous_pos: Option<Coordinates>, 
+                scheduler: &mut Scheduler, previous_pos: Option<Coordinates>,
                mouse_pos: Coordinates) -> bool {
 
         self.on_drag_callback(state_tree, callback_tree, scheduler, previous_pos, mouse_pos)

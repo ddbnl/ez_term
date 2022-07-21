@@ -14,10 +14,7 @@ impl Layout {
         if !state.get_scrolling_config().enable_y.value { return }
         let scroll_chunk = (state.get_effective_size().height as f32 * 0.75) as usize;
         let new_view_start;
-        if state.get_scrolling_config().view_start_y + state.get_effective_size().height ==
-            state.get_scrolling_config().original_height - state.get_effective_size().height {
-            return
-        } else if state.get_scrolling_config().view_start_y + scroll_chunk >
+        if state.get_scrolling_config().view_start_y + scroll_chunk >
             state.get_scrolling_config().original_height - state.get_effective_size().height {
             new_view_start =
                 state.get_scrolling_config().original_height - state.get_effective_size().height;
@@ -56,10 +53,7 @@ impl Layout {
         if !state.get_scrolling_config().enable_x.value { return }
         let scroll_chunk = (state.get_effective_size().width as f32 * 0.75) as usize;
         let new_view_start;
-        if state.get_scrolling_config().view_start_x + state.get_effective_size().width ==
-            state.get_scrolling_config().original_width - state.get_effective_size().height {
-            return
-        } else if state.get_scrolling_config().view_start_x + scroll_chunk >
+        if state.get_scrolling_config().view_start_x + scroll_chunk >
             state.get_scrolling_config().original_width - state.get_effective_size().width {
             new_view_start = state.get_scrolling_config().original_width - state.get_effective_size().width;
         } else {
@@ -91,7 +85,7 @@ impl Layout {
     }
 
     /// Create a horizontal scrollbox out of this layout if its contents width exceed its own width
-    pub fn create_horizontal_scroll_box(&self, state_tree: &mut StateTree, contents: PixelMap)
+    pub fn create_horizontal_scroll_box(&self, state_tree: &mut StateTree, mut contents: PixelMap)
                                     -> PixelMap {
 
         let state = state_tree.get_by_path_mut(&self.get_full_path())
@@ -116,24 +110,24 @@ impl Layout {
     }
 
     /// Create a vertical scrollbox out of this layout if its contents width exceed its own width
-    pub fn create_vertical_scroll_box(&self, state_tree: &mut StateTree, contents: PixelMap)
+    pub fn create_vertical_scroll_box(&self, state_tree: &mut StateTree, mut contents: PixelMap)
         -> PixelMap {
 
         let state = state_tree.get_by_path_mut(&self.get_full_path())
             .as_layout_mut();
-        if !state.scrolling_config.enable_y.value ||
-            contents[0].len() <= state.get_effective_size().height {
+        let largest = contents.iter().map(|x| x.len()).max().unwrap_or(0);
+        if !state.scrolling_config.enable_y.value || largest <= state.get_effective_size().height {
             state.scrolling_config.is_scrolling_y = false;
             return contents
         }
-        state.scrolling_config.original_height = contents[0].len();
+        state.scrolling_config.original_height = largest;
         state.scrolling_config.is_scrolling_y = true;
         let view_start = state.scrolling_config.view_start_y;
         let view_end =
-            if contents[0].len() - view_start > state.get_effective_size().height {
+            if largest - view_start > state.get_effective_size().height {
                 view_start + state.get_effective_size().height
             } else {
-                contents[0].len()
+                largest
             };
         let scrolled_contents: PixelMap =
             contents.iter().map(|x| x[view_start..view_end].to_vec()).collect();

@@ -137,7 +137,7 @@ fn handle_mouse_press_event(event: MouseEvent, button: MouseButton, state_tree: 
         let abs = state_tree.get_by_path(&widget.get_full_path()).as_generic()
             .get_absolute_position();
         let relative_position = Coordinates::new(
-            mouse_position.x - abs.x, mouse_position.y - abs.y);
+            mouse_position.x - abs.usize_x(), mouse_position.y - abs.usize_y());
         let consumed = match button {
             MouseButton::Left => {
                 widget.on_left_mouse_click(
@@ -164,8 +164,9 @@ fn handle_mouse_hover_event(event: MouseEvent, state_tree: &mut StateTree,
     for widget in get_widget_by_position(mouse_position, root_widget, state_tree) {
         let abs = state_tree.get_by_path(&widget.get_full_path())
             .as_generic().get_absolute_position();
+        if abs.usize_y() > mouse_position.y { println!("SJAMO {} {}", abs.usize_y(), mouse_position.y)}
         let relative_position = Coordinates::new(
-            mouse_position.x - abs.x, mouse_position.y - abs.y);
+            mouse_position.x - abs.usize_x(), mouse_position.y - abs.usize_y());
         if widget.on_hover(state_tree, callback_tree, scheduler,relative_position) {
             return true
         }
@@ -189,7 +190,7 @@ fn handle_mouse_drag_event(event: MouseEvent, state_tree: &mut StateTree,
         let abs = state_tree.get_by_path(&widget.get_full_path())
             .as_generic().get_absolute_position();
         let relative_position = Coordinates::new(
-            mouse_position.x - abs.x, mouse_position.y - abs.y);
+            mouse_position.x - abs.usize_x(), mouse_position.y - abs.usize_y());
         let consumed = if dragging.is_some() {
             widget.on_drag(state_tree, callback_tree, scheduler,
                            Some(*last_dragging_pos), relative_position)

@@ -7,7 +7,6 @@
     size_hint_x: 1/3
     border: True
     border_fg_color: dark_cyan
-    border_bg_color: black
     scroll_y: true
 
 

@@ -1,5 +1,5 @@
 use crate::property::ez_property::EzProperty;
-use crate::run::definitions::Coordinates;
+use crate::run::definitions::{IsizeCoordinates};
 use crate::scheduler::scheduler_funcs::clean_up_property;
 use crate::scheduler::scheduler::Scheduler;
 use crate::states::definitions::{StateCoordinates, SizeHint, PosHint, StateSize, AutoScale, Padding,
@@ -21,7 +21,7 @@ pub struct LabelState {
     pub position: StateCoordinates,
 
     /// Absolute position of this widget on screen. Automatically propagated, do not set manually
-    pub absolute_position: Coordinates,
+    pub absolute_position: IsizeCoordinates,
 
     /// Relative height/width of this widget to parent layout
     pub size_hint: SizeHint,
@@ -63,7 +63,7 @@ impl LabelState {
        LabelState {
            path: path.clone(),
            position: StateCoordinates::new(0, 0, path.clone(), scheduler),
-           absolute_position: Coordinates::default(),
+           absolute_position: IsizeCoordinates::default(),
            size_hint: SizeHint::new(Some(1.0), Some(1.0), path.clone(), scheduler),
            pos_hint: PosHint::new(None, None, path.clone(), scheduler),
            auto_scale: AutoScale::new(false, false, path.clone(), scheduler),
@@ -109,11 +109,11 @@ impl GenericState for LabelState {
         &mut self.position
     }
 
-    fn set_absolute_position(&mut self, pos: Coordinates) {
+    fn set_absolute_position(&mut self, pos: IsizeCoordinates) {
         self.absolute_position = pos;
     }
 
-    fn get_absolute_position(&self) -> Coordinates { self.absolute_position }
+    fn get_absolute_position(&self) -> IsizeCoordinates { self.absolute_position }
 
     fn set_horizontal_alignment(&mut self, alignment: HorizontalAlignment) {
         self.halign.set(alignment);

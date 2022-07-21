@@ -2,7 +2,7 @@
 //! A module containing the base structs and traits for widget states.
 use crossterm::style::Color;
 use crate::EzProperty;
-use crate::run::definitions::{Coordinates, Size};
+use crate::run::definitions::{Coordinates, IsizeCoordinates, Size};
 use crate::scheduler::scheduler::Scheduler;
 use crate::states::canvas_state::{CanvasState};
 use crate::states::label_state::{LabelState};
@@ -364,20 +364,20 @@ pub trait GenericState {
     /// Set the absolute position of a widget, i.e. the position on screen rather than within its'
     /// parent widget. Should be set automatically through the "propagate_absolute_positions"
     /// function.
-    fn set_absolute_position(&mut self, pos: Coordinates);
+    fn set_absolute_position(&mut self, pos: IsizeCoordinates);
 
     /// Get the absolute position of a widget, i.e. the position on screen rather than within its'
     /// parent widget.
-    fn get_absolute_position(&self) -> Coordinates;
+    fn get_absolute_position(&self) -> IsizeCoordinates;
 
     /// Get the absolute position of where the actual content of the widget starts, taking out
     /// e.g. border and padding
-    fn get_effective_absolute_position(&self) -> Coordinates {
-        Coordinates::new(
+    fn get_effective_absolute_position(&self) -> IsizeCoordinates {
+        IsizeCoordinates::new(
          self.get_absolute_position().x +if self.get_border_config().enabled.value {1} else {0}
-             + self.get_padding().left.value,
+             + self.get_padding().left.value as isize,
          self.get_absolute_position().y +if self.get_border_config().enabled.value {1} else {0}
-             + self.get_padding().top.value)
+             + self.get_padding().top.value as isize)
     }
 
     /// Set [HorizontalAlignment] of this widget.
@@ -445,7 +445,7 @@ pub trait GenericState {
 
     /// Get the top left and bottom right corners of a widget in (X, Y) coordinate tuples.
     fn get_box(&self) -> (Coordinates, Coordinates) {
-        let top_left = self.get_absolute_position();
+        let top_left = self.get_absolute_position().as_coordinates();
         let bottom_right = Coordinates::new(
             top_left.x + self.get_size().width.value,
             top_left.y + self.get_size().height.value);
@@ -493,10 +493,10 @@ pub trait GenericState {
     fn _collides(&self, pos: Coordinates, size: &Size) -> bool {
 
         let starting_pos = self.get_effective_absolute_position();
-        let end_pos = Coordinates::new(starting_pos.x + size.width - 1,
-                                                  starting_pos.y + size.height - 1);
-        pos.x >= starting_pos.x && pos.x <= end_pos.x &&
-            pos.y >= starting_pos.y && pos.y <= end_pos.y
+        let end_pos = IsizeCoordinates::new(starting_pos.x + (size.width as isize) - 1,
+                                                         starting_pos.y + (size.height as isize) - 1);
+        pos.x as isize >= starting_pos.x && pos.x as isize <= end_pos.x &&
+            pos.y as isize >= starting_pos.y && pos.y as isize <= end_pos.y
     }
 
     /// Returns a bool representing whether this widget can be select by keyboard or mouse. E.g.

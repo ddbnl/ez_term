@@ -171,7 +171,8 @@ impl Layout{
                 state.get_size_mut().width.set(child_content.len())
             }
             if state.get_size().infinite_height {
-                state.get_size_mut().height.set(child_content[0].len())
+                state.get_size_mut().height.set(
+                    if !child_content.is_empty() { child_content[0].len() } else { 0 })
             }
             position.y += if !child_content.is_empty() {child_content[0].len()} else {0};
             content_list.push(child_content);

@@ -278,9 +278,9 @@ pub fn is_in_view(path: String, state_tree: &StateTree) -> bool {
         // If there's no visible height and width then we're not scrolling. Simply check if obj is
         // inside of the root window.
         if (visible_width == None &&
-            state.as_generic().get_effective_absolute_position().x > window_size.width.value) ||
+            state.as_generic().get_effective_absolute_position().usize_x() > window_size.width.value) ||
             (visible_height == None &&
-                state.as_generic().get_effective_absolute_position().y > window_size.height.value) {
+                state.as_generic().get_effective_absolute_position().usize_y() > window_size.height.value) {
             return false
         }
 

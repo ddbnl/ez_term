@@ -11,7 +11,7 @@ use crate::states::ez_state::{EzState, GenericState};
 use crate::scheduler::scheduler::Scheduler;
 use crate::states::definitions::{LayoutMode, LayoutOrientation};
 use crate::property::ez_values::EzValues;
-use crate::run::definitions::{CallbackTree, Coordinates, Pixel, PixelMap, StateTree};
+use crate::run::definitions::{CallbackTree, Coordinates, IsizeCoordinates, Pixel, PixelMap, StateTree};
 use crate::widgets::helper_functions::{add_border, add_padding, reposition_with_pos_hint,
                                        resize_with_size_hint};
 
@@ -432,8 +432,9 @@ impl EzObject for Layout {
 
         let state = state_tree.get_by_path_mut(&self.path).as_layout_mut();
 
+        let offset = if state.border_config.enabled.value { 2 } else { 1 };
         if state.scrolling_config.is_scrolling_x &&
-            mouse_pos.y + 2 == state.get_size().height.value {
+            mouse_pos.y + offset == state.get_size().height.value {
 
             let (scrollbar_size, scrollbar_pos) =
                 self.get_horizontal_scrollbar_parameters(
@@ -465,7 +466,7 @@ impl EzObject for Layout {
             consumed = true;
 
         } else if state.scrolling_config.is_scrolling_y &&
-            mouse_pos.x + 2 == state.get_size().width.value {
+            mouse_pos.x + offset == state.get_size().width.value {
 
             let (scrollbar_size, scrollbar_pos) =
                 self.get_vertical_scrollbar_parameters(
@@ -599,7 +600,8 @@ impl Layout {
             state.as_generic_mut());
         let x = state.as_generic().get_position().x.value;
         let y = state.as_generic().get_position().y.value;
-        state.as_generic_mut().set_absolute_position(Coordinates::new(x, y));
+        state.as_generic_mut().set_absolute_position(IsizeCoordinates::new(
+            x as isize, y as isize));
 
         //Get contents
         let modal_content;
@@ -668,8 +670,9 @@ impl Layout {
         while contents.len() < state.get_effective_size().width {
             contents.push(Vec::new());
         }
+        let largest = contents.iter().map(|x| x.len()).max().unwrap_or(0);
         for x in contents.iter_mut() {
-            while x.len() < state.get_effective_size().height {
+            while x.len() < state.get_effective_size().height || x.len() < largest {
                 x.push(Pixel::new(
                     " ".to_string(), state.get_color_config().foreground.value,
                     state.get_color_config().background.value));

@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use crate::states::definitions::{StateCoordinates, SizeHint, PosHint, StateSize, AutoScale, Padding, HorizontalAlignment, VerticalAlignment, BorderConfig, ColorConfig, LayoutMode, LayoutOrientation, ScrollingConfig, TableConfig};
 use crate::{EzProperty};
 use crate::parser::ez_definition::Templates;
-use crate::run::definitions::{Coordinates, Size, StateTree};
+use crate::run::definitions::{IsizeCoordinates, Size, StateTree};
 use crate::run::tree::initialize_state_tree;
 use crate::scheduler::scheduler_funcs::clean_up_property;
 use crate::scheduler::scheduler::Scheduler;
@@ -21,7 +21,7 @@ pub struct LayoutState {
     pub position: StateCoordinates,
 
     /// Absolute position of this widget on screen. Automatically propagated, do not set manually
-    pub absolute_position: Coordinates,
+    pub absolute_position: IsizeCoordinates,
 
     /// Relative height/width of this widget to parent layout
     pub size_hint: SizeHint,
@@ -106,7 +106,7 @@ impl LayoutState {
         LayoutState {
             path: path.clone(),
             position: StateCoordinates::new(0, 0, path.clone(), scheduler),
-            absolute_position: Coordinates::default(),
+            absolute_position: IsizeCoordinates::default(),
             size_hint: SizeHint::new(Some(1.0), Some(1.0), path.clone(), scheduler),
             pos_hint: PosHint::new(None, None, path.clone(), scheduler),
             size: StateSize::new(0, 0, path.clone(), scheduler),
@@ -167,12 +167,12 @@ impl GenericState for LayoutState {
 
         let width_result: isize = self.size.width.value as isize
             -if self.get_border_config().enabled.value {2} else {0}
-            -if self.scrolling_config.is_scrolling_y {1} else {0}
+            -if self.scrolling_config.enable_y.value {1} else {0}
             -self.get_padding().left.value as isize - self.get_padding().right.value as isize;
         let width = if width_result < 0 {0} else { width_result};
         let height_result: isize = self.size.height.value as isize
             -if self.get_border_config().enabled.value {2} else {0}
-            -if self.scrolling_config.is_scrolling_x {1} else {0}
+            -if self.scrolling_config.enable_x.value {1} else {0}
             -self.get_padding().top.value as isize - self.get_padding().bottom.value as isize;
         let height = if height_result < 0 {0} else { height_result};
         Size::new(width as usize, height as usize)
@@ -203,9 +203,9 @@ impl GenericState for LayoutState {
         &mut self.position
     }
 
-    fn set_absolute_position(&mut self, pos: Coordinates) { self.absolute_position = pos; }
+    fn set_absolute_position(&mut self, pos: IsizeCoordinates) { self.absolute_position = pos; }
 
-    fn get_absolute_position(&self) -> Coordinates { self.absolute_position }
+    fn get_absolute_position(&self) -> IsizeCoordinates { self.absolute_position }
 
     fn set_horizontal_alignment(&mut self, alignment: HorizontalAlignment) {
         self.halign.set(alignment);

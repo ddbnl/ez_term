@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 use crate::{CallbackConfig, EzContext, EzObject};
-use crate::run::definitions::{Coordinates, PixelMap, StateTree};
+use crate::run::definitions::{IsizeCoordinates, PixelMap, StateTree};
 use crate::scheduler::scheduler::Scheduler;
 use crate::states::ez_state::GenericState;
 use crate::states::definitions::{LayoutMode, LayoutOrientation};
@@ -117,8 +117,9 @@ impl Layout {
                 let child_state =
                     state_tree.get_by_path_mut(&i.get_full_path()).as_generic_mut();
                 let pos = child_state.get_position();
-                let mut new_absolute_position = Coordinates::new(
-                    absolute_position.x + pos.x.get(), absolute_position.y + pos.y.get());
+                let mut new_absolute_position = IsizeCoordinates::new(
+                    absolute_position.x + *pos.x.get() as isize,
+                    absolute_position.y + *pos.y.get() as isize);
                 new_absolute_position = offset_scrolled_absolute_position(
                     new_absolute_position, &scrolling, &size);
                 child_state.set_absolute_position(new_absolute_position);
@@ -127,8 +128,9 @@ impl Layout {
                 let child_state = state_tree.get_by_path_mut(
                     &child.as_ez_object().get_full_path()).as_generic_mut();
                 let pos = child_state.get_position();
-                let mut new_absolute_position = Coordinates::new(
-                    absolute_position.x + pos.x.get(), absolute_position.y + pos.y.get());
+                let mut new_absolute_position = IsizeCoordinates::new(
+                    absolute_position.x + *pos.x.get() as isize,
+                    absolute_position.y + *pos.y.get() as isize);
                 new_absolute_position = offset_scrolled_absolute_position(
                     new_absolute_position, &scrolling, &size);
                 child_state.set_absolute_position(new_absolute_position);

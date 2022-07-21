@@ -1,7 +1,7 @@
 use crate::scheduler::scheduler_funcs::clean_up_property;
 use crate::scheduler::scheduler::Scheduler;
 use crate::EzProperty;
-use crate::run::definitions::Coordinates;
+use crate::run::definitions::{IsizeCoordinates};
 use crate::states::definitions::{AutoScale, BorderConfig, ColorConfig, StateCoordinates,
                                  HorizontalAlignment, Padding, PosHint, StateSize, SizeHint,
                                  VerticalAlignment};
@@ -25,7 +25,7 @@ pub struct ProgressBarState {
     pub position: StateCoordinates,
 
     /// Absolute position of this layout on screen. Automatically propagated, do not set manually
-    pub absolute_position: Coordinates,
+    pub absolute_position: IsizeCoordinates,
 
     /// Relative height/width of this widget to parent layout
     pub size_hint: SizeHint,
@@ -74,7 +74,7 @@ impl ProgressBarState {
            value: scheduler.new_usize_property(format!("{}/progress_value", path).as_str(),
                                                0),
            position: StateCoordinates::new(0, 0, path.clone(), scheduler),
-           absolute_position: Coordinates::default(),
+           absolute_position: IsizeCoordinates::default(),
            size: StateSize::new(0, 0, path.clone(), scheduler),
            size_hint: SizeHint::new(Some(1.0), Some(1.0), path.clone(), scheduler),
            pos_hint: PosHint::new(None, None, path.clone(), scheduler),
@@ -122,9 +122,9 @@ impl GenericState for ProgressBarState {
         &mut self.position
     }
 
-    fn set_absolute_position(&mut self, pos: Coordinates) { self.absolute_position = pos }
+    fn set_absolute_position(&mut self, pos: IsizeCoordinates) { self.absolute_position = pos }
 
-    fn get_absolute_position(&self) -> Coordinates { self.absolute_position }
+    fn get_absolute_position(&self) -> IsizeCoordinates { self.absolute_position }
 
     fn set_horizontal_alignment(&mut self, alignment: HorizontalAlignment) {
         self.halign.set(alignment);

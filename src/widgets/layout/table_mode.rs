@@ -199,7 +199,7 @@ impl Layout{
                     if x < child_table.len() && y < child_table[x].len() {
                         let height =
                             content_list.get(child_table[x][y]).unwrap().iter()
-                                .map(|x| x.len()).max().unwrap();
+                                .map(|x| x.len()).max().unwrap_or(0);
                         if height > largest { largest = height };
                     }
                 }
@@ -273,14 +273,14 @@ impl Layout{
             }
 
             let child_content = generic_child.get_contents(state_tree);
-            if child_content.is_empty() { continue }  // handle empty widget
             let state = state_tree.get_by_path_mut(&generic_child.get_full_path())
                 .as_generic_mut(); // re-borrow
             if state.get_size().infinite_width {
                 state.get_size_mut().width.set(child_content.len())
             }
             if state.get_size().infinite_height {
-                state.get_size_mut().height.set(child_content[0].len())
+                state.get_size_mut().height.set(
+                    if !child_content.is_empty() { child_content[0].len() } else { 0 })
             }
             content_list.push(child_content);
         }

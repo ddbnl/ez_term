@@ -1,4 +1,4 @@
-use crate::run::definitions::{Coordinates, Pixel, PixelMap, StateTree};
+use crate::run::definitions::{IsizeCoordinates, Pixel, PixelMap, StateTree};
 use crate::scheduler::scheduler::Scheduler;
 use crate::widgets::ez_object::EzObjects;
 use crate::widgets::ez_object::EzObject;
@@ -75,10 +75,11 @@ impl Layout {
                 child_state.set_effective_height(
                     if own_effective_size.height >= 3 { own_effective_size.height - 5} else {0});
                 child_state.set_effective_width(
-                    if own_effective_size.width >= 1 { own_effective_size.width - 2} else {0});
+                    if own_effective_size.width >= 1 { own_effective_size.width - 1} else {0});
                 child_state.get_position_mut().x.set(0);
                 child_state.get_position_mut().y.set(3);
-                child_state.set_absolute_position(Coordinates::new(own_pos.x, own_pos.y + 3));
+                child_state.set_absolute_position(IsizeCoordinates::new(
+                    own_pos.x, own_pos.y + 3));
                 tab_content = i.get_contents(state_tree);
             } else if let EzObjects::Button(i) = child {
 
@@ -112,7 +113,7 @@ impl Layout {
                     own_colors.clone(),
                     child_state);
                 child_state.set_absolute_position(
-                    Coordinates::new(own_pos.x + pos_x, own_pos.y + 1));
+                    IsizeCoordinates::new(own_pos.x + pos_x as isize, own_pos.y + 1));
 
                 if (!selection.is_empty() && selection == i.path) || (selection.is_empty() &&
                     active_tab == i.path.strip_suffix("_tab_header").unwrap()) {
@@ -146,9 +147,9 @@ impl Layout {
                         .get_by_path_mut(&button.path).as_button_mut();
                     state.set_x(if state.get_position().x.get() >= &difference
                     { state.get_position().x.get() - difference } else { 0 });
-                    state.set_absolute_position(Coordinates::new(
-                        if state.get_absolute_position().x >= difference
-                        { state.get_absolute_position().x - difference } else { 0 },
+                    state.set_absolute_position(IsizeCoordinates::new(
+                        if state.get_absolute_position().x >= difference as isize
+                        { state.get_absolute_position().x - difference as isize } else { 0 },
                     state.get_absolute_position().y));
                 }
             }

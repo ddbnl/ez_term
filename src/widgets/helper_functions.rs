@@ -1,5 +1,5 @@
 use crossterm::style::{Color};
-use crate::run::definitions::{Coordinates, Pixel, PixelMap};
+use crate::run::definitions::{IsizeCoordinates, Pixel, PixelMap};
 use crate::states::definitions::{Padding, BorderConfig, VerticalAlignment, HorizontalAlignment, ScrollingConfig, StateSize};
 use crate::states::ez_state::{EzState, GenericState};
 
@@ -308,23 +308,19 @@ pub fn wrap_text (mut text: String, width: usize) -> Vec<String> {
 
 
 /// Adjust an absolute position based on scrolling config and size of the parent layout.
-pub fn offset_scrolled_absolute_position(mut absolute_position: Coordinates,
+pub fn offset_scrolled_absolute_position(mut absolute_position: IsizeCoordinates,
                                          scrolling: &ScrollingConfig, size: &StateSize)
-                                         -> Coordinates {
+                                         -> IsizeCoordinates {
     
     if scrolling.is_scrolling_x && size.width > 0 {
         let offset = ((scrolling.view_start_x / size.width.value) * size.width.value) +
             (scrolling.view_start_x % size.width.value);
-        if offset <= absolute_position.x {
-            absolute_position.x -= offset;
-        }
+        absolute_position.x -= offset as isize;
     }
     if scrolling.is_scrolling_y && size.height > 0 {
         let offset = ((scrolling.view_start_y / size.height.value) * size.height.value) +
             (scrolling.view_start_y % size.height.value);
-        if offset <= absolute_position.y {
-            absolute_position.y -= offset;
-        }
+        absolute_position.y -= offset as isize;
     }
     absolute_position
 }

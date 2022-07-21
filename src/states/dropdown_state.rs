@@ -1,6 +1,6 @@
 use crate::states::ez_state::GenericState;
 use crate::EzProperty;
-use crate::run::definitions::Coordinates;
+use crate::run::definitions::{IsizeCoordinates};
 use crate::scheduler::scheduler_funcs::clean_up_property;
 use crate::scheduler::scheduler::Scheduler;
 use crate::states::definitions::{StateCoordinates, SizeHint, PosHint, StateSize, AutoScale, Padding,
@@ -18,7 +18,7 @@ pub struct DropdownState {
     pub position: StateCoordinates,
 
     /// Absolute position of this widget on screen. Automatically propagated, do not set manually
-    pub absolute_position: Coordinates,
+    pub absolute_position: IsizeCoordinates,
 
     /// Relative height/width of this widget to parent layout
     pub size_hint: SizeHint,
@@ -71,7 +71,7 @@ impl DropdownState {
        DropdownState {
            path: path.clone(),
            position: StateCoordinates::new(0, 0, path.clone(), scheduler),
-           absolute_position: Coordinates::default(),
+           absolute_position: IsizeCoordinates::default(),
            size_hint: SizeHint::new(Some(1.0), Some(1.0), path.clone(), scheduler),
            auto_scale: AutoScale::new(false, false, path.clone(), scheduler),
            pos_hint: PosHint::new(None, None, path.clone(), scheduler),
@@ -119,9 +119,9 @@ impl GenericState for DropdownState {
 
     fn get_position_mut(&mut self) -> &mut StateCoordinates { &mut self.position }
 
-    fn set_absolute_position(&mut self, pos: Coordinates) { self.absolute_position = pos }
+    fn set_absolute_position(&mut self, pos: IsizeCoordinates) { self.absolute_position = pos }
 
-    fn get_absolute_position(&self) -> Coordinates { self.absolute_position }
+    fn get_absolute_position(&self) -> IsizeCoordinates { self.absolute_position }
 
     fn set_horizontal_alignment(&mut self, alignment: HorizontalAlignment) {
         self.halign.set(alignment);
@@ -215,7 +215,7 @@ pub struct DroppedDownMenuState {
     pub position: StateCoordinates,
 
     /// Absolute position of this widget on screen. Automatically propagated, do not set manually
-    pub absolute_position: Coordinates,
+    pub absolute_position: IsizeCoordinates,
 
     /// Relative height/width of this widget to parent layout
     pub size_hint: SizeHint,
@@ -271,7 +271,7 @@ impl DroppedDownMenuState {
             path: path.clone(),
             parent_path: String::new(),
             position: StateCoordinates::new(0, 0, path.clone(), scheduler),
-            absolute_position: Coordinates::default(),
+            absolute_position: IsizeCoordinates::default(),
             size_hint: SizeHint::new(Some(1.0), Some(1.0), path.clone(), scheduler),
             auto_scale: AutoScale::new(false, false, path.clone(), scheduler),
             pos_hint: PosHint::new(None, None, path.clone(), scheduler),
@@ -324,9 +324,9 @@ impl GenericState for DroppedDownMenuState {
         &mut self.position
     }
 
-    fn set_absolute_position(&mut self, pos: Coordinates) { self.absolute_position = pos }
+    fn set_absolute_position(&mut self, pos: IsizeCoordinates) { self.absolute_position = pos }
 
-    fn get_absolute_position(&self) -> Coordinates { self.absolute_position }
+    fn get_absolute_position(&self) -> IsizeCoordinates { self.absolute_position }
 
     fn set_horizontal_alignment(&mut self, alignment: HorizontalAlignment) {
         self.halign.set(alignment)

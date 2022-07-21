@@ -1,6 +1,7 @@
 //! # Run Definitions
 //!
 //! This module contains definitions common to run functions.
+use std::cmp::{max};
 use crossterm::style::{Color, StyledContent, Stylize};
 
 use crate::CallbackConfig;
@@ -20,6 +21,26 @@ impl Coordinates {
     pub fn new(x: usize, y: usize) -> Self { Coordinates{x, y}}
 }
 
+
+/// Convenience wrapper around an isize XY tuple, represents coordinates. Makes reading code
+/// more clear when explicitly dealing with 'x' and 'y'. Used for absolute position, which can be
+/// negative due to scrolling.
+#[derive(PartialEq, Clone, Copy, Debug, Default)]
+pub struct IsizeCoordinates {
+    pub x: isize,
+    pub y: isize,
+}
+impl IsizeCoordinates {
+    pub fn new(x: isize, y: isize) -> Self { IsizeCoordinates{x, y}}
+
+    pub fn usize_x(&self) -> usize { max(self.x, 0) as usize }
+
+    pub fn usize_y(&self) -> usize { max(self.y, 0) as usize }
+
+    pub fn as_coordinates(&self) -> Coordinates {
+        Coordinates::new(self.usize_x(), self.usize_y())
+    }
+}
 
 
 /// Convenience wrapper around a width/height tuple, represents size. Makes reading code more clear

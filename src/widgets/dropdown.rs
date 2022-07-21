@@ -158,7 +158,7 @@ impl EzObject for Dropdown {
         let modal_path = format!("/modal/{}", modal_id);
         let position =
             StateCoordinates::new(
-                state.get_absolute_position().x, state.get_absolute_position().y,
+                state.get_absolute_position().usize_x(), state.get_absolute_position().usize_y(),
                 format!("{}/position", modal_path), scheduler);
         let new_modal_state = DroppedDownMenuState {
             path: modal_path.clone(),
@@ -406,7 +406,7 @@ impl DroppedDownMenu {
             .as_dropped_down_menu();
         let parent = state.parent_path.clone();
         if state.collides_effective(pos) {
-            let clicked_row = pos.y - state.absolute_position.y;
+            let clicked_row = pos.y - state.absolute_position.usize_y();
             // Check if not click on border
             if clicked_row != 0 && clicked_row <= state.get_effective_size().height {
                 let choice = state.get_dropped_down_options()[clicked_row - 1]
@@ -433,7 +433,7 @@ impl DroppedDownMenu {
     /// Called when this widget is already dropped down and widget is hovered
     pub fn handle_hover(&self, state: &mut DroppedDownMenuState,
                         pos: Coordinates) -> bool {
-        let hovered_row = pos.y - state.absolute_position.y;
+        let hovered_row = pos.y - state.absolute_position.usize_y();
         // Check if not hover on border
         if hovered_row != 0 && hovered_row - 1 != state.dropped_down_selected_row &&
             hovered_row <= state.get_dropped_down_options().len() {
