@@ -74,8 +74,7 @@ impl<T> Tree<T> {
         if let Some(path) = self.cache.get(id) {
             self.get_by_path(path)
         } else {
-            panic!("Tried a lookup by ID in {}, but the ID \"{}\" is not unique. \
-            Make the ID unique or use \"get_by_path\" instead", self.name, id)
+            panic!("Could not find ID {}, in tree \"{}\"", id, self.name)
         }
     }
 
@@ -88,8 +87,7 @@ impl<T> Tree<T> {
         if let Some(path) = self.cache.get(id) {
             full_path = path.clone();
         } else {
-            panic!("Tried a lookup by ID in {}, but the ID \"{}\" is not unique. \
-            Make the ID unique or use \"get_by_path\" instead", self.name, id)
+            panic!("Could not find ID {}, in tree \"{}\"", id, self.name)
         }
         self.get_by_path_mut(&full_path)
     }

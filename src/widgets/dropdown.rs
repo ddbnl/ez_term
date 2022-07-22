@@ -118,18 +118,21 @@ impl EzObject for Dropdown {
             state_tree.get_by_path_mut(&self.get_full_path()).as_dropdown_mut();
         // If dropped down get full content instead
         // Set a default value if user didn't give one
-        let mut active = state.choice.clone();
-        if active.value.is_empty() && !state.allow_none.value {
-            active.set(state.options.first()
+        if state.choice.value.is_empty() && !state.allow_none.value {
+            state.choice.set(state.options.first()
                 .expect("Dropdown widget must have at least one option").to_string());
         }
         // Create a bordered label representing currently active value
         let (fg_color, bg_color) = state.get_context_colors();
-        let mut text = active.value.chars().rev().collect::<String>();
+        let mut text = state.choice.value.chars().rev().collect::<String>();
         let mut contents = Vec::new();
 
-        let write_width = if state.get_size().infinite_width { text.len() }
-                                else {state.get_effective_size().width };
+        let write_width = if state.get_size().infinite_width ||
+            state.get_auto_scale().width.value {
+            state.options.iter().map(|x| x.len()).max().unwrap_or(0)
+        } else {
+            state.get_effective_size().width
+        };
 
         for _ in 0..write_width {
             let mut new_y = Vec::new();
@@ -142,6 +145,9 @@ impl EzObject for Dropdown {
             }
             contents.push(new_y);
         }
+        if state.get_auto_scale().width.value {
+            state.set_effective_width(contents.len());
+        }
         contents = add_border(contents, state.get_border_config());
         state.set_effective_height(1);
         contents
@@ -152,10 +158,15 @@ impl EzObject for Dropdown {
     fn on_press(&self, state_tree: &mut StateTree, _callback_tree: &mut CallbackTree,
                 scheduler: &mut Scheduler) -> bool {
 
-        let state = state_tree.get_by_path(&self.get_full_path())
-            .as_dropdown();
         let modal_id = format!("{}_modal", self.get_id());
         let modal_path = format!("/modal/{}", modal_id);
+        if state_tree.objects.contains_key(&modal_path) {
+            return false
+        }
+
+        let state = state_tree.get_by_path(&self.get_full_path())
+            .as_dropdown();
+
         let position =
             StateCoordinates::new(
                 state.get_absolute_position().usize_x(), state.get_absolute_position().usize_y(),
@@ -408,7 +419,7 @@ impl DroppedDownMenu {
         if state.collides_effective(pos) {
             let clicked_row = pos.y - state.absolute_position.usize_y();
             // Check if not click on border
-            if clicked_row != 0 && clicked_row <= state.get_effective_size().height {
+            if clicked_row <= state.get_effective_size().height {
                 let choice = state.get_dropped_down_options()[clicked_row - 1]
                     .clone();
                 let state = state_tree.get_by_path_mut(&parent).as_dropdown_mut();
@@ -435,7 +446,7 @@ impl DroppedDownMenu {
                         pos: Coordinates) -> bool {
         let hovered_row = pos.y - state.absolute_position.usize_y();
         // Check if not hover on border
-        if hovered_row != 0 && hovered_row - 1 != state.dropped_down_selected_row &&
+        if hovered_row - 1 != state.dropped_down_selected_row &&
             hovered_row <= state.get_dropped_down_options().len() {
             state.set_dropped_down_selected_row(hovered_row - 1);
             return true
