@@ -222,7 +222,151 @@
 //! You should you be able to see the 'hello world' UI! Press Escape to quit.
 //! Now that you know how to create a basic UI, we'll dive into the specifics of the framework.
 //!
-//! 
+//! ## 2. Ez language
+//!
+//! ### 2.1 Basics
+//!
+//! With EzTerm, the UI is defined in the .ez files, using a YAML(ish) type syntax called EzLang.
+//! Like everything in EzTerm, this language is designed to be simple to use. There are only two
+//! things you can do in EzLang: define widgets and set properties on those widgets:
+//! ```
+//! - Label:
+//!     text: Hello world!
+//! ```
+//! As you can see in the above example, widget definitions start with a "-" dash. This makes it
+//! easier to read the .ez files. After a widget definition we can define the properties of that
+//! widget by indenting four spaces on the next line and using the "property: value" syntax. You
+//! can find every possible property of a widget in the docs (see table of contents on the top of
+//! this page).
+//!
+//! Every widget must defined inside of a layout. A layout may also be defined inside of another
+//! layout, or it can be the root layout. Every EzTerm project must contain exactly one root layout:
+//! ```
+//! - Layout:
+//!     mode: box
+//!     - Label:
+//!         text: Hello World!
+//! ```
+//! Here is an example of nested layouts creating multiple screens (note we still have only one
+//! root layout):
+//! ```
+//! - Layout:
+//!     mode: screen
+//!     - Layout:
+//!         id: screen_1
+//!         mode: box
+//!         - Label:
+//!             text: Hello screen one!
+//!     - Layout:
+//!         id: screen_2
+//!         mode: box
+//!         - Label:
+//!             text: Hello screen two!
+//! ```
+//! In the above example we gave the screen layouts an ID through the 'id' property; the ID is
+//! optional but becomes necessary when you want to refer to your layout/widget (either from code
+//! or from EzLang). It also makes the config file more readable.
+//!
+//! ### 2.2 Layout modes
+//!
+//! You may also have noted the "mode" property of the Layouts; this is one of the most important
+//! properties to learn about, because it does most of the heavy lifting in the framework. One of
+//! the advantages of EzTerm is that you don't have to hardcode your widget positions and sizes and
+//! you don't have to handle UI scaling. Instead, smart layouts do the work for you unless you
+//! specify that you want manual positions. To give you control over the way in which objects are
+//! placed on the screen, you can choose between layout modes and layout orientations. Here is a
+//! short overview of the layout modes (for detailed info, see the dedicated entries in the table
+//! of contents at the top of this page).
+//!
+//! > You can try all the code examples below by pasting them into the 'ui.ez' file of the project
+//! we created in the last chapter.
+//!
+//! #### 2.2.1 Box mode
+//!
+//! In Box mode layouts are placed from left to right (orientation: horizontal) or top to bottom
+//! (orientation: vertical). This is the simplest layout mode and is useful in many scenarios. An
+//! example of a vertical box mode layout could be a menu (a set of buttons placed under one
+//! another):
+//! ```
+//! - Layout:
+//!     mode: box
+//!     orientation: vertical
+//!     - Button:
+//!         text: Option 1
+//!     - Button:
+//!         text: Option 2
+//!     - Button:
+//!         text: Option 3
+//! ```
+//! It can often be useful to nest Box layouts in other Box layouts to divide the screen into
+//! rectangles. Let's say for example we want two menus, one on the left side of the screen and one
+//! on the right. We could divide the screen horizontally with a Box layout, and then add two
+//! vertical Box layouts (one menu for each side of the screen):
+//! ```
+//! - Layout:
+//!     mode: box
+//!     orientation: horizontal
+//!     - Layout:
+//!         mode: box
+//!         orientation: vertical
+//!         - Button:
+//!             text: Left option 1
+//!         - Button:
+//!             text: Left option 2
+//!         - Button:
+//!             text: Left option 3
+//!     - Layout:
+//!         mode: box
+//!         orientation: vertical
+//!         - Button:
+//!             text: Right option 1
+//!         - Button:
+//!             text: Right option 2
+//!         - Button:
+//!             text: Right option 3
+//! ```
+//!
+//! #### 2.2.2 Stack mode
+//!
+//! Stack mode stacks widgets inside of the layout according to the primary and secondary
+//! orientation. This can be useful if you want a bunch of widgets to fit into a layout
+//! efficiently (especially useful if the widgets are many different sizes. Unlike box mode
+//! which can either be horizontal or vertical, stack mode has 8 possible orientations.
+//! The default orientation is "top-bottom, left-right". This means that objects will be placed
+//! from top to bottom until there is no more vertical space to place the next widget. The next
+//! widget will then be placed at the top again, to the right of the first widget.
+//! In short: widgets are placed in the primary direction until space runs out; then they
+//! will be shifted towards the secondary direction. The possible orientations are:
+//! - Top-bottom, left-right ('tb-lr')
+//! - Top-bottom, right-left ('tb-rl')
+//! - Bottom-top, left-right ('bt-lr')
+//! - Bottom-top, right-left ('bt-rl')
+//! - Left-right, top-bottom ('lr-tb')
+//! - Left-right, bottom-top ('lr-bt')
+//! - Right-left, top-bottom ('rl-tb')
+//! - Right-left, bottom-top ('rl-bt')
+//!
+//! Here is an example: we have labels of different sizes and we want to place them efficiently
+//! in a layout, trying not to waste space. Instead of coming up with a complex solution, we just
+//! let the stack layout do the work for us. We want the widgets stacked left-to-right,
+//! top-to-bottom:
+//! ```
+//! - Layout:
+//!     mode: stack
+//!     orientation: lr-tb
+//!     - Label:
+//!         text: Hi,
+//!         auto_scale: true, true
+//!     - Label:
+//!         text: The size
+//!         auto_scale: true, true
+//!     - Label:
+//!         text: Of these labels
+//!         auto_scale: true, true
+//!     - Label:
+//!         text: Keeps increasing in length!
+//!         auto_scale: true, true
+//! ```
 mod run;
 mod scheduler;
 mod widgets;
