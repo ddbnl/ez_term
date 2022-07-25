@@ -64,7 +64,9 @@ impl<T> EzProperty<T> where EzValues: From<T> {
 
         if new != self.value {
             self.value = new.clone();
-            self.tx.send(EzValues::from(new)).unwrap();
+            self.tx.send(EzValues::from(new)).unwrap_or_else(
+                |e| panic!("Error setting value \"{}\": {}.", self.name, e)
+            );
         }
     }
 

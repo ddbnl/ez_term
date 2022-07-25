@@ -29,12 +29,20 @@ pub struct RadioButton {
 }
 
 impl RadioButton {
-    fn new(id: String, path: String, scheduler: &mut Scheduler) -> Self {
+    pub fn new(id: String, path: String, scheduler: &mut Scheduler) -> Self {
         RadioButton {
             id,
             path: path.clone(),
 
             state: RadioButtonState::new(path, scheduler),
+        }
+    }
+
+    pub fn from_state(id: String, path: String, scheduler: &mut Scheduler, state: EzState) -> Self {
+        RadioButton {
+            id,
+            path: path.clone(),
+            state: state.as_radio_button().to_owned(),
         }
     }
 

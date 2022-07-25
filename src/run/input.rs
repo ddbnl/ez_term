@@ -164,7 +164,6 @@ fn handle_mouse_hover_event(event: MouseEvent, state_tree: &mut StateTree,
     for widget in get_widget_by_position(mouse_position, root_widget, state_tree) {
         let abs = state_tree.get_by_path(&widget.get_full_path())
             .as_generic().get_absolute_position();
-        if abs.usize_y() > mouse_position.y { println!("SJAMO {} {}", abs.usize_y(), mouse_position.y)}
         let relative_position = Coordinates::new(
             mouse_position.x - abs.usize_x(), mouse_position.y - abs.usize_y());
         if widget.on_hover(state_tree, callback_tree, scheduler,relative_position) {

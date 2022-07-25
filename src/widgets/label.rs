@@ -38,6 +38,16 @@ impl Label {
             state: LabelState::new(path, scheduler),
         }
     }
+
+    pub fn from_state(id: String, path: String, scheduler: &mut Scheduler, state: EzState) -> Self {
+        Label {
+            id,
+            path: path.clone(),
+            from_file: None,
+            state: state.as_label().to_owned(),
+        }
+    }
+
 }
 
 
@@ -80,7 +90,7 @@ impl EzObject for Label {
     fn get_state_mut(&mut self) -> &mut dyn GenericState { &mut self.state }
 
     fn get_contents(&self, state_tree: &mut StateTree) -> PixelMap {
-        
+
         let state = state_tree
             .get_by_path_mut(&self.get_full_path()).as_label_mut();
         let mut text;

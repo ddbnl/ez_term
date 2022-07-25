@@ -36,6 +36,14 @@ impl Button {
         }
     }
 
+    pub fn from_state(id: String, path: String, scheduler: &mut Scheduler, state: EzState) -> Self {
+        Button {
+            id,
+            path: path.clone(),
+            state: state.as_button().to_owned(),
+        }
+    }
+
     pub fn load_text_property(&mut self, parameter_value: &str, scheduler: &mut Scheduler)
         -> Result<(), Error> {
 

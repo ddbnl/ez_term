@@ -4,9 +4,10 @@
 use std::thread::{JoinHandle, spawn};
 use std::time::Instant;
 
-use crate::EzContext;
+use crate::{CallbackConfig, EzContext};
 use crate::run::definitions::{CallbackTree, StateTree};
 use crate::run::select::{deselect_widget, select_widget};
+use crate::widgets::ez_object::EzObjects;
 use crate::widgets::layout::layout::Layout;
 
 use super::scheduler::Scheduler;
@@ -85,6 +86,28 @@ pub fn run_tasks(scheduler: &mut Scheduler, state_tree: &mut StateTree) {
         }
     }
     scheduler.tasks = remaining_tasks;
+}
+
+
+/// Check if there are any new widgets to create.
+pub fn create_new_widgets(scheduler: &mut Scheduler, root_widget: &mut Layout,
+                          state_tree: &mut StateTree, callback_tree: &mut CallbackTree) {
+
+    let mut widgets_to_create = scheduler.widgets_to_create.clone();
+    scheduler.widgets_to_create.clear();
+    for (path, base_type, state) in widgets_to_create {
+        let (parent_path, id) = path.rsplit_once('/').unwrap();
+        let parent = root_widget.get_child_by_path_mut(parent_path).unwrap_or_else(
+            || panic!("Could not create new widget, parent path does not exist: {}", parent_path)
+        ).as_layout_mut();
+        let widget =
+            EzObjects::from_string(&base_type, path.to_string(),
+                                   id.to_string(), scheduler, state.clone());
+        parent.add_child(widget, scheduler);
+        state_tree.insert(path.clone(), state);
+        callback_tree.insert(path, CallbackConfig::default());
+        scheduler.force_redraw();
+    }
 }
 
 

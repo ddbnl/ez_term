@@ -203,11 +203,12 @@
             - StackShowcase:
                 orientation: bt-rl
     - Layout:
-        id: Tab 4
+        id: Generation
         mode: box
         orientation: vertical
         - Label:
-            text: This is a label on a fourth tab.
+            text: The labels below are programmatically added to the layout.
+            auto_scale: true, true
     - Layout:
         id: Tab 5
         mode: box

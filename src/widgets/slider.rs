@@ -24,13 +24,22 @@ pub struct Slider {
 }
 
 impl Slider {
-    fn new(id: String, path: String, scheduler: &mut Scheduler) -> Self {
+    pub fn new(id: String, path: String, scheduler: &mut Scheduler) -> Self {
         Slider {
             id,
             path: path.clone(),
             state: SliderState::new(path, scheduler),
         }
     }
+
+    pub fn from_state(id: String, path: String, scheduler: &mut Scheduler, state: EzState) -> Self {
+        Slider {
+            id,
+            path: path.clone(),
+            state: state.as_slider().to_owned(),
+        }
+    }
+
 }
 
 

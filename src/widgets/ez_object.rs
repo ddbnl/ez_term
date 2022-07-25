@@ -29,7 +29,7 @@ pub enum EzObjects {
     Layout(Layout),
     Label(Label),
     Button(Button),
-    CanvasWidget(Canvas),
+    Canvas(Canvas),
     Checkbox(Checkbox),
     Dropdown(Dropdown),
     DroppedDownMenu(DroppedDownMenu),
@@ -40,6 +40,25 @@ pub enum EzObjects {
 }
 impl EzObjects {
 
+    /// Get an EzObjects based on a string containing the base widget type.
+    pub fn from_string(type_name: &str, path: String, id: String, scheduler: &mut Scheduler,
+                       state: EzState) -> Self {
+
+        match type_name {
+            "Layout" => EzObjects::Layout(Layout::from_state(id, path, scheduler, state)),
+            "Canvas" => EzObjects::Canvas(Canvas::from_state(id, path, scheduler, state)),
+            "Label" => EzObjects::Label(Label::from_state(id, path, scheduler, state)),
+            "Button" => EzObjects::Button(Button::from_state(id, path,scheduler, state)),
+            "CheckBox" => EzObjects::Checkbox(Checkbox::from_state(id, path,scheduler, state)),
+            "RadioButton" => EzObjects::RadioButton(RadioButton::from_state(id, path, scheduler, state)),
+            "TextInput" => EzObjects::TextInput(TextInput::from_state(id, path, scheduler, state)),
+            "Dropdown" => EzObjects::Dropdown(Dropdown::from_state(id, path, scheduler, state)),
+            "Slider" => EzObjects::Slider(Slider::from_state(id, path, scheduler, state)),
+            "ProgressBar" => EzObjects::ProgressBar(ProgressBar::from_state(id, path, scheduler, state)),
+            _ => panic!("Cannot create widget from string \"{}\". This widget type does not exist.",
+                        type_name)
+        }
+    }
     /// Cast this enum to a generic [EzObject] trait object. As this trait is implemented by both
     /// [layout] and [widget], it is safe to call on all variants.
     pub fn as_ez_object(&self) -> &dyn EzObject {
@@ -47,7 +66,7 @@ impl EzObjects {
             EzObjects::Label(i) => i,
             EzObjects::Button(i) => i,
             EzObjects::Layout(i) => i,
-            EzObjects::CanvasWidget(i) => i,
+            EzObjects::Canvas(i) => i,
             EzObjects::Checkbox(i) => i,
             EzObjects::Dropdown(i) => i,
             EzObjects::DroppedDownMenu(i) => i,
@@ -65,7 +84,7 @@ impl EzObjects {
             EzObjects::Layout(i) => i,
             EzObjects::Label(i) => i,
             EzObjects::Button(i) => i,
-            EzObjects::CanvasWidget(i) => i,
+            EzObjects::Canvas(i) => i,
             EzObjects::Checkbox(i) => i,
             EzObjects::Dropdown(i) => i,
             EzObjects::DroppedDownMenu(i) => i,
@@ -89,13 +108,13 @@ impl EzObjects {
     }
     /// Cast this as a Canvas widget ref, you must be sure you have one.
     pub fn as_canvas(&self) -> &Canvas {
-        if let EzObjects::CanvasWidget(i) = self { i }
+        if let EzObjects::Canvas(i) = self { i }
         else { panic!("wrong EzObject.") }
     }
 
     /// Cast this as a mutable Canvas widget ref, you must be sure you have one.
     pub fn as_canvas_mut(&mut self) -> &mut Canvas {
-        if let EzObjects::CanvasWidget(i) = self { i }
+        if let EzObjects::Canvas(i) = self { i }
         else { panic!("wrong EzObject.") }
     }
 

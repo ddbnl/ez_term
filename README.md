@@ -153,7 +153,7 @@ Currently supports the following:
 - Ez language:
   - Define entire UI in an Ez file using simple english
   - Supports templates and template inheritance
-  - Bind widget parameters to one another (e.g. 'width: another_widget.width')
+  - Bind widget parameters to one another (e.g. 'width: parent.width')
   - Refer to other widgets' values from within the config file
 - Widgets:
   - Screen layout (multiple screens, one active at a time)
@@ -179,6 +179,7 @@ Currently supports the following:
   - Auto scaling for widgets (adjust widget size to actual content minimizing size)
   - Colors and borders.
   - Resize if terminal resizes
+  - Generate widgets programmatically through the scheduler
 - Callbacks:
   - On keyboard enter
   - On left/right click

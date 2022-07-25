@@ -35,6 +35,15 @@ impl Checkbox {
         }
     }
 
+    pub fn from_state(id: String, path: String, scheduler: &mut Scheduler, state: EzState) -> Self {
+        Checkbox {
+            id,
+            path: path.clone(),
+            state: state.as_checkbox().to_owned(),
+        }
+    }
+
+
     fn load_active_property(&mut self, parameter_value: &str, scheduler: &mut Scheduler)
         -> Result<(), Error>{
 

@@ -9,13 +9,25 @@ use std::time::{Duration, Instant};
 use crossterm::style::Color;
 
 use crate::{CallbackConfig, EzContext, EzPropertiesMap};
+use crate::parser::ez_definition::Templates;
 use crate::property::ez_properties::EzProperties;
 use crate::property::ez_property::EzProperty;
 use crate::property::ez_values::EzValues;
 use crate::run::definitions::{Coordinates, StateTree};
 use crate::run::run::{open_popup, stop};
 use crate::scheduler::definitions::{EzPropertyUpdater, EzThread, GenericEzTask};
+use crate::states::button_state::ButtonState;
+use crate::states::canvas_state::CanvasState;
+use crate::states::checkbox_state::CheckboxState;
 use crate::states::definitions::{HorizontalAlignment, VerticalAlignment};
+use crate::states::dropdown_state::{DropdownState, DroppedDownMenuState};
+use crate::states::ez_state::EzState;
+use crate::states::label_state::LabelState;
+use crate::states::layout_state::LayoutState;
+use crate::states::progress_bar_state::ProgressBarState;
+use crate::states::radio_button_state::RadioButtonState;
+use crate::states::slider_state::SliderState;
+use crate::states::text_input_state::TextInputState;
 
 
 /// A struct with methods for managing the UI indirectly.
@@ -59,6 +71,12 @@ pub struct Scheduler {
     /// List of thread handles with optional callbacks. If a thread is finished running, the
     /// JoinHandle is joined and the callback executed if there was any.
     pub thread_handles: Vec<(JoinHandle<()>, Option<GenericEzTask>)>,
+
+    /// Templates defined in the .ez files. Used by [create_widget]
+    pub templates: Templates,
+
+    /// List of new widgets that will be created on the next frame. Use [create_widget] for this.
+    pub widgets_to_create: Vec<(String, String, EzState)>,
 
     /// List of <Widget path, [CallbackConfig]. Every frame this list is checked, and the widget
     /// belonging to the widget path will have its' [CallbackConfig] replaced with the new one.
@@ -340,6 +358,29 @@ impl Scheduler {
     /// ```
     pub fn update_callback_config(&mut self, for_widget: &str, callback_config: CallbackConfig) {
         self.updated_callback_configs.push((for_widget.to_string(), callback_config));
+
+    }
+
+    pub fn create_widget(&mut self, widget_type: &str, id: &str, path: &str) -> &mut EzState {
+
+        let new_path = format!("{}/{}", path, id);
+        let base_type;
+        let mut new_state;
+        if self.templates.contains_key(widget_type) {
+            base_type = self.templates
+                .get(widget_type).unwrap().resolve_base_type(&self.templates);
+            new_state = self.templates.get_mut(widget_type).unwrap()
+                .clone().parse(self, path.to_string(), 0,
+                               Some(vec!(format!("id: {}", id))))
+                .as_ez_object_mut().get_state();
+        } else {
+            base_type = widget_type.to_string();
+            new_state = EzState::from_string(
+                &base_type, path.to_string(), self);
+        };
+
+        self.widgets_to_create.push((new_path, base_type, new_state));
+        &mut self.widgets_to_create.last_mut().unwrap().2
 
     }
 

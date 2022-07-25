@@ -44,6 +44,18 @@ impl Canvas {
             state: CanvasState::new(path, scheduler),
         }
     }
+
+    pub fn from_state(id: String, path: String, scheduler: &mut Scheduler, state: EzState) -> Self {
+
+        Canvas {
+            id,
+            path: path.clone(),
+            from_file: None,
+            contents: Vec::new(),
+            state: state.as_canvas().to_owned(),
+        }
+    }
+
 }
 
 

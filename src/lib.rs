@@ -8,13 +8,14 @@
 //! **Docs table of contents:**
 //! 1. [How to use](#how_to_use)
 //!     1. [Project structure](#structure)
-//!     2. [Small example](#small_example)
+//!     2. [Minimal example](#minimal_example)
 //!     3. [Ez language](#)
 //!     4. [Scheduler](#)
-//!     5. [Ez properties](#)
-//!     6. [Global bindings](#)
-//! 2. Examples
-//! 3. Layouts
+//!         4.1 [Setting callbacks]
+//!         4.1 [Creating widget programmatically]
+//!         4.3. [Creating ez properties](#)
+//!     6. [Global (key)bindings](#)
+//! 2. Layouts
 //!     1. [General]
 //!     2. [General - scrolling]
 //!     3. [General - Properties]
@@ -24,7 +25,7 @@
 //!     7. [Float Layout]
 //!     8. [Tab Layout]
 //!     9. [Screen Layout]
-//! 4. Widgets
+//! 3. Widgets
 //!     1. [General]
 //!     2. [General - Properties]
 //!     3. [Label widget]
@@ -36,6 +37,7 @@
 //!     9. [Dropdown widget]
 //!     10. [Progress bar widget]
 //!     11. [Canvas widget]
+//! 4. Examples
 //!
 //!
 //! <a name="how_to_use"></a>
@@ -139,17 +141,19 @@
 //! ```
 //!
 //! <a name="small_example"></a>
-//! ### 1.2 Small example
+//! ### 1.2 Minimal example
 //!
 //! Now that we know the structure of an EzTerm project, we'll create the smallest working example
-//! possible to get the structure into your fingers. After that we will move on to explain the
-//! .ez file language, the scheduler, etc.
+//! possible to get the structure into our fingers. After that we will move on to explain the
+//! how to create the actual UI in detail (for which we can use the project we are now creating).
 //!
 //! **Step 1: Create a new cargo project:**
+//!
+//! We'll create a new Rust project first using cargo. Feel free to choose another name.
 //! ```
 //! cargo-new ez_term_test
 //! ```
-//! In cargo.toml include the framework:
+//! In cargo.toml include the framework as a dependency:
 //! ```
 //! [dependencies]
 //! ez_term = "0.1.0"
@@ -158,7 +162,8 @@
 //! **Step 2: Define the UI:**
 //!
 //! Create a folder named 'ui' in the root of the project. Create a file named 'ui.ez' in the new
-//! folder:
+//! folder. These names are not mandatory, you can call the folder and file whatever you like. If
+//! you choose the default names your project folder now looks like this:
 //! ```
 //! /ez_term_test
 //!   /cargo.toml
@@ -166,9 +171,11 @@
 //!     /main.rs
 //!   /ui
 //!     /ui.ez
-//!```
+//! ```
 //!
-//! In the 'ui.ez' file write or copy the following config:
+//! In the 'ui.ez' file write or copy the below config to create a small 'hello world'
+//! UI (don't worry if the syntax of the .ez file is still unfamiliar, we'll dive into it in the
+//! next chapter):
 //! ```
 //! - Layout:
 //!     mode: box
@@ -183,6 +190,7 @@
 //!
 //! **Step 3: Create the UI rust module**
 //!
+//! We now have a UI definiton in the .ez file. We will need to initialize it in a rust module.
 //! We will use the existing 'main.rs' to initialize and run the UI. Modify 'main.rs' to look like
 //! this:
 //! ```
@@ -190,14 +198,14 @@
 //!
 //! fn main() {
 //!
-//!     let (root_widget, mut scheduler) = load_ui();
-//!     run(root_widget, scheduler);
+//!     let (root_widget, state_tree, mut scheduler) = load_ui();
+//!     run(root_widget, state_tree, scheduler);
 //! }
 //! ```
 //!
 //! **Step 4: Compile and run the project**
 //!
-//! First let cargo know where your .ez files are through the environment variable:
+//! First we let cargo know where our .ez files can be found through an environment variable:
 //! - On Linux:
 //! ```
 //! export EZ_FOLDER="/path/to/ez_term_test/ui"
@@ -206,11 +214,15 @@
 //! ```
 //! $env:EZ_FOLDER="C:\path\to\ez_term_test\ui"
 //! ```
+//! Cargo needs to know the location of our .ez files so it can merge them into the binary.
 //! Now run the following cargo command in any OS terminal:
 //! ```
 //! cargo run
 //! ```
-//! You should you be able to see the two labels we defined in the .ez file. Press Escape to quit.
+//! You should you be able to see the 'hello world' UI! Press Escape to quit.
+//! Now that you know how to create a basic UI, we'll dive into the specifics of the framework.
+//!
+//! 
 mod run;
 mod scheduler;
 mod widgets;

@@ -31,13 +31,22 @@ pub struct TextInput {
 }
 
 impl TextInput {
-    fn new(id: String, path: String, scheduler: &mut Scheduler) -> Self {
+    pub fn new(id: String, path: String, scheduler: &mut Scheduler) -> Self {
         TextInput {
             id,
             path: path.clone(),
             state: TextInputState::new(path, scheduler),
         }
     }
+
+    pub fn from_state(id: String, path: String, scheduler: &mut Scheduler, state: EzState) -> Self {
+        TextInput {
+            id,
+            path: path.clone(),
+            state: state.as_text_input().to_owned(),
+        }
+    }
+
 }
 
 

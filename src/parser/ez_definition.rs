@@ -81,10 +81,21 @@ impl EzWidgetDefinition {
         }
     }
 
+    /// Based on a template, find the base widget type. Templates can be based on templates so the
+    /// base type might be a few levels deep.
+    pub fn resolve_base_type(&self, templates: &Templates) -> String {
+
+        let mut type_name = &self.type_name;
+        while templates.contains_key(type_name) {
+            type_name = &templates.get(type_name).unwrap().type_name;
+        }
+        type_name.to_string()
+    }
+
     /// Parse a definition by separating the config lines from the sub widget definitions. Then
     /// apply the config to the initialized widget, then initialize and add sub widgets.
-    pub fn parse(&mut self, templates: &mut Templates, scheduler: &mut Scheduler,
-                 parent_path: String, order: usize, merge_config: Option<Vec<String>>) -> EzObjects {
+    pub fn parse(&mut self, scheduler: &mut Scheduler, parent_path: String, order: usize,
+                 merge_config: Option<Vec<String>>) -> EzObjects {
 
         let (mut config, mut sub_widgets, _) =
             parse_lang::parse_level(self.content.clone(), self.indentation_offset,
@@ -95,14 +106,13 @@ impl EzWidgetDefinition {
         if let Some(config_to_merge) = merge_config {
             config = merge_configs(config, config_to_merge);
         }
-        let initialized = self.initialize(config, templates, scheduler,
-                                          parent_path, order).unwrap();
+        let initialized = self.initialize(config, scheduler, parent_path, order).unwrap();
         let parent_path = initialized.as_ez_object().get_full_path();
 
         if let EzObjects::Layout(mut obj) = initialized {
             for (i, sub_widget) in sub_widgets.iter_mut().enumerate() {
                 let initialized_sub_widget = sub_widget.parse(
-                    templates, scheduler, parent_path.clone(),i, None);
+                    scheduler, parent_path.clone(),i, None);
 
                 obj.add_child(initialized_sub_widget, scheduler);
             }
@@ -122,11 +132,9 @@ impl EzWidgetDefinition {
 
     /// Initialize a widget object based on the type specified by the definition. The type can be
     /// a template defined by the user.
-    fn initialize(&mut self, mut config: Vec<String>, templates: &mut Templates,
-                  scheduler: &mut Scheduler, parent_path: String, order: usize)
-        -> Result<EzObjects, Error> {
+    fn initialize(&mut self, mut config: Vec<String>, scheduler: &mut Scheduler,
+                  parent_path: String, order: usize) -> Result<EzObjects, Error> {
 
-        // If this is the root layout, validate that
         if self.is_root {
             let id = peek_id_from_config(&config);
             if !id.is_empty() {
@@ -141,12 +149,12 @@ impl EzWidgetDefinition {
         }
         // If this is a template, clone the template definition and parse that instead; we want to
         // keep the original template definition intact as it might be used multiple times.
-        if templates.contains_key(&self.type_name) {
+        if scheduler.templates.contains_key(&self.type_name) {
             let mut template =
-                templates.get_mut(&self.type_name).unwrap().clone();
+                scheduler.templates.get_mut(&self.type_name).unwrap().clone();
             template.is_root = self.is_root;
-            let object = template.parse(templates, scheduler, parent_path,
-                                                    order, Some(config));
+            let object = template.parse(scheduler, parent_path, order,
+                                        Some(config));
             Ok(object)
         // If this is a base widget definition initialize a widget of that type from the config of
         // this widget definition.
@@ -158,7 +166,7 @@ impl EzWidgetDefinition {
                 "Layout" => Ok(EzObjects::Layout(
                     Layout::from_config(config, id, path, scheduler, self.file.clone(),
                                         self.line_offset))),
-                "Canvas" => Ok(EzObjects::CanvasWidget(
+                "Canvas" => Ok(EzObjects::Canvas(
                     Canvas::from_config(config, id, path, scheduler, self.file.clone(),
                                         self.line_offset))),
                 "Label" => Ok(EzObjects::Label(

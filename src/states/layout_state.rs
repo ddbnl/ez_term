@@ -343,8 +343,8 @@ impl LayoutState {
     pub fn open_popup(&mut self, template: String, scheduler: &mut Scheduler)
         -> (String, StateTree) {
         let mut popup = self.templates.get(&template).unwrap().clone();
-        let init_popup = popup.parse(&mut self.templates, scheduler,
-                                     "/modal".to_string(), 0, None);
+        let init_popup = popup.parse(scheduler,"/modal".to_string(), 0,
+                                     None);
         self.open_modal(init_popup)
     }
     

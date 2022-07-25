@@ -92,6 +92,7 @@ fn main() {
         CallbackConfig::from_on_press(
             Box::new(test_on_button_press)));
 
+    // Creating a neon-banner callback
     let mut neon = (0, 255, 0);
     let mut switch: u8 = 0;
     let neon_banner = move | context: EzContext | {
@@ -120,9 +121,16 @@ fn main() {
         state.update(context.scheduler);
         true
     };
-
     scheduler.schedule_interval("canvas".to_string(),
                                 Box::new(neon_banner), Duration::from_millis(200));
+
+    // Programmatically create some labels
+    for i in 0..10 {
+        let state = scheduler.create_widget(
+            "ScalingLabel", format!("label_{}", i).as_str(),
+            "/root/main_screen/tabbed_box/Generation");
+        state.as_label_mut().text.set(format!("Generated label: {}", i));
+    }
 
     // Step 3: Run app
     // Now everything must happen from bindings as root widget is passed over

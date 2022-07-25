@@ -49,6 +49,16 @@ impl Layout {
         }
     }
 
+    pub fn from_state(id: String, path: String, scheduler: &mut Scheduler, state: EzState) -> Self {
+        Layout {
+            id,
+            path: path.clone(),
+            children: Vec::new(),
+            child_lookup: HashMap::new(),
+            state: state.as_layout().to_owned(),
+        }
+    }
+
     fn load_fill_property(&mut self, parameter_value: &str, scheduler: &mut Scheduler)
         -> Result<(), Error> {
 

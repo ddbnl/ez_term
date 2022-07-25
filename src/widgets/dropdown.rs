@@ -43,6 +43,14 @@ impl Dropdown {
         }
     }
 
+    pub fn from_state(id: String, path: String, scheduler: &mut Scheduler, state: EzState) -> Self {
+        Dropdown {
+            id,
+            path: path.clone(),
+            state: state.as_dropdown().to_owned(),
+        }
+    }
+
     fn load_allow_none_property(&mut self, parameter_value: &str, scheduler: &mut Scheduler)
         -> Result<(), Error>{
 

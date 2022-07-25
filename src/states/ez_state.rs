@@ -1,5 +1,6 @@
 //! # Widget state:
 //! A module containing the base structs and traits for widget states.
+use std::iter::successors;
 use crossterm::style::Color;
 use crate::EzProperty;
 use crate::run::definitions::{Coordinates, IsizeCoordinates, Size};
@@ -40,6 +41,25 @@ pub enum EzState {
     ProgressBar(ProgressBarState)
 }
 impl EzState {
+
+    /// Get an EzState based on a string containing the base widget type.
+    pub fn from_string(type_name: &str, path: String, scheduler: &mut Scheduler) -> Self {
+
+        match type_name {
+            "Layout" => EzState::Layout(LayoutState::new(path, scheduler)),
+            "Canvas" => EzState::Canvas(CanvasState::new(path, scheduler)),
+            "Label" => EzState::Label(LabelState::new(path, scheduler)),
+            "Button" => EzState::Button(ButtonState::new(path, scheduler)),
+            "CheckBox" => EzState::Checkbox(CheckboxState::new(path, scheduler)),
+            "RadioButton" => EzState::RadioButton(RadioButtonState::new(path, scheduler)),
+            "TextInput" => EzState::TextInput(TextInputState::new(path, scheduler)),
+            "Dropdown" => EzState::Dropdown(DropdownState::new(path, scheduler)),
+            "Slider" => EzState::Slider(SliderState::new(path, scheduler)),
+            "ProgressBar" => EzState::ProgressBar(ProgressBarState::new(path, scheduler)),
+            _ => panic!("Cannot create state from string \"{}\". This widget type does not exist.",
+                        type_name)
+        }
+    }
 
     /// Cast this enum to a generic widget state trait object, which contains methods for setting
     /// and getting fields common to all widget states. Can always be called safely.
@@ -217,9 +237,7 @@ pub trait GenericState {
 
     fn get_path(&self) -> &String;
     
-    fn get_id(&self) -> String {
-        self.get_path().rsplit_once('/').unwrap().1.to_string()
-    }
+    fn get_id(&self) -> String { self.get_path().rsplit_once('/').unwrap().1.to_string() }
 
     /// Set to None for passing an absolute width, or to a value between 0 and 1 to
     /// automatically scale width based on parent width

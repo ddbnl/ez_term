@@ -13,7 +13,7 @@ use crate::run::terminal::{redraw_changed_widgets, write_to_screen};
 use crate::run::tree::{clean_trees, initialize_callback_tree, ViewTree};
 use crate::scheduler::scheduler::Scheduler;
 use crate::scheduler::scheduler_funcs;
-use crate::scheduler::scheduler_funcs::{handle_next_selection, run_tasks, update_callback_configs, update_properties, update_threads};
+use crate::scheduler::scheduler_funcs::{create_new_widgets, handle_next_selection, run_tasks, update_callback_configs, update_properties, update_threads};
 use crate::states::ez_state::GenericState;
 use crate::widgets::ez_object::{EzObject, EzObjects};
 use crate::widgets::layout::layout::Layout;
@@ -219,6 +219,7 @@ fn run_loop(mut root_widget: Layout, mut state_tree: StateTree, mut callback_tre
         if last_update.elapsed() < Duration::from_millis(tick_rate) { continue }
 
         // Update scheduler
+        create_new_widgets(&mut scheduler, &mut root_widget, &mut state_tree, &mut callback_tree);
         selected_widget = handle_next_selection(&mut scheduler, &mut state_tree, &root_widget,
                                                 &mut callback_tree, selected_widget);
         update_callback_configs(&mut scheduler, &mut callback_tree);

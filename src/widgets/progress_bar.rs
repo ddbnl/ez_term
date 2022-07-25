@@ -24,11 +24,19 @@ pub struct ProgressBar {
 }
 
 impl ProgressBar {
-    fn new(id: String, path: String, scheduler: &mut Scheduler) -> Self {
+    pub fn new(id: String, path: String, scheduler: &mut Scheduler) -> Self {
         ProgressBar {
             id,
             path: path.clone(),
             state: ProgressBarState::new(path, scheduler),
+        }
+    }
+
+    pub fn from_state(id: String, path: String, scheduler: &mut Scheduler, state: EzState) -> Self {
+        ProgressBar {
+            id,
+            path: path.clone(),
+            state: state.as_progress_bar().to_owned(),
         }
     }
 
