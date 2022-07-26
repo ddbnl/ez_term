@@ -1,6 +1,6 @@
 - <TabsShowcase@Layout>:
     id: tabbed_box
-    mode: tabbed
+    mode: tab
     size_hint_x: 1/5
     border: True
     selection_order: 50
@@ -207,8 +207,9 @@
         mode: box
         orientation: vertical
         - Label:
-            text: The labels below are programmatically added to the layout.
-            auto_scale: true, true
+            text: The labels below are programmatically added to the layout:
+            auto_scale_height: true
+            padding_bottom: 1
     - Layout:
         id: Tab 5
         mode: box

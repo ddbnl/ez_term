@@ -5,7 +5,7 @@ use crate::widgets::ez_object::EzObject;
 use crate::states::ez_state::GenericState;
 use crate::widgets::layout::layout::Layout;
 
-// Tabbed mode implementations
+// Tab mode implementations
 impl Layout {
 
     pub fn handle_tab_left(&self, state_tree: &mut StateTree, scheduler: &mut Scheduler) {
@@ -16,12 +16,12 @@ impl Layout {
                 if next_button {
                     let state = state_tree.get_by_path_mut(&self.path)
                         .as_layout_mut();
-                    state.set_selected_tab_header(widget.path.clone());
+                    state.set_selected_tab_header(widget.id.clone());
                     state.update(scheduler);
                     return
                 } else if state_tree
                     .get_by_path(&self.path).as_layout().selected_tab_header ==
-                    widget.path {
+                    widget.id {
                     next_button = true;
                 }
             }
@@ -36,19 +36,19 @@ impl Layout {
                 if next_button {
                     let state = state_tree.get_by_path_mut(&self.path)
                         .as_layout_mut();
-                    state.set_selected_tab_header(widget.path.clone());
+                    state.set_selected_tab_header(widget.id.clone());
                     state.update(scheduler);
                     return
                 } else if state_tree
                     .get_by_path(&self.path).as_layout().selected_tab_header ==
-                    widget.path {
+                    widget.id {
                     next_button = true;
                 }
             }
         }
     }
 
-    pub fn get_tabbed_mode_contents(&self, state_tree: &mut StateTree) -> PixelMap {
+    pub fn get_tab_mode_contents(&self, state_tree: &mut StateTree) -> PixelMap {
 
         if self.children.is_empty() { return PixelMap::new() }
         let state = state_tree.get_by_path_mut(&self.path).as_layout_mut();
@@ -58,7 +58,11 @@ impl Layout {
         let own_colors = state.colors.clone();
         let selection = state.selected_tab_header.clone();
         if state.active_tab.value.is_empty() {
-            state.set_active_tab(self.children[0].as_ez_object().get_full_path());
+            if !self.children.is_empty() {
+                state.set_active_tab(&self.children[0].as_ez_object().get_id());
+            } else {
+                return PixelMap::new()
+            }
         }
         let active_tab = state.active_tab.value.clone();
 
@@ -69,7 +73,7 @@ impl Layout {
         let mut selected_width: usize = 0;
         for child in self.get_children() {
             if let EzObjects::Layout(i) = child {
-                if i.get_full_path() != active_tab { continue }
+                if i.get_id() != active_tab { continue }
                 let child_state = state_tree
                     .get_by_path_mut(&child.as_ez_object().get_full_path()).as_generic_mut();
                 child_state.set_effective_height(
@@ -87,13 +91,13 @@ impl Layout {
                     state_tree.get_by_path_mut(&i.path).as_button_mut();
 
                 child_state.colors.foreground.set(
-                    if selection == i.path { own_colors.selection_foreground.value }
-                    else if active_tab.rsplit_once('/').unwrap().1 == child_state.text.value {
+                    if selection == i.id { own_colors.selection_foreground.value }
+                    else if active_tab == child_state.text.value {
                         own_colors.active_foreground.value
                     } else { own_colors.tab_foreground.value });
                 child_state.colors.background.set(
-                    if selection == i.path { own_colors.selection_background.value }
-                    else if active_tab.rsplit_once('/').unwrap().1 == child_state.text.value {
+                    if selection == i.id { own_colors.selection_background.value }
+                    else if active_tab == child_state.text.value {
                         own_colors.active_background.value
                     } else { own_colors.tab_background.value });
 
@@ -115,8 +119,8 @@ impl Layout {
                 child_state.set_absolute_position(
                     IsizeCoordinates::new(own_pos.x + pos_x as isize, own_pos.y + 1));
 
-                if (!selection.is_empty() && selection == i.path) || (selection.is_empty() &&
-                    active_tab == i.path.strip_suffix("_tab_header").unwrap()) {
+                if (!selection.is_empty() && selection == i.id) || (selection.is_empty() &&
+                    active_tab == i.id.strip_suffix("_tab_header").unwrap()) {
                     selected_pos_x = pos_x;
                     selected_width = child_state.size.width.value;
                 }

@@ -59,10 +59,10 @@ pub struct LayoutState {
     /// Name shown for tab if [is_tab] is true and parent [is_tabbed]
     pub tab_name: EzProperty<String>,
 
-    /// Path to active tab (i.e. its content is visible)
+    /// ID of the active tab (i.e. its content is visible)
     pub active_tab: EzProperty<String>,
 
-    /// Path to active tab header button
+    /// Id of the active tab header button
     pub selected_tab_header: String,
 
     /// Bool representing whether this layout should be filled with [filler_symbol] in positions
@@ -236,7 +236,8 @@ impl GenericState for LayoutState {
     }
 
     fn is_selectable(&self) -> bool { self.get_scrolling_config().is_scrolling_x
-        || self.get_scrolling_config().is_scrolling_y || self.mode == LayoutMode::Tabbed }
+        || self.get_scrolling_config().is_scrolling_y || self.mode == LayoutMode::Tab
+    }
 
     fn set_disabled(&mut self, disabled: bool) {
         self.disabled.set(disabled)
@@ -295,15 +296,15 @@ impl LayoutState {
     /// Get the ID of the child that is the currently active screen (i.e. content is showing)
     pub fn get_active_screen(&self) -> &EzProperty<String> { &self.active_screen }
 
-    /// Set the path to the layout that is currently active as the current tab (i.e. content is
+    /// Set the id of the layout that is currently active as the current tab (i.e. content is
     /// showing)
-    pub fn set_active_tab(&mut self, path: String) { self.active_tab.set(path); }
+    pub fn set_active_tab(&mut self, id: &str) { self.active_tab.set(id.to_string()); }
 
-    /// Get the [path] to the layout that is currently active as a tab (i.e. content is showing)
+    /// Get the id of the layout that is currently active as a tab (i.e. content is showing)
     pub fn get_active_tab(&self) -> &EzProperty<String> { &self.active_tab }
 
     /// Set the tab header that is currently selected
-    pub fn set_selected_tab_header(&mut self, path: String) { self.selected_tab_header = path; }
+    pub fn set_selected_tab_header(&mut self, id: String) { self.selected_tab_header = id; }
 
     /// Get the tab header that is currently selected
     pub fn get_selected_tab_header(&self) -> String { self.selected_tab_header.clone() }

@@ -323,9 +323,9 @@ pub fn widget_is_hidden(widget_path: String, state_tree: &StateTree) -> bool {
             parent_state.active_screen.value != check_child.rsplit_once('/').unwrap().1 {
             return true
         }
-        if parent_state.mode == LayoutMode::Tabbed {
+        if parent_state.mode == LayoutMode::Tab {
             if let EzState::Layout(_) = state_tree.get_by_path(&check_child) {
-                if parent_state.active_tab != check_child {
+                if parent_state.active_tab.value != check_child.rsplit_once('/').unwrap().1 {
                     return true
                 }
             }

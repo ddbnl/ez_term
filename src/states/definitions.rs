@@ -38,7 +38,7 @@ pub enum LayoutMode {
     /// This layout can only contain other layouts and presents those as tabs. A tab header will
     /// automatically be added for each child layout, so the user can switch between tabs. The tab
     /// header will display the [id] of the child layout.
-    Tabbed,
+    Tab,
 }
 
 

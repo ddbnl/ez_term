@@ -59,6 +59,36 @@ impl Layout {
         }
     }
 
+    fn load_active_tab_property(&mut self, parameter_value: &str, scheduler: &mut Scheduler)
+                                -> Result<(), Error> {
+
+        let path = self.path.clone();
+        self.state.set_active_tab(&load_ez_string_property(
+            parameter_value.trim(), scheduler, path.clone(),
+            Box::new(move |state_tree: &mut StateTree, val: EzValues| {
+                let state = state_tree.get_by_path_mut(&path)
+                    .as_layout_mut();
+                state.set_active_tab(val.as_string());
+                path.clone()
+            }))?);
+        Ok(())
+    }
+
+    fn load_active_screen_property(&mut self, parameter_value: &str, scheduler: &mut Scheduler)
+                                   -> Result<(), Error> {
+
+        let path = self.path.clone();
+        self.state.set_active_screen(&load_ez_string_property(
+            parameter_value.trim(), scheduler, path.clone(),
+            Box::new(move |state_tree: &mut StateTree, val: EzValues| {
+                let state = state_tree.get_by_path_mut(&path)
+                    .as_layout_mut();
+                state.set_active_screen(val.as_string());
+                path.clone()
+            }))?);
+        Ok(())
+    }
+
     fn load_fill_property(&mut self, parameter_value: &str, scheduler: &mut Scheduler)
         -> Result<(), Error> {
 
@@ -227,7 +257,7 @@ impl EzObject for Layout {
                     "table" => self.state.mode = LayoutMode::Table,
                     "float" => self.state.mode = LayoutMode::Float,
                     "screen" => self.state.mode = LayoutMode::Screen,
-                    "tabbed" => self.state.mode = LayoutMode::Tabbed,
+                    "tab" => self.state.mode = LayoutMode::Tab,
                     _ => return Err(
                         Error::new(ErrorKind::InvalidData,
                                    format!("Invalid parameter value for mode {}",
@@ -252,6 +282,10 @@ impl EzObject for Layout {
                                            parameter_value)))
                 }
             },
+            "active_tab" =>
+                self.load_active_tab_property(parameter_value.trim(), scheduler)?,
+            "active_screen" =>
+                self.load_active_screen_property(parameter_value.trim(), scheduler)?,
             "scroll" => {
                 let (x, y) = match parameter_value.split_once(',') {
                     Some((i, j)) => (i, j),
@@ -313,7 +347,7 @@ impl EzObject for Layout {
             LayoutMode::Table => self.get_table_mode_contents(state_tree),
             LayoutMode::Float => self.get_float_mode_contents(merged_content, state_tree),
             LayoutMode::Screen => self.get_screen_mode_contents(state_tree),
-            LayoutMode::Tabbed => self.get_tabbed_mode_contents(state_tree),
+            LayoutMode::Tab => self.get_tab_mode_contents(state_tree),
         };
 
         merged_content = self.add_user_filler(state_tree, merged_content);
@@ -352,14 +386,14 @@ impl EzObject for Layout {
                 self.handle_scroll_down(state_tree, scheduler);
                 return true
             } else if key.code == KeyCode::Left {
-                if state.get_mode() == &LayoutMode::Tabbed {
+                if state.get_mode() == &LayoutMode::Tab {
                     self.handle_tab_left(state_tree, scheduler);
                 } else {
                     self.handle_scroll_left(state_tree, scheduler);
                 }
                 return true
             } else if key.code == KeyCode::Right {
-                if state.get_mode() == &LayoutMode::Tabbed {
+                if state.get_mode() == &LayoutMode::Tab {
                     self.handle_tab_right(state_tree, scheduler);
                 } else {
                     self.handle_scroll_right(state_tree, scheduler);
@@ -377,7 +411,7 @@ impl EzObject for Layout {
         let state = state_tree.get_by_path_mut(&self.path).as_layout_mut();
         if !state.selected_tab_header.is_empty() {
             state.set_active_tab(state.get_selected_tab_header()
-                .strip_suffix("_tab_header").unwrap().to_string());
+                .strip_suffix("_tab_header").unwrap());
             state.update(scheduler);
             return true
         }
@@ -540,7 +574,7 @@ impl EzObject for Layout {
         for child in self.children.iter() {
             if let EzObjects::Button(i) = child {
                 let state = state_tree.get_by_path_mut(&self.path).as_layout_mut();
-                state.selected_tab_header = i.path.clone();
+                state.selected_tab_header = i.id.clone();
                 state.update(scheduler);
                 return true
             }

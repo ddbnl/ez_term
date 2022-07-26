@@ -146,7 +146,7 @@ ez_term::run(root_widget, scheduler);
 If this seems useful to you please let me know or star the repo, so I can gauge interest.
 
 # Current state
-Planned to be released on cargo before August 2022. See the projects page for what I'm working on. 
+Planned to be released on cargo in August 2022. See the projects page for what I'm working on. 
 
 Currently supports the following:
 
@@ -157,7 +157,7 @@ Currently supports the following:
   - Refer to other widgets' values from within the config file
 - Widgets:
   - Screen layout (multiple screens, one active at a time)
-  - Tabbed layout
+  - Tab layout
   - Box layout (automatically place widgets next to each other or below each
     other)
   - Table layout (automatically place widths in a table/grid)
