@@ -16,58 +16,58 @@ pub struct RadioButtonState {
 
     /// Group this radio button belongs to. Set the same group value for a number of radio buttons
     /// to make them mutually exclusive.
-    pub group: EzProperty<String>,
+    group: EzProperty<String>,
 
     /// Position of this widget relative to its' parent [layout]
-    pub position: StateCoordinates,
+    position: StateCoordinates,
 
     /// Absolute position of this widget on screen. Internal only.
-    pub absolute_position: IsizeCoordinates,
+    absolute_position: IsizeCoordinates,
 
     /// size of this widget
-    pub size: StateSize,
+    size: StateSize,
 
     /// Automatically adjust size of widget to content
-    pub auto_scale: AutoScale,
+    auto_scale: AutoScale,
 
     /// Cannot be set for Radio Button, size is always 5,1
-    pub size_hint: SizeHint,
+    size_hint: SizeHint,
 
     /// Pos hint of this widget
-    pub pos_hint: PosHint,
+    pos_hint: PosHint,
 
     /// Amount of space to leave between sides of the widget and other widgets
-    pub padding: Padding,
+    padding: Padding,
 
     /// Horizontal alignment of this widget
-    pub halign: EzProperty<HorizontalAlignment>,
+    halign: EzProperty<HorizontalAlignment>,
 
     /// Vertical alignment of this widget
-    pub valign: EzProperty<VerticalAlignment>,
+    valign: EzProperty<VerticalAlignment>,
 
     /// Bool representing whether this widget is currently active (i.e. checkbox is checked)
-    pub active: EzProperty<bool>,
+    active: EzProperty<bool>,
 
     /// [Pixel.symbol] used when the Checkbox is active
-    pub active_symbol: EzProperty<String>,
+    active_symbol: EzProperty<String>,
 
     /// [Pixel.symbol] used when the Checkbox is not active
-    pub inactive_symbol: EzProperty<String>,
+    inactive_symbol: EzProperty<String>,
 
     /// [BorderConfig] object that will be used to draw the border if enabled
-    pub border_config: BorderConfig,
+    border_config: BorderConfig,
 
     /// Object containing colors to be used by this widget in different situations
-    pub colors: ColorConfig,
+    colors: ColorConfig,
 
     /// Bool representing whether widget is disabled, i.e. cannot be interacted with
-    pub disabled: EzProperty<bool>,
+    disabled: EzProperty<bool>,
 
     /// Global order number in which this widget will be selection when user presses down/up keys
-    pub selection_order: EzProperty<usize>,
+    selection_order: EzProperty<usize>,
 
     /// Bool representing whether this widget is currently selected.
-    pub selected: bool,
+    selected: bool,
 }
 impl RadioButtonState {
 
@@ -153,7 +153,7 @@ impl GenericState for RadioButtonState {
 
     fn get_color_config(&self) -> &ColorConfig { &self.colors }
 
-    fn get_colors_config_mut(&mut self) -> &mut ColorConfig { &mut self.colors }
+    fn get_color_config_mut(&mut self) -> &mut ColorConfig { &mut self.colors }
 
     fn is_selectable(&self) -> bool { true}
 
@@ -189,6 +189,10 @@ impl GenericState for RadioButtonState {
     }
 }
 impl RadioButtonState {
+
+    /// Set the group this radio button belongs to. Radio buttons that share a group are
+    /// mutually exclusive.
+    pub fn set_group(&mut self, group: String) { self.group.set(group) }
 
     /// Get the group this radio button belongs to. Radio buttons that share a group are
     /// mutually exclusive.

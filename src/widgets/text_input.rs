@@ -74,12 +74,12 @@ impl EzObject for TextInput {
             },
             "text" => {
                 let path = self.path.clone();
-                self.state.text.set(load_ez_string_property(
+                self.state.set_text(load_ez_string_property(
                     parameter_value.trim(), scheduler, path.clone(),
                     Box::new(move |state_tree: &mut StateTree, val: EzValues| {
                         let state = state_tree.get_by_path_mut(&path)
                             .as_text_input_mut();
-                        state.text.set(val.as_string().clone());
+                        state.set_text(val.as_string().clone());
                         path.clone()
                     }))?)
             }
@@ -173,7 +173,7 @@ impl EzObject for TextInput {
 
         let state = state_tree.get_by_path_mut(&self.get_full_path())
             .as_text_input_mut();
-        let current_text = state.text.clone();
+        let current_text = state.get_text().clone();
         if let Event::Key(key) = event {
             if key.code == KeyCode::Backspace {
                 handle_backspace(state, scheduler);
@@ -229,8 +229,8 @@ impl EzObject for TextInput {
         // Handle this widget being selected from mouse, follow user click position
         if let Some(pos) = mouse_pos {
             target_pos = Coordinates::new(pos.x, pos.y);
-            if pos.x > state.text.value.len() { target_pos.x = state.text.value.len() };
-            if !state.active_blink_task {
+            if pos.x > state.get_text().value.len() { target_pos.x = state.get_text().value.len() };
+            if !state.get_active_blink_task() {
                 start_cursor_blink(target_pos, state, scheduler,self.get_full_path());
             } else {
                 state.set_cursor_pos(target_pos);
@@ -239,8 +239,8 @@ impl EzObject for TextInput {
             // Handle this widget being selected from keyboard. We choose the position.
         } else {
             // If text fills the widget move to end of widget. If not, move to end of text.
-            let target_x = if state.text.value.len() > (state.get_effective_size().width - 1)
-            { state.get_effective_size().width - 1 } else { state.text.value.len() };
+            let target_x = if state.get_text().value.len() > (state.get_effective_size().width - 1)
+            { state.get_effective_size().width - 1 } else { state.get_text().value.len() };
             target_pos = Coordinates::new(target_x, state.get_position().y.value);
             start_cursor_blink(target_pos, state, scheduler,
                                self.get_full_path());
@@ -270,10 +270,10 @@ pub fn handle_char(state: &mut TextInputState, char: char, scheduler: &mut Sched
         text = format!("{}{}{}", text[0..cursor_pos.x as usize].to_string(), char,
                        text[(cursor_pos.x) as usize..text.len()].to_string());
         state.get_text_mut().set(text);
-        if state.cursor_pos.x < state.get_effective_size().width - 1 {
-            state.cursor_pos.x += 1;
+        if state.get_cursor_pos().x < state.get_effective_size().width - 1 {
+            state.set_cursor_x(state.get_cursor_pos().x + 1);
         } else {
-            state.view_start += 1;
+            state.set_view_start(state.get_view_start() + 1);
         }
     }
     // Text does not fit in widget, add char to view
@@ -290,11 +290,11 @@ pub fn handle_char(state: &mut TextInputState, char: char, scheduler: &mut Sched
         }
         let new_text = format!("{}{}{}", pre_view_text, view_text, post_view_text);
         state.get_text_mut().set(new_text);
-        if state.cursor_pos.x < state.get_effective_size().width - 1 {
-            state.cursor_pos.x += 1;
+        if state.get_cursor_pos().x < state.get_effective_size().width - 1 {
+            state.set_cursor_x(state.get_cursor_pos().x + 1);
         } else {
-            state.cursor_pos.x -= 1;
-            state.view_start += 2;
+            state.set_cursor_x(state.get_cursor_pos().x - 1);
+            state.set_view_start(state.get_view_start() + 2);
         }
     }
     state.update(scheduler);
@@ -317,7 +317,7 @@ impl TextInput {
                           scheduler: &mut SchedulerFrontend, old_text: String) {
 
         let state = state_tree.get_by_path(&self.path).as_text_input();
-        if state.text != old_text {
+        if state.get_text().value != old_text {
             self.on_value_change_callback(state_tree,callback_tree, scheduler);
         }
     }
@@ -337,7 +337,7 @@ fn start_cursor_blink(target_pos: Coordinates, state: &mut TextInputState,
     let blink_func = move | context: EzContext | {
         let state = context.state_tree.get_by_path_mut(&context.widget_path)
             .as_text_input_mut();
-        if !state.selected {
+        if !state.get_selected() {
             state.set_blink_switch(false);
             state.set_active_blink_task(false);
             state.update(context.scheduler);
@@ -501,11 +501,11 @@ pub fn handle_backspace(state: &mut TextInputState, scheduler: &mut SchedulerFro
         state.get_text_mut().set(format!("{}{}{}", pre_view_text, view_text, post_view_text));
 
         // Backspace should move the view back if it's not already at the start
-        if state.view_start > 1 && post_view_text.is_empty() {
+        if state.get_view_start() > 1 && post_view_text.is_empty() {
             state.set_view_start(state.get_view_start() - 1);
         }
         // If backspacing out of view move back view 2 times if possible
-        if state.view_start > 1 && cursor_pos.x == 0 && !pre_view_text.is_empty() {
+        if state.get_view_start() > 1 && cursor_pos.x == 0 && !pre_view_text.is_empty() {
             state.set_view_start(state.get_view_start() - 1);
         }
 

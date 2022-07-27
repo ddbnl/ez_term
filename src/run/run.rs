@@ -56,8 +56,8 @@ fn initialize_widgets(root_widget: &mut Layout, state_tree: &mut StateTree) -> V
 
     // Create an initial view tree so we can diff all future changes against it.
     let mut view_tree = ViewTree::default();
-    view_tree.initialize(root_widget.state.size.width.value,
-                         root_widget.state.size.height.value);
+    view_tree.initialize(root_widget.state.get_size().width.value,
+                         root_widget.state.get_size().height.value);
     view_tree.write_content(Coordinates::new(0, 0), all_content);
     write_to_screen(&mut view_tree);
     view_tree
@@ -78,7 +78,7 @@ pub fn open_popup(template: String, state_tree: &mut StateTree, scheduler: &mut 
     let state = state_tree.get_by_path_mut("/root").as_layout_mut();
     scheduler.set_callback_config(path.as_str(),
                                   CallbackConfig::default());
-    let modal = state.open_modals.first().unwrap();
+    let modal = state.get_modals().first().unwrap();
     if let EzObjects::Layout(ref i) = modal {
         for sub_widget in i.get_widgets_recursive().values() {
             scheduler.set_callback_config(

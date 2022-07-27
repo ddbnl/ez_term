@@ -16,65 +16,65 @@ pub struct TextInputState {
     pub path: String,
 
     /// Text currently being displayed by the text input
-    pub text: EzProperty<String>,
+    text: EzProperty<String>,
 
     /// Position of this widget relative to its' parent [layout]
-    pub position: StateCoordinates,
+    position: StateCoordinates,
 
     /// Absolute position of this widget on screen. Automatically propagated, do not set manually
-    pub absolute_position: IsizeCoordinates,
+    absolute_position: IsizeCoordinates,
 
     /// size of this widget
-    pub size: StateSize,
+    size: StateSize,
 
     /// Relative height/width of this widget to parent layout
-    pub size_hint: SizeHint,
+    size_hint: SizeHint,
 
     /// Pos hint of this widget
-    pub pos_hint: PosHint,
+    pos_hint: PosHint,
 
     /// Automatically adjust size of widget to content
-    pub auto_scale: AutoScale,
+    auto_scale: AutoScale,
 
     /// Amount of space to leave between sides of the widget and other widgets
-    pub padding: Padding,
+    padding: Padding,
 
     /// Horizontal alignment of this widget
-    pub halign: EzProperty<HorizontalAlignment>,
+    halign: EzProperty<HorizontalAlignment>,
 
     /// Vertical alignment of this widget
-    pub valign: EzProperty<VerticalAlignment>,
+    valign: EzProperty<VerticalAlignment>,
 
     /// How many characters [text] may hold
-    pub max_length: EzProperty<usize>,
+    max_length: EzProperty<usize>,
 
     /// [BorderConfig] object that will be used to draw the border if enabled
-    pub border_config: BorderConfig,
+    border_config: BorderConfig,
 
     /// Object containing colors to be used by this widget in different situations
-    pub colors: ColorConfig,
+    colors: ColorConfig,
 
     /// Bool representing whether widget is disabled, i.e. cannot be interacted with
-    pub disabled: EzProperty<bool>,
+    disabled: EzProperty<bool>,
 
     /// Global order number in which this widget will be selection when user presses down/up keys
-    pub selection_order: EzProperty<usize>,
+    selection_order: EzProperty<usize>,
 
     /// Bool representing whether this widget is currently selected. Internal only.
-    pub selected: bool,
+    selected: bool,
 
     /// Position of cursor relative to this widget. Internal only
-    pub cursor_pos: Coordinates,
+    cursor_pos: Coordinates,
 
     /// Bool representing whether we have a blinking scheduled task running. Internal only
-    pub active_blink_task: bool,
+    active_blink_task: bool,
 
     /// Switch for blinking. When true displays [cursor_color] on the [cursor_pos]. Internal only
-    pub blink_switch: bool,
+    blink_switch: bool,
 
     /// If text is larger than the widget, only a part of the text can be displayed. This is the
     /// index of where to start viewing the text. Internal only.
-    pub view_start: usize,
+    view_start: usize,
 }
 impl TextInputState {
 
@@ -165,7 +165,7 @@ impl GenericState for TextInputState {
 
     fn get_color_config(&self) -> &ColorConfig { &self.colors }
 
-    fn get_colors_config_mut(&mut self) -> &mut ColorConfig { &mut self.colors }
+    fn get_color_config_mut(&mut self) -> &mut ColorConfig { &mut self.colors }
 
     fn is_selectable(&self) -> bool { true }
 
@@ -207,41 +207,27 @@ impl TextInputState {
     
     pub fn set_text(&mut self, text: String) { self.get_text_mut().set(text) }
 
-    pub fn set_cursor_pos(&mut self, cursor_pos: Coordinates) {
-        self.cursor_pos = cursor_pos;
-    }
+    pub fn set_cursor_pos(&mut self, cursor_pos: Coordinates) { self.cursor_pos = cursor_pos; }
 
-    pub fn set_cursor_x(&mut self, pos: usize) {
-        self.cursor_pos.x = pos;
-    }
+    pub fn set_cursor_x(&mut self, pos: usize) { self.cursor_pos.x = pos; }
 
-    pub fn set_cursor_y(&mut self, pos: usize) {
-        self.cursor_pos.y = pos;
-    }
+    pub fn set_cursor_y(&mut self, pos: usize) { self.cursor_pos.y = pos; }
 
     pub fn get_cursor_pos(&self) -> Coordinates { self.cursor_pos }
 
-    pub fn set_active_blink_task(&mut self, active: bool) {
-        self.active_blink_task = active;
-    }
+    pub fn set_active_blink_task(&mut self, active: bool) { self.active_blink_task = active; }
 
     pub fn get_active_blink_task(&self) -> bool { self.active_blink_task }
 
-    pub fn set_blink_switch(&mut self, active: bool) {
-        self.blink_switch = active;
-    }
+    pub fn set_blink_switch(&mut self, active: bool) { self.blink_switch = active; }
 
     pub fn get_blink_switch(&self) -> bool { self.blink_switch }
 
-    pub fn set_view_start(&mut self, view_start: usize) {
-        self.view_start = view_start;
-    }
+    pub fn set_view_start(&mut self, view_start: usize) { self.view_start = view_start; }
 
     pub fn get_view_start(&self) -> usize { self.view_start }
 
-    pub fn set_max_length(&mut self, max_length: usize) {
-        self.max_length.set(max_length);
-    }
+    pub fn set_max_length(&mut self, max_length: usize) { self.max_length.set(max_length); }
 
     pub fn get_max_length(&self) -> &EzProperty<usize> { &self.max_length }
 

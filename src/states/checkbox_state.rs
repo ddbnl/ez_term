@@ -15,56 +15,55 @@ pub struct CheckboxState {
     pub path: String,
 
     /// Bool representing whether this widget is currently active (i.e. checkbox is checked)
-    pub active: EzProperty<bool>,
+    active: EzProperty<bool>,
 
     /// [Pixel.symbol] used when the Checkbox is active
-    pub active_symbol: EzProperty<String>,
+    active_symbol: EzProperty<String>,
 
     /// [Pixel.symbol] used when the Checkbox is not active
-    pub inactive_symbol: EzProperty<String>,
+    inactive_symbol: EzProperty<String>,
 
     /// Position of this widget relative to its' parent [layout]
-    pub position: StateCoordinates,
+    position: StateCoordinates,
 
     /// Absolute position of this widget on screen. Internal only.
-    pub absolute_position: IsizeCoordinates,
-
+    absolute_position: IsizeCoordinates,
 
     /// size of this widget
-    pub size: StateSize,
+    size: StateSize,
 
     /// Cannot be set, checkbox is always 5,1
-    pub size_hint: SizeHint,
+    size_hint: SizeHint,
 
     /// Automatically adjust size of widget to content
-    pub auto_scale: AutoScale,
+    auto_scale: AutoScale,
 
     /// Pos hint of this widget
-    pub pos_hint: PosHint,
+    pos_hint: PosHint,
 
     /// Amount of space to leave between sides of the widget and other widgets
-    pub padding: Padding,
+    padding: Padding,
 
     /// Horizontal alignment of this widget
-    pub halign: EzProperty<HorizontalAlignment>,
+    halign: EzProperty<HorizontalAlignment>,
 
     /// Vertical alignment of this widget
-    pub valign: EzProperty<VerticalAlignment>,
+    valign: EzProperty<VerticalAlignment>,
 
     /// [BorderConfig] object that will be used to draw the border if enabled
-    pub border_config: BorderConfig,
+    border_config: BorderConfig,
 
     /// Object containing colors to be used by this widget in different situations
-    pub colors: ColorConfig,
+    colors: ColorConfig,
 
     /// Bool representing whether widget is disabled, i.e. cannot be interacted with
-    pub disabled: EzProperty<bool>,
+    disabled: EzProperty<bool>,
 
     /// Global order number in which this widget will be selection when user presses down/up keys
-    pub selection_order: EzProperty<usize>,
+    selection_order: EzProperty<usize>,
 
     /// Bool representing whether this widget is currently selected. Internal only.
-    pub selected: bool,
+    selected: bool,
 }
 impl CheckboxState {
     
@@ -155,7 +154,7 @@ impl GenericState for CheckboxState {
 
     fn get_color_config(&self) -> &ColorConfig { &self.colors }
 
-    fn get_colors_config_mut(&mut self) -> &mut ColorConfig {
+    fn get_color_config_mut(&mut self) -> &mut ColorConfig {
         &mut self.colors
     }
 

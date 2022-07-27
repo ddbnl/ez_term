@@ -16,7 +16,7 @@ impl Layout{
         let state = state_tree.get_by_path_mut(&self.get_full_path()).as_layout();
 
         let own_table_config = state.get_table_config().clone();
-        let own_orientation = state.orientation.clone();
+        let own_orientation = state.get_orientation().clone();
         if own_orientation == LayoutOrientation::Vertical ||
             own_orientation == LayoutOrientation::Horizontal {
             panic!("Error in layout: {}. When in table mode, orientation must be one of: \

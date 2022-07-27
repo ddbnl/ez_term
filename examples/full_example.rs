@@ -48,10 +48,10 @@ fn main() {
         scheduler.new_usize_property("progress_property", 0);
     let value_property_callback = |context: EzContext| {
         let val = context.state_tree.get_by_id("progress_bar")
-            .as_progress_bar().value.value;
+            .as_progress_bar().get_value().value;
         let state = context.state_tree.get_by_id_mut("progress_label")
             .as_label_mut();
-        state.text.set(format!("{}%", val));
+        state.set_text(format!("{}%", val));
         state.update(context.scheduler);
         true
     };
@@ -116,7 +116,7 @@ fn main() {
         }
         let state = context.state_tree.get_by_id_mut(&context.widget_path)
             .as_canvas_mut();
-        state.get_colors_config_mut().foreground.set(color);
+        state.get_color_config_mut().foreground.set(color);
         state.update(context.scheduler);
         true
     };
@@ -128,7 +128,7 @@ fn main() {
         let state = scheduler.create_widget(
             "ScalingLabel", format!("label_{}", i).as_str(),
             "/root/main_screen/tabbed_box/Generation");
-        state.as_label_mut().text.set(format!("Generated label: {}", i));
+        state.as_label_mut().set_text(format!("Generated label: {}", i));
     }
 
     // Step 3: Run app
@@ -154,7 +154,7 @@ fn test_checkbox_on_value_change(context: EzContext) -> bool {
     let label_state = context.state_tree
         .get_by_id_mut("checkbox_label").as_label_mut();
     label_state.get_text_mut().set(text.to_string());
-    label_state.get_colors_config_mut().foreground.set(color);
+    label_state.get_color_config_mut().foreground.set(color);
     false
 }
 
@@ -171,15 +171,15 @@ fn test_slider_on_value_change(context: EzContext) -> bool {
     // Now we will create a text and a color depending on whether the checkbox was turned on or off
     let text = value.to_string();
     let color =
-        if state.value.value as f32 / state.maximum.value as f32 <= 1.0/3.0 {Color::Red}
-        else if state.value.value as f32 / state.maximum.value as f32 <= 2.0/3.0 {Color::Yellow}
+        if state.get_value().value as f32 / state.get_maximum().value as f32 <= 1.0/3.0 {Color::Red}
+        else if state.get_value().value as f32 / state.get_maximum().value as f32 <= 2.0/3.0 {Color::Yellow}
         else {Color::Green};
     // Next we will retrieve a label widget state and change the text and color field. This will
     // cause the text to change on the next frame.
     let label_state = context.state_tree
         .get_by_id_mut("slider_label").as_label_mut();
     label_state.get_text_mut().set(text);
-    label_state.get_colors_config_mut().foreground.set(color);
+    label_state.get_color_config_mut().foreground.set(color);
     label_state.update(context.scheduler);
     false
 }
@@ -205,7 +205,7 @@ fn test_radio_button_on_value_change(context: EzContext) -> bool {
     let label_state = context.state_tree
         .get_by_id_mut("radio_label").as_label_mut();
     label_state.get_text_mut().set(name);
-    label_state.get_colors_config_mut().foreground.set(color);
+    label_state.get_color_config_mut().foreground.set(color);
     false
 }
 

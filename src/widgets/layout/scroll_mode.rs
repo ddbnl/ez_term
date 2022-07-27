@@ -90,14 +90,14 @@ impl Layout {
 
         let state = state_tree.get_by_path_mut(&self.get_full_path())
             .as_layout_mut();
-        if !state.scrolling_config.enable_x.value
+        if !state.get_scrolling_config().enable_x.value
             || contents.len() <= state.get_effective_size().width {
-            state.scrolling_config.is_scrolling_x = false;
+            state.get_scrolling_config_mut().is_scrolling_x = false;
             return contents
         }
-        state.scrolling_config.original_width = contents.len();
-        state.scrolling_config.is_scrolling_x = true;
-        let view_start = state.scrolling_config.view_start_x;
+        state.get_scrolling_config_mut().original_width = contents.len();
+        state.get_scrolling_config_mut().is_scrolling_x = true;
+        let view_start = state.get_scrolling_config().view_start_x;
         let view_end =
             if contents.len() - view_start > state.get_effective_size().width {
                 view_start + state.get_effective_size().width
@@ -116,13 +116,13 @@ impl Layout {
         let state = state_tree.get_by_path_mut(&self.get_full_path())
             .as_layout_mut();
         let largest = contents.iter().map(|x| x.len()).max().unwrap_or(0);
-        if !state.scrolling_config.enable_y.value || largest <= state.get_effective_size().height {
-            state.scrolling_config.is_scrolling_y = false;
+        if !state.get_scrolling_config().enable_y.value || largest <= state.get_effective_size().height {
+            state.get_scrolling_config_mut().is_scrolling_y = false;
             return contents
         }
-        state.scrolling_config.original_height = largest;
-        state.scrolling_config.is_scrolling_y = true;
-        let view_start = state.scrolling_config.view_start_y;
+        state.get_scrolling_config_mut().original_height = largest;
+        state.get_scrolling_config_mut().is_scrolling_y = true;
+        let view_start = state.get_scrolling_config().view_start_y;
         let view_end =
             if largest - view_start > state.get_effective_size().height {
                 view_start + state.get_effective_size().height

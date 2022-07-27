@@ -15,55 +15,55 @@ pub struct DropdownState {
     pub path: String,
 
     /// Position of this widget relative to its' parent [layout]
-    pub position: StateCoordinates,
+    position: StateCoordinates,
 
     /// Absolute position of this widget on screen. Automatically propagated, do not set manually
-    pub absolute_position: IsizeCoordinates,
+    absolute_position: IsizeCoordinates,
 
     /// Relative height/width of this widget to parent layout
-    pub size_hint: SizeHint,
+    size_hint: SizeHint,
 
     /// Pos hint of this widget
-    pub pos_hint: PosHint,
+    pos_hint: PosHint,
 
     /// size of this widget
-    pub size: StateSize,
+    size: StateSize,
 
     /// Automatically adjust size of widget to content
-    pub auto_scale: AutoScale,
+    auto_scale: AutoScale,
 
     /// Amount of space to leave between sides of the widget and other widgets
-    pub padding: Padding,
+    padding: Padding,
 
     /// Horizontal alignment of this widget
-    pub halign: EzProperty<HorizontalAlignment>,
+    halign: EzProperty<HorizontalAlignment>,
 
     /// Vertical alignment of this widget
-    pub valign: EzProperty<VerticalAlignment>,
+    valign: EzProperty<VerticalAlignment>,
 
     /// Bool representing whether widget is disabled, i.e. cannot be interacted with
-    pub disabled: EzProperty<bool>,
+    disabled: EzProperty<bool>,
 
     /// Global order number in which this widget will be selection when user presses down/up keys
-    pub selection_order: EzProperty<usize>,
+    selection_order: EzProperty<usize>,
 
     /// List of options this dropdown will display
-    pub options: Vec<String>,
+    options: Vec<String>,
 
     /// Bool representing whether an empty value should be shown to choose from
-    pub allow_none: EzProperty<bool>,
+    allow_none: EzProperty<bool>,
 
     /// The currently active choice of the dropdown.
-    pub choice: EzProperty<String>,
+    choice: EzProperty<String>,
 
     /// [BorderConfig] object that will be used to draw the border if enabled
-    pub border_config: BorderConfig,
+    border_config: BorderConfig,
 
     /// Object containing colors to be used by this widget in different situations
-    pub colors: ColorConfig,
+    colors: ColorConfig,
 
     /// Bool representing whether this widget is currently selected. Internal only.
-    pub selected: bool,
+    selected: bool,
 }
 impl DropdownState {
     pub fn new(path: String, scheduler: &mut SchedulerFrontend) -> Self {
@@ -145,7 +145,7 @@ impl GenericState for DropdownState {
 
     fn get_color_config(&self) -> &ColorConfig { &self.colors }
 
-    fn get_colors_config_mut(&mut self) -> &mut ColorConfig { &mut self.colors }
+    fn get_color_config_mut(&mut self) -> &mut ColorConfig { &mut self.colors }
 
     fn is_selectable(&self) -> bool { true }
 
@@ -350,7 +350,7 @@ impl GenericState for DroppedDownMenuState {
 
     fn get_color_config(&self) -> &ColorConfig { &self.colors }
 
-    fn get_colors_config_mut(&mut self) -> &mut ColorConfig { &mut self.colors }
+    fn get_color_config_mut(&mut self) -> &mut ColorConfig { &mut self.colors }
 
     fn set_disabled(&mut self, disabled: bool) {
         self.disabled.set(disabled)

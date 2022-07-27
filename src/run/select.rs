@@ -319,13 +319,13 @@ pub fn widget_is_hidden(widget_path: String, state_tree: &StateTree) -> bool {
     let mut check_child = widget_path.clone();
     loop {
         let parent_state = state_tree.get_by_path(&check_parent).as_layout();
-        if parent_state.mode == LayoutMode::Screen &&
-            parent_state.active_screen.value != check_child.rsplit_once('/').unwrap().1 {
+        if parent_state.get_mode() == &LayoutMode::Screen &&
+            parent_state.get_active_screen().value != check_child.rsplit_once('/').unwrap().1 {
             return true
         }
-        if parent_state.mode == LayoutMode::Tab {
+        if parent_state.get_mode() == &LayoutMode::Tab {
             if let EzState::Layout(_) = state_tree.get_by_path(&check_child) {
-                if parent_state.active_tab.value != check_child.rsplit_once('/').unwrap().1 {
+                if parent_state.get_active_tab().value != check_child.rsplit_once('/').unwrap().1 {
                     return true
                 }
             }

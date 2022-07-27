@@ -19,9 +19,8 @@ impl Layout {
                     state.set_selected_tab_header(widget.id.clone());
                     state.update(scheduler);
                     return
-                } else if state_tree
-                    .get_by_path(&self.path).as_layout().selected_tab_header ==
-                    widget.id {
+                } else if state_tree.get_by_path(&self.path).as_layout()
+                    .get_selected_tab_header() == widget.id {
                     next_button = true;
                 }
             }
@@ -40,8 +39,7 @@ impl Layout {
                     state.update(scheduler);
                     return
                 } else if state_tree
-                    .get_by_path(&self.path).as_layout().selected_tab_header ==
-                    widget.id {
+                    .get_by_path(&self.path).as_layout().get_selected_tab_header() == widget.id {
                     next_button = true;
                 }
             }
@@ -55,16 +53,16 @@ impl Layout {
         let own_size = state.get_size().clone();
         let own_effective_size = state.get_effective_size();
         let own_pos = state.get_effective_absolute_position();
-        let own_colors = state.colors.clone();
-        let selection = state.selected_tab_header.clone();
-        if state.active_tab.value.is_empty() {
+        let own_colors = state.get_color_config().clone();
+        let selection = state.get_selected_tab_header().clone();
+        if state.get_active_tab().value.is_empty() {
             if !self.children.is_empty() {
                 state.set_active_tab(&self.children[0].as_ez_object().get_id());
             } else {
                 return PixelMap::new()
             }
         }
-        let active_tab = state.active_tab.value.clone();
+        let active_tab = state.get_active_tab().value.clone();
 
         let mut button_content = PixelMap::new();
         let mut tab_content = PixelMap::new();
@@ -90,19 +88,20 @@ impl Layout {
                 let child_state=
                     state_tree.get_by_path_mut(&i.path).as_button_mut();
 
-                child_state.colors.foreground.set(
+                let tab_text = child_state.get_text().value.clone();
+                child_state.get_color_config_mut().foreground.set(
                     if selection == i.id { own_colors.selection_foreground.value }
-                    else if active_tab == child_state.text.value {
+                    else if active_tab == tab_text {
                         own_colors.active_foreground.value
                     } else { own_colors.tab_foreground.value });
-                child_state.colors.background.set(
+                child_state.get_color_config_mut().background.set(
                     if selection == i.id { own_colors.selection_background.value }
-                    else if active_tab == child_state.text.value {
+                    else if active_tab == tab_text {
                         own_colors.active_background.value
                     } else { own_colors.tab_background.value });
 
-                child_state.auto_scale.width.set(true);
-                child_state.auto_scale.height.set(true);
+                child_state.set_auto_scale_width(true);
+                child_state.set_auto_scale_height(true);
                 child_state.set_x(pos_x);
                 child_state.set_y(0);
                 let content = i.get_contents(state_tree);
@@ -122,7 +121,7 @@ impl Layout {
                 if (!selection.is_empty() && selection == i.id) || (selection.is_empty() &&
                     active_tab == i.id.strip_suffix("_tab_header").unwrap()) {
                     selected_pos_x = pos_x;
-                    selected_width = child_state.size.width.value;
+                    selected_width = child_state.get_size().width.value;
                 }
 
                 pos_x = button_content.len();

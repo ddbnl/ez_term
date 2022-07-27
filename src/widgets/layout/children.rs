@@ -25,7 +25,8 @@ impl Layout {
         // multiple children in a Box layout and have them distributed equally automatically. Any
         // kind of asymmetry breaks this behavior.
         if self.children.len() > 1 &&
-            own_state.mode != LayoutMode::Tab && own_state.mode != LayoutMode::Screen {
+            own_state.get_mode() != &LayoutMode::Tab &&
+                own_state.get_mode() != &LayoutMode::Screen {
             let (all_default_size_hint_x, all_default_size_hint_y) =
                 self.check_default_size_hints(state_tree);
             if all_default_size_hint_x {
@@ -65,7 +66,7 @@ impl Layout {
         let mut all_default_size_hint_x = true;
         let mut all_default_size_hint_y = true;
         let own_orientation = state_tree.get_by_path(&self.path)
-            .as_layout().orientation.clone();
+            .as_layout().get_orientation().clone();
         for child in self.get_children() {
             if !all_default_size_hint_x && !all_default_size_hint_y {
                 break
@@ -170,14 +171,14 @@ impl Layout {
         self.child_lookup.insert(generic_child.get_id(), self.children.len());
         self.children.push(child.clone());
 
-        if self.state.mode == LayoutMode::Tab {
+        if self.state.get_mode() == &LayoutMode::Tab {
             if let EzObjects::Layout(_) = child.clone() {
                 let new_id = format!("{}_tab_header", id);
                 let new_path = format!("{}/{}", parent_path, new_id);
                 let mut tab_header = Button::new(new_id, new_path, scheduler);
                 tab_header.state.set_size_hint_x(None);
                 tab_header.state.set_size_hint_y(None);
-                tab_header.state.text.set(id.clone());
+                tab_header.state.set_text(id.clone());
 
                 let tab_on_click = move |context: EzContext| {
                     let state = context.state_tree
@@ -233,7 +234,7 @@ impl Layout {
 
         let first = paths.pop().unwrap();
         let mut root = if first == "modal" {
-            if let Some(i) = self.state.open_modals.first() { paths.pop();  i }
+            if let Some(i) = self.state.get_modals().first() { paths.pop();  i }
             else { return None }
         } else {
             if let Some(i) = self.get_child(first) { i }
@@ -261,7 +262,7 @@ impl Layout {
 
         let first = paths.pop().unwrap();
         let mut root = if first == "modal" {
-            if let Some(i) = self.state.open_modals.first_mut() { i }
+            if let Some(i) = self.state.get_modals_mut().first_mut() { i }
             else { return None }
         } else {
             if let Some(i) = self.get_child_mut(first) { i }
@@ -296,17 +297,17 @@ impl Layout {
     pub fn scale_to_largest_child(&self, content_list: &[PixelMap], state_tree: &mut StateTree){
 
         let state = state_tree.get_by_path_mut(&self.path).as_layout_mut();
-        if state.auto_scale.width.value {
+        if state.get_auto_scale().width.value {
             state.set_effective_width(
-                if state.orientation == LayoutOrientation::Vertical {
+                if state.get_orientation() == &LayoutOrientation::Vertical {
                     content_list.iter().map(|x| x.len()).max().unwrap_or(0)
                 } else {
                     content_list.iter().map(|x| x.len()).sum()
                 });
         }
-        if state.auto_scale.height.value {
+        if state.get_auto_scale().height.value {
             state.set_effective_height(
-                if state.orientation == LayoutOrientation::Horizontal {
+                if state.get_orientation() == &LayoutOrientation::Horizontal {
                     content_list.iter().map(
                         |child| child.iter().map(|x| x.len()).max().unwrap_or(0))
                         .max().unwrap_or(0)

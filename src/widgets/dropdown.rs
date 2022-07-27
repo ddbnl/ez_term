@@ -96,8 +96,8 @@ impl EzObject for Dropdown {
             "allow_none" => self.load_allow_none_property(parameter_value.trim(),
                                                           scheduler)?,
             "options" => {
-                self.state.options = parameter_value.split(',')
-                    .map(|x| x.trim().to_string()).collect();
+                self.state.set_options(parameter_value.split(',')
+                    .map(|x| x.trim().to_string()).collect());
             },
             "choice" => self.load_choice_property(parameter_value.trim(), scheduler)?,
             _ => return Err(
@@ -128,18 +128,18 @@ impl EzObject for Dropdown {
             state_tree.get_by_path_mut(&self.get_full_path()).as_dropdown_mut();
         // If dropped down get full content instead
         // Set a default value if user didn't give one
-        if state.choice.value.is_empty() && !state.allow_none.value {
-            state.choice.set(state.options.first()
+        if state.get_choice().value.is_empty() && !state.get_allow_none().value {
+            state.set_choice(state.get_options().first()
                 .expect("Dropdown widget must have at least one option").to_string());
         }
         // Create a bordered label representing currently active value
         let (fg_color, bg_color) = state.get_context_colors();
-        let mut text = state.choice.value.chars().rev().collect::<String>();
+        let mut text = state.get_choice().value.chars().rev().collect::<String>();
         let mut contents = Vec::new();
 
         let write_width = if state.get_size().infinite_width ||
             state.get_auto_scale().width.value {
-            state.options.iter().map(|x| x.len()).max().unwrap_or(0)
+            state.get_options().iter().map(|x| x.len()).max().unwrap_or(0)
         } else {
             state.get_effective_size().width
         };
@@ -190,7 +190,7 @@ impl EzObject for Dropdown {
                 false, false, modal_path.clone(), scheduler),
             options: state.get_options(),
             allow_none: scheduler.new_bool_property(
-                format!("{}/allow_none", modal_path).as_str(), state.allow_none.value),
+                format!("{}/allow_none", modal_path).as_str(), state.get_allow_none().value),
             size_hint: SizeHint::new(None, None,
                                      modal_path.clone(), scheduler),
             position,
@@ -207,8 +207,8 @@ impl EzObject for Dropdown {
             absolute_position: state.get_absolute_position(),
             pos_hint: PosHint::new(None, None, modal_path.clone(), scheduler),
             dropped_down_selected_row: 1,
-            border_config: state.border_config.clone(),
-            colors: state.colors.clone(),
+            border_config: state.get_border_config().clone(),
+            colors: state.get_color_config().clone(),
             choice: scheduler.new_string_property(format!("{}/choice", modal_path).as_str(),
                                                   state.get_choice().value.clone()),
             parent_path: self.path.clone(),

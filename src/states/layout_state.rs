@@ -18,86 +18,86 @@ pub struct LayoutState {
     pub path: String,
 
     /// Position of this widget relative to its' parent [layout]
-    pub position: StateCoordinates,
+    position: StateCoordinates,
 
     /// Absolute position of this widget on screen. Automatically propagated, do not set manually
-    pub absolute_position: IsizeCoordinates,
+    absolute_position: IsizeCoordinates,
 
     /// Relative height/width of this widget to parent layout
-    pub size_hint: SizeHint,
+    size_hint: SizeHint,
 
     /// Pos hint of this widget
-    pub pos_hint: PosHint,
+    pos_hint: PosHint,
 
     /// size of this widget
-    pub size: StateSize,
+    size: StateSize,
 
     /// Automatically adjust size of widget to content
-    pub auto_scale: AutoScale,
+    auto_scale: AutoScale,
 
     /// layout mode enum, see [LayoutMode] for options
-    pub mode: LayoutMode,
+    mode: LayoutMode,
 
     /// Orientation enum, see [LayoutOrientation] for options
-    pub orientation: LayoutOrientation,
+    orientation: LayoutOrientation,
 
     /// Amount of space to leave between sides of the widget and other widgets
-    pub padding: Padding,
+    padding: Padding,
 
     /// Horizontal alignment of this layout
-    pub halign: EzProperty<HorizontalAlignment>,
+    halign: EzProperty<HorizontalAlignment>,
 
     /// Vertical alignment of this layout
-    pub valign: EzProperty<VerticalAlignment>,
+    valign: EzProperty<VerticalAlignment>,
 
     /// [TableConfig] of this layout
-    pub table_config: TableConfig,
+    table_config: TableConfig,
 
     /// ID of the child that is the active screen (i.e. its content is visible)
-    pub active_screen: EzProperty<String>,
+    active_screen: EzProperty<String>,
 
     /// Name shown for tab if [is_tab] is true and parent [is_tabbed]
-    pub tab_name: EzProperty<String>,
+    tab_name: EzProperty<String>,
 
     /// ID of the active tab (i.e. its content is visible)
-    pub active_tab: EzProperty<String>,
+    active_tab: EzProperty<String>,
 
     /// Id of the active tab header button
-    pub selected_tab_header: String,
+    selected_tab_header: String,
 
     /// Bool representing whether this layout should be filled with [filler_symbol] in positions
     /// where it does not get other content from [get_contents]
-    pub fill: EzProperty<bool>,
+    fill: EzProperty<bool>,
 
     /// The [Pixel.Symbol] to use for filler pixels if [fill] is true
-    pub filler_symbol: EzProperty<String>,
+    filler_symbol: EzProperty<String>,
 
     /// [BorderConfig] object that will be used to draw the border if enabled
-    pub border_config: BorderConfig,
+    border_config: BorderConfig,
 
     /// Object containing colors to be used by this widget in different situations
-    pub colors: ColorConfig,
+    colors: ColorConfig,
 
     /// See [ScrollingConfig]
-    pub scrolling_config: ScrollingConfig,
+    scrolling_config: ScrollingConfig,
 
     /// A list of open modals. Modals are widgets that overlap other content; in other words, they
     /// open 'in front of' other content. Only one can be shown at a time (the first on in the
     /// list).
-    pub open_modals: Vec<EzObjects>,
+    open_modals: Vec<EzObjects>,
 
     /// A hashmap of 'Template Name > [EzWidgetDefinition]'. Used to instantiate widget templates
     /// at runtime. E.g. when spawning popups.
-    pub templates: Templates,
+    templates: Templates,
 
     /// Bool representing whether widget is disabled, i.e. cannot be interacted with
-    pub disabled: EzProperty<bool>,
+    disabled: EzProperty<bool>,
 
     /// Global order number in which this widget will be selection when user presses down/up keys
-    pub selection_order: EzProperty<usize>,
+    selection_order: EzProperty<usize>,
 
     /// Bool representing whether this widget is currently selected.
-    pub selected: bool,
+    selected: bool,
 }
 impl LayoutState {
 
@@ -231,7 +231,7 @@ impl GenericState for LayoutState {
 
     fn get_color_config(&self) -> &ColorConfig { &self.colors }
 
-    fn get_colors_config_mut(&mut self) -> &mut ColorConfig {
+    fn get_color_config_mut(&mut self) -> &mut ColorConfig {
         &mut self.colors
     }
 

@@ -15,52 +15,52 @@ pub struct ButtonState {
     pub path: String,
 
     /// Text currently being displayed by the label
-    pub text: EzProperty<String>,
+    text: EzProperty<String>,
 
     /// Position of this widget relative to its' parent [layout]
-    pub position: StateCoordinates,
+    position: StateCoordinates,
 
     /// Absolute position of this layout on screen. Automatically propagated, do not set manually
-    pub absolute_position: IsizeCoordinates,
+    absolute_position: IsizeCoordinates,
 
     /// Relative height/width of this widget to parent layout
-    pub size_hint: SizeHint,
+    size_hint: SizeHint,
 
     /// Pos hint of this widget
-    pub pos_hint: PosHint,
+    pos_hint: PosHint,
 
     /// size of this widget
-    pub size: StateSize,
+    size: StateSize,
 
     /// Automatically adjust size of widget to content
-    pub auto_scale: AutoScale,
+    auto_scale: AutoScale,
 
     /// Amount of space to leave between sides of the widget and other widgets
-    pub padding: Padding,
+    padding: Padding,
 
     /// Horizontal alignment of this widget
-    pub halign: EzProperty<HorizontalAlignment>,
+    halign: EzProperty<HorizontalAlignment>,
 
     /// Vertical alignment of this widget
-    pub valign: EzProperty<VerticalAlignment>,
+    valign: EzProperty<VerticalAlignment>,
 
     /// [BorderConfig] object that will be used to draw the border if enabled
-    pub border_config: BorderConfig,
+    border_config: BorderConfig,
 
     /// Object containing colors to be used by this widget in different situations
-    pub colors: ColorConfig,
+    colors: ColorConfig,
 
     /// Bool representing whether widget is disabled, i.e. cannot be interacted with
-    pub disabled: EzProperty<bool>,
+    disabled: EzProperty<bool>,
 
     /// Global order number in which this widget will be selection when user presses down/up keys
-    pub selection_order: EzProperty<usize>,
+    selection_order: EzProperty<usize>,
 
     /// Bool representing whether this widget is currently selected.
-    pub selected: bool,
+    selected: bool,
 
     /// Bool representing whether this widget is currently displaying it's flash color.
-    pub flashing: bool,
+    flashing: bool,
 }
 impl ButtonState {
     
@@ -143,7 +143,7 @@ impl GenericState for ButtonState {
 
     fn get_color_config(&self) -> &ColorConfig { &self.colors }
 
-    fn get_colors_config_mut(&mut self) -> &mut ColorConfig { &mut self.colors }
+    fn get_color_config_mut(&mut self) -> &mut ColorConfig { &mut self.colors }
 
     fn is_selectable(&self) -> bool { true }
 

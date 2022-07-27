@@ -22,13 +22,14 @@ impl Layout {
         for _ in 0..own_width {
             content.push(Vec::new());
             for _ in 0..own_height {
-                if own_state.fill.value {
+                if own_state.get_fill().value {
                     content.last_mut().unwrap().push(filler.clone());
                 } else {
                     content.last_mut().unwrap().push(
                         Pixel::new(
-                            " ".to_string(), own_state.colors.foreground.value,
-                            own_state.colors.background.value));
+                            " ".to_string(),
+                            own_state.get_color_config().foreground.value,
+                            own_state.get_color_config().background.value));
                 }
             }
         }

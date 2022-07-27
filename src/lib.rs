@@ -111,8 +111,8 @@
 //!
 //! fn main() {
 //!
-//!     let (root_widget, mut scheduler) = load_ui();
-//!     run(root_widget, scheduler);
+//!     let (root_widget, mut state_tree, mut scheduler) = load_ui();
+//!     run(root_widget, state_tree, scheduler);
 //! }
 //! ```
 //!

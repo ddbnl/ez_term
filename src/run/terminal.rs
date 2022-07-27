@@ -57,7 +57,7 @@ pub fn redraw_changed_widgets(view_tree: &mut ViewTree, state_tree: &mut StateTr
                               root_widget: &mut Layout, changed_states: &mut Vec<String>,
                               mut force_redraw: bool) -> bool {
 
-    if !state_tree.get_by_path("/root").as_layout().open_modals.is_empty() &&
+    if !state_tree.get_by_path("/root").as_layout().get_modals().is_empty() &&
         !changed_states.is_empty(){
         force_redraw = true;
     }

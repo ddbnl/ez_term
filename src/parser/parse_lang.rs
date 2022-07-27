@@ -71,7 +71,7 @@ pub fn load_ez_text(files: HashMap<String, String>) -> Result<(Layout, Scheduler
     let initialized_root_widget = root_widget.parse(
         &mut scheduler_frontend, String::new(), 0, None);
     let mut root = initialized_root_widget.as_layout().to_owned();
-    root.state.templates = templates;
+    root.state.set_templates(templates);
 
     Ok((root, scheduler_frontend))
 }

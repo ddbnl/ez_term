@@ -442,7 +442,7 @@ pub trait GenericState {
     fn get_color_config(&self) -> &ColorConfig;
 
     /// Get a mut ref to the [ColorConfig] abject that will be used to draw this widget
-    fn get_colors_config_mut(&mut self) -> &mut ColorConfig;
+    fn get_color_config_mut(&mut self) -> &mut ColorConfig;
 
     /// Convenience function. Get a Foreground and Background color depending on the state of
     /// the widget (e.g. disabled, selected, etc.).
@@ -497,24 +497,13 @@ pub trait GenericState {
     /// effective size, meaning its borders, padding, etc. are ignored
     fn collides_effective(&self, pos: Coordinates) -> bool {
         let size = self.get_effective_size();
-        self._collides(pos, &size)
+        _collides(self.get_effective_absolute_position(), pos, &size)
     }
 
     /// Returns a bool representing whether a single point collides with a widget.
     fn collides(&self, pos: Coordinates) -> bool {
         let size = Size::from_state_size(self.get_size());
-        self._collides(pos, &size)
-    }
-
-    /// Base func for whether a single point collides with a widget. Use [collides] or
-    /// [collides_effective] depending on the situation.
-    fn _collides(&self, pos: Coordinates, size: &Size) -> bool {
-
-        let starting_pos = self.get_effective_absolute_position();
-        let end_pos = IsizeCoordinates::new(starting_pos.x + (size.width as isize) - 1,
-                                                         starting_pos.y + (size.height as isize) - 1);
-        pos.x as isize >= starting_pos.x && pos.x as isize <= end_pos.x &&
-            pos.y as isize >= starting_pos.y && pos.y as isize <= end_pos.y
+        _collides(self.get_effective_absolute_position(), pos, &size)
     }
 
     /// Returns a bool representing whether this widget can be select by keyboard or mouse. E.g.
@@ -548,4 +537,15 @@ pub trait GenericState {
     }
 
     fn clean_up_properties(&self, scheduler: &mut SchedulerFrontend);
+}
+
+
+/// Base func for whether a single point collides with a widget. Use [collides] or
+/// [collides_effective] depending on the situation.
+fn _collides(pos_1: IsizeCoordinates, pos_2: Coordinates, size: &Size) -> bool {
+
+    let end_pos = IsizeCoordinates::new(pos_1.x + (size.width as isize) - 1,
+                                        pos_1.y + (size.height as isize) - 1);
+    pos_2.x as isize >= pos_1.x && pos_2.x as isize <= end_pos.x &&
+        pos_2.y as isize >= pos_1.y && pos_2.y as isize <= end_pos.y
 }

@@ -12,7 +12,7 @@ impl Layout{
     /// [get_box_mode_vertical_orientation_contents] depending on orientation
     pub fn get_box_mode_contents(&self, state_tree: &mut StateTree) -> PixelMap {
 
-        match state_tree.get_by_path(&self.path).as_layout().orientation {
+        match state_tree.get_by_path(&self.path).as_layout().get_orientation() {
             LayoutOrientation::Horizontal => {
                 self.get_box_mode_horizontal_orientation_contents(state_tree)
             },

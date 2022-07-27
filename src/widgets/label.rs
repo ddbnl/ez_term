@@ -63,12 +63,12 @@ impl EzObject for Label {
         match parameter_name.as_str() {
             "text" => {
                 let path = self.path.clone();
-                self.state.text.set(load_ez_string_property(
+                self.state.set_text(load_ez_string_property(
                     parameter_value.trim(), scheduler, path.clone(),
                     Box::new(move |state_tree: &mut StateTree, val: EzValues| {
                         let state = state_tree.get_by_path_mut(&path)
                             .as_label_mut();
-                        state.text.set(val.as_string().clone());
+                        state.set_text(val.as_string().clone());
                         path.clone()
                     }))?)
             },
@@ -102,7 +102,7 @@ impl EzObject for Label {
             file.read_to_string(&mut text).expect("Unable to read file");
         // or take text from widget state
         } else {
-            text = state.text.value.clone();
+            text = state.get_text().value.clone();
         }
         
         let chunk_size =

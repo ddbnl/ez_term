@@ -23,10 +23,10 @@ pub fn handle_modal_event (event: Event, state_tree: &mut StateTree,
                        root_widget: &Layout, callback_tree: &mut CallbackTree,
                        scheduler: &mut SchedulerFrontend) -> bool {
 
-    if state_tree.get_by_path(&root_widget.path).as_layout().open_modals.is_empty() {
+    if state_tree.get_by_path(&root_widget.path).as_layout().get_modals().is_empty() {
         return false
     }
-    let modal = root_widget.state.open_modals.first().unwrap();
+    let modal = root_widget.state.get_modals().first().unwrap();
     let mut consumed = modal.as_ez_object().handle_event(
         event, state_tree, callback_tree, scheduler);
     if !consumed {
@@ -247,8 +247,8 @@ pub fn handle_resize(view_tree: &mut ViewTree, state_tree: &mut StateTree, root_
 
     for state in state_tree.objects.values_mut() {
         if let EzState::Layout(_) = state {
-            state.as_layout_mut().scrolling_config.view_start_x = 0;
-            state.as_layout_mut().scrolling_config.view_start_y = 0;
+            state.as_layout_mut().get_scrolling_config_mut().view_start_x = 0;
+            state.as_layout_mut().get_scrolling_config_mut().view_start_y = 0;
         }
     }
     let state = state_tree.get_by_path_mut(&root_widget.path).as_generic_mut();

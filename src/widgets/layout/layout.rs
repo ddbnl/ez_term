@@ -252,12 +252,12 @@ impl EzObject for Layout {
         match parameter_name.as_str() {
             "mode" => {
                 match parameter_value.to_lowercase().trim() {
-                    "box" => self.state.mode = LayoutMode::Box,
-                    "stack" => self.state.mode = LayoutMode::Stack,
-                    "table" => self.state.mode = LayoutMode::Table,
-                    "float" => self.state.mode = LayoutMode::Float,
-                    "screen" => self.state.mode = LayoutMode::Screen,
-                    "tab" => self.state.mode = LayoutMode::Tab,
+                    "box" => self.state.set_mode(LayoutMode::Box),
+                    "stack" => self.state.set_mode(LayoutMode::Stack),
+                    "table" => self.state.set_mode(LayoutMode::Table),
+                    "float" => self.state.set_mode(LayoutMode::Float),
+                    "screen" => self.state.set_mode(LayoutMode::Screen),
+                    "tab" => self.state.set_mode(LayoutMode::Tab),
                     _ => return Err(
                         Error::new(ErrorKind::InvalidData,
                                    format!("Invalid parameter value for mode {}",
@@ -266,16 +266,16 @@ impl EzObject for Layout {
             },
             "orientation" => {
                 match parameter_value.trim() {
-                    "horizontal" => self.state.orientation = LayoutOrientation::Horizontal,
-                    "vertical" => self.state.orientation = LayoutOrientation::Vertical,
-                    "lr-tb" => self.state.orientation = LayoutOrientation::LeftRightTopBottom,
-                    "tb-lr" => self.state.orientation = LayoutOrientation::TopBottomLeftRight,
-                    "rl-tb" => self.state.orientation = LayoutOrientation::RightLeftTopBottom,
-                    "tb-rl" => self.state.orientation = LayoutOrientation::TopBottomRightLeft,
-                    "lr-bt" => self.state.orientation = LayoutOrientation::LeftRightBottomTop,
-                    "bt-lr" => self.state.orientation = LayoutOrientation::BottomTopLeftRight,
-                    "rl-bt" => self.state.orientation = LayoutOrientation::RightLeftBottomTop,
-                    "bt-rl" => self.state.orientation = LayoutOrientation::BottomTopRightLeft,
+                    "horizontal" => self.state.set_orientation(LayoutOrientation::Horizontal),
+                    "vertical" => self.state.set_orientation(LayoutOrientation::Vertical),
+                    "lr-tb" => self.state.set_orientation(LayoutOrientation::LeftRightTopBottom),
+                    "tb-lr" => self.state.set_orientation(LayoutOrientation::TopBottomLeftRight),
+                    "rl-tb" => self.state.set_orientation(LayoutOrientation::RightLeftTopBottom),
+                    "tb-rl" => self.state.set_orientation(LayoutOrientation::TopBottomRightLeft),
+                    "lr-bt" => self.state.set_orientation(LayoutOrientation::LeftRightBottomTop),
+                    "bt-lr" => self.state.set_orientation(LayoutOrientation::BottomTopLeftRight),
+                    "rl-bt" => self.state.set_orientation(LayoutOrientation::RightLeftBottomTop),
+                    "bt-rl" => self.state.set_orientation(LayoutOrientation::BottomTopRightLeft),
                     _ => return Err(
                         Error::new(ErrorKind::InvalidData,
                                    format!("Invalid parameter value for orientation {}",
@@ -338,7 +338,7 @@ impl EzObject for Layout {
     fn get_contents(&self, state_tree: &mut StateTree) -> PixelMap {
 
         let mut merged_content = PixelMap::new();
-        let mode = state_tree.get_by_path(&self.path).as_layout().mode.clone();
+        let mode = state_tree.get_by_path(&self.path).as_layout().get_mode().clone();
 
         self.set_child_sizes(state_tree);
         merged_content = match mode {
@@ -409,7 +409,7 @@ impl EzObject for Layout {
                          scheduler: &mut SchedulerFrontend) -> bool {
 
         let state = state_tree.get_by_path_mut(&self.path).as_layout_mut();
-        if !state.selected_tab_header.is_empty() {
+        if !state.get_selected_tab_header().is_empty() {
             state.set_active_tab(state.get_selected_tab_header()
                 .strip_suffix("_tab_header").unwrap());
             state.update(scheduler);
@@ -424,11 +424,10 @@ impl EzObject for Layout {
 
         let state = state_tree.get_by_path_mut(&self.path).as_layout_mut();
 
-        let v_edge = if state.border_config.enabled.value
+        let v_edge = if state.get_border_config().enabled.value
         { state.get_effective_size().height + 1 }
         else { state.get_effective_size().height };
-        if state.scrolling_config.is_scrolling_x &&
-            mouse_pos.y == v_edge {
+        if state.get_scrolling_config().is_scrolling_x && mouse_pos.y == v_edge {
 
             let (scrollbar_size, scrollbar_pos) =
                 self.get_horizontal_scrollbar_parameters(
@@ -445,10 +444,10 @@ impl EzObject for Layout {
             }
         }
 
-        let h_edge = if state.border_config.enabled.value
+        let h_edge = if state.get_border_config().enabled.value
             { state.get_effective_size().width + 1 }
             else { state.get_effective_size().width };
-        if state.scrolling_config.is_scrolling_y &&
+        if state.get_scrolling_config().is_scrolling_y &&
             mouse_pos.x == h_edge {
             let (scrollbar_size, scrollbar_pos) = self.get_vertical_scrollbar_parameters(
                 state.get_scrolling_config().original_height,
@@ -476,8 +475,8 @@ impl EzObject for Layout {
 
         let state = state_tree.get_by_path_mut(&self.path).as_layout_mut();
 
-        let offset = if state.border_config.enabled.value { 2 } else { 1 };
-        if state.scrolling_config.is_scrolling_x &&
+        let offset = if state.get_border_config().enabled.value { 2 } else { 1 };
+        if state.get_scrolling_config().is_scrolling_x &&
             mouse_pos.y + offset == state.get_size().height.value {
 
             let (scrollbar_size, scrollbar_pos) =
@@ -487,29 +486,29 @@ impl EzObject for Layout {
                     state.get_scrolling_config().view_start_x);
 
             if previous_pos.is_none() {
-                if mouse_pos.x >= scrollbar_pos && mouse_pos.x <= scrollbar_pos + scrollbar_size {
-                    return true
+                return if mouse_pos.x >= scrollbar_pos && mouse_pos.x <= scrollbar_pos + scrollbar_size {
+                    true
                 } else {
-                    return false
+                    false
                 }
             }
             if previous_pos.unwrap().x > mouse_pos.x &&
                 (mouse_pos.x as isize).abs_diff(previous_pos.unwrap().x as isize)
-                    > state.scrolling_config.view_start_x {
-                state.scrolling_config.view_start_x = 0;
+                    > state.get_scrolling_config().view_start_x {
+                state.get_scrolling_config_mut().view_start_x = 0;
             } else if previous_pos.unwrap().x < mouse_pos.x &&
-                state.scrolling_config.view_start_x + (mouse_pos.x - previous_pos.unwrap().x) >
-                    state.scrolling_config.original_width - state.get_effective_size().width {
-                state.scrolling_config.view_start_x = state.scrolling_config.original_width -
-                    state.get_effective_size().width
+                state.get_scrolling_config().view_start_x + (mouse_pos.x - previous_pos.unwrap().x) >
+                    state.get_scrolling_config().original_width - state.get_effective_size().width {
+                state.get_scrolling_config_mut().view_start_x =
+                    state.get_scrolling_config().original_width - state.get_effective_size().width
             } else {
-                state.scrolling_config.view_start_x =
-                    (state.scrolling_config.view_start_x as isize + mouse_pos.x as isize -
+                state.get_scrolling_config_mut().view_start_x =
+                    (state.get_scrolling_config().view_start_x as isize + mouse_pos.x as isize -
                         previous_pos.unwrap().x as isize) as usize;
             }
             consumed = true;
 
-        } else if state.scrolling_config.is_scrolling_y &&
+        } else if state.get_scrolling_config().is_scrolling_y &&
             mouse_pos.x + offset == state.get_size().width.value {
 
             let (scrollbar_size, scrollbar_pos) =
@@ -519,24 +518,24 @@ impl EzObject for Layout {
                     state.get_scrolling_config().view_start_y);
 
             if previous_pos.is_none() {
-                if mouse_pos.y >= scrollbar_pos && mouse_pos.y <= scrollbar_pos + scrollbar_size {
-                    return true
+                return if mouse_pos.y >= scrollbar_pos && mouse_pos.y <= scrollbar_pos + scrollbar_size {
+                    true
                 } else {
-                    return false
+                    false
                 }
             }
             if previous_pos.unwrap().y > mouse_pos.y &&
                 (mouse_pos.y as isize).abs_diff(previous_pos.unwrap().y as isize)
-                    > state.scrolling_config.view_start_y {
-                state.scrolling_config.view_start_y = 0;
+                    > state.get_scrolling_config().view_start_y {
+                state.get_scrolling_config_mut().view_start_y = 0;
             } else if previous_pos.unwrap().y < mouse_pos.y &&
-                state.scrolling_config.view_start_y + (mouse_pos.y - previous_pos.unwrap().y) >
-                    state.scrolling_config.original_height - state.get_effective_size().height {
-                state.scrolling_config.view_start_y = state.scrolling_config.original_height -
-                    state.get_effective_size().height
+                state.get_scrolling_config().view_start_y + (mouse_pos.y - previous_pos.unwrap().y) >
+                    state.get_scrolling_config().original_height - state.get_effective_size().height {
+                state.get_scrolling_config_mut().view_start_y =
+                    state.get_scrolling_config().original_height - state.get_effective_size().height
             } else {
-                state.scrolling_config.view_start_y =
-                    (state.scrolling_config.view_start_y as isize + mouse_pos.y as isize -
+                state.get_scrolling_config_mut().view_start_y =
+                    (state.get_scrolling_config().view_start_y as isize + mouse_pos.y as isize -
                         previous_pos.unwrap().y as isize) as usize;
             }
             consumed = true;
@@ -550,7 +549,7 @@ impl EzObject for Layout {
                     scheduler: &mut SchedulerFrontend) -> bool {
 
         let state = state_tree.get_by_path_mut(&self.path).as_layout_mut();
-        if state.scrolling_config.is_scrolling_y || state.scrolling_config.is_scrolling_x {
+        if state.get_scrolling_config().is_scrolling_y || state.get_scrolling_config().is_scrolling_x {
             self.handle_scroll_up(state_tree, scheduler);
             return true
         }
@@ -561,7 +560,8 @@ impl EzObject for Layout {
                       scheduler: &mut SchedulerFrontend) -> bool {
 
         let state = state_tree.get_by_path_mut(&self.path).as_layout_mut();
-        if state.scrolling_config.is_scrolling_y || state.scrolling_config.is_scrolling_x {
+        if state.get_scrolling_config().is_scrolling_y ||
+                state.get_scrolling_config().is_scrolling_x {
             self.handle_scroll_down(state_tree, scheduler);
             return true
         }
@@ -574,7 +574,7 @@ impl EzObject for Layout {
         for child in self.children.iter() {
             if let EzObjects::Button(i) = child {
                 let state = state_tree.get_by_path_mut(&self.path).as_layout_mut();
-                state.selected_tab_header = i.id.clone();
+                state.set_selected_tab_header(i.id.clone());
                 state.update(scheduler);
                 return true
             }
@@ -586,7 +586,7 @@ impl EzObject for Layout {
                    scheduler: &mut SchedulerFrontend) -> bool {
 
         let state = state_tree.get_by_path_mut(&self.path).as_layout_mut();
-        state.selected_tab_header.clear();
+        state.get_selected_tab_header().clear();
         state.update(scheduler);
         true
     }
@@ -679,7 +679,7 @@ impl Layout {
 
         let state = state_tree.get_by_path_mut(&self.get_full_path())
             .as_layout_mut();
-        if !state.fill.value { return contents }
+        if !state.get_fill().value { return contents }
 
         let filler = Pixel::new(state.get_filler_symbol().value.clone(),
                                 state.get_color_config().filler_foreground.value,

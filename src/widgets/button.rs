@@ -50,12 +50,12 @@ impl Button {
         -> Result<(), Error> {
 
         let path = self.path.clone();
-        self.state.text.set(load_ez_string_property(
+        self.state.set_text(load_ez_string_property(
             parameter_value.trim(), scheduler, self.path.clone(),
             Box::new(move |state_tree: &mut StateTree, val: EzValues| {
                 let state = state_tree.get_by_path_mut(&path)
                     .as_button_mut();
-                state.text.set(val.as_string().clone());
+                state.set_text(val.as_string().clone());
                 path.clone()
             }))?);
         Ok(())
@@ -100,11 +100,11 @@ impl EzObject for Button {
             .as_button_mut();
 
         let (fg_color, bg_color) =
-            if state.flashing {(state.get_color_config().flash_foreground.value,
+            if state.get_flashing() {(state.get_color_config().flash_foreground.value,
                                 state.get_color_config().flash_background.value)}
             else { state.get_context_colors() };
 
-        let text = state.text.value.clone();
+        let text = state.get_text().value.clone();
 
         let write_width = if state.get_size().infinite_width ||
             state.get_auto_scale().width.value { text.len() + 1 }

@@ -129,8 +129,9 @@ impl EzObject for Checkbox {
             .as_checkbox_mut();
         state.set_width(5);
         state.set_height(1);
-        let active_symbol = { if state.active.value { state.active_symbol.value.clone() }
-                              else { state.inactive_symbol.value.clone() } };
+        let active_symbol =
+            if state.get_active().value { state.get_active_symbol().value.clone() }
+            else { state.get_inactive_symbol().value.clone() };
 
         let (fg_color, bg_color) = state.get_context_colors();
         let mut contents = vec!(

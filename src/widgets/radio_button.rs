@@ -51,12 +51,12 @@ impl RadioButton {
         -> Result<(), Error> {
 
         let path = self.path.clone();
-        self.state.group.set(load_ez_string_property(
+        self.state.set_group(load_ez_string_property(
             parameter_value.trim(), scheduler, path.clone(),
             Box::new(move |state_tree: &mut StateTree, val: EzValues| {
                 let state = state_tree.get_by_path_mut(&path)
                     .as_radio_button_mut();
-                state.group.set(val.as_string().to_owned());
+                state.set_group(val.as_string().to_owned());
                 path.clone()
             }))?);
         Ok(())
@@ -152,8 +152,9 @@ impl EzObject for RadioButton {
             .get_by_path_mut(&self.get_full_path()).as_radio_button_mut();
         state.set_width(5);
         state.set_height(1);
-        let active_symbol = { if state.active.value { state.active_symbol.value.clone() }
-                                    else { state.inactive_symbol.value.clone() }};
+        let active_symbol =
+            if state.get_active().value { state.get_active_symbol().value.clone() }
+            else { state.get_inactive_symbol().value.clone() };
         let (fg_color, bg_color) = state.get_context_colors();
         let mut contents = vec!(
             vec!(Pixel {symbol: "(".to_string(), foreground_color: fg_color,
@@ -212,7 +213,7 @@ impl RadioButton {
 
         // Find all other radio buttons in same group and make them inactive (mutual exclusivity)
         let group_name =
-            state_tree.get_by_path(&self.path).as_radio_button().group.value.clone();
+            state_tree.get_by_path(&self.path).as_radio_button().get_group().value.clone();
         for (path, state) in state_tree.objects.iter_mut() {
             if let EzState::RadioButton(ref mut i) = state {
                 if i.get_group().value == group_name && path != &self.get_full_path() {
@@ -223,7 +224,7 @@ impl RadioButton {
         // Set entered radio button to active and select it
         let state = state_tree.get_by_path_mut(&self.get_full_path())
             .as_radio_button_mut();
-        if !state.active.value {
+        if !state.get_active().value {
             state.set_active(true);
             state.update(scheduler);
             self.on_value_change_callback(state_tree, callback_tree, scheduler);

@@ -392,12 +392,12 @@ pub fn load_border_background_color_property(state: &mut dyn GenericState, prope
 pub fn load_foreground_color_property(state: &mut dyn GenericState, property_value: &str,
                                              scheduler: &mut SchedulerFrontend, path: String) -> Result<(), Error>  {
 
-    state.get_colors_config_mut().foreground.set(load_base_properties::load_ez_color_property(
+    state.get_color_config_mut().foreground.set(load_base_properties::load_ez_color_property(
         property_value.trim(), scheduler, path.clone(),
         Box::new(move |state_tree: &mut StateTree, val: EzValues| {
             let state = state_tree.get_by_path_mut(&path.clone())
                 .as_generic_mut();
-            state.get_colors_config_mut().foreground.set(*val.as_color());
+            state.get_color_config_mut().foreground.set(*val.as_color());
             path.clone()
         }))?);
     Ok(())
@@ -407,12 +407,12 @@ pub fn load_foreground_color_property(state: &mut dyn GenericState, property_val
 pub fn load_background_color_property(state: &mut dyn GenericState, property_value: &str,
                                              scheduler: &mut SchedulerFrontend, path: String) -> Result<(), Error>  {
 
-    state.get_colors_config_mut().background.set(load_base_properties::load_ez_color_property(
+    state.get_color_config_mut().background.set(load_base_properties::load_ez_color_property(
         property_value.trim(), scheduler, path.clone(),
         Box::new(move |state_tree: &mut StateTree, val: EzValues| {
             let state = state_tree.get_by_path_mut(&path.clone())
                 .as_generic_mut();
-            state.get_colors_config_mut().background.set(*val.as_color());
+            state.get_color_config_mut().background.set(*val.as_color());
             path.clone()
         }))?);
     Ok(())
@@ -422,12 +422,12 @@ pub fn load_background_color_property(state: &mut dyn GenericState, property_val
 pub fn load_selection_foreground_color_property(state: &mut dyn GenericState, property_value: &str,
                                              scheduler: &mut SchedulerFrontend, path: String) -> Result<(), Error>  {
 
-    state.get_colors_config_mut().selection_foreground.set(load_base_properties::load_ez_color_property(
+    state.get_color_config_mut().selection_foreground.set(load_base_properties::load_ez_color_property(
         property_value.trim(), scheduler, path.clone(),
         Box::new(move |state_tree: &mut StateTree, val: EzValues| {
             let state = state_tree.get_by_path_mut(&path.clone())
                 .as_generic_mut();
-            state.get_colors_config_mut().selection_foreground.set(*val.as_color());
+            state.get_color_config_mut().selection_foreground.set(*val.as_color());
             path.clone()
         }))?);
     Ok(())
@@ -437,12 +437,12 @@ pub fn load_selection_foreground_color_property(state: &mut dyn GenericState, pr
 pub fn load_selection_background_color_property(state: &mut dyn GenericState, property_value: &str,
                                              scheduler: &mut SchedulerFrontend, path: String) -> Result<(), Error>  {
 
-    state.get_colors_config_mut().selection_background.set(load_base_properties::load_ez_color_property(
+    state.get_color_config_mut().selection_background.set(load_base_properties::load_ez_color_property(
         property_value.trim(), scheduler, path.clone(),
         Box::new(move |state_tree: &mut StateTree, val: EzValues| {
             let state = state_tree.get_by_path_mut(&path.clone())
                 .as_generic_mut();
-            state.get_colors_config_mut().selection_background.set(*val.as_color());
+            state.get_color_config_mut().selection_background.set(*val.as_color());
             path.clone()
         }))?);
     Ok(())
@@ -452,12 +452,12 @@ pub fn load_selection_background_color_property(state: &mut dyn GenericState, pr
 pub fn load_disabled_foreground_color_property(state: &mut dyn GenericState, property_value: &str,
                                              scheduler: &mut SchedulerFrontend, path: String) -> Result<(), Error>  {
 
-    state.get_colors_config_mut().disabled_foreground.set(load_base_properties::load_ez_color_property(
+    state.get_color_config_mut().disabled_foreground.set(load_base_properties::load_ez_color_property(
         property_value.trim(), scheduler, path.clone(),
         Box::new(move |state_tree: &mut StateTree, val: EzValues| {
             let state = state_tree.get_by_path_mut(&path.clone())
                 .as_generic_mut();
-            state.get_colors_config_mut().disabled_foreground.set(*val.as_color());
+            state.get_color_config_mut().disabled_foreground.set(*val.as_color());
             path.clone()
         }))?);
     Ok(())
@@ -467,12 +467,12 @@ pub fn load_disabled_foreground_color_property(state: &mut dyn GenericState, pro
 pub fn load_disabled_background_color_property(state: &mut dyn GenericState, property_value: &str,
                                              scheduler: &mut SchedulerFrontend, path: String) -> Result<(), Error>  {
 
-    state.get_colors_config_mut().disabled_background.set(load_base_properties::load_ez_color_property(
+    state.get_color_config_mut().disabled_background.set(load_base_properties::load_ez_color_property(
         property_value.trim(), scheduler, path.clone(),
         Box::new(move |state_tree: &mut StateTree, val: EzValues| {
             let state = state_tree.get_by_path_mut(&path.clone())
                 .as_generic_mut();
-            state.get_colors_config_mut().disabled_background.set(*val.as_color());
+            state.get_color_config_mut().disabled_background.set(*val.as_color());
             path.clone()
         }))?);
     Ok(())
@@ -482,12 +482,12 @@ pub fn load_disabled_background_color_property(state: &mut dyn GenericState, pro
 pub fn load_tab_foreground_color_property(state: &mut dyn GenericState, property_value: &str,
                                              scheduler: &mut SchedulerFrontend, path: String) -> Result<(), Error>  {
 
-    state.get_colors_config_mut().tab_foreground.set(load_base_properties::load_ez_color_property(
+    state.get_color_config_mut().tab_foreground.set(load_base_properties::load_ez_color_property(
         property_value.trim(), scheduler, path.clone(),
         Box::new(move |state_tree: &mut StateTree, val: EzValues| {
             let state = state_tree.get_by_path_mut(&path.clone())
                 .as_generic_mut();
-            state.get_colors_config_mut().tab_foreground.set(*val.as_color());
+            state.get_color_config_mut().tab_foreground.set(*val.as_color());
             path.clone()
         }))?);
     Ok(())
@@ -497,12 +497,12 @@ pub fn load_tab_foreground_color_property(state: &mut dyn GenericState, property
 pub fn load_tab_background_color_property(state: &mut dyn GenericState, property_value: &str,
                                              scheduler: &mut SchedulerFrontend, path: String) -> Result<(), Error>  {
 
-    state.get_colors_config_mut().tab_background.set(load_base_properties::load_ez_color_property(
+    state.get_color_config_mut().tab_background.set(load_base_properties::load_ez_color_property(
         property_value.trim(), scheduler, path.clone(),
         Box::new(move |state_tree: &mut StateTree, val: EzValues| {
             let state = state_tree.get_by_path_mut(&path.clone())
                 .as_generic_mut();
-            state.get_colors_config_mut().tab_background.set(*val.as_color());
+            state.get_color_config_mut().tab_background.set(*val.as_color());
             path.clone()
         }))?);
     Ok(())
@@ -513,12 +513,12 @@ pub fn load_flash_foreground_color_property(state: &mut dyn GenericState, proper
                                              scheduler: &mut SchedulerFrontend, path: String)
     -> Result<(), Error>  {
 
-    state.get_colors_config_mut().flash_foreground.set(load_base_properties::load_ez_color_property(
+    state.get_color_config_mut().flash_foreground.set(load_base_properties::load_ez_color_property(
         property_value.trim(), scheduler, path.clone(),
         Box::new(move |state_tree: &mut StateTree, val: EzValues| {
             let state = state_tree.get_by_path_mut(&path.clone())
                 .as_generic_mut();
-            state.get_colors_config_mut().flash_foreground.set(*val.as_color());
+            state.get_color_config_mut().flash_foreground.set(*val.as_color());
             path.clone()
         }))?);
     Ok(())
@@ -529,12 +529,12 @@ pub fn load_flash_background_color_property(state: &mut dyn GenericState, proper
                                              scheduler: &mut SchedulerFrontend, path: String)
     -> Result<(), Error>  {
 
-    state.get_colors_config_mut().flash_background.set(load_base_properties::load_ez_color_property(
+    state.get_color_config_mut().flash_background.set(load_base_properties::load_ez_color_property(
         property_value.trim(), scheduler, path.clone(),
         Box::new(move |state_tree: &mut StateTree, val: EzValues| {
             let state = state_tree.get_by_path_mut(&path.clone())
                 .as_generic_mut();
-            state.get_colors_config_mut().flash_background.set(*val.as_color());
+            state.get_color_config_mut().flash_background.set(*val.as_color());
             path.clone()
         }))?);
     Ok(())
@@ -545,12 +545,12 @@ pub fn load_fill_foreground_color_property(state: &mut dyn GenericState, propert
                                              scheduler: &mut SchedulerFrontend, path: String)
     -> Result<(), Error>  {
 
-    state.get_colors_config_mut().filler_foreground.set(load_base_properties::load_ez_color_property(
+    state.get_color_config_mut().filler_foreground.set(load_base_properties::load_ez_color_property(
         property_value.trim(), scheduler, path.clone(),
         Box::new(move |state_tree: &mut StateTree, val: EzValues| {
             let state = state_tree.get_by_path_mut(&path.clone())
                 .as_generic_mut();
-            state.get_colors_config_mut().filler_foreground.set(*val.as_color());
+            state.get_color_config_mut().filler_foreground.set(*val.as_color());
             path.clone()
         }))?);
     Ok(())
@@ -561,13 +561,13 @@ pub fn load_fill_background_color_property(state: &mut dyn GenericState, propert
                                              scheduler: &mut SchedulerFrontend, path: String)
     -> Result<(), Error>  {
 
-    state.get_colors_config_mut().filler_background.set(
+    state.get_color_config_mut().filler_background.set(
         load_base_properties::load_ez_color_property(
         property_value.trim(), scheduler, path.clone(),
         Box::new(move |state_tree: &mut StateTree, val: EzValues| {
             let state = state_tree.get_by_path_mut(&path.clone())
                 .as_generic_mut();
-            state.get_colors_config_mut().filler_background.set(*val.as_color());
+            state.get_color_config_mut().filler_background.set(*val.as_color());
             path.clone()
         }))?);
     Ok(())
@@ -578,12 +578,12 @@ pub fn load_cursor_background_color_property(state: &mut dyn GenericState, prope
                                            scheduler: &mut SchedulerFrontend, path: String)
     -> Result<(), Error>  {
 
-    state.get_colors_config_mut().cursor.set(load_base_properties::load_ez_color_property(
+    state.get_color_config_mut().cursor.set(load_base_properties::load_ez_color_property(
         property_value.trim(), scheduler, path.clone(),
         Box::new(move |state_tree: &mut StateTree, val: EzValues| {
             let state = state_tree.get_by_path_mut(&path.clone())
                 .as_generic_mut();
-            state.get_colors_config_mut().cursor.set(*val.as_color());
+            state.get_color_config_mut().cursor.set(*val.as_color());
             path.clone()
         }))?);
     Ok(())
