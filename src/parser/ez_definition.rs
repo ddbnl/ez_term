@@ -118,11 +118,11 @@ impl EzWidgetDefinition {
             }
             if self.is_root {
                 let terminal_size = size().unwrap();
-                if obj.state.get_size().width.get() == &0 {
-                    obj.state.get_size_mut().width.set(terminal_size.0 as usize);
+                if obj.state.get_size().get_width() == 0 {
+                    obj.state.get_size_mut().set_width(terminal_size.0 as usize);
                 }
-                if obj.state.get_size().height.get() == &0 {
-                    obj.state.get_size_mut().height.set(terminal_size.1 as usize);
+                if obj.state.get_size().get_height() == 0 {
+                    obj.state.get_size_mut().set_height(terminal_size.1 as usize);
                 }
             }
             return EzObjects::Layout(obj)

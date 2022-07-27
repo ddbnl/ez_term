@@ -48,7 +48,7 @@ fn main() {
         scheduler.new_usize_property("progress_property", 0);
     let value_property_callback = |context: EzContext| {
         let val = context.state_tree.get_by_id("progress_bar")
-            .as_progress_bar().get_value().value;
+            .as_progress_bar().get_value();
         let state = context.state_tree.get_by_id_mut("progress_label")
             .as_label_mut();
         state.set_text(format!("{}%", val));
@@ -116,7 +116,7 @@ fn main() {
         }
         let state = context.state_tree.get_by_id_mut(&context.widget_path)
             .as_canvas_mut();
-        state.get_color_config_mut().foreground.set(color);
+        state.get_color_config_mut().set_foreground(color);
         state.update(context.scheduler);
         true
     };
@@ -145,7 +145,7 @@ fn test_checkbox_on_value_change(context: EzContext) -> bool {
     // parameter as a key. The state contains the current value. Then we cast the generic widget
     // state as a CheckboxState, so we can access all its fields. Then we check the 'active' field.
     let enabled = context.state_tree
-        .get_by_path(&context.widget_path).as_checkbox().get_active().value;
+        .get_by_path(&context.widget_path).as_checkbox().get_active();
     // Now we will create a text and a color depending on whether the checkbox was turned on or off
     let text = if enabled {"Enabled"} else {"Disabled"};
     let color = if enabled {Color::Green} else {Color::Red};
@@ -154,7 +154,7 @@ fn test_checkbox_on_value_change(context: EzContext) -> bool {
     let label_state = context.state_tree
         .get_by_id_mut("checkbox_label").as_label_mut();
     label_state.get_text_mut().set(text.to_string());
-    label_state.get_color_config_mut().foreground.set(color);
+    label_state.get_color_config_mut().set_foreground(color);
     false
 }
 
@@ -167,19 +167,19 @@ fn test_slider_on_value_change(context: EzContext) -> bool {
     // parameter as a key. The state contains the current value.
     let state = context.state_tree
         .get_by_path(&context.widget_path).as_slider();
-    let value = state.get_value().value;
+    let value = state.get_value();
     // Now we will create a text and a color depending on whether the checkbox was turned on or off
     let text = value.to_string();
     let color =
-        if state.get_value().value as f32 / state.get_maximum().value as f32 <= 1.0/3.0 {Color::Red}
-        else if state.get_value().value as f32 / state.get_maximum().value as f32 <= 2.0/3.0 {Color::Yellow}
+        if state.get_value() as f32 / state.get_maximum() as f32 <= 1.0/3.0 {Color::Red}
+        else if state.get_value() as f32 / state.get_maximum() as f32 <= 2.0/3.0 {Color::Yellow}
         else {Color::Green};
     // Next we will retrieve a label widget state and change the text and color field. This will
     // cause the text to change on the next frame.
     let label_state = context.state_tree
         .get_by_id_mut("slider_label").as_label_mut();
     label_state.get_text_mut().set(text);
-    label_state.get_color_config_mut().foreground.set(color);
+    label_state.get_color_config_mut().set_foreground(color);
     label_state.update(context.scheduler);
     false
 }
@@ -199,13 +199,13 @@ fn test_radio_button_on_value_change(context: EzContext) -> bool {
         .get_by_path(&context.widget_path).as_radio_button().get_id();
     // Now we will get the radio button state because we need to know its' color.
     let color = context.state_tree
-        .get_by_path(&context.widget_path).as_radio_button().get_color_config().foreground.value;
+        .get_by_path(&context.widget_path).as_radio_button().get_color_config().get_foreground();
     // Next we will retrieve a label widget and change the 'text' field of its' state to the ID of
     // the radio button that became active. This will cause the text to change on the next frame.
     let label_state = context.state_tree
         .get_by_id_mut("radio_label").as_label_mut();
     label_state.get_text_mut().set(name);
-    label_state.get_color_config_mut().foreground.set(color);
+    label_state.get_color_config_mut().set_foreground(color);
     false
 }
 
@@ -216,7 +216,7 @@ fn test_dropdown_on_value_change(context: EzContext) -> bool {
     // parameter as a key. The state contains the current value. Then we cast the generic widget
     // state as a DropdownState, so we can access all its fields.
     let value = context.state_tree
-        .get_by_path(&context.widget_path).as_dropdown().get_choice().value.clone();
+        .get_by_path(&context.widget_path).as_dropdown().get_choice();
     // Next we will retrieve a label widget and change the 'text' field of its' state. This will
     // cause the text to change on the next frame.
     context.state_tree
@@ -234,7 +234,7 @@ fn test_text_input_on_keyboard_enter(context: EzContext) -> bool {
     // state as a TextInputState, so we can access all its fields.
     let text_input_state = context.state_tree
         .get_by_path_mut(&context.widget_path).as_text_input_mut();
-    let value = text_input_state.get_text().value.clone();
+    let value = text_input_state.get_text();
     // Now we will set the selected field of the text input state to false. This will deselect the
     // widget on the next frame.
     text_input_state.set_selected(false);
@@ -256,7 +256,7 @@ fn test_on_button_press(context: EzContext) -> bool {
         .get_by_id_mut("button_label")
         .as_label_mut();
     let number: usize =
-        label_state.get_text().value.split_once(':')
+        label_state.get_text().split_once(':')
             .unwrap().1.trim().split_once("times")
             .unwrap().0.trim().parse().unwrap();
     label_state.set_text(format!("Clicked: {} times", number + 1));

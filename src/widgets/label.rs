@@ -102,33 +102,34 @@ impl EzObject for Label {
             file.read_to_string(&mut text).expect("Unable to read file");
         // or take text from widget state
         } else {
-            text = state.get_text().value.clone();
+            text = state.get_text();
         }
         
         let chunk_size =
-            if state.get_size().infinite_width || state.get_auto_scale().width.value {text.len() + 1}
+            if state.get_size().get_infinite_width() ||
+                state.get_auto_scale().get_width() {text.len() + 1}
             else {state.get_effective_size().width};
         let content_lines = wrap_text(text, chunk_size);
         // If content is scrolled simply scale to length of content on that axis
-        if state.get_size().infinite_width {
+        if state.get_size().get_infinite_width() {
             let longest_line = content_lines.iter().map(|x| x.len()).max();
             let width = if let Some(i) = longest_line { i } else { 0 };
             state.set_effective_width(width);
         }
-        if state.get_size().infinite_height {
+        if state.get_size().get_infinite_height() {
             let height = content_lines.len();
             state.set_effective_height(height);
         }
         // If user wants to autoscale we set size to size of content or if that does not it to
         // size of the widget
-        if state.get_auto_scale().width.value {
+        if state.get_auto_scale().get_width() {
             let longest_line = content_lines.iter().map(|x| x.len()).max();
             let auto_scale_width = if let Some(i) = longest_line { i } else { 0 };
             if auto_scale_width < state.get_effective_size().width {
                 state.set_effective_width(auto_scale_width);
             }
         }
-        if state.get_auto_scale().height.value {
+        if state.get_auto_scale().get_height() {
             let auto_scale_height = content_lines.len();
             if auto_scale_height < state.get_effective_size().height {
                 state.set_effective_height(auto_scale_height);
@@ -143,30 +144,31 @@ impl EzObject for Label {
                 if y < content_lines.len() && x < content_lines[y].len() {
                     new_y.push(Pixel {
                         symbol: content_lines[y][x..x+1].to_string(),
-                        foreground_color: state.get_color_config().foreground.value,
-                        background_color: state.get_color_config().background.value,
+                        foreground_color: state.get_color_config().get_foreground(),
+                        background_color: state.get_color_config().get_background(),
                         underline: false
                     })
                 } else {
                     new_y.push(Pixel {
                         symbol: " ".to_string(),
-                        foreground_color: state.get_color_config().foreground.value,
-                        background_color: state.get_color_config().background.value,
+                        foreground_color: state.get_color_config().get_foreground(),
+                        background_color: state.get_color_config().get_background(),
                         underline: false
                     })
                 }
             }
             contents.push(new_y);
         }
-        if state.get_border_config().enabled.value {
-            contents = add_border(contents, state.get_border_config());
+        if state.get_border_config().get_enabled() {
+            contents = add_border(contents, state.get_border_config(),
+                                 state.get_color_config());
         }
         let state = state_tree.get_by_path(&self.get_full_path()).as_label();
         let parent_colors = state_tree.get_by_path(self.get_full_path()
             .rsplit_once('/').unwrap().0).as_generic().get_color_config();
         contents = add_padding(
-            contents, state.get_padding(), parent_colors.background.value,
-            parent_colors.foreground.value);
+            contents, state.get_padding(), parent_colors.get_background(),
+            parent_colors.get_foreground());
         contents
     }
 }

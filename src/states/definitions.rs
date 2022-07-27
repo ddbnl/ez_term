@@ -79,29 +79,29 @@ pub struct TableConfig {
 
     /// Maximum amount of rows. Usually you want to set either the maximum amount of rows or the
     /// maximum amount of columns, and let the other one grow with the amount of content
-    pub rows: EzProperty<usize>,
+    rows: EzProperty<usize>,
 
     /// Maximum amount of columns. Usually you want to set either the maximum amount of rows or the
     /// maximum amount of columns, and let the other one grow with the amount of content
-    pub columns: EzProperty<usize>,
+    columns: EzProperty<usize>,
 
     /// Default height of rows. If kept at 0, it will be set to the height of the parent divided by
     /// the amount of rows. If force_default_height is false, widgets are allowed to be larger
     /// than default_height, in which case each row will grow to its' largest widget.
-    pub default_height: EzProperty<usize>,
+    default_height: EzProperty<usize>,
 
     /// Default width of columns. If kept at 0, it will be set to the width of the parent divided by
     /// the amount of columns. If force_default_width is false, widgets are allowed to be larger
     /// than default_width, in which case each column will grow to its' largest widget.
-    pub default_width: EzProperty<usize>,
+    default_width: EzProperty<usize>,
 
     /// Each row will be exactly default_height. If default_height is 0, it will be set to the
     /// height of the parent divided by the amount of rows.
-    pub force_default_height: EzProperty<bool>,
+    force_default_height: EzProperty<bool>,
 
     /// Each column will be exactly default_width. If default_width is 0, it will be set to the
     /// width of the parent divided by the amount of columns.
-    pub force_default_width: EzProperty<bool>,
+    force_default_width: EzProperty<bool>,
 }
 impl TableConfig {
 
@@ -134,6 +134,54 @@ impl TableConfig {
         }
     }
 
+    pub fn set_rows(&mut self, rows: usize) {
+        self.rows.set(rows);
+    }
+
+    pub fn get_rows(&self) -> usize {
+        self.rows.value
+    }
+
+    pub fn set_columns(&mut self, columns: usize) {
+        self.columns.set(columns);
+    }
+
+    pub fn get_columns(&self) -> usize {
+        self.columns.value
+    }
+
+    pub fn set_default_height(&mut self, default: usize) {
+        self.default_height.set(default);
+    }
+
+    pub fn get_default_height(&self) -> usize {
+        self.default_height.value
+    }
+
+    pub fn set_default_width(&mut self, default: usize) {
+        self.default_width.set(default);
+    }
+
+    pub fn get_default_width(&self) -> usize {
+        self.default_width.value
+    }
+
+    pub fn set_force_default_height(&mut self, force: bool) {
+        self.force_default_height.set(force);
+    }
+
+    pub fn get_force_default_height(&self) -> bool {
+        self.force_default_height.value
+    }
+
+    pub fn set_force_default_width(&mut self, force: bool) {
+        self.force_default_width.set(force);
+    }
+
+    pub fn get_force_default_width(&self) -> bool {
+        self.force_default_width.value
+    }
+
     pub fn clean_up_properties(&self, scheduler: &mut SchedulerFrontend) {
         clean_up_property(scheduler, &self.rows.name);
         clean_up_property(scheduler, &self.columns.name);
@@ -146,10 +194,10 @@ impl TableConfig {
 /// Convenience wrapper around a size tuple.
 #[derive(PartialEq, Clone, Debug)]
 pub struct StateSize {
-    pub width: EzProperty<usize>,
-    pub height: EzProperty<usize>,
-    pub infinite_width: bool,
-    pub infinite_height: bool,
+    width: EzProperty<usize>,
+    height: EzProperty<usize>,
+    infinite_width: bool,
+    infinite_height: bool,
 }
 impl StateSize {
 
@@ -167,6 +215,26 @@ impl StateSize {
         }
     }
 
+    pub fn set_width(&mut self, width: usize) { self.width.set(width); }
+
+    pub fn get_width(&self) -> usize { self.width.value }
+
+    pub fn set_height(&mut self, height: usize) { self.height.set(height); }
+
+    pub fn get_height(&self) -> usize { self.height.value }
+
+    pub fn set_infinite_width(&mut self, force: bool) {
+        self.infinite_width = force;
+    }
+
+    pub fn get_infinite_width(&self) -> bool { self.infinite_width }
+
+    pub fn set_infinite_height(&mut self, force: bool) {
+        self.infinite_height = force;
+    }
+
+    pub fn get_infinite_height(&self) -> bool { self.infinite_height }
+
     pub fn clean_up_properties(&self, scheduler: &mut SchedulerFrontend) {
         clean_up_property(scheduler, &self.width.name);
         clean_up_property(scheduler, &self.height.name);
@@ -177,8 +245,8 @@ impl StateSize {
 /// Convenience wrapper around an XY tuple.
 #[derive(PartialEq, Clone, Debug)]
 pub struct StateCoordinates {
-    pub x: EzProperty<usize>,
-    pub y: EzProperty<usize>,
+    x: EzProperty<usize>,
+    y: EzProperty<usize>,
 }
 impl StateCoordinates {
     pub fn new(x: usize, y: usize, name: String, scheduler: &mut SchedulerFrontend) -> Self {
@@ -193,6 +261,20 @@ impl StateCoordinates {
         }
     }
 
+    pub fn set_x(&mut self, x: usize) { self.x.set(x); }
+
+    pub fn get_x(&self) -> usize {
+        self.x.value
+    }
+
+    pub fn set_y(&mut self, y: usize) {
+        self.y.set(y);
+    }
+
+    pub fn get_y(&self) -> usize {
+        self.y.value
+    }
+
     pub fn clean_up_properties(&self, scheduler: &mut SchedulerFrontend) {
         clean_up_property(scheduler, &self.x.name);
         clean_up_property(scheduler, &self.y.name);
@@ -203,8 +285,8 @@ impl StateCoordinates {
 /// Convenience wrapper around an size_hint tuple.
 #[derive(PartialEq, Clone, Debug)]
 pub struct AutoScale {
-    pub width: EzProperty<bool>,
-    pub height: EzProperty<bool>,
+    width: EzProperty<bool>,
+    height: EzProperty<bool>,
 }
 impl AutoScale {
 
@@ -218,6 +300,21 @@ impl AutoScale {
         AutoScale{width: width_property, height: height_property}
     }
 
+    pub fn set_width(&mut self, width: bool) {
+        self.width.set(width);
+    }
+
+    pub fn get_width(&self) -> bool {
+        self.width.value
+    }
+
+    pub fn set_height(&mut self, height: bool) {
+        self.height.set(height);
+    }
+
+    pub fn get_height(&self) -> bool {
+        self.height.value
+    }
     pub fn clean_up_properties(&self, scheduler: &mut SchedulerFrontend) {
         clean_up_property(scheduler, &self.width.name);
         clean_up_property(scheduler, &self.height.name);
@@ -228,10 +325,11 @@ impl AutoScale {
 /// Convenience wrapper around an size_hint tuple.
 #[derive(PartialEq, Clone, Debug)]
 pub struct SizeHint {
-    pub x: EzProperty<Option<f64>>,
-    pub y: EzProperty<Option<f64>>,
+    x: EzProperty<Option<f64>>,
+    y: EzProperty<Option<f64>>,
 }
 impl SizeHint {
+
     pub fn new(x: Option<f64>, y: Option<f64>, name: String, scheduler: &mut SchedulerFrontend)
         -> Self {
         let x_property =
@@ -241,6 +339,22 @@ impl SizeHint {
             scheduler.new_size_hint_property(format!("{}/size_hint_height", name).as_str(),
                                         y);
         SizeHint{x: x_property, y: y_property}
+    }
+
+    pub fn set_x(&mut self, x: Option<f64>) {
+        self.x.set(x);
+    }
+
+    pub fn get_x(&self) -> Option<f64> {
+        self.x.value
+    }
+
+    pub fn set_y(&mut self, y: Option<f64>) {
+        self.y.set(y);
+    }
+
+    pub fn get_y(&self) -> Option<f64> {
+        self.y.value
     }
 
     pub fn clean_up_properties(&self, scheduler: &mut SchedulerFrontend) {
@@ -253,8 +367,8 @@ impl SizeHint {
 /// Convenience wrapper around an pos_hint tuple.
 #[derive(PartialEq, Clone, Debug)]
 pub struct PosHint {
-    pub x: EzProperty<Option<(HorizontalAlignment, f64)>>,
-    pub y: EzProperty<Option<(VerticalAlignment, f64)>>,
+    x: EzProperty<Option<(HorizontalAlignment, f64)>>,
+    y: EzProperty<Option<(VerticalAlignment, f64)>>,
 }
 impl PosHint {
 
@@ -267,6 +381,22 @@ impl PosHint {
             scheduler.new_vertical_pos_hint_property(
                 format!("{}/pos_hint_y", name).as_str(),y);
         PosHint{x: x_property, y: y_property}
+    }
+
+    pub fn set_x(&mut self, x: Option<(HorizontalAlignment, f64)>) {
+        self.x.set(x);
+    }
+
+    pub fn get_x(&self) -> Option<(HorizontalAlignment, f64)> {
+        self.x.value
+    }
+
+    pub fn set_y(&mut self, y: Option<(VerticalAlignment, f64)>) {
+        self.y.set(y);
+    }
+
+    pub fn get_y(&self) -> Option<(VerticalAlignment, f64)> {
+        self.y.value
     }
 
     pub fn clean_up_properties(&self, scheduler: &mut SchedulerFrontend) {
@@ -481,30 +611,30 @@ pub type KeyMap = HashMap<KeyCode, KeyboardCallbackFunction>;
 pub struct ScrollingConfig {
 
     /// Bool representing whether the x axis should be able to scroll
-    pub enable_x: EzProperty<bool>,
+    enable_x: EzProperty<bool>,
 
     /// Bool representing whether the y axis should be able to scroll
-    pub enable_y: EzProperty<bool>,
+    enable_y: EzProperty<bool>,
 
     /// Start of the view on the x axis, content is shown from here until view_start_x + width
-    pub view_start_x: usize,
+    view_start_x: usize,
 
     /// Start of the view on the y axis, content is shown from here until view_start_y + height
-    pub view_start_y: usize,
+    view_start_y: usize,
 
     /// Bool representing whether the owning object is actually scrolling, as it is possible for
     /// scrolling to be enabled but not active (i.e. content already fits within object)
-    pub is_scrolling_x: bool,
+    is_scrolling_x: bool,
 
     /// Bool representing whether the owning object is actually scrolling, as it is possible for
     /// scrolling to be enabled but not active (i.e. content already fits within object)
-    pub is_scrolling_y: bool,
+    is_scrolling_y: bool,
 
     /// Original height of the content being scrolled
-    pub original_height: usize,
+    original_height: usize,
 
     /// Original width of the content being scrolled
-    pub original_width: usize,
+    original_width: usize,
 }
 impl ScrollingConfig {
 
@@ -527,6 +657,71 @@ impl ScrollingConfig {
             original_width: 0
         }
     }
+
+    pub fn set_enable_x(&mut self, x: bool) {
+        self.enable_x.set(x);
+    }
+
+    pub fn get_enable_x(&self) -> bool {
+        self.enable_x.value
+    }
+
+    pub fn set_enable_y(&mut self, y: bool) {
+        self.enable_y.set(y);
+    }
+
+    pub fn get_enable_y(&self) -> bool {
+        self.enable_y.value
+    }
+
+    pub fn set_view_start_x(&mut self, view_start: usize) {
+        self.view_start_x = view_start;
+    }
+
+    pub fn get_view_start_x(&self) -> usize {
+        self.view_start_x
+    }
+
+    pub fn set_view_start_y(&mut self, view_start: usize) {
+        self.view_start_y = view_start;
+    }
+
+    pub fn get_view_start_y(&self) -> usize {
+        self.view_start_y
+    }
+
+    pub fn set_original_height(&mut self, height: usize) {
+        self.original_height = height;
+    }
+
+    pub fn get_original_height(&self) -> usize {
+        self.original_height
+    }
+
+    pub fn set_original_width(&mut self, width: usize) {
+        self.original_width = width;
+    }
+
+    pub fn get_original_width(&self) -> usize {
+        self.original_width
+    }
+
+    pub fn set_is_scrolling_x(&mut self, x: bool) {
+        self.is_scrolling_x = x;
+    }
+
+    pub fn get_is_scrolling_x(&self) -> bool {
+        self.is_scrolling_x
+    }
+
+    pub fn set_is_scrolling_y(&mut self, y: bool) {
+        self.is_scrolling_y = y;
+    }
+
+    pub fn get_is_scrolling_y(&self) -> bool {
+        self.is_scrolling_y
+    }
+
     pub fn clean_up_properties(&self, scheduler: &mut SchedulerFrontend) {
         clean_up_property(scheduler, &self.enable_x.name);
         clean_up_property(scheduler, &self.enable_y.name);
@@ -539,31 +734,25 @@ impl ScrollingConfig {
 pub struct BorderConfig {
 
     /// Bool representing whether an object should have a border
-    pub enabled: EzProperty<bool>,
+    enabled: EzProperty<bool>,
 
     /// The [Pixel.symbol] to use for the horizontal border if [border] is true
-    pub horizontal_symbol: EzProperty<String>,
+    horizontal_symbol: EzProperty<String>,
     
     /// The [Pixel.symbol] to use for the vertical border if [border] is true
-    pub vertical_symbol: EzProperty<String>,
+    vertical_symbol: EzProperty<String>,
     
     /// The [Pixel.symbol] to use for the top left border if [border] is true
-    pub top_left_symbol: EzProperty<String>,
+    top_left_symbol: EzProperty<String>,
     
     /// The [Pixel.symbol] to use for the top right border if [border] is true
-    pub top_right_symbol: EzProperty<String>,
+    top_right_symbol: EzProperty<String>,
     
     /// The [Pixel.symbol] to use for the bottom left border if [border] is true
-    pub bottom_left_symbol: EzProperty<String>,
+    bottom_left_symbol: EzProperty<String>,
     
     /// The [Pixel.symbol] to use for the bottom right border if [border] is true
-    pub bottom_right_symbol: EzProperty<String>,
-    
-    /// The [Pixel.foreground_color]  to use for the border if [border] is true
-    pub fg_color: EzProperty<Color>,
-    
-    /// The [Pixel.background_color] to use for the border if [border] is true
-    pub bg_color: EzProperty<Color>,
+    bottom_right_symbol: EzProperty<String>,
 }
 
 impl BorderConfig {
@@ -575,28 +764,23 @@ impl BorderConfig {
                                         enable);
         let horizontal_symbol =
             scheduler.new_string_property(format!("{}/border_horizontal", name).as_str(),
-                                          "━".to_string());
+                                          "─".to_string());
         let vertical_symbol =
             scheduler.new_string_property(format!("{}/border_vertical", name).as_str(),
                                           "│".to_string());
         let top_left_symbol =
             scheduler.new_string_property(format!("{}/border_top_left", name).as_str(),
-                                          "┍".to_string());
+                                          "┌".to_string());
         let top_right_symbol =
             scheduler.new_string_property(format!("{}/border_top_right", name).as_str(),
-                                          "┑".to_string());
+                                          "┐".to_string());
         let bottom_left_symbol =
             scheduler.new_string_property(format!("{}/border_bottom_left", name).as_str(),
-                                          "┕".to_string());
+                                          "└".to_string());
         let bottom_right_symbol =
             scheduler.new_string_property(format!("{}/border_bottom_right", name).as_str(),
-                                          "┙".to_string());
-        let fg_color =
-            scheduler.new_color_property(format!("{}/border_fg_color", name).as_str(),
-                                          Color::White);
-        let bg_color =
-            scheduler.new_color_property(format!("{}/border_bg_color", name).as_str(),
-                                         Color::Black);
+                                          "┘".to_string());
+
 
        BorderConfig {
            enabled: enabled_property,
@@ -606,9 +790,63 @@ impl BorderConfig {
            top_right_symbol,
            bottom_left_symbol,
            bottom_right_symbol,
-           fg_color,
-           bg_color,
-       } 
+       }
+    }
+
+    pub fn set_enabled(&mut self, enabled: bool) {
+        self.enabled.set(enabled);
+    }
+
+    pub fn get_enabled(&self) -> bool {
+        self.enabled.value
+    }
+
+    pub fn set_horizontal_symbol(&mut self, symbol: String) {
+        self.horizontal_symbol.set(symbol);
+    }
+
+    pub fn get_horizontal_symbol(&self) -> String {
+        self.horizontal_symbol.value.clone()
+    }
+
+    pub fn set_vertical_symbol(&mut self, symbol: String) {
+        self.vertical_symbol.set(symbol);
+    }
+
+    pub fn get_vertical_symbol(&self) -> String {
+        self.vertical_symbol.value.clone()
+    }
+
+    pub fn set_top_left_symbol(&mut self, symbol: String) {
+        self.top_left_symbol.set(symbol);
+    }
+
+    pub fn get_top_left_symbol(&self) -> String {
+        self.top_left_symbol.value.clone()
+    }
+
+    pub fn set_top_right_symbol(&mut self, symbol: String) {
+        self.top_right_symbol.set(symbol);
+    }
+
+    pub fn get_top_right_symbol(&self) -> String {
+        self.top_right_symbol.value.clone()
+    }
+
+    pub fn set_bottom_left_symbol(&mut self, symbol: String) {
+        self.bottom_left_symbol.set(symbol);
+    }
+
+    pub fn get_bottom_left_symbol(&self) -> String {
+        self.bottom_left_symbol.value.clone()
+    }
+
+    pub fn set_bottom_right_symbol(&mut self, symbol: String) {
+        self.bottom_right_symbol.set(symbol);
+    }
+
+    pub fn get_bottom_right_symbol(&self) -> String {
+        self.bottom_right_symbol.value.clone()
     }
 
     pub fn clean_up_properties(&self, scheduler: &mut SchedulerFrontend) {
@@ -619,8 +857,6 @@ impl BorderConfig {
         clean_up_property(scheduler, &self.top_right_symbol.name);
         clean_up_property(scheduler, &self.bottom_left_symbol.name);
         clean_up_property(scheduler, &self.bottom_right_symbol.name);
-        clean_up_property(scheduler, &self.fg_color.name);
-        clean_up_property(scheduler, &self.bg_color.name);
     }
 }
 
@@ -629,50 +865,56 @@ impl BorderConfig {
 pub struct ColorConfig {
 
     /// The [Pixel.foreground_color] to use for this widgets' content
-    pub foreground: EzProperty<Color>,
+    foreground: EzProperty<Color>,
 
     /// The [Pixel.background_color] to use for this widgets' content
-    pub background: EzProperty<Color>,
+    background: EzProperty<Color>,
 
     /// The [Pixel.foreground_color] to use for this widgets' content when selected
-    pub selection_foreground: EzProperty<Color>,
+    selection_foreground: EzProperty<Color>,
 
     /// The [Pixel.background_color] to use for this widgets' content when selected
-    pub selection_background: EzProperty<Color>,
+    selection_background: EzProperty<Color>,
 
     /// The [Pixel.foreground_color] to use for this widgets' content is disabled
-    pub disabled_foreground: EzProperty<Color>,
+    disabled_foreground: EzProperty<Color>,
 
     /// The [Pixel.background_color] to use for this widgets' content is disabled
-    pub disabled_background: EzProperty<Color>,
+    disabled_background: EzProperty<Color>,
 
     /// The [Pixel.foreground_color] to use for this widgets' content is active
-    pub active_foreground: EzProperty<Color>,
+    active_foreground: EzProperty<Color>,
 
     /// The [Pixel.background_color] to use for this widgets' content is active
-    pub active_background: EzProperty<Color>,
+    active_background: EzProperty<Color>,
 
     /// The [Pixel.foreground_color] to use for this widgets' content when flashed
-    pub flash_foreground: EzProperty<Color>,
+    flash_foreground: EzProperty<Color>,
 
     /// The [Pixel.background_color] to use for this widgets' content when flashed
-    pub flash_background: EzProperty<Color>,
+    flash_background: EzProperty<Color>,
 
     /// The [Pixel.foreground_color] to use for tab headers
-    pub tab_foreground: EzProperty<Color>,
+    tab_foreground: EzProperty<Color>,
 
     /// The [Pixel.background_color] to use for tab headers
-    pub tab_background: EzProperty<Color>,
+    tab_background: EzProperty<Color>,
 
     /// The [Pixel.foreground_color] to use for filler pixels if [fill] is true
-    pub filler_foreground: EzProperty<Color>,
+    filler_foreground: EzProperty<Color>,
 
     /// The [Pixel.background_color] to use for filler pixels if [fill] is true
-    pub filler_background: EzProperty<Color>,
+    filler_background: EzProperty<Color>,
+
+    /// The [Pixel.foreground_color] to use for border pixels
+    border_foreground: EzProperty<Color>,
+
+    /// The [Pixel.background_color] to use for border pixels
+    border_background: EzProperty<Color>,
 
     /// The [Pixel.background_color] to use for this widgets' content when a position has been
     /// highlighted by the blinking cursor
-    pub cursor: EzProperty<Color>,
+    cursor: EzProperty<Color>,
 }
 impl ColorConfig {
     pub fn new(name: String, scheduler: &mut SchedulerFrontend) -> Self {
@@ -712,6 +954,11 @@ impl ColorConfig {
         let tab_background = scheduler.new_color_property(
             format!("{}/color_tab_bg", name).as_str(), Color::Black);
 
+        let border_foreground = scheduler.new_color_property(
+            format!("{}/color_border_fg", name).as_str(), Color::White);
+        let border_background = scheduler.new_color_property(
+            format!("{}/color_border_bg", name).as_str(), Color::Black);
+
         let cursor = scheduler.new_color_property(
             format!("{}/color_cursor", name).as_str(), Color::DarkYellow);
 
@@ -730,8 +977,146 @@ impl ColorConfig {
             tab_background,
             filler_foreground,
             filler_background,
+            border_foreground,
+            border_background,
             cursor,
         }
+    }
+
+    pub fn set_foreground(&mut self, color: Color) {
+        self.foreground.set(color);
+    }
+
+    pub fn get_foreground(&self) -> Color {
+        self.foreground.value
+    }
+
+    pub fn set_background(&mut self, color: Color) {
+        self.background.set(color);
+    }
+
+    pub fn get_background(&self) -> Color {
+        self.background.value
+    }
+
+    pub fn set_selection_foreground(&mut self, color: Color) {
+        self.selection_foreground.set(color);
+    }
+
+    pub fn get_selection_foreground(&self) -> Color {
+        self.selection_foreground.value
+    }
+
+    pub fn set_selection_background(&mut self, color: Color) {
+        self.selection_background.set(color);
+    }
+
+    pub fn get_selection_background(&self) -> Color {
+        self.selection_background.value
+    }
+
+    pub fn set_disabled_foreground(&mut self, color: Color) {
+        self.disabled_foreground.set(color);
+    }
+
+    pub fn get_disabled_foreground(&self) -> Color {
+        self.disabled_foreground.value
+    }
+
+    pub fn set_disabled_background(&mut self, color: Color) {
+        self.disabled_background.set(color);
+    }
+
+    pub fn get_disabled_background(&self) -> Color {
+        self.disabled_background.value
+    }
+
+    pub fn set_active_foreground(&mut self, color: Color) {
+        self.active_foreground.set(color);
+    }
+
+    pub fn get_active_foreground(&self) -> Color {
+        self.active_foreground.value
+    }
+
+    pub fn set_active_background(&mut self, color: Color) {
+        self.active_background.set(color);
+    }
+
+    pub fn get_active_background(&self) -> Color {
+        self.active_background.value
+    }
+
+    pub fn set_flash_foreground(&mut self, color: Color) {
+        self.flash_foreground.set(color);
+    }
+
+    pub fn get_flash_foreground(&self) -> Color {
+        self.flash_foreground.value
+    }
+
+    pub fn set_flash_background(&mut self, color: Color) {
+        self.flash_background.set(color);
+    }
+
+    pub fn get_flash_background(&self) -> Color {
+        self.flash_background.value
+    }
+
+    pub fn set_tab_foreground(&mut self, color: Color) {
+        self.tab_foreground.set(color);
+    }
+
+    pub fn get_tab_foreground(&self) -> Color {
+        self.tab_foreground.value
+    }
+
+    pub fn set_tab_background(&mut self, color: Color) {
+        self.tab_background.set(color);
+    }
+
+    pub fn get_tab_background(&self) -> Color {
+        self.tab_background.value
+    }
+
+    pub fn set_filler_foreground(&mut self, color: Color) {
+        self.filler_foreground.set(color);
+    }
+
+    pub fn get_filler_foreground(&self) -> Color {
+        self.filler_foreground.value
+    }
+
+    pub fn set_filler_background(&mut self, color: Color) {
+        self.filler_background.set(color);
+    }
+
+    pub fn get_filler_background(&self) -> Color {
+        self.filler_background.value
+    }
+
+    pub fn set_border_foreground(&mut self, color: Color) {
+        self.border_foreground.set(color);
+    }
+
+    pub fn get_border_foreground(&self) -> Color {
+        self.border_foreground.value
+    }
+
+    pub fn set_border_background(&mut self, color: Color) {
+        self.border_background.set(color);
+    }
+
+    pub fn get_border_background(&self) -> Color {
+        self.border_background.value
+    }
+
+    pub fn get_cursor(&self) -> Color {
+        self.cursor.value
+    }
+
+    pub fn set_cursor(&mut self, color: Color) {
+        self.cursor.set(color);
     }
 
     pub fn clean_up_properties(&self, scheduler: &mut SchedulerFrontend) {
@@ -749,6 +1134,8 @@ impl ColorConfig {
         clean_up_property(scheduler, &self.tab_background.name);
         clean_up_property(scheduler, &self.filler_foreground.name);
         clean_up_property(scheduler, &self.filler_background.name);
+        clean_up_property(scheduler, &self.border_foreground.name);
+        clean_up_property(scheduler, &self.border_background.name);
         clean_up_property(scheduler, &self.cursor.name);
     }
 }
@@ -756,10 +1143,10 @@ impl ColorConfig {
 
 #[derive(PartialEq, Clone, Debug)]
 pub struct Padding {
-    pub top: EzProperty<usize>,
-    pub bottom: EzProperty<usize>,
-    pub left: EzProperty<usize>,
-    pub right: EzProperty<usize>,
+    top: EzProperty<usize>,
+    bottom: EzProperty<usize>,
+    left: EzProperty<usize>,
+    right: EzProperty<usize>,
 }
 impl Padding {
     pub fn new(top: usize, bottom: usize, left: usize, right: usize, name: String,
@@ -780,6 +1167,38 @@ impl Padding {
             left: left_property,
             right: right_property,
         }
+    }
+
+    pub fn set_top(&mut self, padding: usize) {
+        self.top.set(padding);
+    }
+
+    pub fn get_top(&self) -> usize {
+        self.top.value
+    }
+
+    pub fn set_bottom(&mut self, padding: usize) {
+        self.bottom.set(padding);
+    }
+
+    pub fn get_bottom(&self) -> usize {
+        self.bottom.value
+    }
+
+    pub fn set_left(&mut self, padding: usize) {
+        self.left.set(padding);
+    }
+
+    pub fn get_left(&self) -> usize {
+        self.left.value
+    }
+
+    pub fn set_right(&mut self, padding: usize) {
+        self.right.set(padding);
+    }
+
+    pub fn get_right(&self) -> usize {
+        self.right.value
     }
 
     pub fn clean_up_properties(&self, scheduler: &mut SchedulerFrontend) {

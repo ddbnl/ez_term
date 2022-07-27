@@ -81,9 +81,7 @@ impl CanvasState {
 }
 impl GenericState for CanvasState {
 
-    fn get_path(&self) -> &String {
-        &self.path
-    }
+    fn get_path(&self) -> &String { &self.path }
 
     fn get_size_hint(&self) -> &SizeHint { &self.size_hint }
 
@@ -103,13 +101,9 @@ impl GenericState for CanvasState {
 
     fn get_position(&self) -> &StateCoordinates { &self.position }
 
-    fn get_position_mut(&mut self) -> &mut StateCoordinates {
-        &mut self.position
-    }
+    fn get_position_mut(&mut self) -> &mut StateCoordinates { &mut self.position }
 
-    fn set_absolute_position(&mut self, pos: IsizeCoordinates) {
-        self.absolute_position = pos;
-    }
+    fn set_absolute_position(&mut self, pos: IsizeCoordinates) { self.absolute_position = pos; }
 
     fn get_absolute_position(&self) -> IsizeCoordinates { self.absolute_position }
 
@@ -117,13 +111,13 @@ impl GenericState for CanvasState {
         self.halign.set(alignment);
     }
 
-    fn get_horizontal_alignment(&self) -> &EzProperty<HorizontalAlignment> { &self.halign }
+    fn get_horizontal_alignment(&self) -> HorizontalAlignment { self.halign.value }
 
     fn set_vertical_alignment(&mut self, alignment: VerticalAlignment) {
         self.valign.set(alignment);
     }
 
-    fn get_vertical_alignment(&self) -> &EzProperty<VerticalAlignment> { &self.valign }
+    fn get_vertical_alignment(&self) -> VerticalAlignment { self.valign.value }
 
     fn get_padding(&self) -> &Padding { &self.padding}
 
@@ -131,23 +125,17 @@ impl GenericState for CanvasState {
 
     fn get_border_config(&self) -> &BorderConfig { &self.border_config  }
 
-    fn get_border_config_mut(&mut self) -> &mut BorderConfig {
-        &mut self.border_config
-    }
+    fn get_border_config_mut(&mut self) -> &mut BorderConfig { &mut self.border_config }
 
     fn get_color_config(&self) -> &ColorConfig { &self.colors }
 
-    fn get_color_config_mut(&mut self) -> &mut ColorConfig {
-        &mut self.colors
-    }
+    fn get_color_config_mut(&mut self) -> &mut ColorConfig { &mut self.colors }
 
-    fn set_disabled(&mut self, disabled: bool) {
-        self.disabled.set(disabled)
-    }
+    fn set_disabled(&mut self, disabled: bool) { self.disabled.set(disabled) }
 
-    fn get_disabled(&self) -> &EzProperty<bool> { &self.disabled }
+    fn get_disabled(&self) -> bool { self.disabled.value }
 
-    fn get_selection_order(&self) -> &EzProperty<usize> { &self.selection_order }
+    fn get_selection_order(&self) -> usize { self.selection_order.value }
 
     fn set_selection_order(&mut self, order: usize) { self.selection_order.set(order); }
 

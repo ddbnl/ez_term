@@ -55,14 +55,14 @@ impl Layout {
         let own_pos = state.get_effective_absolute_position();
         let own_colors = state.get_color_config().clone();
         let selection = state.get_selected_tab_header().clone();
-        if state.get_active_tab().value.is_empty() {
+        if state.get_active_tab().is_empty() {
             if !self.children.is_empty() {
                 state.set_active_tab(&self.children[0].as_ez_object().get_id());
             } else {
                 return PixelMap::new()
             }
         }
-        let active_tab = state.get_active_tab().value.clone();
+        let active_tab = state.get_active_tab();
 
         let mut button_content = PixelMap::new();
         let mut tab_content = PixelMap::new();
@@ -78,8 +78,8 @@ impl Layout {
                     if own_effective_size.height >= 3 { own_effective_size.height - 5} else {0});
                 child_state.set_effective_width(
                     if own_effective_size.width >= 1 { own_effective_size.width - 1} else {0});
-                child_state.get_position_mut().x.set(0);
-                child_state.get_position_mut().y.set(3);
+                child_state.get_position_mut().set_x(0);
+                child_state.get_position_mut().set_y(3);
                 child_state.set_absolute_position(IsizeCoordinates::new(
                     own_pos.x, own_pos.y + 3));
                 tab_content = i.get_contents(state_tree);
@@ -88,17 +88,17 @@ impl Layout {
                 let child_state=
                     state_tree.get_by_path_mut(&i.path).as_button_mut();
 
-                let tab_text = child_state.get_text().value.clone();
-                child_state.get_color_config_mut().foreground.set(
-                    if selection == i.id { own_colors.selection_foreground.value }
+                let tab_text = child_state.get_text();
+                child_state.get_color_config_mut().set_foreground(
+                    if selection == i.id { own_colors.get_selection_foreground() }
                     else if active_tab == tab_text {
-                        own_colors.active_foreground.value
-                    } else { own_colors.tab_foreground.value });
-                child_state.get_color_config_mut().background.set(
-                    if selection == i.id { own_colors.selection_background.value }
+                        own_colors.get_active_foreground()
+                    } else { own_colors.get_tab_foreground() });
+                child_state.get_color_config_mut().set_background(
+                    if selection == i.id { own_colors.get_selection_background() }
                     else if active_tab == tab_text {
-                        own_colors.active_background.value
-                    } else { own_colors.tab_background.value });
+                        own_colors.get_active_background()
+                    } else { own_colors.get_tab_background() });
 
                 child_state.set_auto_scale_width(true);
                 child_state.set_auto_scale_height(true);
@@ -112,7 +112,7 @@ impl Layout {
                 custom_size.height = 3;
                 button_content = self.merge_horizontal_contents(
                     button_content, content,
-                    custom_size.height, own_size.infinite_height,
+                    custom_size.height, own_size.get_infinite_height(),
                     own_colors.clone(),
                     child_state);
                 child_state.set_absolute_position(
@@ -121,7 +121,7 @@ impl Layout {
                 if (!selection.is_empty() && selection == i.id) || (selection.is_empty() &&
                     active_tab == i.id.strip_suffix("_tab_header").unwrap()) {
                     selected_pos_x = pos_x;
-                    selected_width = child_state.get_size().width.value;
+                    selected_width = child_state.get_size().get_width();
                 }
 
                 pos_x = button_content.len();
@@ -129,8 +129,8 @@ impl Layout {
             }
         }
         let fill_pixel = Pixel::new(" ".to_string(),
-                                    own_colors.foreground.value,
-                                    own_colors.background.value);
+                                    own_colors.get_foreground(),
+                                    own_colors.get_background());
         if own_effective_size.width < button_content.len()  {
             let mut difference;
             if own_effective_size.width <= selected_pos_x + selected_width {
@@ -148,8 +148,8 @@ impl Layout {
                 if let EzObjects::Button(button) = child {
                     let state = state_tree
                         .get_by_path_mut(&button.path).as_button_mut();
-                    state.set_x(if state.get_position().x.get() >= &difference
-                    { state.get_position().x.get() - difference } else { 0 });
+                    state.set_x(if state.get_position().get_x() >= difference
+                    { state.get_position().get_x() - difference } else { 0 });
                     state.set_absolute_position(IsizeCoordinates::new(
                         if state.get_absolute_position().x >= difference as isize
                         { state.get_absolute_position().x - difference as isize } else { 0 },
@@ -169,7 +169,7 @@ impl Layout {
         self.merge_vertical_contents(
             button_content,
             tab_content,
-            own_effective_size.width, own_size.infinite_width,
+            own_effective_size.width, own_size.get_infinite_width(),
             own_colors, state)
     }
 }

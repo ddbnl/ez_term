@@ -75,10 +75,10 @@ impl Layout {
             let state = state_tree
                 .get_by_path(&generic_child.get_full_path()).as_generic();
             if let LayoutOrientation::Horizontal = own_orientation {
-                if let Some(size_hint_x) = state.get_size_hint().x.value
+                if let Some(size_hint_x) = state.get_size_hint().get_x()
                 {
-                    if size_hint_x != 1.0 || state.get_auto_scale().width.value ||
-                        state.get_auto_scale().height.value || state.get_size().width > 0 {
+                    if size_hint_x != 1.0 || state.get_auto_scale().get_width() ||
+                        state.get_auto_scale().get_height() || state.get_size().get_width() > 0 {
                         all_default_size_hint_x = false;
                     }
                 } else {
@@ -88,9 +88,9 @@ impl Layout {
                 all_default_size_hint_x = false;
             }
             if let LayoutOrientation::Vertical = own_orientation {
-                if let Some(size_hint_y) = state.get_size_hint().y.value {
-                    if size_hint_y != 1.0 || state.get_auto_scale().height.value ||
-                        state.get_auto_scale().width.value || state.get_size().height > 0 {
+                if let Some(size_hint_y) = state.get_size_hint().get_y() {
+                    if size_hint_y != 1.0 || state.get_auto_scale().get_height() ||
+                        state.get_auto_scale().get_width() || state.get_size().get_height() > 0 {
                         all_default_size_hint_y = false;
                     }
                 } else {
@@ -119,8 +119,8 @@ impl Layout {
                     state_tree.get_by_path_mut(&i.get_full_path()).as_generic_mut();
                 let pos = child_state.get_position();
                 let mut new_absolute_position = IsizeCoordinates::new(
-                    absolute_position.x + *pos.x.get() as isize,
-                    absolute_position.y + *pos.y.get() as isize);
+                    absolute_position.x + pos.get_x() as isize,
+                    absolute_position.y + pos.get_y() as isize);
                 new_absolute_position = offset_scrolled_absolute_position(
                     new_absolute_position, &scrolling, &size);
                 child_state.set_absolute_position(new_absolute_position);
@@ -130,8 +130,8 @@ impl Layout {
                     &child.as_ez_object().get_full_path()).as_generic_mut();
                 let pos = child_state.get_position();
                 let mut new_absolute_position = IsizeCoordinates::new(
-                    absolute_position.x + *pos.x.get() as isize,
-                    absolute_position.y + *pos.y.get() as isize);
+                    absolute_position.x + pos.get_x() as isize,
+                    absolute_position.y + pos.get_y() as isize);
                 new_absolute_position = offset_scrolled_absolute_position(
                     new_absolute_position, &scrolling, &size);
                 child_state.set_absolute_position(new_absolute_position);
@@ -297,7 +297,7 @@ impl Layout {
     pub fn scale_to_largest_child(&self, content_list: &[PixelMap], state_tree: &mut StateTree){
 
         let state = state_tree.get_by_path_mut(&self.path).as_layout_mut();
-        if state.get_auto_scale().width.value {
+        if state.get_auto_scale().get_width() {
             state.set_effective_width(
                 if state.get_orientation() == &LayoutOrientation::Vertical {
                     content_list.iter().map(|x| x.len()).max().unwrap_or(0)
@@ -305,7 +305,7 @@ impl Layout {
                     content_list.iter().map(|x| x.len()).sum()
                 });
         }
-        if state.get_auto_scale().height.value {
+        if state.get_auto_scale().get_height() {
             state.set_effective_height(
                 if state.get_orientation() == &LayoutOrientation::Horizontal {
                     content_list.iter().map(

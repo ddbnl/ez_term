@@ -100,18 +100,18 @@ impl EzObject for Button {
             .as_button_mut();
 
         let (fg_color, bg_color) =
-            if state.get_flashing() {(state.get_color_config().flash_foreground.value,
-                                state.get_color_config().flash_background.value)}
+            if state.get_flashing() {(state.get_color_config().get_flash_foreground(),
+                                state.get_color_config().get_flash_background())}
             else { state.get_context_colors() };
 
-        let text = state.get_text().value.clone();
+        let text = state.get_text();
 
-        let write_width = if state.get_size().infinite_width ||
-            state.get_auto_scale().width.value { text.len() + 1 }
+        let write_width = if state.get_size().get_infinite_width() ||
+            state.get_auto_scale().get_width() { text.len() + 1 }
             else {state.get_effective_size().width };
         let content_lines = wrap_text(text, write_width);
         let write_height =
-            if state.get_size().infinite_height || state.get_auto_scale().height.value
+            if state.get_size().get_infinite_height() || state.get_auto_scale().get_height()
             { content_lines.len() }
             else {state.get_effective_size().height };
 
@@ -128,10 +128,10 @@ impl EzObject for Button {
             }
             contents.push(new_y);
         }
-        if state.get_auto_scale().width.value {
+        if state.get_auto_scale().get_width() {
             state.set_effective_width(contents.len());
         }
-        if state.get_auto_scale().height.value {
+        if state.get_auto_scale().get_height() {
             let height = if !contents.is_empty() { contents[0].len() } else { 0 };
             state.set_effective_height(height);
         }
@@ -142,13 +142,13 @@ impl EzObject for Button {
             contents,VerticalAlignment::Middle,
             state.get_effective_size().height, fg_color, bg_color);
         contents = add_border(
-            contents, state.get_border_config());
+            contents, state.get_border_config(), state.get_color_config());
         let state = state_tree.get_by_path(&self.get_full_path()).as_button();
         let parent_colors = state_tree.get_by_path(self.get_full_path()
             .rsplit_once('/').unwrap().0).as_generic().get_color_config();
         contents = add_padding(
-            contents, state.get_padding(), parent_colors.background.value,
-            parent_colors.foreground.value);
+            contents, state.get_padding(), parent_colors.get_background(),
+            parent_colors.get_foreground());
         contents
     }
 

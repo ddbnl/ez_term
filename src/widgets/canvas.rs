@@ -94,9 +94,9 @@ impl EzObject for Canvas {
     /// [height] and [width] as this widget and pass it here.
     fn set_contents(&mut self, contents: PixelMap) {
        let mut valid_contents = Vec::new();
-       for x in 0..self.state.get_size().width.value as usize {
+       for x in 0..self.state.get_size().get_width() as usize {
            valid_contents.push(Vec::new());
-           for y in 0..self.state.get_size().height.value as usize {
+           for y in 0..self.state.get_size().get_height() as usize {
                valid_contents[x].push(contents[x][y].clone())
            }
        }
@@ -116,17 +116,17 @@ impl EzObject for Canvas {
                 .map(|x| x.graphemes(true).rev().collect())
                 .collect();
 
-            if state.get_auto_scale().width.value {
+            if state.get_auto_scale().get_width() {
                 let longest_line = lines.iter().map(|x| x.chars().count()).max();
                 let auto_scale_width =
                     if let Some(i) = longest_line { i } else { 0 };
-                if auto_scale_width < state.get_effective_size().width || state.get_size().infinite_width {
+                if auto_scale_width < state.get_effective_size().width || state.get_size().get_infinite_width() {
                     state.set_effective_width(auto_scale_width);
                 }
             }
-            if state.get_auto_scale().height.value {
+            if state.get_auto_scale().get_height() {
                 let auto_scale_height = lines.len();
-                if auto_scale_height < state.get_effective_size().height || state.get_size().infinite_height{
+                if auto_scale_height < state.get_effective_size().height || state.get_size().get_infinite_height(){
                     state.set_effective_height(auto_scale_height);
                 }
             }
@@ -138,14 +138,14 @@ impl EzObject for Canvas {
                     if y < lines.len() && !lines[y].is_empty() {
                         widget_content[x].push(Pixel {
                             symbol: lines[y].pop().unwrap().to_string(),
-                            foreground_color: state.get_color_config().foreground.value,
-                            background_color: state.get_color_config().background.value,
+                            foreground_color: state.get_color_config().get_foreground(),
+                            background_color: state.get_color_config().get_background(),
                             underline: false})
                     } else {
                         widget_content[x].push(Pixel {
                             symbol: " ".to_string(),
-                            foreground_color: state.get_color_config().foreground.value,
-                            background_color: state.get_color_config().background.value,
+                            foreground_color: state.get_color_config().get_foreground(),
+                            background_color: state.get_color_config().get_background(),
                             underline: false})
                     }
                 }
@@ -154,15 +154,16 @@ impl EzObject for Canvas {
         } else {
             contents = self.contents.clone();
         }
-        if state.get_border_config().enabled.value {
-            contents = add_border(contents, state.get_border_config());
+        if state.get_border_config().get_enabled() {
+            contents = add_border(contents, state.get_border_config(),
+                                 state.get_color_config());
         }
         let state = state_tree.get_by_path(&self.get_full_path()).as_canvas();
         let parent_colors = state_tree.get_by_path(self.get_full_path()
             .rsplit_once('/').unwrap().0).as_generic().get_color_config();
         contents = add_padding(
-            contents, state.get_padding(),parent_colors.background.value,
-            parent_colors.foreground.value);
+            contents, state.get_padding(),parent_colors.get_background(),
+            parent_colors.get_foreground());
         contents
     }
 }

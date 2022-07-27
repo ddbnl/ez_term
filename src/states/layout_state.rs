@@ -165,15 +165,15 @@ impl GenericState for LayoutState {
 
     fn get_effective_size(&self) -> Size {
 
-        let width_result: isize = self.size.width.value as isize
-            -if self.get_border_config().enabled.value {2} else {0}
-            -if self.scrolling_config.enable_y.value {1} else {0}
-            -self.get_padding().left.value as isize - self.get_padding().right.value as isize;
+        let width_result: isize = self.size.get_width() as isize
+            -if self.get_border_config().get_enabled() {2} else {0}
+            -if self.scrolling_config.get_enable_y() {1} else {0}
+            -self.get_padding().get_left() as isize - self.get_padding().get_right() as isize;
         let width = if width_result < 0 {0} else { width_result};
-        let height_result: isize = self.size.height.value as isize
-            -if self.get_border_config().enabled.value {2} else {0}
-            -if self.scrolling_config.enable_x.value {1} else {0}
-            -self.get_padding().top.value as isize - self.get_padding().bottom.value as isize;
+        let height_result: isize = self.size.get_height() as isize
+            -if self.get_border_config().get_enabled() {2} else {0}
+            -if self.scrolling_config.get_enable_x() {1} else {0}
+            -self.get_padding().get_top() as isize - self.get_padding().get_bottom() as isize;
         let height = if height_result < 0 {0} else { height_result};
         Size::new(width as usize, height as usize)
     }
@@ -181,27 +181,25 @@ impl GenericState for LayoutState {
     /// Set the how much width you want the actual content inside this widget to have. Width for
     /// e.g. border and padding will be added to this automatically.
     fn set_effective_width(&mut self, width: usize) {
-        let offset = if self.get_border_config().enabled.value {2} else {0}
-            + if self.scrolling_config.enable_y.value {1} else {0}
-            + self.get_padding().left.value + self.get_padding().right.value;
-        self.get_size_mut().width.set(width + offset);
+        let offset = if self.get_border_config().get_enabled() {2} else {0}
+            + if self.scrolling_config.get_enable_y() {1} else {0}
+            + self.get_padding().get_left() + self.get_padding().get_right();
+        self.get_size_mut().set_width(width + offset);
     }
 
     /// Set the how much height you want the actual content inside this widget to have. Height for
     /// e.g. border and padding will be added to this automatically.
     fn set_effective_height(&mut self, height: usize) {
 
-        let offset = if self.get_border_config().enabled.value {2} else {0}
-            + if self.scrolling_config.enable_x.value {1} else {0}
-            + self.get_padding().top.value + self.get_padding().bottom.value;
-        self.get_size_mut().height.set(height + offset);
+        let offset = if self.get_border_config().get_enabled() {2} else {0}
+            + if self.scrolling_config.get_enable_x() {1} else {0}
+            + self.get_padding().get_top() + self.get_padding().get_bottom();
+        self.get_size_mut().set_height(height + offset);
     }
 
     fn get_position(&self) -> &StateCoordinates { &self.position }
 
-    fn get_position_mut(&mut self) -> &mut StateCoordinates {
-        &mut self.position
-    }
+    fn get_position_mut(&mut self) -> &mut StateCoordinates { &mut self.position }
 
     fn set_absolute_position(&mut self, pos: IsizeCoordinates) { self.absolute_position = pos; }
 
@@ -211,13 +209,13 @@ impl GenericState for LayoutState {
         self.halign.set(alignment);
     }
 
-    fn get_horizontal_alignment(&self) -> &EzProperty<HorizontalAlignment> { &self.halign }
+    fn get_horizontal_alignment(&self) -> HorizontalAlignment { self.halign.value }
 
     fn set_vertical_alignment(&mut self, alignment: VerticalAlignment) {
         self.valign.set(alignment);
     }
 
-    fn get_vertical_alignment(&self) -> &EzProperty<VerticalAlignment> { &self.valign }
+    fn get_vertical_alignment(&self) -> VerticalAlignment { self.valign.value }
 
     fn get_padding(&self) -> &Padding { &self.padding }
 
@@ -235,17 +233,17 @@ impl GenericState for LayoutState {
         &mut self.colors
     }
 
-    fn is_selectable(&self) -> bool { self.get_scrolling_config().is_scrolling_x
-        || self.get_scrolling_config().is_scrolling_y || self.mode == LayoutMode::Tab
+    fn is_selectable(&self) -> bool { self.get_scrolling_config().get_is_scrolling_x()
+        || self.get_scrolling_config().get_is_scrolling_y() || self.mode == LayoutMode::Tab
     }
 
     fn set_disabled(&mut self, disabled: bool) {
         self.disabled.set(disabled)
     }
 
-    fn get_disabled(&self) -> &EzProperty<bool> { &self.disabled }
+    fn get_disabled(&self) -> bool { self.disabled.value }
 
-    fn get_selection_order(&self) -> &EzProperty<usize> { &self.selection_order }
+    fn get_selection_order(&self) -> usize { self.selection_order.value }
 
     fn set_selection_order(&mut self, order: usize) { self.selection_order.set(order); }
 
@@ -294,14 +292,14 @@ impl LayoutState {
     pub fn set_active_screen(&mut self, id: &str) { self.active_screen.set(id.to_string()); }
 
     /// Get the ID of the child that is the currently active screen (i.e. content is showing)
-    pub fn get_active_screen(&self) -> &EzProperty<String> { &self.active_screen }
+    pub fn get_active_screen(&self) -> String { self.active_screen.value.clone() }
 
     /// Set the id of the layout that is currently active as the current tab (i.e. content is
     /// showing)
     pub fn set_active_tab(&mut self, id: &str) { self.active_tab.set(id.to_string()); }
 
     /// Get the id of the layout that is currently active as a tab (i.e. content is showing)
-    pub fn get_active_tab(&self) -> &EzProperty<String> { &self.active_tab }
+    pub fn get_active_tab(&self) -> String { self.active_tab.value.clone() }
 
     /// Set the tab header that is currently selected
     pub fn set_selected_tab_header(&mut self, id: String) { self.selected_tab_header = id; }
@@ -332,13 +330,13 @@ impl LayoutState {
     pub fn set_fill(&mut self, enable: bool) { self.fill.set(enable); }
 
     /// Get [fill]
-    pub fn get_fill(&self) -> &EzProperty<bool> { &self.fill }
+    pub fn get_fill(&self) -> bool { self.fill.value }
 
     /// Set [filler_symbol]
     pub fn set_filler_symbol(&mut self, symbol: String) { self.filler_symbol.set(symbol); }
 
     /// Get [filler_symbol]
-    pub fn get_filler_symbol(&self) -> &EzProperty<String> { &self.filler_symbol }
+    pub fn get_filler_symbol(&self) -> String { self.filler_symbol.value.clone() }
 
     /// Open a popup based on a template defined in the Ez file. Returns the state of the new popup
     pub fn open_popup(&mut self, template: String, scheduler: &mut SchedulerFrontend)

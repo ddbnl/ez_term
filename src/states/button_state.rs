@@ -125,13 +125,13 @@ impl GenericState for ButtonState {
         self.halign.set(alignment);
     }
 
-    fn get_horizontal_alignment(&self) -> &EzProperty<HorizontalAlignment> { &self.halign }
+    fn get_horizontal_alignment(&self) -> HorizontalAlignment { self.halign.value }
 
     fn set_vertical_alignment(&mut self, alignment: VerticalAlignment) {
         self.valign.set(alignment);
     }
 
-    fn get_vertical_alignment(&self) -> &EzProperty<VerticalAlignment> { &self.valign }
+    fn get_vertical_alignment(&self) -> VerticalAlignment { self.valign.value }
 
     fn get_padding(&self) -> &Padding { &self.padding }
 
@@ -149,9 +149,9 @@ impl GenericState for ButtonState {
 
     fn set_disabled(&mut self, disabled: bool) { self.disabled.set(disabled) }
 
-    fn get_disabled(&self) -> &EzProperty<bool> { &self.disabled }
+    fn get_disabled(&self) -> bool { self.disabled.value }
 
-    fn get_selection_order(&self) -> &EzProperty<usize> { &self.selection_order }
+    fn get_selection_order(&self) -> usize { self.selection_order.value }
 
     fn set_selection_order(&mut self, order: usize) { self.selection_order.set(order); }
 
@@ -178,15 +178,11 @@ impl GenericState for ButtonState {
 }
 impl ButtonState {
 
-    pub fn get_text(&self) -> &EzProperty<String> { &self.text }
+    pub fn get_text(&self) -> String { self.text.value.clone() }
 
-    pub fn get_text_mut(&mut self) -> &mut EzProperty<String> { &mut self.text }
-    
-    pub fn set_text(&mut self, text: String) { self.get_text_mut().set(text) }
+    pub fn set_text(&mut self, text: String) { self.text.set(text) }
 
-    pub fn set_flashing(&mut self, flashing: bool) {
-        self.flashing = flashing;
-    }
+    pub fn set_flashing(&mut self, flashing: bool) { self.flashing = flashing; }
 
     pub fn get_flashing(&self) -> bool { self.flashing }
 

@@ -1,6 +1,6 @@
 use crossterm::style::{Color};
 use crate::run::definitions::{IsizeCoordinates, Pixel, PixelMap};
-use crate::states::definitions::{Padding, BorderConfig, VerticalAlignment, HorizontalAlignment, ScrollingConfig, StateSize};
+use crate::states::definitions::{Padding, BorderConfig, VerticalAlignment, HorizontalAlignment, ScrollingConfig, StateSize, ColorConfig};
 use crate::states::ez_state::{EzState, GenericState};
 
 
@@ -9,16 +9,16 @@ use crate::states::ez_state::{EzState, GenericState};
 pub fn resize_with_size_hint(state: &mut EzState, parent_width: usize, parent_height: usize) {
 
     let mut_state = state.as_generic_mut();
-    if let Some(size_hint_x) = mut_state.get_size_hint().x.value {
+    if let Some(size_hint_x) = mut_state.get_size_hint().get_x() {
         let raw_child_size = parent_width as f64 * size_hint_x;
         let child_size = raw_child_size.round() as usize;
-        mut_state.get_size_mut().width.set(child_size);
+        mut_state.get_size_mut().set_width(child_size);
     }
 
-    if let Some(size_hint_y) = mut_state.get_size_hint().y.value {
+    if let Some(size_hint_y) = mut_state.get_size_hint().get_y() {
         let raw_child_size = parent_height as f64 * size_hint_y;
         let child_size = raw_child_size.round() as usize;
-        mut_state.get_size_mut().height.set(child_size);
+        mut_state.get_size_mut().set_height(child_size);
     }
 }
 
@@ -28,54 +28,50 @@ pub fn reposition_with_pos_hint(parent_width: usize, parent_height: usize,
                                 child_state: &mut dyn GenericState) {
 
     // Set x by pos_hint if any
-    if let Some((keyword, fraction)) = child_state.get_pos_hint().x.value {
+    if let Some((keyword, fraction)) = child_state.get_pos_hint().get_x() {
         let initial_pos = match keyword {
             HorizontalAlignment::Left => 0,
-            HorizontalAlignment::Right => parent_width - child_state.get_size().width.value,
+            HorizontalAlignment::Right => parent_width - child_state.get_size().get_width(),
             HorizontalAlignment::Center =>
                 (parent_width as f64 / 2.0).round() as usize -
-                    (child_state.get_size().width.value as f64 / 2.0).round() as usize,
+                    (child_state.get_size().get_width() as f64 / 2.0).round() as usize,
         };
         let x = (initial_pos as f64 * fraction).round() as usize;
-        child_state.get_position_mut().x.set(x);
+        child_state.get_position_mut().set_x(x);
     }
     // Set y by pos hint if any
-    if let Some((keyword, fraction)) = child_state.get_pos_hint().y.value {
+    if let Some((keyword, fraction)) = child_state.get_pos_hint().get_y() {
         let initial_pos = match keyword {
             VerticalAlignment::Top => 0,
-            VerticalAlignment::Bottom => parent_height - child_state.get_size().height.value,
+            VerticalAlignment::Bottom => parent_height - child_state.get_size().get_height(),
             VerticalAlignment::Middle =>
                 (parent_height as f64 / 2.0).round() as usize -
-                    (child_state.get_size().height.value as f64 / 2.0).round() as usize,
+                    (child_state.get_size().get_height() as f64 / 2.0).round() as usize,
         };
         let y = (initial_pos as f64 * fraction).round() as usize;
-        child_state.get_position_mut().y.set(y);
+        child_state.get_position_mut().set_y(y);
     }
 }
 
 
 /// Add a border around a PixelMap.
-pub fn add_border(mut content: PixelMap, config: &BorderConfig) -> PixelMap {
+pub fn add_border(mut content: PixelMap, config: &BorderConfig, colors: &ColorConfig) -> PixelMap {
     if content.is_empty() { return content }
     // Create border elements
-    let horizontal_border = Pixel::new(config.horizontal_symbol.value.clone(),
-                                       config.fg_color.value,
-                                       config.bg_color.value);
-    let vertical_border = Pixel::new(config.vertical_symbol.value.clone(),
-                                     config.fg_color.value,
-                                     config.bg_color.value);
-    let top_left_border = Pixel::new(config.top_left_symbol.value.clone(),
-                                     config.fg_color.value,
-                                     config.bg_color.value);
-    let top_right_border = Pixel::new(config.top_right_symbol.value.clone(),
-                                      config.fg_color.value,
-                                      config.bg_color.value);
-    let bottom_left_border = Pixel::new(config.bottom_left_symbol.value.clone(),
-                                        config.fg_color.value,
-                                        config.bg_color.value);
-    let bottom_right_border = Pixel::new(config.bottom_right_symbol.value.clone(),
-                                         config.fg_color.value,
-                                         config.bg_color.value);
+    let (foreground_color, background_color) =
+        (colors.get_border_foreground(), colors.get_border_background());
+    let horizontal_border = Pixel::new(config.get_horizontal_symbol(),
+                                       foreground_color.clone(), background_color.clone());
+    let vertical_border = Pixel::new(config.get_vertical_symbol(),
+                                     foreground_color.clone(), background_color.clone());
+    let top_left_border = Pixel::new(config.get_top_left_symbol(),
+                                     foreground_color.clone(), background_color.clone());
+    let top_right_border = Pixel::new(config.get_top_right_symbol(),
+                                      foreground_color.clone(), background_color.clone());
+    let bottom_left_border = Pixel::new(config.get_bottom_left_symbol(),
+                                        foreground_color.clone(), background_color.clone());
+    let bottom_right_border = Pixel::new(config.get_bottom_right_symbol(),
+                                         foreground_color.clone(), background_color.clone());
     // Create horizontal borders
     for x in 0..content.len() {
         let mut new_x = vec!(horizontal_border.clone());
@@ -123,22 +119,22 @@ pub fn add_padding(mut content: PixelMap, padding: &Padding, bg_color: Color, fg
     for _ in 0..content[0].len() {
         vertical_padding.push(padding_pixel.clone());
     }
-    for _ in 0..padding.left.value {
+    for _ in 0..padding.get_left() {
         content.insert(0, vertical_padding.clone());
     }
-    for _ in 0..padding.right.value {
+    for _ in 0..padding.get_right() {
         content.push(vertical_padding.clone());
     }
-    if padding.top != 0 {
+    if padding.get_top() != 0 {
         for x in content.iter_mut() {
-            for _ in 0..padding.top.value {
+            for _ in 0..padding.get_top() {
                 x.insert(0, padding_pixel.clone());
             }
         }
     }
-    if padding.bottom != 0 {
+    if padding.get_bottom() != 0 {
         for x in content.iter_mut() {
-            for _ in 0..padding.bottom.value {
+            for _ in 0..padding.get_bottom() {
                 x.push(padding_pixel.clone());
             }
         }
@@ -312,14 +308,14 @@ pub fn offset_scrolled_absolute_position(mut absolute_position: IsizeCoordinates
                                          scrolling: &ScrollingConfig, size: &StateSize)
                                          -> IsizeCoordinates {
     
-    if scrolling.is_scrolling_x && size.width > 0 {
-        let offset = ((scrolling.view_start_x / size.width.value) * size.width.value) +
-            (scrolling.view_start_x % size.width.value);
+    if scrolling.get_is_scrolling_x() && size.get_width() > 0 {
+        let offset = ((scrolling.get_view_start_x() / size.get_width()) * size.get_width()) +
+            (scrolling.get_view_start_x() % size.get_width());
         absolute_position.x -= offset as isize;
     }
-    if scrolling.is_scrolling_y && size.height > 0 {
-        let offset = ((scrolling.view_start_y / size.height.value) * size.height.value) +
-            (scrolling.view_start_y % size.height.value);
+    if scrolling.get_is_scrolling_y() && size.get_height() > 0 {
+        let offset = ((scrolling.get_view_start_y() / size.get_height()) * size.get_height()) +
+            (scrolling.get_view_start_y() % size.get_height());
         absolute_position.y -= offset as isize;
     }
     absolute_position

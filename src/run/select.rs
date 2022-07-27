@@ -54,7 +54,7 @@ pub fn select_next(state_tree: &mut StateTree, _root_widget: &Layout,
 
     let mut current_selection_order = if !current_selection.is_empty() {
         state_tree.get_by_path_mut(&current_selection)
-            .as_generic().get_selection_order().value
+            .as_generic().get_selection_order()
     } else { 0 };
 
     let result = find_next_selection(current_selection_order,
@@ -84,8 +84,8 @@ pub fn find_next_selection(current_selection: usize, state_tree: &StateTree, pat
     for (path, state) in state_tree.objects.iter()  {
         if !path.starts_with(path_prefix) { continue };
         let generic_state = state.as_generic();
-        let widget_order = generic_state.get_selection_order().value;
-        if generic_state.is_selectable() && !generic_state.get_disabled().value &&
+        let widget_order = generic_state.get_selection_order();
+        if generic_state.is_selectable() && !generic_state.get_disabled() &&
             widget_order > 0 && widget_order > current_selection &&
             (next_order == 0 || widget_order < next_order) &&
             !widget_is_hidden(path.to_string(), state_tree) &&
@@ -114,7 +114,7 @@ pub fn select_previous(state_tree: &mut StateTree, _root_widget: &Layout,
 
     let mut current_selection_order = if !current_selection.is_empty() {
         state_tree.get_by_path_mut(&current_selection)
-            .as_generic().get_selection_order().value
+            .as_generic().get_selection_order()
     } else { 0 };
 
     let result = find_previous_selection(current_selection_order,
@@ -143,13 +143,13 @@ pub fn find_previous_selection(current_selection: usize, state_tree: &StateTree,
     for (path, state) in state_tree.objects.iter() {
         if !path.starts_with(path_prefix) { continue }
         let generic_state = state.as_generic();
-        let widget_order = generic_state.get_selection_order().value;
-        if generic_state.is_selectable() && !generic_state.get_disabled().value &&
+        let widget_order = generic_state.get_selection_order();
+        if generic_state.is_selectable() && !generic_state.get_disabled() &&
             widget_order > 0 && (current_selection == 0 || widget_order < current_selection) &&
             (previous_order == 0 || widget_order > previous_order) &&
             !widget_is_hidden(path.to_string(), state_tree) &&
             is_in_view(path.to_string(), state_tree) {
-                previous_order = generic_state.get_selection_order().value;
+                previous_order = generic_state.get_selection_order();
                 previous_widget = Some(path.to_string());
         }
     }
@@ -171,7 +171,7 @@ pub fn get_widget_by_position<'a>(pos: Coordinates, root_widget: &'a Layout,
     let mut results = Vec::new();
     for (widget_path, state) in state_tree.objects.iter() {
         if !widget_path.starts_with(&path_prefix) || widget_path == "/root" ||
-            state.as_generic().get_disabled().value ||
+            state.as_generic().get_disabled() ||
             widget_is_hidden(widget_path.clone(),  state_tree) {
             continue
         }
@@ -278,9 +278,11 @@ pub fn is_in_view(path: String, state_tree: &StateTree) -> bool {
         // If there's no visible height and width then we're not scrolling. Simply check if obj is
         // inside of the root window.
         if (visible_width == None &&
-            state.as_generic().get_effective_absolute_position().usize_x() > window_size.width.value) ||
+            state.as_generic().get_effective_absolute_position().usize_x() >
+                window_size.get_width()) ||
             (visible_height == None &&
-                state.as_generic().get_effective_absolute_position().usize_y() > window_size.height.value) {
+                state.as_generic().get_effective_absolute_position().usize_y() >
+                    window_size.get_height()) {
             return false
         }
 
@@ -288,16 +290,16 @@ pub fn is_in_view(path: String, state_tree: &StateTree) -> bool {
             // This is not the end of the path so this obj must be a layout. This means we have to
             // check if it is scrolling. If it is, we must check if each subsequent subwidget is in
             // this scrollview.
-            if state.as_layout().get_scrolling_config().is_scrolling_x {
+            if state.as_layout().get_scrolling_config().get_is_scrolling_x() {
                 visible_width =
-                    Some((state.as_layout().get_scrolling_config().view_start_x,
-                          state.as_layout().get_scrolling_config().view_start_x +
+                    Some((state.as_layout().get_scrolling_config().get_view_start_x(),
+                          state.as_layout().get_scrolling_config().get_view_start_x() +
                               state.as_layout().get_effective_size().width));
             }
-            if state.as_layout().get_scrolling_config().is_scrolling_y {
+            if state.as_layout().get_scrolling_config().get_is_scrolling_y() {
                 visible_height =
-                    Some((state.as_layout().get_scrolling_config().view_start_y,
-                          state.as_layout().get_scrolling_config().view_start_y +
+                    Some((state.as_layout().get_scrolling_config().get_view_start_y(),
+                          state.as_layout().get_scrolling_config().get_view_start_y() +
                               state.as_layout().get_effective_size().height));
             }
             working_path = format!("{}/{}", working_path, paths.pop().unwrap());
@@ -320,12 +322,12 @@ pub fn widget_is_hidden(widget_path: String, state_tree: &StateTree) -> bool {
     loop {
         let parent_state = state_tree.get_by_path(&check_parent).as_layout();
         if parent_state.get_mode() == &LayoutMode::Screen &&
-            parent_state.get_active_screen().value != check_child.rsplit_once('/').unwrap().1 {
+            parent_state.get_active_screen() != check_child.rsplit_once('/').unwrap().1 {
             return true
         }
         if parent_state.get_mode() == &LayoutMode::Tab {
             if let EzState::Layout(_) = state_tree.get_by_path(&check_child) {
-                if parent_state.get_active_tab().value != check_child.rsplit_once('/').unwrap().1 {
+                if parent_state.get_active_tab() != check_child.rsplit_once('/').unwrap().1 {
                     return true
                 }
             }

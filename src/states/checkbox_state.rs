@@ -134,13 +134,13 @@ impl GenericState for CheckboxState {
         self.halign.set(alignment);
     }
 
-    fn get_horizontal_alignment(&self) -> &EzProperty<HorizontalAlignment> { &self.halign }
+    fn get_horizontal_alignment(&self) -> HorizontalAlignment { self.halign.value }
 
     fn set_vertical_alignment(&mut self, alignment: VerticalAlignment) {
         self.valign.set(alignment);
     }
 
-    fn get_vertical_alignment(&self) -> &EzProperty<VerticalAlignment> { &self.valign }
+    fn get_vertical_alignment(&self) -> VerticalAlignment { self.valign.value }
 
     fn get_padding(&self) -> &Padding { &self.padding }
 
@@ -164,9 +164,9 @@ impl GenericState for CheckboxState {
         self.disabled.set(disabled);
     }
 
-    fn get_disabled(&self) -> &EzProperty<bool> { &self.disabled }
+    fn get_disabled(&self) -> bool { self.disabled.value }
 
-    fn get_selection_order(&self) -> &EzProperty<usize> { &self.selection_order }
+    fn get_selection_order(&self) -> usize { self.selection_order.value }
 
     fn set_selection_order(&mut self, order: usize) { self.selection_order.set(order); }
 
@@ -195,13 +195,13 @@ impl CheckboxState {
 
     pub fn set_active(&mut self, active: bool) { self.active.set(active); }
 
-    pub fn get_active(&self) -> &EzProperty<bool> { &self.active }
+    pub fn get_active(&self) -> bool { self.active.value }
 
     pub fn set_active_symbol(&mut self, symbol: String) { self.active_symbol.set(symbol); }
 
-    pub fn get_active_symbol(&self) -> &EzProperty<String> { &self.active_symbol }
+    pub fn get_active_symbol(&self) -> String { self.active_symbol.value.clone() }
 
     pub fn set_inactive_symbol(&mut self, symbol: String) { self.inactive_symbol.set(symbol); }
 
-    pub fn get_inactive_symbol(&self) -> &EzProperty<String> { &self.inactive_symbol }
+    pub fn get_inactive_symbol(&self) -> String { self.inactive_symbol.value.clone() }
 }

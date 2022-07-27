@@ -2,7 +2,6 @@
 //! A module containing the base structs and traits for widget states.
 use crossterm::style::Color;
 
-use crate::EzProperty;
 use crate::run::definitions::{Coordinates, IsizeCoordinates, Size};
 use crate::scheduler::scheduler::SchedulerFrontend;
 use crate::states::button_state::ButtonState;
@@ -242,13 +241,13 @@ pub trait GenericState {
     /// Set to None for passing an absolute width, or to a value between 0 and 1 to
     /// automatically scale width based on parent width
     fn set_size_hint_x(&mut self, size_hint: Option<f64>) {
-        self.get_size_hint_mut().x.set(size_hint);
+        self.get_size_hint_mut().set_x(size_hint);
     }
 
     /// Set to None for passing an absolute height, or to a value between 0 and 1 to
     /// automatically scale width based on parent height
     fn set_size_hint_y(&mut self, size_hint: Option<f64>) {
-        self.get_size_hint_mut().y.set(size_hint);
+        self.get_size_hint_mut().set_y(size_hint);
     }
 
     /// Get ref to a widgets [SizeHint]
@@ -263,7 +262,7 @@ pub trait GenericState {
     /// When positioning the widget, "center_x" will be replaced with the middle x coordinate of
     /// parent layout, and multiplied with the float.
     fn set_pos_hint_x(&mut self, pos_hint: Option<(HorizontalAlignment, f64)>) {
-        self.get_pos_hint_mut().x.set(pos_hint);
+        self.get_pos_hint_mut().set_x(pos_hint);
     }
 
     /// Set to None to allow hardcoded or default positions. Set a pos hint to position relative
@@ -272,7 +271,7 @@ pub trait GenericState {
     /// When positioning the widget, "top" will be replaced with the y coordinate of the top of the
     /// parent layout, and multiplied by the float.
     fn set_pos_hint_y(&mut self, pos_hint: Option<(VerticalAlignment, f64)>) {
-        self.get_pos_hint_mut().y.set(pos_hint);
+        self.get_pos_hint_mut().set_y(pos_hint);
     }
 
     /// If none widget uses hardcoded or default positions. If a pos hint the widget will be
@@ -293,13 +292,13 @@ pub trait GenericState {
     /// Set width autoscaling bool. If the widget supports it and turned on,
     /// automatically adjusts width to the actual width of its' content
     fn set_auto_scale_width(&mut self, auto_scale: bool) {
-        self.get_auto_scale_mut().width.set(auto_scale);
+        self.get_auto_scale_mut().set_width(auto_scale);
     }
 
     /// Set height autoscaling bool. If the widget supports it and turned on,
     /// automatically adjusts height to the actual height of its' content
     fn set_auto_scale_height(&mut self, auto_scale: bool) {
-        self.get_auto_scale_mut().height.set(auto_scale);
+        self.get_auto_scale_mut().set_height(auto_scale);
     }
 
     /// Get current [Size] of this object
@@ -308,25 +307,21 @@ pub trait GenericState {
     /// Get mutable current [Size] of this object
     fn get_size_mut(&mut self) -> &mut StateSize;
 
-    fn set_width(&mut self, width: usize) {
-        self.get_size_mut().width.set(width)
-    }
+    fn set_width(&mut self, width: usize) { self.get_size_mut().set_width(width) }
 
-    fn set_height(&mut self, height: usize) {
-        self.get_size_mut().height.set(height)
-    }
+    fn set_height(&mut self, height: usize) { self.get_size_mut().set_height(height) }
 
     /// Get the effective amount of width and height within this object, taking off e.g. borders,
     /// padding, etc.
     fn get_effective_size(&self) -> Size {
 
-        let width_result: isize = self.get_size().width.value as isize
-            -if self.get_border_config().enabled.value {2} else {0}
-            -self.get_padding().left.value as isize - self.get_padding().right.value as isize;
+        let width_result: isize = self.get_size().get_width() as isize
+            -if self.get_border_config().get_enabled() {2} else {0}
+            -self.get_padding().get_left() as isize - self.get_padding().get_right() as isize;
         let width = if width_result < 0 {0} else { width_result };
-        let height_result: isize = self.get_size().height.value as isize
-            -if self.get_border_config().enabled.value {2} else {0}
-            -self.get_padding().top.value as isize - self.get_padding().bottom.value as isize;
+        let height_result: isize = self.get_size().get_height() as isize
+            -if self.get_border_config().get_enabled() {2} else {0}
+            -self.get_padding().get_top() as isize - self.get_padding().get_bottom() as isize;
         let height = if height_result < 0 {0} else { height_result };
         Size::new(width as usize, height as usize)
     }
@@ -335,18 +330,18 @@ pub trait GenericState {
     /// e.g. border and padding will be added to this automatically.
     fn set_effective_width(&mut self, width: usize) {
 
-        let offset = if self.get_border_config().enabled.value {2} else {0}
-            + self.get_padding().left.value + self.get_padding().right.value;
-        self.get_size_mut().width.set(width + offset);
+        let offset = if self.get_border_config().get_enabled() {2} else {0}
+            + self.get_padding().get_left() + self.get_padding().get_right();
+        self.get_size_mut().set_width(width + offset);
     }
 
     /// Set the how much height you want the actual content inside this widget to have. Height for
     /// e.g. border and padding will be added to this automatically.
     fn set_effective_height(&mut self, height: usize) {
 
-        let offset = if self.get_border_config().enabled.value {2} else {0}
-            + self.get_padding().top.value + self.get_padding().bottom.value;
-        self.get_size_mut().height.set(height + offset);
+        let offset = if self.get_border_config().get_enabled() {2} else {0}
+            + self.get_padding().get_top() + self.get_padding().get_bottom();
+        self.get_size_mut().set_height(height + offset);
     }
 
     /// Get position relative to parent
@@ -357,15 +352,15 @@ pub trait GenericState {
 
     /// Set x coordinate of [Position]
     fn set_x(&mut self, x: usize) {
-        if x != self.get_position().x.value {
-            self.get_position_mut().x.set(x);
+        if x != self.get_position().get_x() {
+            self.get_position_mut().set_x(x);
         }
     }
 
     /// Set y coordinate of [Position]
     fn set_y(&mut self, y: usize) {
-        if y != self.get_position().y.value {
-            self.get_position_mut().y.set(y);
+        if y != self.get_position().get_y() {
+            self.get_position_mut().set_y(y);
         }
     }
 
@@ -373,10 +368,12 @@ pub trait GenericState {
     /// e.g. borders, padding, etc.
     fn get_effective_position(&self) -> Coordinates {
         Coordinates::new(
-            self.get_position().x.get() +if self.get_border_config().enabled.value {1}
-            else {0} + self.get_padding().left.value,
-            self.get_position().y.get() +if self.get_border_config().enabled.value {1}
-            else {0} + self.get_padding().top.value)
+            self.get_position().get_x()
+                +if self.get_border_config().get_enabled() {1} else {0}
+                +self.get_padding().get_left(),
+            self.get_position().get_y()
+                +if self.get_border_config().get_enabled() {1} else {0}
+                +self.get_padding().get_top())
     }
 
     /// Set the absolute position of a widget, i.e. the position on screen rather than within its'
@@ -392,23 +389,25 @@ pub trait GenericState {
     /// e.g. border and padding
     fn get_effective_absolute_position(&self) -> IsizeCoordinates {
         IsizeCoordinates::new(
-         self.get_absolute_position().x +if self.get_border_config().enabled.value {1} else {0}
-             + self.get_padding().left.value as isize,
-         self.get_absolute_position().y +if self.get_border_config().enabled.value {1} else {0}
-             + self.get_padding().top.value as isize)
+         self.get_absolute_position().x
+             +if self.get_border_config().get_enabled() {1} else {0}
+             + self.get_padding().get_left() as isize,
+         self.get_absolute_position().y
+             +if self.get_border_config().get_enabled() {1} else {0}
+             + self.get_padding().get_top() as isize)
     }
 
     /// Set [HorizontalAlignment] of this widget.
     fn set_horizontal_alignment(&mut self, alignment: HorizontalAlignment);
 
     /// Get [HorizontalAlignment] of this widget
-    fn get_horizontal_alignment(&self) -> &EzProperty<HorizontalAlignment>;
+    fn get_horizontal_alignment(&self) -> HorizontalAlignment;
 
     /// Set [VerticalAlignment] of this widget
     fn set_vertical_alignment(&mut self, alignment: VerticalAlignment);
 
     /// Get [VerticalAlignment] of this widget
-    fn get_vertical_alignment(&self) -> &EzProperty<VerticalAlignment>;
+    fn get_vertical_alignment(&self) -> VerticalAlignment;
 
     /// Get [padding]
     fn get_padding(&self) -> &Padding;
@@ -417,19 +416,19 @@ pub trait GenericState {
     fn get_padding_mut(&mut self) -> &mut Padding;
 
     fn set_padding_top(&mut self, padding: usize) {
-        self.get_padding_mut().top.set(padding)
+        self.get_padding_mut().set_top(padding)
     }
 
     fn set_padding_bottom(&mut self, padding: usize) {
-        self.get_padding_mut().bottom.set(padding)
+        self.get_padding_mut().set_bottom(padding)
     }
 
     fn set_padding_left(&mut self, padding: usize) {
-        self.get_padding_mut().left.set(padding)
+        self.get_padding_mut().set_left(padding)
     }
 
     fn set_padding_right(&mut self, padding: usize) {
-        self.get_padding_mut().right.set(padding)
+        self.get_padding_mut().set_right(padding)
     }
     /// Pas a [BorderConfig] abject that will be used to draw the border if enabled
 
@@ -449,14 +448,14 @@ pub trait GenericState {
     fn get_context_colors(&self) -> (Color, Color) {
 
         let fg_color =
-            if self.get_disabled().value {self.get_color_config().disabled_foreground.value }
-            else if self.get_selected() {self.get_color_config().selection_foreground.value }
-            else {self.get_color_config().foreground.value };
+            if self.get_disabled() {self.get_color_config().get_disabled_foreground() }
+            else if self.get_selected() {self.get_color_config().get_selection_foreground() }
+            else {self.get_color_config().get_foreground() };
 
         let bg_color =
-            if self.get_disabled().value {self.get_color_config().disabled_background.value }
-            else if self.get_selected() {self.get_color_config().selection_background.value }
-            else {self.get_color_config().background.value };
+            if self.get_disabled() {self.get_color_config().get_disabled_background() }
+            else if self.get_selected() {self.get_color_config().get_selection_background() }
+            else {self.get_color_config().get_background() };
 
         (fg_color, bg_color)
     }
@@ -465,8 +464,8 @@ pub trait GenericState {
     fn get_box(&self) -> (Coordinates, Coordinates) {
         let top_left = self.get_absolute_position().as_coordinates();
         let bottom_right = Coordinates::new(
-            top_left.x + self.get_size().width.value,
-            top_left.y + self.get_size().height.value);
+            top_left.x + self.get_size().get_width(),
+            top_left.y + self.get_size().get_height());
         (top_left, bottom_right)
     }
 
@@ -516,12 +515,12 @@ pub trait GenericState {
 
     /// Get the disabled field of a widget. Only implemented by interactive widgets (i.e. widgets
     /// that are selectable).
-    fn get_disabled(&self) -> &EzProperty<bool>;
+    fn get_disabled(&self) -> bool;
 
     /// Get the order in which this widget should be selected, represented by a usize number. E.g.
     /// if there is a '1' widget, a '2' widget, and this widget is '3', calling 'select_next_widget'
     /// will select 1, then 2, then this widget. Used for keyboard up and down keys.
-    fn get_selection_order(&self) -> &EzProperty<usize>;
+    fn get_selection_order(&self) -> usize;
 
     /// Set the order in which this widget should be selected, represented by a usize number. E.g.
     /// if there is a '1' widget, a '2' widget, and this widget is '3', calling 'select_next_widget'

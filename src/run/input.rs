@@ -83,7 +83,7 @@ fn handle_key_event(key: KeyEvent, state_tree: &mut StateTree,
         },
         KeyCode::Enter => {
             if !selected_widget.is_empty() && !state_tree
-                    .get_by_path(&selected_widget).as_generic().get_disabled().value {
+                    .get_by_path(&selected_widget).as_generic().get_disabled() {
                 root_widget.get_child_by_path(selected_widget).unwrap().as_ez_object()
                     .on_keyboard_enter(state_tree, callback_tree, scheduler);
             }
@@ -247,13 +247,13 @@ pub fn handle_resize(view_tree: &mut ViewTree, state_tree: &mut StateTree, root_
 
     for state in state_tree.objects.values_mut() {
         if let EzState::Layout(_) = state {
-            state.as_layout_mut().get_scrolling_config_mut().view_start_x = 0;
-            state.as_layout_mut().get_scrolling_config_mut().view_start_y = 0;
+            state.as_layout_mut().get_scrolling_config_mut().set_view_start_x(0);
+            state.as_layout_mut().get_scrolling_config_mut().set_view_start_y(0);
         }
     }
     let state = state_tree.get_by_path_mut(&root_widget.path).as_generic_mut();
-    state.get_size_mut().width.set(new_width as usize);
-    state.get_size_mut().height.set(new_height as usize);
+    state.get_size_mut().set_width(new_width as usize);
+    state.get_size_mut().set_height(new_height as usize);
     let contents = root_widget.get_contents(state_tree);
     root_widget.propagate_absolute_positions(state_tree);
     // We need to re-initialize the terminal, because on Windows the hidden cursor will come back

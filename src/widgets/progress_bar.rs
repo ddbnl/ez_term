@@ -111,19 +111,20 @@ impl EzObject for ProgressBar {
         for x in 0..state.get_effective_size().width {
             let symbol = if value_pos != 0 && x <= value_pos { "█" } else {"░"};
             contents.push(vec!(Pixel::new(symbol.to_string(),
-                                          state.get_color_config().foreground.value,
-                                     state.get_color_config().background.value)));
+                                          state.get_color_config().get_foreground(),
+                                     state.get_color_config().get_background())));
         }
-        if state.get_border_config().enabled.value {
-            contents = add_border(contents, state.get_border_config());
+        if state.get_border_config().get_enabled() {
+            contents = add_border(contents, state.get_border_config(),
+                                state.get_color_config());
         }
         let state = state_tree
             .get_by_path(&self.get_full_path()).as_progress_bar();
         let parent_colors = state_tree.get_by_path(self.get_full_path()
             .rsplit_once('/').unwrap().0).as_generic().get_color_config();
         contents = add_padding(
-            contents, state.get_padding(), parent_colors.background.value,
-            parent_colors.foreground.value);
+            contents, state.get_padding(), parent_colors.get_background(),
+            parent_colors.get_foreground());
         contents
     }
 }

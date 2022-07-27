@@ -56,8 +56,8 @@ fn initialize_widgets(root_widget: &mut Layout, state_tree: &mut StateTree) -> V
 
     // Create an initial view tree so we can diff all future changes against it.
     let mut view_tree = ViewTree::default();
-    view_tree.initialize(root_widget.state.get_size().width.value,
-                         root_widget.state.get_size().height.value);
+    view_tree.initialize(root_widget.state.get_size().get_width(),
+                         root_widget.state.get_size().get_height());
     view_tree.write_content(Coordinates::new(0, 0), all_content);
     write_to_screen(&mut view_tree);
     view_tree
@@ -192,7 +192,7 @@ fn run_loop(mut root_widget: Layout, mut state_tree: StateTree, mut callback_tre
             }
             // Try to let currently selected widget handle and consume the event
             if !consumed && !selected_widget.is_empty() &&
-                !state_tree.get_by_path(&selected_widget).as_generic().get_disabled().value {
+                !state_tree.get_by_path(&selected_widget).as_generic().get_disabled() {
                 if let Some(widget) =
                 root_widget.get_child_by_path(&selected_widget) {
                     consumed = widget.as_ez_object().handle_event(
@@ -203,8 +203,8 @@ fn run_loop(mut root_widget: Layout, mut state_tree: StateTree, mut callback_tre
                 if let Event::Resize(width, height) = event {
                     let current_size = state_tree.get_by_path(&root_widget.path)
                         .as_generic().get_size();
-                    if current_size.height != height as usize ||
-                        current_size.width != width as usize {
+                    if current_size.get_height() != height as usize ||
+                        current_size.get_width() != width as usize {
                         handle_resize(&mut view_tree, &mut state_tree, &mut root_widget,
                                       width as usize, height as usize);
                         continue

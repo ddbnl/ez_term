@@ -3,6 +3,7 @@
     mode: tab
     size_hint_x: 1/5
     border: True
+    border_fg_color: red
     selection_order: 50
     tab_fg_color: yellow
     tab_bg_color: red

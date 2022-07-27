@@ -130,13 +130,13 @@ impl GenericState for ProgressBarState {
         self.halign.set(alignment);
     }
 
-    fn get_horizontal_alignment(&self) -> &EzProperty<HorizontalAlignment> { &self.halign }
+    fn get_horizontal_alignment(&self) -> HorizontalAlignment { self.halign.value }
 
     fn set_vertical_alignment(&mut self, alignment: VerticalAlignment) {
         self.valign.set(alignment);
     }
 
-    fn get_vertical_alignment(&self) -> &EzProperty<VerticalAlignment> { &self.valign }
+    fn get_vertical_alignment(&self) -> VerticalAlignment { self.valign.value }
 
     fn get_padding(&self) -> &Padding { &self.padding }
 
@@ -156,9 +156,9 @@ impl GenericState for ProgressBarState {
         self.disabled.set(disabled)
     }
 
-    fn get_disabled(&self) -> &EzProperty<bool> { &self.disabled }
+    fn get_disabled(&self) -> bool { self.disabled.value }
 
-    fn get_selection_order(&self) -> &EzProperty<usize> { &self.selection_order }
+    fn get_selection_order(&self) -> usize { self.selection_order.value }
 
     fn set_selection_order(&mut self, order: usize) {
         self.selection_order.set(order);
@@ -195,7 +195,7 @@ impl ProgressBarState {
         self.value.set(value);
     }
 
-    pub fn get_value(&self) -> &EzProperty<usize> { &self.value }
+    pub fn get_value(&self) -> usize { self.value.value }
 
     pub fn set_maximum_value(&mut self, max_value: usize) {
         if self.value > max_value {
@@ -204,7 +204,7 @@ impl ProgressBarState {
         self.maximum.set(max_value);
     }
 
-    pub fn get_maximum_value(&self) -> &EzProperty<usize> { &self.maximum }
+    pub fn get_maximum_value(&self) -> usize { self.maximum.value }
 
     /// Convenience func. Set the progress bar based on two numbers: progress and total. For
     /// example when tracking progress of copying files, pass the number of copied files as

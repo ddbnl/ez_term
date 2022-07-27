@@ -128,17 +128,17 @@ impl EzObject for Dropdown {
             state_tree.get_by_path_mut(&self.get_full_path()).as_dropdown_mut();
         // If dropped down get full content instead
         // Set a default value if user didn't give one
-        if state.get_choice().value.is_empty() && !state.get_allow_none().value {
+        if state.get_choice().is_empty() && !state.get_allow_none() {
             state.set_choice(state.get_options().first()
                 .expect("Dropdown widget must have at least one option").to_string());
         }
         // Create a bordered label representing currently active value
         let (fg_color, bg_color) = state.get_context_colors();
-        let mut text = state.get_choice().value.chars().rev().collect::<String>();
+        let mut text = state.get_choice().chars().rev().collect::<String>();
         let mut contents = Vec::new();
 
-        let write_width = if state.get_size().infinite_width ||
-            state.get_auto_scale().width.value {
+        let write_width = if state.get_size().get_infinite_width() ||
+            state.get_auto_scale().get_width() {
             state.get_options().iter().map(|x| x.len()).max().unwrap_or(0)
         } else {
             state.get_effective_size().width
@@ -155,10 +155,11 @@ impl EzObject for Dropdown {
             }
             contents.push(new_y);
         }
-        if state.get_auto_scale().width.value {
+        if state.get_auto_scale().get_width() {
             state.set_effective_width(contents.len());
         }
-        contents = add_border(contents, state.get_border_config());
+        contents = add_border(contents, state.get_border_config(),
+                            state.get_color_config());
         state.set_effective_height(1);
         contents
     }
@@ -184,13 +185,13 @@ impl EzObject for Dropdown {
         let new_modal_state = DroppedDownMenuState {
             path: modal_path.clone(),
             size: StateSize::new(
-                state.get_size().width.value, state.total_options() + 2,
+                state.get_size().get_width(), state.total_options() + 2,
                 modal_path.clone(), scheduler),
             auto_scale: AutoScale::new(
                 false, false, modal_path.clone(), scheduler),
             options: state.get_options(),
             allow_none: scheduler.new_bool_property(
-                format!("{}/allow_none", modal_path).as_str(), state.get_allow_none().value),
+                format!("{}/allow_none", modal_path).as_str(), state.get_allow_none()),
             size_hint: SizeHint::new(None, None,
                                      modal_path.clone(), scheduler),
             position,
@@ -210,7 +211,7 @@ impl EzObject for Dropdown {
             border_config: state.get_border_config().clone(),
             colors: state.get_color_config().clone(),
             choice: scheduler.new_string_property(format!("{}/choice", modal_path).as_str(),
-                                                  state.get_choice().value.clone()),
+                                                  state.get_choice()),
             parent_path: self.path.clone(),
         };
         let new_modal = DroppedDownMenu {
@@ -305,11 +306,11 @@ impl EzObject for DroppedDownMenu {
             let mut new_y = Vec::new();
             for y in 0..options.len() {
                 let fg = if y == state.dropped_down_selected_row
-                {state.get_color_config().selection_foreground.value }
-                else {state.get_color_config().foreground.value };
+                {state.get_color_config().get_selection_foreground() }
+                else {state.get_color_config().get_foreground() };
                 let bg = if y == state.dropped_down_selected_row
-                {state.get_color_config().selection_background.value }
-                else {state.get_color_config().background.value };
+                {state.get_color_config().get_selection_background() }
+                else {state.get_color_config().get_background() };
                 if !options[y].is_empty(){
                     new_y.push(Pixel{symbol: options[y].pop().unwrap().to_string(),
                         foreground_color: fg, background_color: bg, underline: false})
@@ -324,9 +325,10 @@ impl EzObject for DroppedDownMenu {
         let state = state_tree
             .get_by_path(&self.get_full_path()).as_dropped_down_menu();
         contents = add_padding(
-            contents, state.get_padding(), state.colors.background.value,
-            state.colors.foreground.value);
-        contents = add_border(contents, state.get_border_config());
+            contents, state.get_padding(), state.colors.get_background(),
+            state.colors.get_foreground());
+        contents = add_border(contents, state.get_border_config(),
+                            state.get_color_config());
         contents
     }
 

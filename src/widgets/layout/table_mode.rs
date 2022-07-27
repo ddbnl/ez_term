@@ -23,7 +23,7 @@ impl Layout{
             ‘lr-tb’, ‘tb-lr’, ‘rl-tb’, ‘tb-rl’, ‘lr-bt’, ‘bt-lr’, ‘rl-bt’ and ‘bt-rl’.",
             self.id)
         }
-        if own_table_config.rows == 0 && own_table_config.columns == 0 {
+        if own_table_config.get_rows() == 0 && own_table_config.get_columns() == 0 {
             panic!("Error in layout: {}. When in table mode, rows or columns (or both) should be \
             constrained. Set the \"rows\" or \"cols\" property to a value above 0.", self.id);
         }
@@ -39,11 +39,11 @@ impl Layout{
         // Initial cell size. Can change if force_default is false, in which case it will scale to
         // size of largest child
         let default_height =
-            if own_table_config.default_height == 0 { own_effective_size.height / rows }
-            else { own_table_config.default_height.value };
+            if own_table_config.get_default_height() == 0 { own_effective_size.height / rows }
+            else { own_table_config.get_default_height() };
         let default_width =
-            if own_table_config.default_width == 0 { own_effective_size.width / cols }
-            else { own_table_config.default_width.value };
+            if own_table_config.get_default_width() == 0 { own_effective_size.width / cols }
+            else { own_table_config.get_default_width() };
 
         let content_list = self.get_table_mode_child_content(
             state_tree, &own_size, &own_scrolling, &own_effective_size);
@@ -56,16 +56,16 @@ impl Layout{
     fn get_rows_and_cols(&self, table_config: &TableConfig) -> (usize, usize){
 
         let (rows, cols);
-        if table_config.rows > 0 && table_config.columns > 0 {
-            rows = table_config.rows.value;
-            cols = table_config.columns.value;
+        if table_config.get_rows() > 0 && table_config.get_columns() > 0 {
+            rows = table_config.get_rows();
+            cols = table_config.get_columns();
         }
-        else if table_config.rows > 0 {
-            rows = table_config.rows.value;
+        else if table_config.get_rows() > 0 {
+            rows = table_config.get_rows();
             cols =  (self.children.len() / rows) as usize +
                 if self.children.len() % rows != 0 { 1 } else { 0 };
         } else {
-            cols = table_config.columns.value;
+            cols = table_config.get_columns();
             rows =  (self.children.len() / cols) as usize +
                 if self.children.len() % cols != 0 { 1 } else { 0 };
         }
@@ -192,7 +192,7 @@ impl Layout{
                        default_height: usize) -> Vec<usize> {
 
         let mut row_heights = Vec::new();
-        if !table_config.force_default_height.value {
+        if !table_config.get_force_default_height() {
             for y in 0..rows {
                 let mut largest = 0;
                 for x in 0..cols {
@@ -203,9 +203,9 @@ impl Layout{
                         if height > largest { largest = height };
                     }
                 }
-                if table_config.default_height > 0 &&
-                    largest < table_config.default_height.value {
-                    largest = table_config.default_height.value
+                if table_config.get_default_height() > 0 &&
+                    largest < table_config.get_default_height() {
+                    largest = table_config.get_default_height()
                 }
                 row_heights.push(largest);
             }
@@ -222,7 +222,7 @@ impl Layout{
                       default_width: usize) -> Vec<usize> {
 
         let mut col_widths = Vec::new();
-        if !table_config.force_default_width.value {
+        if !table_config.get_force_default_width() {
             for x in 0..cols {
                 let mut largest = 0;
                 for y in 0..rows {
@@ -231,9 +231,9 @@ impl Layout{
                         if width > largest { largest = width };
                     }
                 }
-                if table_config.default_width > 0 &&
-                    largest < table_config.default_width.value {
-                    largest = table_config.default_width.value
+                if table_config.get_default_width() > 0 &&
+                    largest < table_config.get_default_width() {
+                    largest = table_config.get_default_width()
                 }
                 col_widths.push(largest);
 
@@ -256,30 +256,30 @@ impl Layout{
             let state = state_tree
                 .get_by_path_mut(&generic_child.get_full_path().clone()).as_generic_mut();
 
-            if size.infinite_width || scrolling_config.enable_x.value {
-                state.get_size_mut().infinite_width = true;
+            if size.get_infinite_width() || scrolling_config.get_enable_x() {
+                state.get_size_mut().set_infinite_width(true);
             }
-            if size.infinite_height || scrolling_config.enable_y.value {
-                state.get_size_mut().infinite_height = true;
+            if size.get_infinite_height() || scrolling_config.get_enable_y() {
+                state.get_size_mut().set_infinite_height(true);
             }
 
             // If autoscaling is enabled set child size to max width. It is then expected to scale
             // itself according to its' content
-            if state.get_auto_scale().width.value {
-                state.get_size_mut().width.set(effective_size.width)
+            if state.get_auto_scale().get_width() {
+                state.get_size_mut().set_width(effective_size.width)
             }
-            if state.get_auto_scale().height.value {
-                state.get_size_mut().height.set(effective_size.height)
+            if state.get_auto_scale().get_height() {
+                state.get_size_mut().set_height(effective_size.height)
             }
 
             let child_content = generic_child.get_contents(state_tree);
             let state = state_tree.get_by_path_mut(&generic_child.get_full_path())
                 .as_generic_mut(); // re-borrow
-            if state.get_size().infinite_width {
-                state.get_size_mut().width.set(child_content.len())
+            if state.get_size().get_infinite_width() {
+                state.get_size_mut().set_width(child_content.len())
             }
-            if state.get_size().infinite_height {
-                state.get_size_mut().height.set(
+            if state.get_size().get_infinite_height() {
+                state.get_size_mut().set_height(
                     if !child_content.is_empty() { child_content[0].len() } else { 0 })
             }
             content_list.push(child_content);
@@ -301,8 +301,8 @@ impl Layout{
         let total_height: usize = row_heights.iter().sum();
         let total_width: usize = col_widths.iter().sum();
         let mut content = vec!(
-            vec!(Pixel::new(" ".to_string(), colors.foreground.value,
-                            colors.background.value); total_height); total_width);
+            vec!(Pixel::new(" ".to_string(), colors.get_foreground(),
+                            colors.get_background()); total_height); total_width);
 
         let mut write_pos = Coordinates::new(0, 0);
         for x in 0..cols {
@@ -317,15 +317,15 @@ impl Layout{
 
                 let (child_content, offset) = align_content_horizontally(
                     child_content,
-                    state.get_horizontal_alignment().value, row_heights[y],
-                    colors.foreground.value,colors.background.value);
-                state.get_position_mut().x.set(write_pos.x + offset);
+                    state.get_horizontal_alignment(), row_heights[y],
+                    colors.get_foreground(),colors.get_background());
+                state.get_position_mut().set_x(write_pos.x + offset);
 
                 let (child_content, offset) = align_content_vertically(
                     child_content,
-                    state.get_vertical_alignment().value, row_heights[y],
-                    colors.foreground.value,colors.background.value);
-                state.get_position_mut().y.set(write_pos.y + offset);
+                    state.get_vertical_alignment(), row_heights[y],
+                    colors.get_foreground(),colors.get_background());
+                state.get_position_mut().set_y(write_pos.y + offset);
 
                 for child_x in 0..col_widths[x] {
                     for child_y in 0..row_heights[y] {

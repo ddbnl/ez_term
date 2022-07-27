@@ -153,8 +153,8 @@ impl EzObject for RadioButton {
         state.set_width(5);
         state.set_height(1);
         let active_symbol =
-            if state.get_active().value { state.get_active_symbol().value.clone() }
-            else { state.get_inactive_symbol().value.clone() };
+            if state.get_active() { state.get_active_symbol() }
+            else { state.get_inactive_symbol() };
         let (fg_color, bg_color) = state.get_context_colors();
         let mut contents = vec!(
             vec!(Pixel {symbol: "(".to_string(), foreground_color: fg_color,
@@ -168,16 +168,17 @@ impl EzObject for RadioButton {
             vec!(Pixel {symbol: ")".to_string(), foreground_color: fg_color,
                 background_color: bg_color, underline: false}),
         );
-        if state.get_border_config().enabled.value {
-            contents = add_border(contents, state.get_border_config());
+        if state.get_border_config().get_enabled() {
+            contents = add_border(contents, state.get_border_config(),
+                                state.get_color_config());
         }
         let state = state_tree
             .get_by_path(&self.get_full_path()).as_radio_button();
         let parent_colors = state_tree.get_by_path(self.get_full_path()
             .rsplit_once('/').unwrap().0).as_generic().get_color_config();
         contents = add_padding(
-            contents, state.get_padding(), parent_colors.background.value,
-            parent_colors.foreground.value);
+            contents, state.get_padding(), parent_colors.get_background(),
+            parent_colors.get_foreground());
         contents
     }
 
@@ -213,10 +214,10 @@ impl RadioButton {
 
         // Find all other radio buttons in same group and make them inactive (mutual exclusivity)
         let group_name =
-            state_tree.get_by_path(&self.path).as_radio_button().get_group().value.clone();
+            state_tree.get_by_path(&self.path).as_radio_button().get_group();
         for (path, state) in state_tree.objects.iter_mut() {
             if let EzState::RadioButton(ref mut i) = state {
-                if i.get_group().value == group_name && path != &self.get_full_path() {
+                if i.get_group() == group_name && path != &self.get_full_path() {
                     state.as_radio_button_mut().set_active(false);
                 }
             }
@@ -224,7 +225,7 @@ impl RadioButton {
         // Set entered radio button to active and select it
         let state = state_tree.get_by_path_mut(&self.get_full_path())
             .as_radio_button_mut();
-        if !state.get_active().value {
+        if !state.get_active() {
             state.set_active(true);
             state.update(scheduler);
             self.on_value_change_callback(state_tree, callback_tree, scheduler);

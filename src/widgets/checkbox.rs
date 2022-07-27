@@ -130,8 +130,8 @@ impl EzObject for Checkbox {
         state.set_width(5);
         state.set_height(1);
         let active_symbol =
-            if state.get_active().value { state.get_active_symbol().value.clone() }
-            else { state.get_inactive_symbol().value.clone() };
+            if state.get_active() { state.get_active_symbol() }
+            else { state.get_inactive_symbol() };
 
         let (fg_color, bg_color) = state.get_context_colors();
         let mut contents = vec!(
@@ -146,13 +146,14 @@ impl EzObject for Checkbox {
             vec!(Pixel { symbol: "]".to_string(), foreground_color: fg_color,
                 background_color: bg_color, underline: false}),
         );
-        if state.get_border_config().enabled.value {
-            contents = add_border(contents, state.get_border_config());
+        if state.get_border_config().get_enabled() {
+            contents = add_border(contents, state.get_border_config(),
+                            state.get_color_config());
         }
         let parent_colors = state.get_color_config();
         contents = add_padding(
-            contents, state.get_padding(),parent_colors.background.value,
-            parent_colors.foreground.value);
+            contents, state.get_padding(),parent_colors.get_background(),
+            parent_colors.get_foreground());
         contents
     }
 
@@ -187,7 +188,7 @@ impl Checkbox {
 
         let state = state_tree.get_by_path_mut(&self.get_full_path())
             .as_checkbox_mut();
-        state.set_active(!state.get_active().value);
+        state.set_active(!state.get_active());
         state.update(scheduler);
         self.on_value_change_callback(state_tree, callback_tree, scheduler);
     }

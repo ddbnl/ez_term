@@ -78,31 +78,31 @@ impl Layout {
             let state = state_tree
                 .get_by_path_mut(&generic_child.get_full_path().clone()).as_generic_mut();
 
-            if size.infinite_width || scrolling_config.enable_x.value {
-                state.get_size_mut().infinite_width = true;
+            if size.get_infinite_width() || scrolling_config.get_enable_x() {
+                state.get_size_mut().set_infinite_width(true);
             }
-            if size.infinite_height || scrolling_config.enable_y.value {
-                state.get_size_mut().infinite_height = true;
+            if size.get_infinite_height() || scrolling_config.get_enable_y() {
+                state.get_size_mut().set_infinite_height(true);
             }
 
             // If autoscaling is enabled set child size to max width. It is then expected to scale
             // itself according to its' content
-            if state.get_auto_scale().width.value {
-                state.get_size_mut().width.set(effective_size.width + 1);
+            if state.get_auto_scale().get_width() {
+                state.get_size_mut().set_width(effective_size.width + 1);
             }
-            if state.get_auto_scale().height.value {
-                state.get_size_mut().height.set(effective_size.height + 1);
+            if state.get_auto_scale().get_height() {
+                state.get_size_mut().set_height(effective_size.height + 1);
             }
 
             let child_content = generic_child.get_contents(state_tree);
             if child_content.is_empty() { continue }  // handle empty widget
             let state =
                 state_tree.get_by_path_mut(&generic_child.get_full_path()).as_generic_mut(); // re-borrow
-            if state.get_size().infinite_width {
-                state.get_size_mut().width.set(child_content.len())
+            if state.get_size().get_infinite_width() {
+                state.get_size_mut().set_width(child_content.len())
             }
-            if state.get_size().infinite_height {
-                state.get_size_mut().height.set(child_content[0].len())
+            if state.get_size().get_infinite_height() {
+                state.get_size_mut().set_height(child_content[0].len())
             }
             content_list.push(child_content);
         }
@@ -115,8 +115,8 @@ impl Layout {
 
         let mut merged_content = vec!(
             vec!(Pixel::new(" ".to_string(),
-                            colors.foreground.value,
-                            colors.background.value
+                            colors.get_foreground(),
+                            colors.get_background()
             ); effective_size.height); effective_size.width);
 
         let (mut largest_x, mut largest_y) = (0, 0);
@@ -147,10 +147,10 @@ impl Layout {
             pos.x += content.len();
         }
 
-        if auto_scaling.width.value {
+        if auto_scaling.get_width() {
             merged_content = merged_content[0..=largest_x].to_vec();
         }
-        if auto_scaling.height.value {
+        if auto_scaling.get_height() {
             merged_content = merged_content.iter()
                 .map(|x| x[0..=largest_y].to_vec()).collect();
         }
@@ -163,8 +163,8 @@ impl Layout {
 
         let mut merged_content = vec!(
             vec!(Pixel::new(" ".to_string(),
-                            colors.foreground.value,
-                            colors.background.value
+                            colors.get_foreground(),
+                            colors.get_background()
             ); effective_size.height); effective_size.width);
 
         let (mut largest_x, mut smallest_y) = (0, effective_size.height - 1);
@@ -194,10 +194,10 @@ impl Layout {
             }
             pos.x += content.len();
         }
-        if auto_scaling.width.value {
+        if auto_scaling.get_width() {
             merged_content = merged_content[0..=largest_x].to_vec();
         }
-        if auto_scaling.height.value {
+        if auto_scaling.get_height() {
             merged_content = merged_content.iter()
                 .map(|x| x[smallest_y..].to_vec()).collect();
         }
@@ -210,8 +210,8 @@ impl Layout {
 
         let mut merged_content = vec!(
             vec!(Pixel::new(" ".to_string(),
-                            colors.foreground.value,
-                            colors.background.value
+                            colors.get_foreground(),
+                            colors.get_background()
             ); effective_size.height); effective_size.width);
 
         let (mut smallest_x, mut largest_y) = (effective_size.width - 1, 0);
@@ -241,10 +241,10 @@ impl Layout {
                 }
             }
         }
-        if auto_scaling.width.value {
+        if auto_scaling.get_width() {
             merged_content = merged_content[smallest_x..].to_vec();
         }
-        if auto_scaling.height.value {
+        if auto_scaling.get_height() {
             merged_content = merged_content.iter()
                 .map(|x| x[0..=largest_y].to_vec()).collect();
         }
@@ -257,8 +257,8 @@ impl Layout {
 
         let mut merged_content = vec!(
             vec!(Pixel::new(" ".to_string(),
-                            colors.foreground.value,
-                            colors.background.value
+                            colors.get_foreground(),
+                            colors.get_background()
             ); effective_size.height); effective_size.width);
 
         let (mut smallest_x, mut smallest_y) =
@@ -291,10 +291,10 @@ impl Layout {
                 }
             }
         }
-        if auto_scaling.width.value {
+        if auto_scaling.get_width() {
             merged_content = merged_content[smallest_x..].to_vec();
         }
-        if auto_scaling.height.value {
+        if auto_scaling.get_height() {
             merged_content = merged_content.iter()
                 .map(|x| x[smallest_y..].to_vec()).collect();
         }
@@ -307,8 +307,8 @@ impl Layout {
 
         let mut merged_content = vec!(
             vec!(Pixel::new(" ".to_string(),
-                            colors.foreground.value,
-                            colors.background.value
+                            colors.get_foreground(),
+                            colors.get_background()
             ); effective_size.height); effective_size.width);
 
         let (mut largest_x, mut largest_y) = (0, 0);
@@ -339,10 +339,10 @@ impl Layout {
             pos.y += largest;
         }
 
-        if auto_scaling.width.value {
+        if auto_scaling.get_width() {
             merged_content = merged_content[0..=largest_x].to_vec();
         }
-        if auto_scaling.height.value {
+        if auto_scaling.get_height() {
             merged_content = merged_content.iter()
                 .map(|x| x[0..=largest_y].to_vec()).collect();
         }
@@ -355,8 +355,8 @@ impl Layout {
 
         let mut merged_content = vec!(
             vec!(Pixel::new(" ".to_string(),
-                            colors.foreground.value,
-                            colors.background.value
+                            colors.get_foreground(),
+                            colors.get_background()
             ); effective_size.height); effective_size.width);
 
         let (mut smallest_x, mut largest_y) = (effective_size.width - 1, 0);
@@ -387,10 +387,10 @@ impl Layout {
             pos.y += largest;
         }
 
-        if auto_scaling.width.value {
+        if auto_scaling.get_width() {
             merged_content = merged_content[smallest_x..].to_vec();
         }
-        if auto_scaling.height.value {
+        if auto_scaling.get_height() {
             merged_content = merged_content.iter()
                 .map(|x| x[0..=largest_y].to_vec()).collect();
         }
@@ -403,8 +403,8 @@ impl Layout {
 
         let mut merged_content = vec!(
             vec!(Pixel::new(" ".to_string(),
-                            colors.foreground.value,
-                            colors.background.value
+                            colors.get_foreground(),
+                            colors.get_background()
             ); effective_size.height); effective_size.width);
 
         let (mut largest_x, mut smallest_y) = (0, effective_size.height - 1);
@@ -438,10 +438,10 @@ impl Layout {
             }
         }
 
-        if auto_scaling.width.value {
+        if auto_scaling.get_width() {
             merged_content = merged_content[0..=largest_x].to_vec();
         }
-        if auto_scaling.height.value {
+        if auto_scaling.get_height() {
             merged_content = merged_content.iter()
                 .map(|x| x[smallest_y..].to_vec()).collect();
         }
@@ -453,8 +453,8 @@ impl Layout {
 
         let mut merged_content = vec!(
             vec!(Pixel::new(" ".to_string(),
-                            colors.foreground.value,
-                            colors.background.value
+                            colors.get_foreground(),
+                            colors.get_background()
             ); effective_size.height); effective_size.width);
 
         let (mut smallest_x, mut smallest_y) = (effective_size.width - 1,
@@ -491,10 +491,10 @@ impl Layout {
             }
         }
 
-        if auto_scaling.width.value {
+        if auto_scaling.get_width() {
             merged_content = merged_content[smallest_x..].to_vec();
         }
-        if auto_scaling.height.value {
+        if auto_scaling.get_height() {
             merged_content = merged_content.iter()
                 .map(|x| x[smallest_y..].to_vec()).collect();
         }

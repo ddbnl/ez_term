@@ -123,12 +123,12 @@ impl Layout {
         -> Result<(), Error> {
 
         let path = self.path.clone();
-        self.state.get_scrolling_config_mut().enable_x.set(load_ez_bool_property(
+        self.state.get_scrolling_config_mut().set_enable_x(load_ez_bool_property(
             parameter_value.trim(), scheduler, path.clone(),
             Box::new(move |state_tree: &mut StateTree, val: EzValues| {
                 let state = state_tree.get_by_path_mut(&path)
                     .as_layout_mut();
-                state.get_scrolling_config_mut().enable_x.set(val.as_bool().to_owned());
+                state.get_scrolling_config_mut().set_enable_x(val.as_bool().to_owned());
                 path.clone()
             }))?);
         Ok(())
@@ -138,12 +138,12 @@ impl Layout {
         -> Result<(), Error> {
 
         let path = self.path.clone();
-        self.state.get_scrolling_config_mut().enable_y.set(load_ez_bool_property(
+        self.state.get_scrolling_config_mut().set_enable_y(load_ez_bool_property(
             parameter_value.trim(), scheduler, path.clone(),
             Box::new(move |state_tree: &mut StateTree, val: EzValues| {
                 let state = state_tree.get_by_path_mut(&path)
                     .as_layout_mut();
-                state.get_scrolling_config_mut().enable_y.set(val.as_bool().to_owned());
+                state.get_scrolling_config_mut().set_enable_y(val.as_bool().to_owned());
                 path.clone()
             }))?);
         Ok(())
@@ -153,12 +153,12 @@ impl Layout {
                                       scheduler: &mut SchedulerFrontend) -> Result<(), Error> {
 
         let path = self.path.clone();
-        self.state.get_table_config_mut().rows.set(load_ez_usize_property(
+        self.state.get_table_config_mut().set_rows(load_ez_usize_property(
             parameter_value.trim(), scheduler, path.clone(),
             Box::new(move |state_tree: &mut StateTree, val: EzValues| {
                 let state = state_tree.get_by_path_mut(&path)
                     .as_layout_mut();
-                state.get_table_config_mut().rows.set(val.as_usize().to_owned());
+                state.get_table_config_mut().set_rows(val.as_usize().to_owned());
                 path.clone()
             }))?);
         Ok(())
@@ -168,12 +168,12 @@ impl Layout {
                                    scheduler: &mut SchedulerFrontend) -> Result<(), Error> {
 
         let path = self.path.clone();
-        self.state.get_table_config_mut().columns.set(load_ez_usize_property(
+        self.state.get_table_config_mut().set_columns(load_ez_usize_property(
             parameter_value.trim(), scheduler, path.clone(),
             Box::new(move |state_tree: &mut StateTree, val: EzValues| {
                 let state = state_tree.get_by_path_mut(&path)
                     .as_layout_mut();
-                state.get_table_config_mut().columns.set(val.as_usize().to_owned());
+                state.get_table_config_mut().set_columns(val.as_usize().to_owned());
                 path.clone()
             }))?);
         Ok(())
@@ -183,12 +183,12 @@ impl Layout {
                                           scheduler: &mut SchedulerFrontend) -> Result<(), Error> {
 
         let path = self.path.clone();
-        self.state.get_table_config_mut().default_height.set(load_ez_usize_property(
+        self.state.get_table_config_mut().set_default_height(load_ez_usize_property(
             parameter_value.trim(), scheduler, path.clone(),
             Box::new(move |state_tree: &mut StateTree, val: EzValues| {
                 let state = state_tree.get_by_path_mut(&path)
                     .as_layout_mut();
-                state.get_table_config_mut().default_height.set(val.as_usize().to_owned());
+                state.get_table_config_mut().set_default_height(val.as_usize().to_owned());
                 path.clone()
             }))?);
         Ok(())
@@ -198,12 +198,12 @@ impl Layout {
                                          scheduler: &mut SchedulerFrontend) -> Result<(), Error> {
 
         let path = self.path.clone();
-        self.state.get_table_config_mut().default_width.set(load_ez_usize_property(
+        self.state.get_table_config_mut().set_default_width(load_ez_usize_property(
             parameter_value.trim(), scheduler, path.clone(),
             Box::new(move |state_tree: &mut StateTree, val: EzValues| {
                 let state = state_tree.get_by_path_mut(&path)
                     .as_layout_mut();
-                state.get_table_config_mut().default_width.set(val.as_usize().to_owned());
+                state.get_table_config_mut().set_default_width(val.as_usize().to_owned());
                 path.clone()
             }))?);
         Ok(())
@@ -213,12 +213,12 @@ impl Layout {
                                               scheduler: &mut SchedulerFrontend) -> Result<(), Error> {
 
         let path = self.path.clone();
-        self.state.get_table_config_mut().force_default_height.set(load_ez_bool_property(
+        self.state.get_table_config_mut().set_force_default_height(load_ez_bool_property(
             parameter_value.trim(), scheduler, path.clone(),
             Box::new(move |state_tree: &mut StateTree, val: EzValues| {
                 let state = state_tree.get_by_path_mut(&path)
                     .as_layout_mut();
-                state.get_table_config_mut().force_default_height.set(val.as_bool().to_owned());
+                state.get_table_config_mut().set_force_default_height(val.as_bool().to_owned());
                 path.clone()
             }))?);
         Ok(())
@@ -228,12 +228,12 @@ impl Layout {
                                                 scheduler: &mut SchedulerFrontend) -> Result<(), Error> {
 
         let path = self.path.clone();
-        self.state.get_table_config_mut().force_default_width.set(load_ez_bool_property(
+        self.state.get_table_config_mut().set_force_default_width(load_ez_bool_property(
             parameter_value.trim(), scheduler, path.clone(),
             Box::new(move |state_tree: &mut StateTree, val: EzValues| {
                 let state = state_tree.get_by_path_mut(&path)
                     .as_layout_mut();
-                state.get_table_config_mut().force_default_width.set(val.as_bool().to_owned());
+                state.get_table_config_mut().set_force_default_width(val.as_bool().to_owned());
                 path.clone()
             }))?);
         Ok(())
@@ -359,14 +359,15 @@ impl EzObject for Layout {
 
         if merged_content.is_empty() { return merged_content } // Empty widget
         // Put border around content if border if set
-        if state.get_border_config().enabled.value {
-            merged_content = add_border(merged_content, state.get_border_config());
+        if state.get_border_config().get_enabled() {
+            merged_content = add_border(merged_content, state.get_border_config(),
+                                        state.get_color_config());
         }
         // Put padding around content if set
         merged_content = add_padding(
             merged_content, state.get_padding(),
-            state.get_color_config().background.value,
-            state.get_color_config().foreground.value);
+            state.get_color_config().get_background(),
+            state.get_color_config().get_foreground());
         merged_content = self.get_modal_contents(state_tree, merged_content);
 
         self.propagate_absolute_positions(state_tree);
@@ -424,16 +425,16 @@ impl EzObject for Layout {
 
         let state = state_tree.get_by_path_mut(&self.path).as_layout_mut();
 
-        let v_edge = if state.get_border_config().enabled.value
+        let v_edge = if state.get_border_config().get_enabled()
         { state.get_effective_size().height + 1 }
         else { state.get_effective_size().height };
-        if state.get_scrolling_config().is_scrolling_x && mouse_pos.y == v_edge {
+        if state.get_scrolling_config().get_is_scrolling_x() && mouse_pos.y == v_edge {
 
             let (scrollbar_size, scrollbar_pos) =
                 self.get_horizontal_scrollbar_parameters(
-                state.get_scrolling_config().original_width,
+                state.get_scrolling_config().get_original_width(),
                 state.get_effective_size().width,
-                state.get_scrolling_config().view_start_x);
+                state.get_scrolling_config().get_view_start_x());
 
             if mouse_pos.x < scrollbar_pos {
                 self.handle_scroll_left(state_tree, scheduler);
@@ -444,15 +445,15 @@ impl EzObject for Layout {
             }
         }
 
-        let h_edge = if state.get_border_config().enabled.value
+        let h_edge = if state.get_border_config().get_enabled()
             { state.get_effective_size().width + 1 }
             else { state.get_effective_size().width };
-        if state.get_scrolling_config().is_scrolling_y &&
+        if state.get_scrolling_config().get_is_scrolling_y() &&
             mouse_pos.x == h_edge {
             let (scrollbar_size, scrollbar_pos) = self.get_vertical_scrollbar_parameters(
-                state.get_scrolling_config().original_height,
+                state.get_scrolling_config().get_original_height(),
                 state.get_effective_size().height,
-                state.get_scrolling_config().view_start_y);
+                state.get_scrolling_config().get_view_start_y());
 
             if mouse_pos.y < scrollbar_pos {
                 self.handle_scroll_up(state_tree, scheduler);
@@ -475,15 +476,15 @@ impl EzObject for Layout {
 
         let state = state_tree.get_by_path_mut(&self.path).as_layout_mut();
 
-        let offset = if state.get_border_config().enabled.value { 2 } else { 1 };
-        if state.get_scrolling_config().is_scrolling_x &&
-            mouse_pos.y + offset == state.get_size().height.value {
+        let offset = if state.get_border_config().get_enabled() { 2 } else { 1 };
+        if state.get_scrolling_config().get_is_scrolling_x() &&
+            mouse_pos.y + offset == state.get_size().get_height() {
 
             let (scrollbar_size, scrollbar_pos) =
                 self.get_horizontal_scrollbar_parameters(
-                    state.get_scrolling_config().original_width,
+                    state.get_scrolling_config().get_original_width(),
                     state.get_effective_size().width,
-                    state.get_scrolling_config().view_start_x);
+                    state.get_scrolling_config().get_view_start_x());
 
             if previous_pos.is_none() {
                 return if mouse_pos.x >= scrollbar_pos && mouse_pos.x <= scrollbar_pos + scrollbar_size {
@@ -494,28 +495,31 @@ impl EzObject for Layout {
             }
             if previous_pos.unwrap().x > mouse_pos.x &&
                 (mouse_pos.x as isize).abs_diff(previous_pos.unwrap().x as isize)
-                    > state.get_scrolling_config().view_start_x {
-                state.get_scrolling_config_mut().view_start_x = 0;
+                    > state.get_scrolling_config().get_view_start_x() {
+                state.get_scrolling_config_mut().set_view_start_x(0);
             } else if previous_pos.unwrap().x < mouse_pos.x &&
-                state.get_scrolling_config().view_start_x + (mouse_pos.x - previous_pos.unwrap().x) >
-                    state.get_scrolling_config().original_width - state.get_effective_size().width {
-                state.get_scrolling_config_mut().view_start_x =
-                    state.get_scrolling_config().original_width - state.get_effective_size().width
+                    state.get_scrolling_config().get_view_start_x() +
+                        (mouse_pos.x - previous_pos.unwrap().x) >
+                    state.get_scrolling_config().get_original_width() -
+                        state.get_effective_size().width {
+                let new_view_start = state.get_scrolling_config().get_original_width() -
+                    state.get_effective_size().width;
+                state.get_scrolling_config_mut().set_view_start_x(new_view_start)
             } else {
-                state.get_scrolling_config_mut().view_start_x =
-                    (state.get_scrolling_config().view_start_x as isize + mouse_pos.x as isize -
-                        previous_pos.unwrap().x as isize) as usize;
+                let new_view_start = (state.get_scrolling_config().get_view_start_x() as isize
+                    + mouse_pos.x as isize - previous_pos.unwrap().x as isize) as usize;
+                state.get_scrolling_config_mut().set_view_start_x(new_view_start);
             }
             consumed = true;
 
-        } else if state.get_scrolling_config().is_scrolling_y &&
-            mouse_pos.x + offset == state.get_size().width.value {
+        } else if state.get_scrolling_config().get_is_scrolling_y() &&
+            mouse_pos.x + offset == state.get_size().get_width() {
 
             let (scrollbar_size, scrollbar_pos) =
                 self.get_vertical_scrollbar_parameters(
-                    state.get_scrolling_config().original_height,
+                    state.get_scrolling_config().get_original_height(),
                     state.get_effective_size().height,
-                    state.get_scrolling_config().view_start_y);
+                    state.get_scrolling_config().get_view_start_y());
 
             if previous_pos.is_none() {
                 return if mouse_pos.y >= scrollbar_pos && mouse_pos.y <= scrollbar_pos + scrollbar_size {
@@ -526,17 +530,20 @@ impl EzObject for Layout {
             }
             if previous_pos.unwrap().y > mouse_pos.y &&
                 (mouse_pos.y as isize).abs_diff(previous_pos.unwrap().y as isize)
-                    > state.get_scrolling_config().view_start_y {
-                state.get_scrolling_config_mut().view_start_y = 0;
+                    > state.get_scrolling_config().get_view_start_y() {
+                state.get_scrolling_config_mut().set_view_start_y(0);
             } else if previous_pos.unwrap().y < mouse_pos.y &&
-                state.get_scrolling_config().view_start_y + (mouse_pos.y - previous_pos.unwrap().y) >
-                    state.get_scrolling_config().original_height - state.get_effective_size().height {
-                state.get_scrolling_config_mut().view_start_y =
-                    state.get_scrolling_config().original_height - state.get_effective_size().height
+                    state.get_scrolling_config().get_view_start_y()
+                        + (mouse_pos.y - previous_pos.unwrap().y) >
+                    state.get_scrolling_config().get_original_height()
+                        - state.get_effective_size().height {
+                let new_view_start = state.get_scrolling_config().get_original_height() -
+                    state.get_effective_size().height;
+                state.get_scrolling_config_mut().set_view_start_y(new_view_start)
             } else {
-                state.get_scrolling_config_mut().view_start_y =
-                    (state.get_scrolling_config().view_start_y as isize + mouse_pos.y as isize -
-                        previous_pos.unwrap().y as isize) as usize;
+                let new_view_start = (state.get_scrolling_config().get_view_start_y() as isize +
+                    mouse_pos.y as isize - previous_pos.unwrap().y as isize) as usize;
+                state.get_scrolling_config_mut().set_view_start_y(new_view_start);
             }
             consumed = true;
         }
@@ -549,7 +556,8 @@ impl EzObject for Layout {
                     scheduler: &mut SchedulerFrontend) -> bool {
 
         let state = state_tree.get_by_path_mut(&self.path).as_layout_mut();
-        if state.get_scrolling_config().is_scrolling_y || state.get_scrolling_config().is_scrolling_x {
+        if state.get_scrolling_config().get_is_scrolling_y() ||
+            state.get_scrolling_config().get_is_scrolling_x() {
             self.handle_scroll_up(state_tree, scheduler);
             return true
         }
@@ -560,8 +568,8 @@ impl EzObject for Layout {
                       scheduler: &mut SchedulerFrontend) -> bool {
 
         let state = state_tree.get_by_path_mut(&self.path).as_layout_mut();
-        if state.get_scrolling_config().is_scrolling_y ||
-                state.get_scrolling_config().is_scrolling_x {
+        if state.get_scrolling_config().get_is_scrolling_y() ||
+                state.get_scrolling_config().get_is_scrolling_x() {
             self.handle_scroll_down(state_tree, scheduler);
             return true
         }
@@ -607,13 +615,13 @@ impl Layout {
 
         let state = state_tree.get_by_path_mut(&self.get_full_path())
             .as_layout_mut();
-        if state.get_auto_scale().width.value {
+        if state.get_auto_scale().get_width() {
             let auto_scale_width = contents.len();
             if auto_scale_width < state.get_effective_size().width {
                 state.set_effective_width(auto_scale_width);
             }
         }
-        if state.get_auto_scale().height.value {
+        if state.get_auto_scale().get_height() {
             let auto_scale_height = contents.iter()
                 .map(|x| x.len()).max().unwrap_or(0);
             if auto_scale_height < state.get_effective_size().height {
@@ -637,13 +645,13 @@ impl Layout {
             .get_modals().first().unwrap().clone();
         let state = state_tree
             .get_by_path_mut(&modal.as_ez_object().get_full_path());
-        resize_with_size_hint(state, parent_size.width.value,
-                              parent_size.height.value);
+        resize_with_size_hint(state, parent_size.get_width(),
+                              parent_size.get_height());
         reposition_with_pos_hint(
-            parent_size.width.value, parent_size.height.value,
+            parent_size.get_width(), parent_size.get_height(),
             state.as_generic_mut());
-        let x = state.as_generic().get_position().x.value;
-        let y = state.as_generic().get_position().y.value;
+        let x = state.as_generic().get_position().get_x();
+        let y = state.as_generic().get_position().get_y();
         state.as_generic_mut().set_absolute_position(IsizeCoordinates::new(
             x as isize, y as isize));
 
@@ -664,10 +672,10 @@ impl Layout {
         let start_pos = state.get_position();
         for x in 0..modal_content.len() {
             for y in 0..modal_content[x].len() {
-                let write_pos = Coordinates::new(start_pos.x.get() + x,
-                                                 start_pos.y.get() + y);
-                if write_pos.x < parent_size.width.value &&
-                    write_pos.y < parent_size.height.value {
+                let write_pos = Coordinates::new(start_pos.get_x() + x,
+                                                 start_pos.get_y() + y);
+                if write_pos.x < parent_size.get_width() &&
+                    write_pos.y < parent_size.get_height() {
                     contents[write_pos.x][write_pos.y] = modal_content[x][y].clone();
                 }
             }
@@ -679,11 +687,11 @@ impl Layout {
 
         let state = state_tree.get_by_path_mut(&self.get_full_path())
             .as_layout_mut();
-        if !state.get_fill().value { return contents }
+        if !state.get_fill() { return contents }
 
-        let filler = Pixel::new(state.get_filler_symbol().value.clone(),
-                                state.get_color_config().filler_foreground.value,
-                                state.get_color_config().filler_background.value);
+        let filler = Pixel::new(state.get_filler_symbol(),
+                                state.get_color_config().get_filler_foreground(),
+                                state.get_color_config().get_filler_background());
 
         for x in 0..state.get_effective_size().width {
             for y in contents[x].iter_mut() {
@@ -718,8 +726,8 @@ impl Layout {
         for x in contents.iter_mut() {
             while x.len() < state.get_effective_size().height || x.len() < largest {
                 x.push(Pixel::new(
-                    " ".to_string(), state.get_color_config().foreground.value,
-                    state.get_color_config().background.value));
+                    " ".to_string(), state.get_color_config().get_foreground(),
+                    state.get_color_config().get_background()));
             }
         }
         contents

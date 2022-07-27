@@ -86,8 +86,8 @@ pub fn redraw_widgets(paths: &mut Vec<String>, view_tree: &mut ViewTree,
             // to keep the view intact.
             loop {
                 let state = state_tree.get_by_path(&widget_path);
-                if (!state.as_generic().get_size().infinite_width &&
-                    !state.as_generic().get_size().infinite_height) || widget_path == "/root" {
+                if (!state.as_generic().get_size().get_infinite_width() &&
+                    !state.as_generic().get_size().get_infinite_height()) || widget_path == "/root" {
                     break
                 } else {
                     widget_path = widget_path.rsplit_once('/').unwrap().0.to_string()

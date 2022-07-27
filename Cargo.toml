@@ -9,5 +9,5 @@ name = "ez_term"
 path = "src/lib.rs"
 
 [dependencies]
-crossterm = "0.23.2"
+crossterm = "0.24.0"
 unicode-segmentation = "1.9.0"

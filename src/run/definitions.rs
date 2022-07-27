@@ -56,8 +56,8 @@ impl Size {
 
     pub fn from_state_size(other: &StateSize) -> Self {
         Size {
-            width: other.width.value,
-            height: other.height.value,
+            width: other.get_width(),
+            height: other.get_height(),
         }
     }
 }

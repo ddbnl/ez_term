@@ -107,34 +107,34 @@ impl EzObject for Slider {
             .as_slider_mut();
 
         if state.get_effective_size().width == 0 { return PixelMap::new() }
-        if state.get_value().value < state.get_minimum().value {
-            state.set_value(state.get_minimum().value)
+        if state.get_value() < state.get_minimum() {
+            state.set_value(state.get_minimum())
         }
-        if state.get_value().value > state.get_maximum().value {
-            state.set_value(state.get_maximum().value)
+        if state.get_value() > state.get_maximum() {
+            state.set_value(state.get_maximum())
         }
 
         state.set_height(1);
-        if state.get_auto_scale().width.value {
-            state.set_effective_width(((state.get_maximum().value - state.get_minimum().value) /
-                state.get_step().value) as usize + 1);
+        if state.get_auto_scale().get_width() {
+            state.set_effective_width(((state.get_maximum() - state.get_minimum()) /
+                state.get_step()) as usize + 1);
         }
 
         let mut contents = PixelMap::new();
         let value_pos =
             ((state.get_effective_size().width - 1) as f64 *
-            ((state.get_value().value - state.get_minimum().value) as f64 /
-                (state.get_maximum().value - state.get_minimum().value) as f64))
+            ((state.get_value() - state.get_minimum()) as f64 /
+                (state.get_maximum() - state.get_minimum()) as f64))
                 as usize;
         for x in 0..state.get_effective_size().width {
             let fg_color =
-                if state.get_disabled().value {state.get_color_config().disabled_foreground.value }
+                if state.get_disabled() {state.get_color_config().get_disabled_foreground() }
                 else if x == value_pos &&
-                    state.get_selected() { state.get_color_config().selection_foreground.value }
-                else { state.get_color_config().foreground.value };
+                    state.get_selected() { state.get_color_config().get_selection_foreground() }
+                else { state.get_color_config().get_foreground() };
             let bg_color =
-                if state.get_disabled().value {state.get_color_config().disabled_background.value }
-                else {state.get_color_config().background.value};
+                if state.get_disabled() {state.get_color_config().get_disabled_background() }
+                else {state.get_color_config().get_background()};
             contents.push(vec!(Pixel::new(
                 if x == value_pos { "🮚".to_string() } else { "━".to_string() },
                 fg_color, bg_color)));
@@ -144,8 +144,8 @@ impl EzObject for Slider {
         let parent_colors = state_tree.get_by_path(self.get_full_path()
             .rsplit_once('/').unwrap().0).as_generic().get_color_config();
         contents = add_padding(
-            contents, state.get_padding(), parent_colors.background.value,
-            parent_colors.foreground.value);
+            contents, state.get_padding(), parent_colors.get_background(),
+            parent_colors.get_foreground());
         contents
     }
 
@@ -208,21 +208,21 @@ impl Slider {
     }
 
     fn value_from_mouse_pos(&self, state: &mut SliderState, mouse_pos: Coordinates) -> usize {
-        let ratio = (state.get_maximum().value - state.get_minimum().value) as f64
+        let ratio = (state.get_maximum() - state.get_minimum()) as f64
             / state.get_effective_size().width as f64;
-        let mut value = (ratio * mouse_pos.x as f64).round() as usize + state.get_minimum().value;
+        let mut value = (ratio * mouse_pos.x as f64).round() as usize + state.get_minimum();
 
         // Make sure the set value is a multiple of step
-        if value >= state.get_maximum().value - state.get_step().value ||
+        if value >= state.get_maximum() - state.get_step() ||
             mouse_pos.x == state.get_effective_size().width - 1 {
-            value = state.get_maximum().value;
+            value = state.get_maximum();
         } else if mouse_pos.x == 0 {
-            value = state.get_minimum().value;
+            value = state.get_minimum();
         } else {
-            value -= value % state.get_step().value;
+            value -= value % state.get_step();
         }
 
-        min(value, state.get_maximum().value)
+        min(value, state.get_maximum())
     }
 
     fn handle_left(&self, state_tree: &mut StateTree, callback_tree: &mut CallbackTree,
@@ -230,7 +230,7 @@ impl Slider {
 
         let state = state_tree.get_by_path_mut(&self.path).as_slider_mut();
         if state.get_value() == state.get_minimum() { return }
-        state.set_value(state.get_value().value - state.get_step().value);
+        state.set_value(state.get_value() - state.get_step());
         state.update(scheduler);
         self.on_value_change_callback(state_tree, callback_tree, scheduler);
     }
@@ -239,7 +239,7 @@ impl Slider {
 
         let state = state_tree.get_by_path_mut(&self.path).as_slider_mut();
         if state.get_value() == state.get_maximum() { return }
-        state.set_value(state.get_value().value + state.get_step().value);
+        state.set_value(state.get_value() + state.get_step());
         state.update(scheduler);
         self.on_value_change_callback(state_tree, callback_tree, scheduler);
     }

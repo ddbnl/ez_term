@@ -127,13 +127,13 @@ impl GenericState for DropdownState {
         self.halign.set(alignment);
     }
 
-    fn get_horizontal_alignment(&self) -> &EzProperty<HorizontalAlignment> { &self.halign }
+    fn get_horizontal_alignment(&self) -> HorizontalAlignment { self.halign.value }
 
     fn set_vertical_alignment(&mut self, alignment: VerticalAlignment) {
         self.valign.set(alignment);
     }
 
-    fn get_vertical_alignment(&self) -> &EzProperty<VerticalAlignment> { &self.valign }
+    fn get_vertical_alignment(&self) -> VerticalAlignment { self.valign.value }
 
     fn get_padding(&self) -> &Padding { &self.padding }
 
@@ -151,9 +151,9 @@ impl GenericState for DropdownState {
 
     fn set_disabled(&mut self, disabled: bool) { self.disabled.set(disabled) }
 
-    fn get_disabled(&self) -> &EzProperty<bool> { &self.disabled }
+    fn get_disabled(&self) -> bool { self.disabled.value }
 
-    fn get_selection_order(&self) -> &EzProperty<usize> { &self.selection_order }
+    fn get_selection_order(&self) -> usize { self.selection_order.value }
 
     fn set_selection_order(&mut self, order: usize) { self.selection_order.set(order); }
 
@@ -183,7 +183,7 @@ impl DropdownState {
 
     pub fn set_choice(&mut self, choice: String) { self.choice.set(choice); }
 
-    pub fn get_choice(&self) -> &EzProperty<String> { &self.choice }
+    pub fn get_choice(&self) -> String { self.choice.value.clone() }
 
     pub fn set_options(&mut self, options: Vec<String>) { self.options = options }
 
@@ -191,7 +191,7 @@ impl DropdownState {
 
     pub fn set_allow_none(&mut self, allow_none: bool) { self.allow_none.set(allow_none); }
 
-    pub fn get_allow_none(&self) -> &EzProperty<bool> { &self.allow_none }
+    pub fn get_allow_none(&self) -> bool { self.allow_none.value }
 
     /// Return the total amount of options in this dropdown including the empty option if it is
     /// allowed.
@@ -332,13 +332,13 @@ impl GenericState for DroppedDownMenuState {
         self.halign.set(alignment)
     }
 
-    fn get_horizontal_alignment(&self) -> &EzProperty<HorizontalAlignment> { &self.halign }
+    fn get_horizontal_alignment(&self) -> HorizontalAlignment { self.halign.value }
 
     fn set_vertical_alignment(&mut self, alignment: VerticalAlignment) {
         self.valign.set(alignment)
     }
 
-    fn get_vertical_alignment(&self) -> &EzProperty<VerticalAlignment> { &self.valign }
+    fn get_vertical_alignment(&self) -> VerticalAlignment { self.valign.value }
 
     fn get_padding(&self) -> &Padding { &self.padding }
 
@@ -356,9 +356,9 @@ impl GenericState for DroppedDownMenuState {
         self.disabled.set(disabled)
     }
 
-    fn get_disabled(&self) -> &EzProperty<bool> { &self.disabled }
+    fn get_disabled(&self) -> bool { self.disabled.value }
 
-    fn get_selection_order(&self) -> &EzProperty<usize> { &self.selection_order }
+    fn get_selection_order(&self) -> usize { self.selection_order.value }
 
     fn set_selection_order(&mut self, order: usize) { self.selection_order.set(order); }
 
@@ -385,7 +385,7 @@ impl DroppedDownMenuState {
 
     pub fn set_choice(&mut self, choice: String) { self.choice.set(choice); }
 
-    pub fn get_choice(&self) -> &EzProperty<String> { &self.choice }
+    pub fn get_choice(&self) -> String { self.choice.value.clone() }
 
     pub fn set_options(&mut self, options: Vec<String>) { self.options = options }
 
@@ -393,7 +393,7 @@ impl DroppedDownMenuState {
 
     pub fn set_allow_none(&mut self, allow_none: bool) { self.allow_none.set(allow_none); }
 
-    pub fn get_allow_none(&self) -> &EzProperty<bool> { &self.allow_none }
+    pub fn get_allow_none(&self) -> bool { self.allow_none.value }
 
     pub fn set_dropped_down_selected_row(&mut self, dropped_down_selected_row: usize) {
         self.dropped_down_selected_row = dropped_down_selected_row;
