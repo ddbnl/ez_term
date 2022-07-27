@@ -8,7 +8,7 @@ use crossterm::event::KeyCode;
 use crate::property::ez_properties::EzProperties;
 use crate::property::ez_values::EzValues;
 use crate::run::definitions::{Coordinates, StateTree};
-use crate::scheduler::scheduler::Scheduler;
+use crate::scheduler::scheduler::{SchedulerFrontend};
 
 
 /// A <Name, EzProperties> HashMap.
@@ -81,10 +81,11 @@ pub struct EzContext<'a, 'b> {
     pub state_tree: &'a mut StateTree,
 
     /// The current [Scheduler]
-    pub scheduler: &'b mut Scheduler,
+    pub scheduler: &'b mut SchedulerFrontend,
 }
 impl<'a, 'b> EzContext<'a, 'b> {
 
-    pub fn new(widget_path: String, state_tree: &'a mut StateTree, scheduler: &'b mut Scheduler)
+    pub fn new(widget_path: String, state_tree: &'a mut StateTree,
+               scheduler: &'b mut SchedulerFrontend)
         -> Self { EzContext { widget_path, state_tree, scheduler } }
 }

@@ -1,7 +1,7 @@
 use crate::property::ez_property::EzProperty;
 use crate::run::definitions::{IsizeCoordinates};
+use crate::scheduler::scheduler::SchedulerFrontend;
 use crate::scheduler::scheduler_funcs::clean_up_property;
-use crate::scheduler::scheduler::Scheduler;
 use crate::states::definitions::{StateCoordinates, SizeHint, PosHint, StateSize, AutoScale, Padding,
                                  HorizontalAlignment, VerticalAlignment, BorderConfig, ColorConfig};
 use crate::states::ez_state::GenericState;
@@ -58,7 +58,7 @@ pub struct LabelState {
 }
 impl LabelState {
 
-    pub fn new(path: String, scheduler: &mut Scheduler) -> Self {
+    pub fn new(path: String, scheduler: &mut SchedulerFrontend) -> Self {
 
        LabelState {
            path: path.clone(),
@@ -149,7 +149,7 @@ impl GenericState for LabelState {
 
     fn set_selection_order(&mut self, order: usize) { self.selection_order.set(order); }
 
-    fn clean_up_properties(&self, scheduler: &mut Scheduler) {
+    fn clean_up_properties(&self, scheduler: &mut SchedulerFrontend) {
 
         self.position.clean_up_properties(scheduler);
         self.size.clean_up_properties(scheduler);

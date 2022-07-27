@@ -1,14 +1,17 @@
 //! A widget that displays text non-interactively.
 use std::cmp::min;
 use std::io::{Error, ErrorKind};
+
 use crossterm::event::{Event, KeyCode};
-use crate::states::ez_state::{EzState, GenericState};
-use crate::widgets::ez_object::{EzObject};
+
 use crate::parser::load_common_properties::load_common_property;
 use crate::run::definitions::{CallbackTree, Coordinates, Pixel, PixelMap, StateTree};
-use crate::scheduler::scheduler::Scheduler;
+use crate::scheduler::scheduler::SchedulerFrontend;
+use crate::states::ez_state::{EzState, GenericState};
 use crate::states::slider_state::SliderState;
+use crate::widgets::ez_object::EzObject;
 use crate::widgets::helper_functions::add_padding;
+
 
 #[derive(Clone, Debug)]
 pub struct Slider {
@@ -24,7 +27,7 @@ pub struct Slider {
 }
 
 impl Slider {
-    pub fn new(id: String, path: String, scheduler: &mut Scheduler) -> Self {
+    pub fn new(id: String, path: String, scheduler: &mut SchedulerFrontend) -> Self {
         Slider {
             id,
             path: path.clone(),
@@ -32,7 +35,7 @@ impl Slider {
         }
     }
 
-    pub fn from_state(id: String, path: String, scheduler: &mut Scheduler, state: EzState) -> Self {
+    pub fn from_state(id: String, path: String, _scheduler: &mut SchedulerFrontend, state: EzState) -> Self {
         Slider {
             id,
             path: path.clone(),
@@ -46,7 +49,7 @@ impl Slider {
 impl EzObject for Slider {
 
     fn load_ez_parameter(&mut self, parameter_name: String, parameter_value: String,
-                         scheduler: &mut Scheduler) -> Result<(), Error> {
+                         scheduler: &mut SchedulerFrontend) -> Result<(), Error> {
         let consumed = load_common_property(
             &parameter_name, parameter_value.clone(), self, scheduler)?;
         if consumed { return Ok(())}
@@ -143,7 +146,7 @@ impl EzObject for Slider {
     }
 
     fn handle_event(&self, event: Event, state_tree: &mut StateTree,
-                    callback_tree: &mut CallbackTree, scheduler: &mut Scheduler) -> bool {
+                    callback_tree: &mut CallbackTree, scheduler: &mut SchedulerFrontend) -> bool {
 
         if let Event::Key(key) = event {
             if key.code == KeyCode::Left {
@@ -158,7 +161,7 @@ impl EzObject for Slider {
     }
 
     fn on_left_mouse_click(&self, state_tree: &mut StateTree, callback_tree: &mut CallbackTree,
-                           scheduler: &mut Scheduler, mouse_pos: Coordinates) -> bool {
+                           scheduler: &mut SchedulerFrontend, mouse_pos: Coordinates) -> bool {
 
         let state = state_tree.get_by_path_mut(&self.path).as_slider_mut();
         let value = self.value_from_mouse_pos(state, mouse_pos);
@@ -169,7 +172,7 @@ impl EzObject for Slider {
     }
 
     fn on_hover(&self, state_tree: &mut StateTree, callback_tree: &mut CallbackTree,
-                scheduler: &mut Scheduler, mouse_pos: Coordinates) -> bool {
+                scheduler: &mut SchedulerFrontend, mouse_pos: Coordinates) -> bool {
 
         scheduler.set_selected_widget(&self.path, Some(mouse_pos));
         self.on_hover_callback(state_tree, callback_tree, scheduler, mouse_pos);
@@ -177,7 +180,7 @@ impl EzObject for Slider {
     }
 
     fn on_drag(&self, state_tree: &mut StateTree, callback_tree: &mut CallbackTree,
-               scheduler: &mut Scheduler, previous_pos: Option<Coordinates>,
+               scheduler: &mut SchedulerFrontend, previous_pos: Option<Coordinates>,
                mouse_pos: Coordinates) -> bool {
 
         let state = state_tree.get_by_path_mut(&self.path).as_slider_mut();
@@ -192,7 +195,7 @@ impl EzObject for Slider {
 impl Slider {
 
     /// Initialize an instance of this object using the passed config coming from [ez_parser]
-    pub fn from_config(config: Vec<String>, id: String, path: String, scheduler: &mut Scheduler,
+    pub fn from_config(config: Vec<String>, id: String, path: String, scheduler: &mut SchedulerFrontend,
                        file: String, line: usize) -> Self {
 
         let mut obj = Slider::new(id, path, scheduler);
@@ -219,7 +222,7 @@ impl Slider {
     }
 
     fn handle_left(&self, state_tree: &mut StateTree, callback_tree: &mut CallbackTree,
-                   scheduler: &mut Scheduler) {
+                   scheduler: &mut SchedulerFrontend) {
 
         let state = state_tree.get_by_path_mut(&self.path).as_slider_mut();
         if state.value == state.minimum { return }
@@ -228,7 +231,7 @@ impl Slider {
         self.on_value_change_callback(state_tree, callback_tree, scheduler);
     }
     fn handle_right(&self, state_tree: &mut StateTree, callback_tree: &mut CallbackTree,
-                    scheduler: &mut Scheduler) {
+                    scheduler: &mut SchedulerFrontend) {
 
         let state = state_tree.get_by_path_mut(&self.path).as_slider_mut();
         if state.value == state.maximum { return }

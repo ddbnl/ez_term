@@ -7,7 +7,7 @@ use crossterm::style::StyledContent;
 
 use crate::CallbackConfig;
 use crate::run::definitions::{CallbackTree, Coordinates, Pixel, PixelMap, StateTree};
-use crate::scheduler::scheduler::Scheduler;
+use crate::scheduler::scheduler::SchedulerFrontend;
 use crate::widgets::ez_object::EzObject;
 use crate::widgets::layout::layout::Layout;
 
@@ -190,7 +190,7 @@ pub fn initialize_callback_tree(root_layout: &Layout) -> CallbackTree {
 /// Clean up orphaned states and callback configs in their respective trees. E.g. for when a
 /// modal closes.
 pub fn clean_trees(root_widget: &mut Layout, state_tree: &mut StateTree,
-                   callback_tree: &mut CallbackTree, scheduler: &mut Scheduler) {
+                   callback_tree: &mut CallbackTree, scheduler: &mut SchedulerFrontend) {
 
     let state_paths: Vec<String> = state_tree.objects.keys().into_iter().cloned().collect();
     for path in state_paths {
@@ -202,7 +202,7 @@ pub fn clean_trees(root_widget: &mut Layout, state_tree: &mut StateTree,
     let callback_paths: Vec<String> = callback_tree.objects.keys().into_iter().cloned().collect();
     for path in callback_paths {
         if path != "/root" && root_widget.get_child_by_path(&path).is_none()
-            && !scheduler.properties.contains_key(&path) {
+            && !scheduler.backend.properties.contains_key(&path) {
             callback_tree.remove(&path);
         }
     }

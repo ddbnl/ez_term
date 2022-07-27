@@ -3,7 +3,7 @@
 //! A module implementing the Scheduler struct.
 use std::collections::HashMap;
 use std::sync::mpsc::Receiver;
-use std::thread::JoinHandle;
+use std::thread::{JoinHandle};
 use std::time::{Duration, Instant};
 
 use crossterm::style::Color;
@@ -16,22 +16,10 @@ use crate::property::ez_values::EzValues;
 use crate::run::definitions::{Coordinates, StateTree};
 use crate::run::run::{open_popup, stop};
 use crate::scheduler::definitions::{EzPropertyUpdater, EzThread, GenericEzTask};
-use crate::states::button_state::ButtonState;
-use crate::states::canvas_state::CanvasState;
-use crate::states::checkbox_state::CheckboxState;
 use crate::states::definitions::{HorizontalAlignment, VerticalAlignment};
-use crate::states::dropdown_state::{DropdownState, DroppedDownMenuState};
 use crate::states::ez_state::EzState;
-use crate::states::label_state::LabelState;
-use crate::states::layout_state::LayoutState;
-use crate::states::progress_bar_state::ProgressBarState;
-use crate::states::radio_button_state::RadioButtonState;
-use crate::states::slider_state::SliderState;
-use crate::states::text_input_state::TextInputState;
 
 
-/// A struct with methods for managing the UI indirectly.
-///
 /// The Scheduler is a key component of the framework. It, along with the [StateTree], gives
 /// you control over the UI at runtime.
 /// # Features of the scheduler
@@ -43,104 +31,15 @@ use crate::states::text_input_state::TextInputState;
 /// - Creating custom [EzProperty]s
 /// - Set the selected widget
 /// - Stop the app
-#[derive(Default)]
-pub struct Scheduler {
+pub struct SchedulerFrontend {
 
-    /// List of widgets that will be redrawn on the next frame
-    pub widgets_to_update: Vec<String>,
-
-    /// If true, the entire screen will be redrawn on the next frame. Only differences compared to
-    /// the previous frame.
-    pub force_redraw: bool,
-
-    /// A <Name, [EzProperty]> HashMap to keep track of all properties at runtime. Also passed to
-    /// closures that are spawned in background threads, as [EzProperty] is thread-safe.
-    pub properties: HashMap<String, EzProperties>,
-
-    /// A list of scheduled tasks. Can be run-once or interval tasks. These are checked on every
-    /// frame, and ran if the 'after' Duration has passed for run-once tasks, or after the 'interval'
-    /// duration has passed for interval tasks.
-    pub tasks: Vec<Task>,
-
-    /// List of <Function, Optional on_finish callback>. This list is checked every frame. If
-    /// theres an item in here, it will be used to spawn a background thread based on the passed
-    /// function. Once the function is finished running, the optional callback will be executed if
-    /// there was one.
-    pub threads_to_start: Vec<(EzThread, Option<GenericEzTask>)>,
-
-    /// List of thread handles with optional callbacks. If a thread is finished running, the
-    /// JoinHandle is joined and the callback executed if there was any.
-    pub thread_handles: Vec<(JoinHandle<()>, Option<GenericEzTask>)>,
-
-    /// Templates defined in the .ez files. Used by [create_widget]
-    pub templates: Templates,
-
-    /// List of new widgets that will be created on the next frame. Use [create_widget] for this.
-    pub widgets_to_create: Vec<(String, String, EzState)>,
-
-    /// List of <Widget path, [CallbackConfig]. Every frame this list is checked, and the widget
-    /// belonging to the widget path will have its' [CallbackConfig] replaced with the new one.
-    pub new_callback_configs: Vec<(String, CallbackConfig)>,
-
-    /// List of <Widget path, [CallbackConfig]. Every frame this list is checked, and the widget
-    /// belonging to the widget path will have its' [CallbackConfig] updated with the new one,
-    /// meaning any callbacks that are unset in the old config, but set in the new one, will be
-    /// updated. Callbacks are never deleted, but will be overwritten.
-    pub updated_callback_configs: Vec<(String, CallbackConfig)>,
-
-    /// A <Widget path, Receiver> HashMap, used to get the receiver of an EzProprerty channel.
-    /// New values are received on this receiver and then synced to any subsribed properties.
-    pub property_receivers: HashMap<String, Receiver<EzValues>>,
-
-    /// A <Widget path, update_callback> HashMap, used to get the updater callback EzProprerty.
-    /// When a property subsribes to another, it must provide an updater callback. When the value
-    /// changes, the callback will be called with the new value, and is responsible for syncing the
-    /// subscribing property to the new value.
-    pub property_subscribers: HashMap<String, Vec<EzPropertyUpdater>>,
-
-    /// A <Widget path, user_callback> HashMap, used to store callbacks the user has registered to
-    /// the changing of a value of an [EzProperty]. When the value changes, the callback is called.
-    pub property_callbacks: HashMap<String, Vec<Box<dyn FnMut(EzContext)>>>,
-    
-    /// The widget (ID or path) set here will be selected on the next frame, deselecting the current
-    /// selection if any and calling the appropriate callbacks. The optional mouse_position will be
-    /// passed to the on_select callback.
-    pub next_selection: Option<(String, Option<Coordinates>)>,
-
-    /// If true, deselect the currently selection widget (if any) on the next frame.
-    pub deselect: bool,
-}
-
-/// A struct representing a run-once- or recurring task. This struct is not directly used by the
-/// end-user, but created when they schedule a task through the [Scheduler].
-pub struct Task {
-
-    /// The widget for which this task was scheduled. Convenience property as this is passed to the
-    /// task callback func, allowed the user to easily retrieve the state of the widget.
-    pub widget: String,
-
-    /// Function that will be called when this task is executed.
-    pub func: GenericEzTask,
-
-    /// This task is run-once if this is false, in which case it will be executed if the 'after'
-    /// Duration has passed. This task is recurring if this is true, in which case it will be
-    /// executed after the 'interval' Duration has passed, and scheduled again as long as the
-    /// function keeps returning true.
-    pub recurring: bool,
-
-    /// Task will be dropped if this is true. Mainly used to cancel a run-once task before it is
-    /// executed.
-    pub canceled: bool,
-
-    /// The schedule on which a recurring task must run.
-    pub interval: Duration,
-
-    /// Last time this task was executed, used to keep track of when it should run next.
-    pub last_execution: Option<Instant>,
+    /// Backend of the scheduler. Do not use. Use the public funcs instead.
+    pub backend: Scheduler,
 }
 
 
-impl Scheduler {
+
+impl SchedulerFrontend {
 
     /// Schedule a [GenericEzTask] to be executed once, after the passed duration. The duration can
     /// be 0 to start this on the next frame. This should only be used to manipulate the UI; to run
@@ -177,7 +76,7 @@ impl Scheduler {
 
         let task = Task::new(widget, func, false, after,
                              Some(Instant::now()));
-        self.tasks.push(task);
+        self.backend.tasks.push(task);
     }
 
     /// Schedule a [GenericEzTask] to be executed repeatedly on an interval. As long as the passed
@@ -221,8 +120,8 @@ impl Scheduler {
     pub fn schedule_interval(&mut self, widget: String,  func: GenericEzTask, interval: Duration)
         -> &mut Task {
         let task = Task::new(widget, func, true, interval, None);
-        self.tasks.push(task);
-        self.tasks.last_mut().unwrap()
+        self.backend.tasks.push(task);
+        self.backend.tasks.last_mut().unwrap()
     }
 
     /// Schedule to immediately run a function or closure in a background thread. Use this for
@@ -269,7 +168,7 @@ impl Scheduler {
     pub fn schedule_threaded(&mut self, threaded_func: Box<dyn FnOnce(EzPropertiesMap) + Send>,
                              on_finish: Option<GenericEzTask>) {
 
-        self.threads_to_start.push((threaded_func, on_finish));
+        self.backend.threads_to_start.push((threaded_func, on_finish));
     }
 
     /// Open a template defined in an .ez file as a popup.
@@ -334,7 +233,7 @@ impl Scheduler {
     ///                               CallbackConfig::from_on_press(Box::new(dismiss_delay)));
     /// ```
     pub fn set_callback_config(&mut self, for_widget: &str, callback_config: CallbackConfig) {
-        self.new_callback_configs.push((for_widget.to_string(), callback_config));
+        self.backend.new_callback_configs.push((for_widget.to_string(), callback_config));
     }
 
     /// Update the [CallbackConfig] of a widget. The first argument is the ID or the Path of the
@@ -357,7 +256,7 @@ impl Scheduler {
     ///                                  CallbackConfig::from_on_press(Box::new(dismiss_delay)));
     /// ```
     pub fn update_callback_config(&mut self, for_widget: &str, callback_config: CallbackConfig) {
-        self.updated_callback_configs.push((for_widget.to_string(), callback_config));
+        self.backend.updated_callback_configs.push((for_widget.to_string(), callback_config));
 
     }
 
@@ -365,11 +264,11 @@ impl Scheduler {
 
         let new_path = format!("{}/{}", path, id);
         let base_type;
-        let mut new_state;
-        if self.templates.contains_key(widget_type) {
-            base_type = self.templates
-                .get(widget_type).unwrap().resolve_base_type(&self.templates);
-            new_state = self.templates.get_mut(widget_type).unwrap()
+        let new_state;
+        if self.backend.templates.contains_key(widget_type) {
+            base_type = self.backend.templates
+                .get(widget_type).unwrap().resolve_base_type(&self.backend.templates);
+            new_state = self.backend.templates.get_mut(widget_type).unwrap()
                 .clone().parse(self, path.to_string(), 0,
                                Some(vec!(format!("id: {}", id))))
                 .as_ez_object_mut().get_state();
@@ -379,8 +278,8 @@ impl Scheduler {
                 &base_type, path.to_string(), self);
         };
 
-        self.widgets_to_create.push((new_path, base_type, new_state));
-        &mut self.widgets_to_create.last_mut().unwrap().2
+        self.backend.widgets_to_create.push((new_path, base_type, new_state));
+        &mut self.backend.widgets_to_create.last_mut().unwrap().2
 
     }
 
@@ -393,8 +292,9 @@ impl Scheduler {
 
         let (property, receiver) =
             EzProperty::new(name.to_string(), value);
-        self.properties.insert(name.to_string(), EzProperties::Usize(property.clone()));
-        self.property_receivers.insert(name.to_string(), receiver);
+        self.backend.properties.insert(name.to_string(),
+                                       EzProperties::Usize(property.clone()));
+        self.backend.property_receivers.insert(name.to_string(), receiver);
         property
     }
 
@@ -407,8 +307,9 @@ impl Scheduler {
 
         let (property, receiver) =
             EzProperty::new(name.to_string(), value);
-        self.properties.insert(name.to_string(), EzProperties::String(property.clone()));
-        self.property_receivers.insert(name.to_string(), receiver);
+        self.backend.properties.insert(name.to_string(),
+                                       EzProperties::String(property.clone()));
+        self.backend.property_receivers.insert(name.to_string(), receiver);
         property
     }
 
@@ -421,8 +322,9 @@ impl Scheduler {
 
         let (property, receiver) =
             EzProperty::new(name.to_string(), value);
-        self.properties.insert(name.to_string(), EzProperties::Bool(property.clone()));
-        self.property_receivers.insert(name.to_string(), receiver);
+        self.backend.properties.insert(name.to_string(),
+                                       EzProperties::Bool(property.clone()));
+        self.backend.property_receivers.insert(name.to_string(), receiver);
         property
     }
 
@@ -435,8 +337,9 @@ impl Scheduler {
 
         let (property, receiver) =
             EzProperty::new(name.to_string(), value);
-        self.properties.insert(name.to_string(), EzProperties::Color(property.clone()));
-        self.property_receivers.insert(name.to_string(), receiver);
+        self.backend.properties.insert(name.to_string(),
+                                       EzProperties::Color(property.clone()));
+        self.backend.property_receivers.insert(name.to_string(), receiver);
         property
     }
 
@@ -450,8 +353,9 @@ impl Scheduler {
 
         let (property, receiver) =
             EzProperty::new(name.to_string(), value);
-        self.properties.insert(name.to_string(), EzProperties::VerticalAlignment(property.clone()));
-        self.property_receivers.insert(name.to_string(), receiver);
+        self.backend.properties.insert(name.to_string(),
+                                       EzProperties::VerticalAlignment(property.clone()));
+        self.backend.property_receivers.insert(name.to_string(), receiver);
         property
     }
 
@@ -465,8 +369,9 @@ impl Scheduler {
 
         let (property, receiver) =
             EzProperty::new(name.to_string(), value);
-        self.properties.insert(name.to_string(), EzProperties::HorizontalAlignment(property.clone()));
-        self.property_receivers.insert(name.to_string(), receiver);
+        self.backend.properties.insert(name.to_string(),
+                                       EzProperties::HorizontalAlignment(property.clone()));
+        self.backend.property_receivers.insert(name.to_string(), receiver);
         property
     }
 
@@ -481,8 +386,9 @@ impl Scheduler {
 
         let (property, receiver) =
             EzProperty::new(name.to_string(), value);
-        self.properties.insert(name.to_string(), EzProperties::HorizontalPosHint(property.clone()));
-        self.property_receivers.insert(name.to_string(), receiver);
+        self.backend.properties.insert(name.to_string(),
+                                       EzProperties::HorizontalPosHint(property.clone()));
+        self.backend.property_receivers.insert(name.to_string(), receiver);
         property
     }
 
@@ -497,8 +403,9 @@ impl Scheduler {
 
         let (property, receiver) =
             EzProperty::new(name.to_string(), value);
-        self.properties.insert(name.to_string(), EzProperties::VerticalPosHint(property.clone()));
-        self.property_receivers.insert(name.to_string(), receiver);
+        self.backend.properties.insert(name.to_string(),
+                                       EzProperties::VerticalPosHint(property.clone()));
+        self.backend.property_receivers.insert(name.to_string(), receiver);
         property
     }
 
@@ -512,8 +419,9 @@ impl Scheduler {
 
         let (property, receiver) =
             EzProperty::new(name.to_string(), value);
-        self.properties.insert(name.to_string(), EzProperties::SizeHint(property.clone()));
-        self.property_receivers.insert(name.to_string(), receiver);
+        self.backend.properties.insert(name.to_string(),
+                                       EzProperties::SizeHint(property.clone()));
+        self.backend.property_receivers.insert(name.to_string(), receiver);
         property
     }
 
@@ -523,27 +431,27 @@ impl Scheduler {
     /// is responsible for setting the appropriate field on the subscriber.
     pub fn subscribe_to_ez_property(&mut self, name: &str, update_func: EzPropertyUpdater) {
 
-        if !self.property_subscribers.contains_key(name) {
-            self.property_subscribers.insert(name.to_string(), Vec::new());
+        if !self.backend.property_subscribers.contains_key(name) {
+            self.backend.property_subscribers.insert(name.to_string(), Vec::new());
         }
-        self.property_subscribers.get_mut(name).unwrap().push(update_func);
+        self.backend.property_subscribers.get_mut(name).unwrap().push(update_func);
     }
 
     /// Schedule a widget to be updated on the next frame. Can also be called from the widget itself
     /// as ```[widget.update(scheduler)]``` (for convenience).
     pub fn update_widget(&mut self, path: String) {
         if path.starts_with("/modal") {
-            self.force_redraw = true;
+            self.backend.force_redraw = true;
             return
         }
-        if !self.widgets_to_update.contains(&path) {
-            self.widgets_to_update.push(path);
+        if !self.backend.widgets_to_update.contains(&path) {
+            self.backend.widgets_to_update.push(path);
         }
     }
 
     /// Schedule a full screen redraw on the next frame. [get_contents] will be called on the root
     /// widget and drawn to screen. Only changed pixels are actually drawn as an optimization.
-    pub fn force_redraw(&mut self) { self.force_redraw = true; }
+    pub fn force_redraw(&mut self) { self.backend.force_redraw = true; }
 
     /// Bind a callback function to the changing of an EzProperty. Make sure that the function you
     /// create has the right signature, e.g.:
@@ -562,22 +470,121 @@ impl Scheduler {
     pub fn bind_ez_property_callback(&mut self, name: &str, callback: Box<dyn FnMut(EzContext)>) {
 
         let callbacks =
-            self.property_callbacks.entry(name.to_string()).or_insert(Vec::new());
+            self.backend.property_callbacks.entry(name.to_string()).or_insert(Vec::new());
         callbacks.push(callback);
     }
     
     /// Set the passed widget (can be ID or path) as selected. Automatically deselects the current
     /// selection if any, and calls the appropriate callbacks.
     pub fn set_selected_widget(&mut self, widget: &str, mouse_pos: Option<Coordinates>) {
-        self.next_selection = Some((widget.to_string(), mouse_pos));
+        self.backend.next_selection = Some((widget.to_string(), mouse_pos));
     }
 
     /// Set the passed widget (can be ID or path) as selected. Automatically deselects the current
     /// selection if any, and calls the appropriate callbacks.
-    pub fn deselect_widget(&mut self) { self.deselect = true }
+    pub fn deselect_widget(&mut self) { self.backend.deselect = true }
 
     /// Gracefully exit the app.
     pub fn exit(&self) { stop(); }
+}
+
+
+/// See [SchedulerFrontend] for more info.
+#[derive(Default)]
+pub struct Scheduler {
+
+    /// List of widgets that will be redrawn on the next frame. Don't use this directly, use
+    /// [update_widget] or EzState.update instead.
+    pub widgets_to_update: Vec<String>,
+
+    /// If true, the entire screen will be redrawn on the next frame. Only differences compared to
+    /// the previous frame. Use [force_redraw] to set this.
+    pub force_redraw: bool,
+
+    /// A <Name, [EzProperty]> HashMap to keep track of all properties at runtime. Also passed to
+    /// closures that are spawned in background threads, as [EzProperty] is thread-safe.
+    pub properties: HashMap<String, EzProperties>,
+
+    /// A list of scheduled tasks. Can be run-once or interval tasks. These are checked on every
+    /// frame, and ran if the 'after' Duration has passed for run-once tasks, or after the 'interval'
+    /// duration has passed for interval tasks.
+    pub tasks: Vec<Task>,
+
+    /// List of <Function, Optional on_finish callback>. This list is checked every frame. If
+    /// theres an item in here, it will be used to spawn a background thread based on the passed
+    /// function. Once the function is finished running, the optional callback will be executed if
+    /// there was one.
+    pub threads_to_start: Vec<(EzThread, Option<GenericEzTask>)>,
+
+    /// List of thread handles with optional callbacks. If a thread is finished running, the
+    /// JoinHandle is joined and the callback executed if there was any.
+    pub thread_handles: Vec<(JoinHandle<()>, Option<GenericEzTask>)>,
+
+    /// Templates defined in the .ez files. Used by [create_widget]
+    pub templates: Templates,
+
+    /// List of new widgets that will be created on the next frame. Use [create_widget] for this.
+    pub widgets_to_create: Vec<(String, String, EzState)>,
+
+    /// List of <Widget path, [CallbackConfig]. Every frame this list is checked, and the widget
+    /// belonging to the widget path will have its' [CallbackConfig] replaced with the new one.
+    pub new_callback_configs: Vec<(String, CallbackConfig)>,
+
+    /// List of <Widget path, [CallbackConfig]. Every frame this list is checked, and the widget
+    /// belonging to the widget path will have its' [CallbackConfig] updated with the new one,
+    /// meaning any callbacks that are unset in the old config, but set in the new one, will be
+    /// updated. Callbacks are never deleted, but will be overwritten.
+    pub updated_callback_configs: Vec<(String, CallbackConfig)>,
+
+    /// A <Widget path, Receiver> HashMap, used to get the receiver of an EzProprerty channel.
+    /// New values are received on this receiver and then synced to any subsribed properties.
+    pub property_receivers: HashMap<String, Receiver<EzValues>>,
+
+    /// A <Widget path, update_callback> HashMap, used to get the updater callback EzProprerty.
+    /// When a property subsribes to another, it must provide an updater callback. When the value
+    /// changes, the callback will be called with the new value, and is responsible for syncing the
+    /// subscribing property to the new value.
+    pub property_subscribers: HashMap<String, Vec<EzPropertyUpdater>>,
+
+    /// A <Widget path, user_callback> HashMap, used to store callbacks the user has registered to
+    /// the changing of a value of an [EzProperty]. When the value changes, the callback is called.
+    pub property_callbacks: HashMap<String, Vec<Box<dyn FnMut(EzContext)>>>,
+
+    /// The widget (ID or path) set here will be selected on the next frame, deselecting the current
+    /// selection if any and calling the appropriate callbacks. The optional mouse_position will be
+    /// passed to the on_select callback.
+    pub next_selection: Option<(String, Option<Coordinates>)>,
+
+    /// If true, deselect the currently selection widget (if any) on the next frame.
+    pub deselect: bool,
+}
+
+/// A struct representing a run-once- or recurring task. This struct is not directly used by the
+/// end-user, but created when they schedule a task through the [Scheduler].
+pub struct Task {
+
+    /// The widget for which this task was scheduled. Convenience property as this is passed to the
+    /// task callback func, allowed the user to easily retrieve the state of the widget.
+    pub widget: String,
+
+    /// Function that will be called when this task is executed.
+    pub func: GenericEzTask,
+
+    /// This task is run-once if this is false, in which case it will be executed if the 'after'
+    /// Duration has passed. This task is recurring if this is true, in which case it will be
+    /// executed after the 'interval' Duration has passed, and scheduled again as long as the
+    /// function keeps returning true.
+    pub recurring: bool,
+
+    /// Task will be dropped if this is true. Mainly used to cancel a run-once task before it is
+    /// executed.
+    pub canceled: bool,
+
+    /// The schedule on which a recurring task must run.
+    pub interval: Duration,
+
+    /// Last time this task was executed, used to keep track of when it should run next.
+    pub last_execution: Option<Instant>,
 }
 
 impl Task {

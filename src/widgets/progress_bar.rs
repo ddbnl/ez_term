@@ -1,14 +1,16 @@
 //! A widget that displays text non-interactively.
 use std::io::{Error, ErrorKind};
-use crate::states::ez_state::{EzState, GenericState};
-use crate::widgets::ez_object::{EzObject};
+
+use crate::parser::load_base_properties::load_ez_usize_property;
 use crate::parser::load_common_properties::load_common_property;
-use crate::parser::load_base_properties::{load_ez_usize_property};
 use crate::property::ez_values::EzValues;
 use crate::run::definitions::{Pixel, PixelMap, StateTree};
-use crate::scheduler::scheduler::Scheduler;
+use crate::scheduler::scheduler::SchedulerFrontend;
+use crate::states::ez_state::{EzState, GenericState};
 use crate::states::progress_bar_state::ProgressBarState;
+use crate::widgets::ez_object::EzObject;
 use crate::widgets::helper_functions::{add_border, add_padding};
+
 
 #[derive(Clone, Debug)]
 pub struct ProgressBar {
@@ -24,7 +26,7 @@ pub struct ProgressBar {
 }
 
 impl ProgressBar {
-    pub fn new(id: String, path: String, scheduler: &mut Scheduler) -> Self {
+    pub fn new(id: String, path: String, scheduler: &mut SchedulerFrontend) -> Self {
         ProgressBar {
             id,
             path: path.clone(),
@@ -32,7 +34,7 @@ impl ProgressBar {
         }
     }
 
-    pub fn from_state(id: String, path: String, scheduler: &mut Scheduler, state: EzState) -> Self {
+    pub fn from_state(id: String, path: String, _scheduler: &mut SchedulerFrontend, state: EzState) -> Self {
         ProgressBar {
             id,
             path: path.clone(),
@@ -40,7 +42,7 @@ impl ProgressBar {
         }
     }
 
-    fn load_value_property(&mut self, parameter_value: &str, scheduler: &mut Scheduler)
+    fn load_value_property(&mut self, parameter_value: &str, scheduler: &mut SchedulerFrontend)
                             -> Result<(), Error> {
         let path = self.path.clone();
         self.state.set_value(
@@ -61,7 +63,7 @@ impl ProgressBar {
 impl EzObject for ProgressBar {
 
     fn load_ez_parameter(&mut self, parameter_name: String, parameter_value: String,
-                         scheduler: &mut Scheduler) -> Result<(), Error> {
+                         scheduler: &mut SchedulerFrontend) -> Result<(), Error> {
         let consumed = load_common_property(
             &parameter_name, parameter_value.clone(), self, scheduler)?;
         if consumed { return Ok(())}
@@ -128,7 +130,7 @@ impl EzObject for ProgressBar {
 impl ProgressBar {
 
     /// Initialize an instance of this object using the passed config coming from [ez_parser]
-    pub fn from_config(config: Vec<String>, id: String, path: String, scheduler: &mut Scheduler,
+    pub fn from_config(config: Vec<String>, id: String, path: String, scheduler: &mut SchedulerFrontend,
                        file: String, line: usize) -> Self {
 
         let mut obj = ProgressBar::new(id, path, scheduler);

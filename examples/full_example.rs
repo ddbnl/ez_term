@@ -13,7 +13,6 @@ fn main() {
     let (root_widget, state_tree, mut scheduler) = load_ui();
 
     // Step 2: Customize widgets where needed. Here are some examples:
-
     // We will set up the menu screen buttons with closures.
     scheduler.update_callback_config("start_button",
         CallbackConfig::from_on_press(Box::new(

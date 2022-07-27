@@ -1,5 +1,5 @@
 use crate::run::definitions::{Pixel, PixelMap, StateTree};
-use crate::scheduler::scheduler::Scheduler;
+use crate::scheduler::scheduler::SchedulerFrontend;
 use crate::widgets::ez_object::EzObject;
 use crate::states::ez_state::GenericState;
 use crate::widgets::layout::layout::Layout;
@@ -8,7 +8,7 @@ use crate::widgets::layout::layout::Layout;
 impl Layout {
 
     /// Handle command by user to scroll down by increasing the scroll_view of y
-    pub fn handle_scroll_down(&self, state_tree: &mut StateTree, scheduler: &mut Scheduler) {
+    pub fn handle_scroll_down(&self, state_tree: &mut StateTree, scheduler: &mut SchedulerFrontend) {
 
         let state = state_tree.get_by_path_mut(&self.path).as_layout_mut();
         if !state.get_scrolling_config().enable_y.value { return }
@@ -27,7 +27,7 @@ impl Layout {
     }
 
     /// Handle command by user to scroll down by decreasing the scroll_view of y
-    pub fn handle_scroll_up(&self, state_tree: &mut StateTree, scheduler: &mut Scheduler) {
+    pub fn handle_scroll_up(&self, state_tree: &mut StateTree, scheduler: &mut SchedulerFrontend) {
 
         let state = state_tree.get_by_path_mut(&self.path).as_layout_mut();
         if !state.get_scrolling_config().enable_y.value { return }
@@ -47,7 +47,7 @@ impl Layout {
     }
 
     /// Handle command by user to scroll down by increasing the scroll_view of x
-    pub fn handle_scroll_right(&self, state_tree: &mut StateTree, scheduler: &mut Scheduler) {
+    pub fn handle_scroll_right(&self, state_tree: &mut StateTree, scheduler: &mut SchedulerFrontend) {
 
         let state = state_tree.get_by_path_mut(&self.path).as_layout_mut();
         if !state.get_scrolling_config().enable_x.value { return }
@@ -65,7 +65,7 @@ impl Layout {
     }
 
     /// Handle command by user to scroll down by decreasing the scroll_view of x
-    pub fn handle_scroll_left(&self, state_tree: &mut StateTree, scheduler: &mut Scheduler) {
+    pub fn handle_scroll_left(&self, state_tree: &mut StateTree, scheduler: &mut SchedulerFrontend) {
 
         let state = state_tree.get_by_path_mut(&self.path).as_layout_mut();
         if !state.get_scrolling_config().enable_x.value { return }
@@ -85,7 +85,7 @@ impl Layout {
     }
 
     /// Create a horizontal scrollbox out of this layout if its contents width exceed its own width
-    pub fn create_horizontal_scroll_box(&self, state_tree: &mut StateTree, mut contents: PixelMap)
+    pub fn create_horizontal_scroll_box(&self, state_tree: &mut StateTree, contents: PixelMap)
                                     -> PixelMap {
 
         let state = state_tree.get_by_path_mut(&self.get_full_path())
@@ -110,7 +110,7 @@ impl Layout {
     }
 
     /// Create a vertical scrollbox out of this layout if its contents width exceed its own width
-    pub fn create_vertical_scroll_box(&self, state_tree: &mut StateTree, mut contents: PixelMap)
+    pub fn create_vertical_scroll_box(&self, state_tree: &mut StateTree, contents: PixelMap)
         -> PixelMap {
 
         let state = state_tree.get_by_path_mut(&self.get_full_path())

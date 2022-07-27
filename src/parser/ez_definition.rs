@@ -12,7 +12,7 @@ use std::io::{Error, ErrorKind};
 use crossterm::terminal::size;
 
 use crate::parser::parse_lang;
-use crate::scheduler::scheduler::Scheduler;
+use crate::scheduler::scheduler::SchedulerFrontend;
 use crate::states::ez_state::GenericState;
 use crate::widgets::{
     ez_object::EzObjects,
@@ -94,7 +94,7 @@ impl EzWidgetDefinition {
 
     /// Parse a definition by separating the config lines from the sub widget definitions. Then
     /// apply the config to the initialized widget, then initialize and add sub widgets.
-    pub fn parse(&mut self, scheduler: &mut Scheduler, parent_path: String, order: usize,
+    pub fn parse(&mut self, scheduler: &mut SchedulerFrontend, parent_path: String, order: usize,
                  merge_config: Option<Vec<String>>) -> EzObjects {
 
         let (mut config, mut sub_widgets, _) =
@@ -132,7 +132,7 @@ impl EzWidgetDefinition {
 
     /// Initialize a widget object based on the type specified by the definition. The type can be
     /// a template defined by the user.
-    fn initialize(&mut self, mut config: Vec<String>, scheduler: &mut Scheduler,
+    fn initialize(&mut self, mut config: Vec<String>, scheduler: &mut SchedulerFrontend,
                   parent_path: String, order: usize) -> Result<EzObjects, Error> {
 
         if self.is_root {
@@ -149,9 +149,9 @@ impl EzWidgetDefinition {
         }
         // If this is a template, clone the template definition and parse that instead; we want to
         // keep the original template definition intact as it might be used multiple times.
-        if scheduler.templates.contains_key(&self.type_name) {
+        if scheduler.backend.templates.contains_key(&self.type_name) {
             let mut template =
-                scheduler.templates.get_mut(&self.type_name).unwrap().clone();
+                scheduler.backend.templates.get_mut(&self.type_name).unwrap().clone();
             template.is_root = self.is_root;
             let object = template.parse(scheduler, parent_path, order,
                                         Some(config));

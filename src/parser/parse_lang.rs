@@ -9,7 +9,7 @@ use unicode_segmentation::UnicodeSegmentation;
 use crate::parser::ez_definition::{EzWidgetDefinition, Templates};
 use crate::run::definitions::StateTree;
 use crate::run::tree::initialize_state_tree;
-use crate::scheduler::scheduler::Scheduler;
+use crate::scheduler::scheduler::{Scheduler, SchedulerFrontend};
 use crate::widgets::layout::layout::Layout;
 
 include!(concat!(env!("OUT_DIR"), "/ez_file_gen.rs"));
@@ -17,7 +17,7 @@ include!(concat!(env!("OUT_DIR"), "/ez_file_gen.rs"));
 
 /// Load a file path into a root layout. Return the root widget and a new scheduler. Both will
 /// be needed to run an [App].
-pub fn load_ui() -> (Layout, StateTree, Scheduler) {
+pub fn load_ui() -> (Layout, StateTree, SchedulerFrontend) {
 
     let contents = ez_config(); // ez_config is generated from build.rs
     let (root_widget, scheduler) = load_ez_text(contents).unwrap();
@@ -30,7 +30,7 @@ pub fn load_ui() -> (Layout, StateTree, Scheduler) {
 /// widget definition found there as the root widget (must be a layout or panic). Then parse the
 /// root widget definition into the actual widget, which will parse sub-widgets, who will parse
 /// their sub-widgets, etc. Thus recursively loading the UI.
-pub fn load_ez_text(files: HashMap<String, String>) -> Result<(Layout, Scheduler), Error> {
+pub fn load_ez_text(files: HashMap<String, String>) -> Result<(Layout, SchedulerFrontend), Error> {
 
     let mut widgets: Vec<EzWidgetDefinition> = Vec::new();
     let mut templates = Templates::new();
@@ -67,12 +67,13 @@ pub fn load_ez_text(files: HashMap<String, String>) -> Result<(Layout, Scheduler
 
     let mut scheduler = Scheduler::default();
     scheduler.templates = templates.clone();
+    let mut scheduler_frontend = SchedulerFrontend{backend: scheduler};
     let initialized_root_widget = root_widget.parse(
-        &mut scheduler, String::new(), 0, None);
+        &mut scheduler_frontend, String::new(), 0, None);
     let mut root = initialized_root_widget.as_layout().to_owned();
     root.state.templates = templates;
 
-    Ok((root, scheduler))
+    Ok((root, scheduler_frontend))
 }
 
 /// Parse a single indentation level of a config file. Returns a Vec of config lines, a Vec

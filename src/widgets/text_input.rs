@@ -4,17 +4,20 @@
 use std::cmp::min;
 use std::io::{Error, ErrorKind};
 use std::time::Duration;
+
 use crossterm::event::{Event, KeyCode};
+
 use crate::EzContext;
-use crate::states::text_input_state::TextInputState;
-use crate::states::ez_state::{EzState, GenericState};
-use crate::widgets::ez_object::{EzObject};
-use crate::scheduler::scheduler::Scheduler;
-use crate::parser::load_common_properties::load_common_property;
 use crate::parser::load_base_properties::load_ez_string_property;
+use crate::parser::load_common_properties::load_common_property;
 use crate::property::ez_values::EzValues;
 use crate::run::definitions::{CallbackTree, Coordinates, Pixel, PixelMap, StateTree};
+use crate::scheduler::scheduler::SchedulerFrontend;
+use crate::states::ez_state::{EzState, GenericState};
+use crate::states::text_input_state::TextInputState;
+use crate::widgets::ez_object::EzObject;
 use crate::widgets::helper_functions::{add_border, add_padding};
+
 
 #[derive(Clone, Debug)]
 pub struct TextInput {
@@ -31,7 +34,7 @@ pub struct TextInput {
 }
 
 impl TextInput {
-    pub fn new(id: String, path: String, scheduler: &mut Scheduler) -> Self {
+    pub fn new(id: String, path: String, scheduler: &mut SchedulerFrontend) -> Self {
         TextInput {
             id,
             path: path.clone(),
@@ -39,7 +42,7 @@ impl TextInput {
         }
     }
 
-    pub fn from_state(id: String, path: String, scheduler: &mut Scheduler, state: EzState) -> Self {
+    pub fn from_state(id: String, path: String, _scheduler: &mut SchedulerFrontend, state: EzState) -> Self {
         TextInput {
             id,
             path: path.clone(),
@@ -53,7 +56,7 @@ impl TextInput {
 impl EzObject for TextInput {
 
     fn load_ez_parameter(&mut self, parameter_name: String, parameter_value: String,
-                         scheduler: &mut Scheduler) -> Result<(), Error>{
+                         scheduler: &mut SchedulerFrontend) -> Result<(), Error>{
 
         let consumed = load_common_property(
             &parameter_name, parameter_value.clone(),self, scheduler)?;
@@ -166,7 +169,7 @@ impl EzObject for TextInput {
     }
 
     fn handle_event(&self, event: Event, state_tree: &mut StateTree,
-                    callback_tree: &mut CallbackTree, scheduler: &mut Scheduler) -> bool {
+                    callback_tree: &mut CallbackTree, scheduler: &mut SchedulerFrontend) -> bool {
 
         let state = state_tree.get_by_path_mut(&self.get_full_path())
             .as_text_input_mut();
@@ -200,7 +203,7 @@ impl EzObject for TextInput {
     }
 
     fn on_left_mouse_click(&self, _state_tree: &mut StateTree, _callback_tree: &mut CallbackTree,
-                           scheduler: &mut Scheduler, mouse_pos: Coordinates) -> bool {
+                           scheduler: &mut SchedulerFrontend, mouse_pos: Coordinates) -> bool {
 
         scheduler.deselect_widget(); // We deselect first to allow re-selecting in a different pos
         scheduler.set_selected_widget(&self.path, Some(mouse_pos));
@@ -208,14 +211,14 @@ impl EzObject for TextInput {
     }
 
     fn on_hover(&self, state_tree: &mut StateTree, callback_tree: &mut CallbackTree,
-                scheduler: &mut Scheduler, mouse_pos: Coordinates) -> bool {
+                scheduler: &mut SchedulerFrontend, mouse_pos: Coordinates) -> bool {
 
         self.on_hover_callback(state_tree, callback_tree, scheduler, mouse_pos);
         true
     }
 
     fn on_select(&self, state_tree: &mut StateTree, callback_tree: &mut CallbackTree,
-                 scheduler: &mut Scheduler, mouse_pos: Option<Coordinates>) -> bool {
+                 scheduler: &mut SchedulerFrontend, mouse_pos: Option<Coordinates>) -> bool {
 
         let state = state_tree.get_by_path_mut(
             &self.get_full_path()).as_text_input_mut();
@@ -252,7 +255,7 @@ impl EzObject for TextInput {
 
 /// Handle a char button press by user. insert the char at the cursor and move the cursor and/or
 /// view where necessary.
-pub fn handle_char(state: &mut TextInputState, char: char, scheduler: &mut Scheduler) {
+pub fn handle_char(state: &mut TextInputState, char: char, scheduler: &mut SchedulerFrontend) {
 
     if state.get_max_length().value > 0 &&
         state.get_text().value.len() >= state.get_max_length().value {
@@ -301,7 +304,7 @@ pub fn handle_char(state: &mut TextInputState, char: char, scheduler: &mut Sched
 impl TextInput {
 
     /// Initialize an instance of this object using the passed config coming from [ez_parser]
-    pub fn from_config(config: Vec<String>, id: String, path: String, scheduler: &mut Scheduler,
+    pub fn from_config(config: Vec<String>, id: String, path: String, scheduler: &mut SchedulerFrontend,
                        file: String, line: usize) -> Self {
 
         let mut obj = TextInput::new(id, path, scheduler);
@@ -311,7 +314,7 @@ impl TextInput {
 
     /// Check if text has changed to call on_value_change.
     fn check_changed_text(&self, state_tree: &mut StateTree, callback_tree: &mut CallbackTree,
-                          scheduler: &mut Scheduler, old_text: String) {
+                          scheduler: &mut SchedulerFrontend, old_text: String) {
 
         let state = state_tree.get_by_path(&self.path).as_text_input();
         if state.text != old_text {
@@ -325,7 +328,7 @@ impl TextInput {
 /// visual content, the crossterm cursor is constantly jumping around, which cannot seem to be
 /// resolved using the Hide/Show/SavePosition/RestorePosition methods.
 fn start_cursor_blink(target_pos: Coordinates, state: &mut TextInputState,
-                      scheduler: &mut Scheduler, name: String) {
+                      scheduler: &mut SchedulerFrontend, name: String) {
 
     state.set_cursor_pos(target_pos);
     state.set_active_blink_task(true);
@@ -371,7 +374,7 @@ pub fn get_view_parts(text: String, view_start: usize, widget_with: usize) -> (S
 
 /// Handle a right arrow button press by user. Move cursor to the right or move the
 /// view if the cursor was at the edge of the widget.
-pub fn handle_right(state: &mut TextInputState, scheduler: &mut Scheduler) {
+pub fn handle_right(state: &mut TextInputState, scheduler: &mut SchedulerFrontend) {
 
     let cursor_pos = state.get_cursor_pos();
     // Text does not fit in widget, advance view
@@ -398,7 +401,7 @@ pub fn handle_right(state: &mut TextInputState, scheduler: &mut Scheduler) {
 
 /// Handle a left arrow button press by user. Move cursor to the left or move the
 /// view if the cursor was at the edge of the widget.
-pub fn handle_left(state: &mut TextInputState, scheduler: &mut Scheduler) {
+pub fn handle_left(state: &mut TextInputState, scheduler: &mut SchedulerFrontend) {
 
     let cursor_pos = state.get_cursor_pos();
 
@@ -421,7 +424,7 @@ pub fn handle_left(state: &mut TextInputState, scheduler: &mut Scheduler) {
 
 /// Handle a delete button press by user. Delete character to the right of the widget. Move the
 /// view as necessary.
-pub fn handle_delete(state: &mut TextInputState, scheduler: &mut Scheduler) {
+pub fn handle_delete(state: &mut TextInputState, scheduler: &mut SchedulerFrontend) {
 
     let cursor_pos = state.get_cursor_pos();
     // Check if text does not fit in widget, then we have to delete on a view
@@ -471,7 +474,7 @@ pub fn handle_delete(state: &mut TextInputState, scheduler: &mut Scheduler) {
 
 /// Handle a backspace button press by user. Delete character to the left of the widget. Move the
 /// cursor and/or view as necessary.
-pub fn handle_backspace(state: &mut TextInputState, scheduler: &mut Scheduler) {
+pub fn handle_backspace(state: &mut TextInputState, scheduler: &mut SchedulerFrontend) {
     let cursor_pos = state.get_cursor_pos();
     let mut text = state.get_text().value.clone();
 

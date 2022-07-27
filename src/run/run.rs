@@ -11,9 +11,8 @@ use crate::CallbackConfig;
 use crate::run::definitions::{CallbackTree, Coordinates, StateTree};
 use crate::run::terminal::{redraw_changed_widgets, write_to_screen};
 use crate::run::tree::{clean_trees, initialize_callback_tree, ViewTree};
-use crate::scheduler::scheduler::Scheduler;
-use crate::scheduler::scheduler_funcs;
-use crate::scheduler::scheduler_funcs::{create_new_widgets, handle_next_selection, run_tasks, update_callback_configs, update_properties, update_threads};
+use crate::scheduler::scheduler::SchedulerFrontend;
+use crate::scheduler::scheduler_funcs::{create_new_widgets, drain_property_channels, handle_next_selection, run_tasks, update_callback_configs, update_properties, update_threads};
 use crate::states::ez_state::GenericState;
 use crate::widgets::ez_object::{EzObject, EzObjects};
 use crate::widgets::layout::layout::Layout;
@@ -33,7 +32,7 @@ use super::terminal::{initialize_terminal, shutdown_terminal};
 /// ```
 /// run(root_widget, state_tree, scheduler);
 /// ```
-pub fn run(root_widget: Layout, state_tree: StateTree, scheduler: Scheduler) {
+pub fn run(root_widget: Layout, state_tree: StateTree, scheduler: SchedulerFrontend) {
 
     initialize_terminal().unwrap();
     let callback_tree = initialize_callback_tree(&root_widget);
@@ -69,7 +68,7 @@ fn initialize_widgets(root_widget: &mut Layout, state_tree: &mut StateTree) -> V
 /// Support function for opening a popup. After opening the actual popup in the root layout the
 /// state tree is extended with the new modal widget state, and the same is done for the callback
 /// tree.
-pub fn open_popup(template: String, state_tree: &mut StateTree, scheduler: &mut Scheduler)
+pub fn open_popup(template: String, state_tree: &mut StateTree, scheduler: &mut SchedulerFrontend)
     -> String {
 
     let state = state_tree.get_by_path_mut("/root").as_layout_mut();
@@ -113,7 +112,7 @@ pub fn open_popup(template: String, state_tree: &mut StateTree, scheduler: &mut 
 /// access common functions, or downcast to their specific widget type if you know for sure what it
 /// is.
 fn run_loop(mut root_widget: Layout, mut state_tree: StateTree, mut callback_tree: CallbackTree,
-            mut scheduler: Scheduler) -> Result<()>{
+            mut scheduler: SchedulerFrontend) -> Result<()>{
 
     let mut view_tree = initialize_widgets(&mut root_widget, &mut state_tree);
     let last_update = Instant::now(); // Time of last screen update,
@@ -231,10 +230,11 @@ fn run_loop(mut root_widget: Layout, mut state_tree: StateTree, mut callback_tre
 
         // Redraw individual widgets or the entire screen in case of forced_redraw. If the entire
         // Screen is redrawn individual widgets are not redrawn.
-        let forced_redraw = if !scheduler.force_redraw {
+        let forced_redraw = if !scheduler.backend.force_redraw {
             redraw_changed_widgets(
                 &mut view_tree, &mut state_tree,  &mut root_widget,
-                &mut scheduler.widgets_to_update, scheduler.force_redraw)
+                &mut scheduler.backend.widgets_to_update,
+                scheduler.backend.force_redraw)
         } else {
             true
         };
@@ -243,13 +243,13 @@ fn run_loop(mut root_widget: Layout, mut state_tree: StateTree, mut callback_tre
             view_tree.write_content(Coordinates::new(0, 0), contents);
         }
         write_to_screen(&mut view_tree);
-        scheduler.force_redraw = false;
+        scheduler.backend.force_redraw = false;
 
         // Every now and then we perform cleanup of orphaned states (e.g. modals that were closed)
         // and their properties.
         if cleanup_timer == 100 {
             clean_trees(&mut root_widget, &mut state_tree, &mut callback_tree, &mut scheduler);
-            scheduler_funcs::drain_property_channels(&mut scheduler);
+            drain_property_channels(&mut scheduler);
             cleanup_timer = 0;
         } else {
             cleanup_timer += 1;

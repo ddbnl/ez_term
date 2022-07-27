@@ -9,7 +9,7 @@ use crate::run::definitions::{CallbackTree, Coordinates, StateTree};
 use crate::run::select::{get_widget_by_position, select_next, select_previous};
 use crate::run::terminal::{initialize_terminal, write_to_screen};
 use crate::run::tree::ViewTree;
-use crate::scheduler::scheduler::Scheduler;
+use crate::scheduler::scheduler::SchedulerFrontend;
 use crate::states::ez_state::EzState;
 use crate::widgets::ez_object::{EzObject, EzObjects};
 use crate::widgets::layout::layout::Layout;
@@ -21,7 +21,7 @@ use super::terminal::shutdown_terminal;
 /// it consumed the event or not.
 pub fn handle_modal_event (event: Event, state_tree: &mut StateTree,
                        root_widget: &Layout, callback_tree: &mut CallbackTree,
-                       scheduler: &mut Scheduler) -> bool {
+                       scheduler: &mut SchedulerFrontend) -> bool {
 
     if state_tree.get_by_path(&root_widget.path).as_layout().open_modals.is_empty() {
         return false
@@ -47,7 +47,7 @@ pub fn handle_modal_event (event: Event, state_tree: &mut StateTree,
 /// left/right clicks, etc. If the event is bound globally, it will be consumed.
 pub fn handle_global_event(event: Event, state_tree: &mut StateTree,
                        root_widget: &Layout, callback_tree: &mut CallbackTree,
-                       scheduler: &mut Scheduler, selected_widget: &mut String,
+                       scheduler: &mut SchedulerFrontend, selected_widget: &mut String,
                        dragging: &mut Option<String>, last_dragging_pos: &mut Coordinates) -> bool {
 
     match event {
@@ -68,7 +68,7 @@ pub fn handle_global_event(event: Event, state_tree: &mut StateTree,
 /// on any further.
 fn handle_key_event(key: KeyEvent, state_tree: &mut StateTree,
                     root_widget: &Layout, callback_tree: &mut CallbackTree,
-                    scheduler: &mut Scheduler, selected_widget: &mut String) -> bool {
+                    scheduler: &mut SchedulerFrontend, selected_widget: &mut String) -> bool {
 
     match key.code {
         KeyCode::Down => {
@@ -103,7 +103,7 @@ fn handle_key_event(key: KeyEvent, state_tree: &mut StateTree,
 /// layout the button lives in.
 fn handle_mouse_event(event: MouseEvent, state_tree: &mut StateTree,
                       root_widget: &Layout, callback_tree: &mut CallbackTree,
-                      scheduler: &mut Scheduler, dragging: &mut Option<String>,
+                      scheduler: &mut SchedulerFrontend, dragging: &mut Option<String>,
                       last_dragging_pos: &mut Coordinates) -> bool {
 
     if let MouseEventKind::Moved = event.kind {
@@ -127,7 +127,7 @@ fn handle_mouse_event(event: MouseEvent, state_tree: &mut StateTree,
 
 fn handle_mouse_press_event(event: MouseEvent, button: MouseButton, state_tree: &mut StateTree,
                       root_widget: &Layout, callback_tree: &mut CallbackTree,
-                      scheduler: &mut Scheduler) -> bool {
+                      scheduler: &mut SchedulerFrontend) -> bool {
 
     let consumed = false;
     let mouse_position = Coordinates::new(event.column as usize,event.row as usize);
@@ -157,7 +157,7 @@ fn handle_mouse_press_event(event: MouseEvent, button: MouseButton, state_tree: 
 
 fn handle_mouse_hover_event(event: MouseEvent, state_tree: &mut StateTree,
                             root_widget: &Layout, callback_tree: &mut CallbackTree,
-                            scheduler: &mut Scheduler) -> bool {
+                            scheduler: &mut SchedulerFrontend) -> bool {
 
     let mouse_position = Coordinates::new(event.column as usize,event.row as usize);
 
@@ -177,7 +177,7 @@ fn handle_mouse_hover_event(event: MouseEvent, state_tree: &mut StateTree,
 
 fn handle_mouse_drag_event(event: MouseEvent, state_tree: &mut StateTree,
                            root_widget: &Layout, callback_tree: &mut CallbackTree,
-                           scheduler: &mut Scheduler, dragging: &mut Option<String>,
+                           scheduler: &mut SchedulerFrontend, dragging: &mut Option<String>,
                            last_dragging_pos: &mut Coordinates) -> bool {
 
     let mouse_position = Coordinates::new(event.column as usize,event.row as usize);
@@ -210,7 +210,7 @@ fn handle_mouse_drag_event(event: MouseEvent, state_tree: &mut StateTree,
 
 fn handle_mouse_scroll_up_event(event: MouseEvent, state_tree: &mut StateTree,
                             root_widget: &Layout, callback_tree: &mut CallbackTree,
-                            scheduler: &mut Scheduler) -> bool {
+                            scheduler: &mut SchedulerFrontend) -> bool {
 
     let consumed = false;
     let mouse_position =
@@ -226,7 +226,7 @@ fn handle_mouse_scroll_up_event(event: MouseEvent, state_tree: &mut StateTree,
 
 fn handle_mouse_scroll_down_event(event: MouseEvent, state_tree: &mut StateTree,
                             root_widget: &Layout, callback_tree: &mut CallbackTree,
-                            scheduler: &mut Scheduler) -> bool {
+                            scheduler: &mut SchedulerFrontend) -> bool {
 
     let consumed = false;
     let mouse_position = Coordinates::new(

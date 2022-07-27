@@ -2,14 +2,15 @@
 use std::fs::File;
 use std::io::Error;
 use std::io::prelude::*;
-use crate::widgets::ez_object::{EzObject};
-use crate::states::label_state::LabelState;
-use crate::states::ez_state::{EzState, GenericState};
+
 use crate::parser::load_base_properties::load_ez_string_property;
 use crate::parser::load_common_properties::load_common_property;
 use crate::property::ez_values::EzValues;
 use crate::run::definitions::{Pixel, PixelMap, StateTree};
-use crate::scheduler::scheduler::Scheduler;
+use crate::scheduler::scheduler::SchedulerFrontend;
+use crate::states::ez_state::{EzState, GenericState};
+use crate::states::label_state::LabelState;
+use crate::widgets::ez_object::EzObject;
 use crate::widgets::helper_functions::{add_border, add_padding, wrap_text};
 
 
@@ -30,7 +31,7 @@ pub struct Label {
 }
 
 impl Label {
-    pub fn new(id: String, path: String, scheduler: &mut Scheduler) -> Self {
+    pub fn new(id: String, path: String, scheduler: &mut SchedulerFrontend) -> Self {
         Label {
             id,
             path: path.clone(),
@@ -39,7 +40,7 @@ impl Label {
         }
     }
 
-    pub fn from_state(id: String, path: String, scheduler: &mut Scheduler, state: EzState) -> Self {
+    pub fn from_state(id: String, path: String, _scheduler: &mut SchedulerFrontend, state: EzState) -> Self {
         Label {
             id,
             path: path.clone(),
@@ -54,7 +55,7 @@ impl Label {
 impl EzObject for Label {
 
     fn load_ez_parameter(&mut self, parameter_name: String, parameter_value: String,
-                         scheduler: &mut Scheduler) -> Result<(), Error> {
+                         scheduler: &mut SchedulerFrontend) -> Result<(), Error> {
 
         let consumed = load_common_property(
             &parameter_name, parameter_value.clone(),self, scheduler)?;
@@ -172,7 +173,7 @@ impl EzObject for Label {
 impl Label {
 
     /// Initialize an instance of this object using the passed config coming from [ez_parser]
-    pub fn from_config(config: Vec<String>, id: String, path: String, scheduler: &mut Scheduler,
+    pub fn from_config(config: Vec<String>, id: String, path: String, scheduler: &mut SchedulerFrontend,
                        file: String, line: usize) -> Self {
 
         let mut obj = Label::new(id, path, scheduler);

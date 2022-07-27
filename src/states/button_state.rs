@@ -1,9 +1,9 @@
-use crate::scheduler::scheduler::Scheduler;
-use crate::scheduler::scheduler_funcs::clean_up_property;
 use crate::property::ez_property::EzProperty;
-use crate::run::definitions::{IsizeCoordinates};
-use crate::states::definitions::{StateCoordinates, SizeHint, PosHint, StateSize, AutoScale, Padding,
-                                 HorizontalAlignment, VerticalAlignment, BorderConfig, ColorConfig};
+use crate::run::definitions::IsizeCoordinates;
+use crate::scheduler::scheduler::SchedulerFrontend;
+use crate::scheduler::scheduler_funcs::clean_up_property;
+use crate::states::definitions::{AutoScale, BorderConfig, ColorConfig, HorizontalAlignment, Padding,
+                                 PosHint, SizeHint, StateCoordinates, StateSize, VerticalAlignment};
 use crate::states::ez_state::GenericState;
 
 
@@ -64,7 +64,7 @@ pub struct ButtonState {
 }
 impl ButtonState {
     
-    pub fn new(path: String, scheduler: &mut Scheduler) -> Self {
+    pub fn new(path: String, scheduler: &mut SchedulerFrontend) -> Self {
 
        ButtonState {
            path: path.clone(),
@@ -159,7 +159,7 @@ impl GenericState for ButtonState {
 
     fn get_selected(&self) -> bool { self.selected }
 
-    fn clean_up_properties(&self, scheduler: &mut Scheduler) {
+    fn clean_up_properties(&self, scheduler: &mut SchedulerFrontend) {
 
         self.position.clean_up_properties(scheduler);
         self.size.clean_up_properties(scheduler);

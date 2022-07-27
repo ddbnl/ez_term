@@ -3,18 +3,20 @@
 //! time. The active value is always displayed, and when selected drops down all other possible
 //! values for the user to select.
 use std::io::{Error, ErrorKind};
+
 use crossterm::event::{Event, KeyCode, MouseButton, MouseEventKind};
+
 use crate::{CallbackConfig, EzContext};
-use crate::states::definitions::{StateSize, AutoScale, SizeHint, Padding, PosHint,
-                                 StateCoordinates, HorizontalAlignment, VerticalAlignment};
+use crate::parser::load_base_properties::{load_ez_bool_property, load_ez_string_property};
+use crate::parser::load_common_properties::load_common_property;
+use crate::property::ez_values::EzValues;
+use crate::run::definitions::{CallbackTree, Coordinates, Pixel, PixelMap, StateTree};
+use crate::scheduler::scheduler::SchedulerFrontend;
+use crate::states::definitions::{AutoScale, HorizontalAlignment, Padding, PosHint, SizeHint,
+                                 StateCoordinates, StateSize, VerticalAlignment};
 use crate::states::dropdown_state::{DropdownState, DroppedDownMenuState};
 use crate::states::ez_state::{EzState, GenericState};
 use crate::widgets::ez_object::{self, EzObject};
-use crate::parser::load_common_properties::load_common_property;
-use crate::parser::load_base_properties::{load_ez_bool_property, load_ez_string_property};
-use crate::property::ez_values::EzValues;
-use crate::run::definitions::{CallbackTree, Coordinates, Pixel, PixelMap, StateTree};
-use crate::scheduler::scheduler::Scheduler;
 use crate::widgets::helper_functions::{add_border, add_padding};
 
 
@@ -34,7 +36,7 @@ pub struct Dropdown {
 
 impl Dropdown {
 
-    pub fn new(id: String, path: String, scheduler: &mut Scheduler) -> Self {
+    pub fn new(id: String, path: String, scheduler: &mut SchedulerFrontend) -> Self {
 
         Dropdown {
             id,
@@ -43,7 +45,7 @@ impl Dropdown {
         }
     }
 
-    pub fn from_state(id: String, path: String, scheduler: &mut Scheduler, state: EzState) -> Self {
+    pub fn from_state(id: String, path: String, _scheduler: &mut SchedulerFrontend, state: EzState) -> Self {
         Dropdown {
             id,
             path: path.clone(),
@@ -51,7 +53,7 @@ impl Dropdown {
         }
     }
 
-    fn load_allow_none_property(&mut self, parameter_value: &str, scheduler: &mut Scheduler)
+    fn load_allow_none_property(&mut self, parameter_value: &str, scheduler: &mut SchedulerFrontend)
         -> Result<(), Error>{
 
         let path = self.path.clone();
@@ -66,7 +68,7 @@ impl Dropdown {
         Ok(())
     }
 
-    fn load_choice_property(&mut self, parameter_value: &str, scheduler: &mut Scheduler)
+    fn load_choice_property(&mut self, parameter_value: &str, scheduler: &mut SchedulerFrontend)
         -> Result<(), Error> {
 
         let path = self.path.clone();
@@ -85,7 +87,7 @@ impl Dropdown {
 impl EzObject for Dropdown {
 
     fn load_ez_parameter(&mut self, parameter_name: String, parameter_value: String,
-                         scheduler: &mut Scheduler) -> Result<(), Error> {
+                         scheduler: &mut SchedulerFrontend) -> Result<(), Error> {
 
         let consumed = load_common_property(
             &parameter_name, parameter_value.clone(),self, scheduler)?;
@@ -164,7 +166,7 @@ impl EzObject for Dropdown {
 
     /// Called when the widgets is not dropped down and enter/left mouse click occurs on it.
     fn on_press(&self, state_tree: &mut StateTree, _callback_tree: &mut CallbackTree,
-                scheduler: &mut Scheduler) -> bool {
+                scheduler: &mut SchedulerFrontend) -> bool {
 
         let modal_id = format!("{}_modal", self.get_id());
         let modal_path = format!("/modal/{}", modal_id);
@@ -226,7 +228,7 @@ impl EzObject for Dropdown {
     }
 
     fn on_hover(&self, state_tree: &mut StateTree, callback_tree: &mut CallbackTree,
-                scheduler: &mut Scheduler, mouse_pos: Coordinates) -> bool {
+                scheduler: &mut SchedulerFrontend, mouse_pos: Coordinates) -> bool {
 
         scheduler.set_selected_widget(&self.path, Some(mouse_pos));
         self.on_hover_callback(state_tree, callback_tree, scheduler, mouse_pos);
@@ -237,7 +239,7 @@ impl EzObject for Dropdown {
 impl Dropdown {
 
     /// Initialize an instance of this object using the passed config coming from [ez_parser]
-    pub fn from_config(config: Vec<String>, id: String, path: String, scheduler: &mut Scheduler,
+    pub fn from_config(config: Vec<String>, id: String, path: String, scheduler: &mut SchedulerFrontend,
                        file: String, line: usize) -> Self {
 
         let mut obj = Dropdown::new(id, path, scheduler);
@@ -264,7 +266,7 @@ pub struct DroppedDownMenu {
 
 impl DroppedDownMenu {
 
-    pub fn new(id: String, path: String, scheduler: &mut Scheduler) -> Self {
+    pub fn new(id: String, path: String, scheduler: &mut SchedulerFrontend) -> Self {
 
         DroppedDownMenu {
             id,
@@ -277,7 +279,7 @@ impl DroppedDownMenu {
 impl EzObject for DroppedDownMenu {
 
     fn load_ez_parameter(&mut self, _parameter_name: String, _parameter_value: String,
-                         _scheduler: &mut Scheduler) -> Result<(), Error> { Ok(()) }
+                         _scheduler: &mut SchedulerFrontend) -> Result<(), Error> { Ok(()) }
 
     fn set_id(&mut self, id: String) { self.id = id }
 
@@ -329,7 +331,7 @@ impl EzObject for DroppedDownMenu {
     }
 
     fn handle_event(&self, event: Event, state_tree: &mut StateTree,
-                    callback_tree: &mut CallbackTree, scheduler: &mut Scheduler) -> bool {
+                    callback_tree: &mut CallbackTree, scheduler: &mut SchedulerFrontend) -> bool {
 
         let state = state_tree.get_by_path_mut(&self.get_full_path())
             .as_dropped_down_menu_mut();
@@ -376,7 +378,7 @@ impl DroppedDownMenu {
 
     /// Called when this widget is already dropped down and enter is pressed
     pub fn handle_enter(&self, state_tree: &mut StateTree, callback_tree: &mut CallbackTree,
-                        scheduler: &mut Scheduler) {
+                        scheduler: &mut SchedulerFrontend) {
 
         let selected = state_tree.get_by_path(&self.get_full_path())
             .as_dropped_down_menu().dropped_down_selected_row;
@@ -419,7 +421,7 @@ impl DroppedDownMenu {
 
     /// Called when this widget is already dropped down and widget is left clicked
     pub fn handle_left_click(&self, state_tree: &mut StateTree, callback_tree: &mut CallbackTree,
-                             scheduler: &mut Scheduler, pos: Coordinates) {
+                             scheduler: &mut SchedulerFrontend, pos: Coordinates) {
 
         let state = state_tree.get_by_path(&self.get_full_path())
             .as_dropped_down_menu();

@@ -1,23 +1,25 @@
 //! # Widget:
 //! A module containing the base structs and traits for widgets"
 //! functions allows starting the app based on a root layout.
-use std::io::{Error};
+use std::io::Error;
+
 use crossterm::event::Event;
+
 use crate::EzContext;
 use crate::run::definitions::{CallbackTree, Coordinates, PixelMap, StateTree};
 use crate::run::tree::ViewTree;
-use crate::scheduler::scheduler::Scheduler;
+use crate::scheduler::scheduler::SchedulerFrontend;
 use crate::states::ez_state::{EzState, GenericState};
-use crate::widgets::layout::layout::Layout;
-use crate::widgets::label::{Label};
-use crate::widgets::button::{Button};
-use crate::widgets::canvas::{Canvas};
-use crate::widgets::checkbox::{Checkbox};
+use crate::widgets::button::Button;
+use crate::widgets::canvas::Canvas;
+use crate::widgets::checkbox::Checkbox;
 use crate::widgets::dropdown::{Dropdown, DroppedDownMenu};
+use crate::widgets::label::Label;
+use crate::widgets::layout::layout::Layout;
 use crate::widgets::progress_bar::ProgressBar;
-use crate::widgets::radio_button::{RadioButton};
+use crate::widgets::radio_button::RadioButton;
 use crate::widgets::slider::Slider;
-use crate::widgets::text_input::{TextInput};
+use crate::widgets::text_input::TextInput;
 
 
 /// Enum with variants representing Layouts and each widget type. A layout is not considered a
@@ -41,7 +43,7 @@ pub enum EzObjects {
 impl EzObjects {
 
     /// Get an EzObjects based on a string containing the base widget type.
-    pub fn from_string(type_name: &str, path: String, id: String, scheduler: &mut Scheduler,
+    pub fn from_string(type_name: &str, path: String, id: String, scheduler: &mut SchedulerFrontend,
                        state: EzState) -> Self {
 
         match type_name {
@@ -235,7 +237,7 @@ pub trait EzObject {
 
     /// Accepts config lines from the ez_parser module and prepares them to be loaded by
     /// load_ez_parameter below.
-    fn load_ez_config(&mut self, config: Vec<String>, scheduler: &mut Scheduler, file: String,
+    fn load_ez_config(&mut self, config: Vec<String>, scheduler: &mut SchedulerFrontend, file: String,
                       line: usize) -> Result<(), Error> {
         for (i, line_str) in config.iter().enumerate() {
             let total_line = line + i + 1;
@@ -256,7 +258,7 @@ pub trait EzObject {
     /// Load parameters for an object. Overloaded in each Widget/layout module to load parameters
     /// specific to the respective widget definition.
     fn load_ez_parameter(&mut self, parameter_name: String, parameter_value: String,
-                         scheduler: &mut Scheduler) -> Result<(), Error>;
+                         scheduler: &mut SchedulerFrontend) -> Result<(), Error>;
 
     /// Set ID of the widget. IDs are used to create widgets paths. E.g.
     /// "/root_layout/sub_layout/widget_1".
@@ -305,7 +307,7 @@ pub trait EzObject {
     /// be considered consumed. Simply consults the keymap by default, but can be overloaded for
     /// more complex circumstances.
     fn handle_event(&self, event: Event, state_tree: &mut StateTree,
-                    callback_tree: &mut CallbackTree, scheduler: &mut Scheduler) -> bool {
+                    callback_tree: &mut CallbackTree, scheduler: &mut SchedulerFrontend) -> bool {
 
         if let Event::Key(key) = event {
             if callback_tree.get_by_path(&self.get_full_path())
@@ -326,7 +328,7 @@ pub trait EzObject {
     /// default implementation only calls the appropriate callback. Objects can overwrite this
     /// function but must remember to also call the callback.
     fn on_keyboard_enter(&self, state_tree: &mut StateTree, callback_tree: &mut CallbackTree,
-                         scheduler: &mut Scheduler) -> bool {
+                         scheduler: &mut SchedulerFrontend) -> bool {
 
         let consumed = self.on_keyboard_enter_callback(state_tree, callback_tree, scheduler);
         if !consumed {
@@ -338,7 +340,7 @@ pub trait EzObject {
     /// Call the bound callback if there is any. This method can always be called safely. Used to
     /// prevent a lot of duplicate ```if let Some(i)``` code.
     fn on_keyboard_enter_callback(&self, state_tree: &mut StateTree,
-                                  callback_tree: &mut CallbackTree, scheduler: &mut Scheduler)
+                                  callback_tree: &mut CallbackTree, scheduler: &mut SchedulerFrontend)
         -> bool {
 
         if let Some(ref mut i) = callback_tree
@@ -352,7 +354,7 @@ pub trait EzObject {
     /// appropriate callback. Objects can overwrite this function but must remember to also
     /// call the callback.
     fn on_left_mouse_click(&self, state_tree: &mut StateTree, callback_tree: &mut CallbackTree,
-                           scheduler: &mut Scheduler, mouse_pos: Coordinates) -> bool {
+                           scheduler: &mut SchedulerFrontend, mouse_pos: Coordinates) -> bool {
 
         let consumed = self.on_left_mouse_click_callback(state_tree, callback_tree, scheduler, mouse_pos);
         if !consumed {
@@ -364,7 +366,7 @@ pub trait EzObject {
     /// Call the bound callback if there is any. This method can always be called safely. Used to
     /// prevent a lot of duplicate ```if let Some(i)``` code.
     fn on_left_mouse_click_callback(&self, state_tree: &mut StateTree,
-                                    callback_tree: &mut CallbackTree, scheduler: &mut Scheduler,
+                                    callback_tree: &mut CallbackTree, scheduler: &mut SchedulerFrontend,
                                     mouse_pos: Coordinates) -> bool {
 
         if let Some(ref mut i) = callback_tree
@@ -379,7 +381,7 @@ pub trait EzObject {
     /// when an object is left clicked. Default implementation only calls the appropriate callback.
     /// Objects can overwrite this function but must remember to also call the callback.
     fn on_press(&self, state_tree: &mut StateTree, callback_tree: &mut CallbackTree,
-                scheduler: &mut Scheduler) -> bool {
+                scheduler: &mut SchedulerFrontend) -> bool {
 
         self.on_press_callback(state_tree, callback_tree, scheduler)
     }
@@ -387,7 +389,7 @@ pub trait EzObject {
     /// Call the bound callback if there is any. This method can always be called safely. Used to
     /// prevent a lot of duplicate ```if let Some(i)``` code.
     fn on_press_callback(&self, state_tree: &mut StateTree, callback_tree: &mut CallbackTree,
-                         scheduler: &mut Scheduler) -> bool {
+                         scheduler: &mut SchedulerFrontend) -> bool {
 
         if let Some(ref mut i) = callback_tree
             .get_by_path_mut(&self.get_full_path()).on_press {
@@ -400,7 +402,7 @@ pub trait EzObject {
     /// appropriate callback. Objects can overwrite this function but must remember to also call
     /// the callback.
     fn on_right_mouse_click(&self, state_tree: &mut StateTree, callback_tree: &mut CallbackTree,
-                            scheduler: &mut Scheduler, mouse_pos: Coordinates) -> bool {
+                            scheduler: &mut SchedulerFrontend, mouse_pos: Coordinates) -> bool {
 
         self.on_right_mouse_click_callback(state_tree, callback_tree, scheduler, mouse_pos)
     }
@@ -408,7 +410,7 @@ pub trait EzObject {
     /// Call the bound callback if there is any. This method can always be called safely. Used to
     /// prevent a lot of duplicate ```if let Some(i)``` code.
     fn on_right_mouse_click_callback(&self, state_tree: &mut StateTree,
-                                     callback_tree: &mut CallbackTree, scheduler: &mut Scheduler,
+                                     callback_tree: &mut CallbackTree, scheduler: &mut SchedulerFrontend,
                                      mouse_pos: Coordinates) -> bool {
 
         if let Some(ref mut i) = callback_tree
@@ -424,7 +426,7 @@ pub trait EzObject {
     /// appropriate callback. Objects can overwrite this function but must remember to also call
     /// the callback.
     fn on_hover(&self, state_tree: &mut StateTree, callback_tree: &mut CallbackTree,
-                            scheduler: &mut Scheduler, mouse_pos: Coordinates) -> bool {
+                            scheduler: &mut SchedulerFrontend, mouse_pos: Coordinates) -> bool {
 
         self.on_hover_callback(state_tree, callback_tree, scheduler, mouse_pos)
     }
@@ -432,7 +434,7 @@ pub trait EzObject {
     /// Call the bound callback if there is any. This method can always be called safely. Used to
     /// prevent a lot of duplicate ```if let Some(i)``` code.
     fn on_hover_callback(&self, state_tree: &mut StateTree,
-                         callback_tree: &mut CallbackTree, scheduler: &mut Scheduler,
+                         callback_tree: &mut CallbackTree, scheduler: &mut SchedulerFrontend,
                          mouse_pos: Coordinates) -> bool {
 
         if let Some(ref mut i) = callback_tree
@@ -447,7 +449,7 @@ pub trait EzObject {
     /// the appropriate callback. Objects can overwrite this function but must remember to also 
     /// call the callback.
     fn on_drag(&self, state_tree: &mut StateTree, callback_tree: &mut CallbackTree,
-                scheduler: &mut Scheduler, previous_pos: Option<Coordinates>,
+                scheduler: &mut SchedulerFrontend, previous_pos: Option<Coordinates>,
                mouse_pos: Coordinates) -> bool {
 
         self.on_drag_callback(state_tree, callback_tree, scheduler, previous_pos, mouse_pos)
@@ -456,7 +458,7 @@ pub trait EzObject {
     /// Call the bound callback if there is any. This method can always be called safely. Used to
     /// prevent a lot of duplicate ```if let Some(i)``` code.
     fn on_drag_callback(&self, state_tree: &mut StateTree,
-                         callback_tree: &mut CallbackTree, scheduler: &mut Scheduler,
+                         callback_tree: &mut CallbackTree, scheduler: &mut SchedulerFrontend,
                          previous_pos: Option<Coordinates>, mouse_pos: Coordinates) -> bool {
 
         if let Some(ref mut i) = callback_tree
@@ -471,7 +473,7 @@ pub trait EzObject {
     /// appropriate callback. Objects can overwrite this function but must remember to also call
     /// the callback.
     fn on_scroll_up(&self, state_tree: &mut StateTree, callback_tree: &mut CallbackTree,
-                    scheduler: &mut Scheduler) -> bool {
+                    scheduler: &mut SchedulerFrontend) -> bool {
 
         self.on_scroll_up_callback(state_tree, callback_tree, scheduler)
     }
@@ -479,7 +481,7 @@ pub trait EzObject {
     /// Call the bound callback if there is any. This method can always be called safely. Used to
     /// prevent a lot of duplicate ```if let Some(i)``` code.
     fn on_scroll_up_callback(&self, state_tree: &mut StateTree, callback_tree: &mut CallbackTree,
-                             scheduler: &mut Scheduler) -> bool {
+                             scheduler: &mut SchedulerFrontend) -> bool {
 
         if let Some(ref mut i) = callback_tree
             .get_by_path_mut(&self.get_full_path()).on_scroll_up {
@@ -492,7 +494,7 @@ pub trait EzObject {
     /// the appropriate callback. Objects can overwrite this function but must remember to also call
     /// the callback.
     fn on_scroll_down(&self, state_tree: &mut StateTree, callback_tree: &mut CallbackTree,
-                      scheduler: &mut Scheduler) -> bool {
+                      scheduler: &mut SchedulerFrontend) -> bool {
 
         self.on_scroll_down_callback(state_tree, callback_tree, scheduler)
     }
@@ -500,7 +502,7 @@ pub trait EzObject {
     /// Call the bound callback if there is any. This method can always be called safely. Used to
     /// prevent a lot of duplicate ```if let Some(i)``` code.
     fn on_scroll_down_callback(&self, state_tree: &mut StateTree, callback_tree: &mut CallbackTree,
-                               scheduler: &mut Scheduler) -> bool {
+                               scheduler: &mut SchedulerFrontend) -> bool {
 
         if let Some(ref mut i) = callback_tree
             .get_by_path_mut(&self.get_full_path()).on_scroll_down {
@@ -513,7 +515,7 @@ pub trait EzObject {
     /// appropriate callback. Objects can overwrite this function but must remember to also call
     /// the callback.
     fn on_value_change(&self, state_tree: &mut StateTree, callback_tree: &mut CallbackTree,
-                       scheduler: &mut Scheduler) -> bool {
+                       scheduler: &mut SchedulerFrontend) -> bool {
 
         self.on_value_change_callback(state_tree, callback_tree, scheduler)
     }
@@ -521,7 +523,7 @@ pub trait EzObject {
     /// Call the bound callback if there is any. This method can always be called safely. Used to
     /// prevent a lot of duplicate ```if let Some(i)``` code.
     fn on_value_change_callback(&self, state_tree: &mut StateTree, callback_tree: &mut CallbackTree,
-                                scheduler: &mut Scheduler) -> bool {
+                                scheduler: &mut SchedulerFrontend) -> bool {
 
         if let Some(ref mut i) = callback_tree
             .get_by_path_mut(&self.get_full_path()).on_value_change {
@@ -534,7 +536,7 @@ pub trait EzObject {
     /// appropriate callback. Objects can overwrite this function but must remember to also call
     /// the callback.
     fn on_select(&self, state_tree: &mut StateTree, callback_tree: &mut CallbackTree,
-                 scheduler: &mut Scheduler, mouse_pos: Option<Coordinates>) -> bool {
+                 scheduler: &mut SchedulerFrontend, mouse_pos: Option<Coordinates>) -> bool {
 
         self.on_select_callback(state_tree, callback_tree, scheduler, mouse_pos)
     }
@@ -542,7 +544,7 @@ pub trait EzObject {
     /// Call the bound callback if there is any. This method can always be called safely. Used to
     /// prevent a lot of duplicate ```if let Some(i)``` code.
     fn on_select_callback(&self, state_tree: &mut StateTree, callback_tree: &mut CallbackTree,
-                          scheduler: &mut Scheduler, mouse_pos: Option<Coordinates>) -> bool {
+                          scheduler: &mut SchedulerFrontend, mouse_pos: Option<Coordinates>) -> bool {
 
         if let Some(ref mut i) = callback_tree
             .get_by_path_mut(&self.get_full_path()).on_select {
@@ -556,7 +558,7 @@ pub trait EzObject {
     /// appropriate callback. Objects can overwrite this function but must remember to also call
     /// the callback.
     fn on_deselect(&self, state_tree: &mut StateTree, callback_tree: &mut CallbackTree,
-                   scheduler: &mut Scheduler) -> bool {
+                   scheduler: &mut SchedulerFrontend) -> bool {
 
         self.on_deselect_callback(state_tree, callback_tree, scheduler)
     }
@@ -564,7 +566,7 @@ pub trait EzObject {
     /// Call the bound callback if there is any. This method can always be called safely. Used to
     /// prevent a lot of duplicate ```if let Some(i)``` code.
     fn on_deselect_callback(&self, state_tree: &mut StateTree, callback_tree: &mut CallbackTree,
-                            scheduler: &mut Scheduler) -> bool {
+                            scheduler: &mut SchedulerFrontend) -> bool {
 
         if let Some(ref mut i) = callback_tree
             .get_by_path_mut(&self.get_full_path()).on_deselect {

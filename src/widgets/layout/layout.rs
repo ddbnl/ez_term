@@ -8,7 +8,7 @@ use crate::parser::load_common_properties::load_common_property;
 use crate::widgets::ez_object::{EzObject, EzObjects};
 use crate::states::layout_state::LayoutState;
 use crate::states::ez_state::{EzState, GenericState};
-use crate::scheduler::scheduler::Scheduler;
+use crate::scheduler::scheduler::SchedulerFrontend;
 use crate::states::definitions::{LayoutMode, LayoutOrientation};
 use crate::property::ez_values::EzValues;
 use crate::run::definitions::{CallbackTree, Coordinates, IsizeCoordinates, Pixel, PixelMap, StateTree};
@@ -39,7 +39,7 @@ pub struct Layout {
 
 
 impl Layout {
-    pub fn new(id: String, path: String, scheduler: &mut Scheduler) -> Self {
+    pub fn new(id: String, path: String, scheduler: &mut SchedulerFrontend) -> Self {
         Layout {
             id,
             path: path.clone(),
@@ -49,7 +49,7 @@ impl Layout {
         }
     }
 
-    pub fn from_state(id: String, path: String, scheduler: &mut Scheduler, state: EzState) -> Self {
+    pub fn from_state(id: String, path: String, _scheduler: &mut SchedulerFrontend, state: EzState) -> Self {
         Layout {
             id,
             path: path.clone(),
@@ -59,7 +59,7 @@ impl Layout {
         }
     }
 
-    fn load_active_tab_property(&mut self, parameter_value: &str, scheduler: &mut Scheduler)
+    fn load_active_tab_property(&mut self, parameter_value: &str, scheduler: &mut SchedulerFrontend)
                                 -> Result<(), Error> {
 
         let path = self.path.clone();
@@ -74,7 +74,7 @@ impl Layout {
         Ok(())
     }
 
-    fn load_active_screen_property(&mut self, parameter_value: &str, scheduler: &mut Scheduler)
+    fn load_active_screen_property(&mut self, parameter_value: &str, scheduler: &mut SchedulerFrontend)
                                    -> Result<(), Error> {
 
         let path = self.path.clone();
@@ -89,7 +89,7 @@ impl Layout {
         Ok(())
     }
 
-    fn load_fill_property(&mut self, parameter_value: &str, scheduler: &mut Scheduler)
+    fn load_fill_property(&mut self, parameter_value: &str, scheduler: &mut SchedulerFrontend)
         -> Result<(), Error> {
 
         let path = self.path.clone();
@@ -104,7 +104,7 @@ impl Layout {
         Ok(())
     }
 
-    fn load_filler_symbol_property(&mut self, parameter_value: &str, scheduler: &mut Scheduler)
+    fn load_filler_symbol_property(&mut self, parameter_value: &str, scheduler: &mut SchedulerFrontend)
         -> Result<(), Error> {
 
         let path = self.path.clone();
@@ -119,7 +119,7 @@ impl Layout {
         Ok(())
     }
 
-    fn load_scrolling_enable_x_property(&mut self, parameter_value: &str, scheduler: &mut Scheduler)
+    fn load_scrolling_enable_x_property(&mut self, parameter_value: &str, scheduler: &mut SchedulerFrontend)
         -> Result<(), Error> {
 
         let path = self.path.clone();
@@ -134,7 +134,7 @@ impl Layout {
         Ok(())
     }
 
-    fn load_scrolling_enable_y_property(&mut self, parameter_value: &str, scheduler: &mut Scheduler)
+    fn load_scrolling_enable_y_property(&mut self, parameter_value: &str, scheduler: &mut SchedulerFrontend)
         -> Result<(), Error> {
 
         let path = self.path.clone();
@@ -150,7 +150,7 @@ impl Layout {
     }
 
     fn load_table_rows_property(&mut self, parameter_value: &str,
-                                      scheduler: &mut Scheduler) -> Result<(), Error> {
+                                      scheduler: &mut SchedulerFrontend) -> Result<(), Error> {
 
         let path = self.path.clone();
         self.state.get_table_config_mut().rows.set(load_ez_usize_property(
@@ -165,7 +165,7 @@ impl Layout {
     }
 
     fn load_table_columns_property(&mut self, parameter_value: &str,
-                                   scheduler: &mut Scheduler) -> Result<(), Error> {
+                                   scheduler: &mut SchedulerFrontend) -> Result<(), Error> {
 
         let path = self.path.clone();
         self.state.get_table_config_mut().columns.set(load_ez_usize_property(
@@ -180,7 +180,7 @@ impl Layout {
     }
 
     fn load_table_default_height_property(&mut self, parameter_value: &str,
-                                          scheduler: &mut Scheduler) -> Result<(), Error> {
+                                          scheduler: &mut SchedulerFrontend) -> Result<(), Error> {
 
         let path = self.path.clone();
         self.state.get_table_config_mut().default_height.set(load_ez_usize_property(
@@ -195,7 +195,7 @@ impl Layout {
     }
 
     fn load_table_default_width_property(&mut self, parameter_value: &str,
-                                         scheduler: &mut Scheduler) -> Result<(), Error> {
+                                         scheduler: &mut SchedulerFrontend) -> Result<(), Error> {
 
         let path = self.path.clone();
         self.state.get_table_config_mut().default_width.set(load_ez_usize_property(
@@ -210,7 +210,7 @@ impl Layout {
     }
 
     fn load_table_force_default_height_property(&mut self, parameter_value: &str,
-                                              scheduler: &mut Scheduler) -> Result<(), Error> {
+                                              scheduler: &mut SchedulerFrontend) -> Result<(), Error> {
 
         let path = self.path.clone();
         self.state.get_table_config_mut().force_default_height.set(load_ez_bool_property(
@@ -225,7 +225,7 @@ impl Layout {
     }
 
     fn load_table_force_default_width_property(&mut self, parameter_value: &str,
-                                                scheduler: &mut Scheduler) -> Result<(), Error> {
+                                                scheduler: &mut SchedulerFrontend) -> Result<(), Error> {
 
         let path = self.path.clone();
         self.state.get_table_config_mut().force_default_width.set(load_ez_bool_property(
@@ -244,7 +244,7 @@ impl Layout {
 impl EzObject for Layout {
 
     fn load_ez_parameter(&mut self, parameter_name: String, parameter_value: String,
-                         scheduler: &mut Scheduler) -> Result<(), Error> {
+                         scheduler: &mut SchedulerFrontend) -> Result<(), Error> {
 
         let consumed = load_common_property(
             &parameter_name, parameter_value.clone(),self, scheduler)?;
@@ -374,7 +374,7 @@ impl EzObject for Layout {
     }
 
     fn handle_event(&self, event: Event, state_tree: &mut StateTree,
-                    _callback_tree: &mut CallbackTree, scheduler: &mut Scheduler) -> bool {
+                    _callback_tree: &mut CallbackTree, scheduler: &mut SchedulerFrontend) -> bool {
 
         let state = state_tree.get_by_path_mut(&self.get_full_path())
             .as_layout_mut();
@@ -406,7 +406,7 @@ impl EzObject for Layout {
 
     /// Implement user keyboard enter to select a new tab after it's already selected.
     fn on_keyboard_enter(&self, state_tree: &mut StateTree, _callback_tree: &mut CallbackTree,
-                         scheduler: &mut Scheduler) -> bool {
+                         scheduler: &mut SchedulerFrontend) -> bool {
 
         let state = state_tree.get_by_path_mut(&self.path).as_layout_mut();
         if !state.selected_tab_header.is_empty() {
@@ -420,7 +420,7 @@ impl EzObject for Layout {
 
     // Implement clicking under are above the scrollbar to move it down or up respectively.
     fn on_left_mouse_click(&self, state_tree: &mut StateTree, _callback_tree: &mut CallbackTree,
-                           scheduler: &mut Scheduler, mouse_pos: Coordinates) -> bool {
+                           scheduler: &mut SchedulerFrontend, mouse_pos: Coordinates) -> bool {
 
         let state = state_tree.get_by_path_mut(&self.path).as_layout_mut();
 
@@ -468,7 +468,7 @@ impl EzObject for Layout {
 
     /// Implement clicking on the scrollbar and dragging it down or up.
     fn on_drag(&self, state_tree: &mut StateTree, callback_tree: &mut CallbackTree,
-               scheduler: &mut Scheduler, previous_pos: Option<Coordinates>,
+               scheduler: &mut SchedulerFrontend, previous_pos: Option<Coordinates>,
                mouse_pos: Coordinates) -> bool {
 
         let mut consumed =
@@ -547,7 +547,7 @@ impl EzObject for Layout {
     }
 
     fn on_scroll_up(&self, state_tree: &mut StateTree, _callback_tree: &mut CallbackTree,
-                    scheduler: &mut Scheduler) -> bool {
+                    scheduler: &mut SchedulerFrontend) -> bool {
 
         let state = state_tree.get_by_path_mut(&self.path).as_layout_mut();
         if state.scrolling_config.is_scrolling_y || state.scrolling_config.is_scrolling_x {
@@ -558,7 +558,7 @@ impl EzObject for Layout {
     }
 
     fn on_scroll_down(&self, state_tree: &mut StateTree, _callback_tree: &mut CallbackTree,
-                      scheduler: &mut Scheduler) -> bool {
+                      scheduler: &mut SchedulerFrontend) -> bool {
 
         let state = state_tree.get_by_path_mut(&self.path).as_layout_mut();
         if state.scrolling_config.is_scrolling_y || state.scrolling_config.is_scrolling_x {
@@ -569,7 +569,7 @@ impl EzObject for Layout {
     }
 
     fn on_select(&self, state_tree: &mut StateTree, _callback_tree: &mut CallbackTree,
-                 scheduler: &mut Scheduler, _mouse_pos: Option<Coordinates>) -> bool {
+                 scheduler: &mut SchedulerFrontend, _mouse_pos: Option<Coordinates>) -> bool {
 
         for child in self.children.iter() {
             if let EzObjects::Button(i) = child {
@@ -583,7 +583,7 @@ impl EzObject for Layout {
     }
 
     fn on_deselect(&self, state_tree: &mut StateTree, _callback_tree: &mut CallbackTree,
-                   scheduler: &mut Scheduler) -> bool {
+                   scheduler: &mut SchedulerFrontend) -> bool {
 
         let state = state_tree.get_by_path_mut(&self.path).as_layout_mut();
         state.selected_tab_header.clear();
@@ -594,7 +594,7 @@ impl EzObject for Layout {
 
 impl Layout {
     /// Initialize an instance of this object using the passed config coming from [ez_parser]
-    pub fn from_config(config: Vec<String>, id: String, path: String, scheduler: &mut Scheduler,
+    pub fn from_config(config: Vec<String>, id: String, path: String, scheduler: &mut SchedulerFrontend,
                        file: String, line: usize) -> Self {
 
         let mut obj = Layout::new(id, path, scheduler);

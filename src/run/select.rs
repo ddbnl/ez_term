@@ -4,7 +4,7 @@
 //! Widgets can be selected by keyboard (next/previous widget) or mouse (widget under mouse_pos).
 //! This module provides functions to handle that.
 use crate::run::definitions::{CallbackTree, Coordinates, StateTree};
-use crate::scheduler::scheduler::Scheduler;
+use crate::scheduler::scheduler::SchedulerFrontend;
 use crate::states::definitions::LayoutMode;
 use crate::states::ez_state::{EzState, GenericState};
 use crate::widgets::ez_object::EzObject;
@@ -14,7 +14,7 @@ use crate::widgets::layout::layout::Layout;
 /// Handle a widget being selected.
 pub fn select_widget(path: &str, state_tree: &mut StateTree,
                      root_widget: &Layout, callback_tree: &mut CallbackTree,
-                     scheduler: &mut Scheduler, mouse_pos: Option<Coordinates>) {
+                     scheduler: &mut SchedulerFrontend, mouse_pos: Option<Coordinates>) {
 
     let state = state_tree.get_by_path_mut(path).as_generic_mut();
     state.set_selected(true);
@@ -26,7 +26,7 @@ pub fn select_widget(path: &str, state_tree: &mut StateTree,
 /// Handle a widget being deselected.
 pub fn deselect_widget(path: &str, state_tree: &mut StateTree,
                        root_widget: &Layout, callback_tree: &mut CallbackTree,
-                       scheduler: &mut Scheduler) {
+                       scheduler: &mut SchedulerFrontend) {
 
     let state = state_tree.get_by_path_mut(&path).as_generic_mut();
     state.set_selected(false);
@@ -42,7 +42,7 @@ pub fn deselect_widget(path: &str, state_tree: &mut StateTree,
 /// widget is currently selected wrap around and select the first. This function can always be
 /// called safely.
 pub fn select_next(state_tree: &mut StateTree, _root_widget: &Layout,
-                   _callback_tree: &mut CallbackTree, scheduler: &mut Scheduler,
+                   _callback_tree: &mut CallbackTree, scheduler: &mut SchedulerFrontend,
                    current_selection: &mut String) {
 
     let modals = state_tree.get_by_path("/root").as_layout().get_modals();
@@ -102,7 +102,7 @@ pub fn find_next_selection(current_selection: usize, state_tree: &StateTree, pat
 /// widget is currently selected wrap around and select the last. This function can always be
 /// called safely.
 pub fn select_previous(state_tree: &mut StateTree, _root_widget: &Layout,
-                       _callback_tree: &mut CallbackTree, scheduler: &mut Scheduler,
+                       _callback_tree: &mut CallbackTree, scheduler: &mut SchedulerFrontend,
                        current_selection: &mut String) {
 
     let modals = state_tree.get_by_path("/root").as_layout().get_modals();

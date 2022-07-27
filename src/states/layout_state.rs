@@ -4,8 +4,8 @@ use crate::{EzProperty};
 use crate::parser::ez_definition::Templates;
 use crate::run::definitions::{IsizeCoordinates, Size, StateTree};
 use crate::run::tree::initialize_state_tree;
+use crate::scheduler::scheduler::SchedulerFrontend;
 use crate::scheduler::scheduler_funcs::clean_up_property;
-use crate::scheduler::scheduler::Scheduler;
 use crate::states::ez_state::GenericState;
 use crate::widgets::ez_object::EzObjects;
 
@@ -101,7 +101,7 @@ pub struct LayoutState {
 }
 impl LayoutState {
 
-    pub fn new(path: String, scheduler: &mut Scheduler) -> Self {
+    pub fn new(path: String, scheduler: &mut SchedulerFrontend) -> Self {
 
         LayoutState {
             path: path.clone(),
@@ -253,7 +253,7 @@ impl GenericState for LayoutState {
 
     fn get_selected(&self) -> bool { self.selected }
 
-    fn clean_up_properties(&self, scheduler: &mut Scheduler) {
+    fn clean_up_properties(&self, scheduler: &mut SchedulerFrontend) {
 
         self.position.clean_up_properties(scheduler);
         self.size.clean_up_properties(scheduler);
@@ -341,7 +341,7 @@ impl LayoutState {
     pub fn get_filler_symbol(&self) -> &EzProperty<String> { &self.filler_symbol }
 
     /// Open a popup based on a template defined in the Ez file. Returns the state of the new popup
-    pub fn open_popup(&mut self, template: String, scheduler: &mut Scheduler)
+    pub fn open_popup(&mut self, template: String, scheduler: &mut SchedulerFrontend)
         -> (String, StateTree) {
         let mut popup = self.templates.get(&template).unwrap().clone();
         let init_popup = popup.parse(scheduler,"/modal".to_string(), 0,
@@ -372,7 +372,7 @@ impl LayoutState {
     }
     
     /// Dismiss the current modal
-    pub fn dismiss_modal(&mut self, scheduler: &mut Scheduler) {
+    pub fn dismiss_modal(&mut self, scheduler: &mut SchedulerFrontend) {
 
         self.open_modals.remove(0);
         self.update(scheduler);
@@ -381,7 +381,7 @@ impl LayoutState {
     }
 
     /// Dismiss all modals, clearing the entire stack
-    pub fn dismiss_all_modals(&mut self, scheduler: &mut Scheduler) {
+    pub fn dismiss_all_modals(&mut self, scheduler: &mut SchedulerFrontend) {
 
         self.open_modals.clear();
         self.update(scheduler);

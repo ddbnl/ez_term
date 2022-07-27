@@ -1,5 +1,5 @@
 use crate::run::definitions::{IsizeCoordinates, Pixel, PixelMap, StateTree};
-use crate::scheduler::scheduler::Scheduler;
+use crate::scheduler::scheduler::SchedulerFrontend;
 use crate::widgets::ez_object::EzObjects;
 use crate::widgets::ez_object::EzObject;
 use crate::states::ez_state::GenericState;
@@ -8,7 +8,7 @@ use crate::widgets::layout::layout::Layout;
 // Tab mode implementations
 impl Layout {
 
-    pub fn handle_tab_left(&self, state_tree: &mut StateTree, scheduler: &mut Scheduler) {
+    pub fn handle_tab_left(&self, state_tree: &mut StateTree, scheduler: &mut SchedulerFrontend) {
 
         let mut next_button = false;
         for child in self.children.iter().rev() {
@@ -28,7 +28,7 @@ impl Layout {
         }
     }
 
-    pub fn handle_tab_right(&self, state_tree: &mut StateTree, scheduler: &mut Scheduler) {
+    pub fn handle_tab_right(&self, state_tree: &mut StateTree, scheduler: &mut SchedulerFrontend) {
 
         let mut next_button = false;
         for child in self.children.iter() {

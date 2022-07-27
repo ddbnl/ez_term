@@ -4,14 +4,15 @@
 //! one is selected the others are deselected. Supports on_value_change callback, which is only
 //! called for the radio button that became active.
 use std::io::{Error, ErrorKind};
-use crate::states::radio_button_state::RadioButtonState;
-use crate::states::ez_state::{EzState, GenericState};
-use crate::widgets::ez_object::{EzObject};
-use crate::parser::load_common_properties::load_common_property;
+
 use crate::parser::load_base_properties::{load_ez_bool_property, load_ez_string_property};
+use crate::parser::load_common_properties::load_common_property;
 use crate::property::ez_values::EzValues;
 use crate::run::definitions::{CallbackTree, Coordinates, Pixel, PixelMap, StateTree};
-use crate::scheduler::scheduler::Scheduler;
+use crate::scheduler::scheduler::SchedulerFrontend;
+use crate::states::ez_state::{EzState, GenericState};
+use crate::states::radio_button_state::RadioButtonState;
+use crate::widgets::ez_object::EzObject;
 use crate::widgets::helper_functions::{add_border, add_padding};
 
 
@@ -29,7 +30,7 @@ pub struct RadioButton {
 }
 
 impl RadioButton {
-    pub fn new(id: String, path: String, scheduler: &mut Scheduler) -> Self {
+    pub fn new(id: String, path: String, scheduler: &mut SchedulerFrontend) -> Self {
         RadioButton {
             id,
             path: path.clone(),
@@ -38,7 +39,7 @@ impl RadioButton {
         }
     }
 
-    pub fn from_state(id: String, path: String, scheduler: &mut Scheduler, state: EzState) -> Self {
+    pub fn from_state(id: String, path: String, _scheduler: &mut SchedulerFrontend, state: EzState) -> Self {
         RadioButton {
             id,
             path: path.clone(),
@@ -46,7 +47,7 @@ impl RadioButton {
         }
     }
 
-    fn load_group_property(&mut self, parameter_value: &str, scheduler: &mut Scheduler)
+    fn load_group_property(&mut self, parameter_value: &str, scheduler: &mut SchedulerFrontend)
         -> Result<(), Error> {
 
         let path = self.path.clone();
@@ -61,7 +62,7 @@ impl RadioButton {
         Ok(())
     }
 
-    fn load_active_property(&mut self, parameter_value: &str, scheduler: &mut Scheduler)
+    fn load_active_property(&mut self, parameter_value: &str, scheduler: &mut SchedulerFrontend)
                             -> Result<(), Error> {
 
         let path = self.path.clone();
@@ -76,7 +77,7 @@ impl RadioButton {
         Ok(())
     }
 
-    fn load_active_symbol_property(&mut self, parameter_value: &str, scheduler: &mut Scheduler)
+    fn load_active_symbol_property(&mut self, parameter_value: &str, scheduler: &mut SchedulerFrontend)
                                    -> Result<(), Error>{
 
         let path = self.path.clone();
@@ -90,7 +91,7 @@ impl RadioButton {
         Ok(())
     }
 
-    fn load_inactive_symbol_property(&mut self, parameter_value: &str, scheduler: &mut Scheduler)
+    fn load_inactive_symbol_property(&mut self, parameter_value: &str, scheduler: &mut SchedulerFrontend)
                                      -> Result<(), Error>{
 
         let path = self.path.clone();
@@ -109,7 +110,7 @@ impl RadioButton {
 impl EzObject for RadioButton {
 
     fn load_ez_parameter(&mut self, parameter_name: String, parameter_value: String,
-                         scheduler: &mut Scheduler) -> Result<(), Error> {
+                         scheduler: &mut SchedulerFrontend) -> Result<(), Error> {
 
         let consumed = load_common_property(
             &parameter_name, parameter_value.clone(),self, scheduler)?;
@@ -180,14 +181,14 @@ impl EzObject for RadioButton {
     }
 
     fn on_press(&self, state_tree: &mut StateTree, callback_tree: &mut CallbackTree,
-                scheduler: &mut Scheduler) -> bool {
+                scheduler: &mut SchedulerFrontend) -> bool {
 
         self.handle_press(state_tree, callback_tree, scheduler);
         true
     }
 
     fn on_hover(&self, state_tree: &mut StateTree, callback_tree: &mut CallbackTree,
-                scheduler: &mut Scheduler, mouse_pos: Coordinates) -> bool {
+                scheduler: &mut SchedulerFrontend, mouse_pos: Coordinates) -> bool {
 
         scheduler.set_selected_widget(&self.path, Some(mouse_pos));
         self.on_hover_callback(state_tree, callback_tree, scheduler, mouse_pos);
@@ -197,7 +198,7 @@ impl EzObject for RadioButton {
 impl RadioButton {
 
     /// Initialize an instance of this object using the passed config coming from [ez_parser]
-    pub fn from_config(config: Vec<String>, id: String, path: String, scheduler: &mut Scheduler,
+    pub fn from_config(config: Vec<String>, id: String, path: String, scheduler: &mut SchedulerFrontend,
                        file: String, line: usize) -> Self {
 
         let mut obj = RadioButton::new(id, path, scheduler);
@@ -207,7 +208,7 @@ impl RadioButton {
 
     /// Function that handles this RadioButton being pressed (mouse clicked/keyboard entered).
     fn handle_press(&self, state_tree: &mut StateTree, callback_tree: &mut CallbackTree,
-                    scheduler: &mut Scheduler) {
+                    scheduler: &mut SchedulerFrontend) {
 
         // Find all other radio buttons in same group and make them inactive (mutual exclusivity)
         let group_name =

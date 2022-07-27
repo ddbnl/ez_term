@@ -1,15 +1,17 @@
 //! # Checkbox Widget
 //! Widget which is either on or off and implements an on_value_change callback.
 use std::io::{Error, ErrorKind};
-use crate::widgets::ez_object::{EzObject};
-use crate::states::checkbox_state::CheckboxState;
-use crate::states::ez_state::{EzState, GenericState};
-use crate::parser::load_common_properties::load_common_property;
+
 use crate::parser::load_base_properties::{load_ez_bool_property, load_ez_string_property};
+use crate::parser::load_common_properties::load_common_property;
 use crate::property::ez_values::EzValues;
 use crate::run::definitions::{CallbackTree, Coordinates, Pixel, PixelMap, StateTree};
-use crate::scheduler::scheduler::Scheduler;
+use crate::scheduler::scheduler::SchedulerFrontend;
+use crate::states::checkbox_state::CheckboxState;
+use crate::states::ez_state::{EzState, GenericState};
+use crate::widgets::ez_object::EzObject;
 use crate::widgets::helper_functions::{add_border, add_padding};
+
 
 #[derive(Clone, Debug)]
 pub struct Checkbox {
@@ -26,7 +28,7 @@ pub struct Checkbox {
 
 impl Checkbox {
 
-    pub fn new(id: String, path: String, scheduler: &mut Scheduler) -> Self {
+    pub fn new(id: String, path: String, scheduler: &mut SchedulerFrontend) -> Self {
 
         Checkbox {
             id,
@@ -35,7 +37,7 @@ impl Checkbox {
         }
     }
 
-    pub fn from_state(id: String, path: String, scheduler: &mut Scheduler, state: EzState) -> Self {
+    pub fn from_state(id: String, path: String, _scheduler: &mut SchedulerFrontend, state: EzState) -> Self {
         Checkbox {
             id,
             path: path.clone(),
@@ -44,7 +46,7 @@ impl Checkbox {
     }
 
 
-    fn load_active_property(&mut self, parameter_value: &str, scheduler: &mut Scheduler)
+    fn load_active_property(&mut self, parameter_value: &str, scheduler: &mut SchedulerFrontend)
         -> Result<(), Error>{
 
         let path = self.path.clone();
@@ -58,7 +60,7 @@ impl Checkbox {
         Ok(())
     }
 
-    fn load_active_symbol_property(&mut self, parameter_value: &str, scheduler: &mut Scheduler)
+    fn load_active_symbol_property(&mut self, parameter_value: &str, scheduler: &mut SchedulerFrontend)
         -> Result<(), Error>{
 
         let path = self.path.clone();
@@ -72,7 +74,7 @@ impl Checkbox {
         Ok(())
     }
 
-    fn load_inactive_symbol_property(&mut self, parameter_value: &str, scheduler: &mut Scheduler)
+    fn load_inactive_symbol_property(&mut self, parameter_value: &str, scheduler: &mut SchedulerFrontend)
                                    -> Result<(), Error>{
 
         let path = self.path.clone();
@@ -91,7 +93,7 @@ impl Checkbox {
 impl EzObject for Checkbox {
 
     fn load_ez_parameter(&mut self, parameter_name: String, parameter_value: String,
-                         scheduler: &mut Scheduler) -> Result<(), Error> {
+                         scheduler: &mut SchedulerFrontend) -> Result<(), Error> {
 
         let consumed = load_common_property(
             &parameter_name, parameter_value.clone(),self, scheduler)?;
@@ -154,14 +156,14 @@ impl EzObject for Checkbox {
     }
 
     fn on_press(&self, state_tree: &mut StateTree, callback_tree: &mut CallbackTree,
-                scheduler: &mut Scheduler) -> bool {
+                scheduler: &mut SchedulerFrontend) -> bool {
 
         self.handle_toggle(state_tree, callback_tree, scheduler);
         true
     }
 
     fn on_hover(&self, state_tree: &mut StateTree, callback_tree: &mut CallbackTree,
-                scheduler: &mut Scheduler, mouse_pos: Coordinates) -> bool {
+                scheduler: &mut SchedulerFrontend, mouse_pos: Coordinates) -> bool {
 
         scheduler.set_selected_widget(&self.path, Some(mouse_pos));
         self.on_hover_callback(state_tree, callback_tree, scheduler, mouse_pos);
@@ -171,7 +173,7 @@ impl EzObject for Checkbox {
 impl Checkbox {
 
     /// Initialize an instance of this object using the passed config coming from [ez_parser]
-    pub fn from_config(config: Vec<String>, id: String, path: String, scheduler: &mut Scheduler,
+    pub fn from_config(config: Vec<String>, id: String, path: String, scheduler: &mut SchedulerFrontend,
                        file: String, line: usize) -> Self {
 
         let mut obj = Checkbox::new(id, path, scheduler);
@@ -180,7 +182,7 @@ impl Checkbox {
     }
 
     fn handle_toggle(&self, state_tree: &mut StateTree, callback_tree: &mut CallbackTree,
-                     scheduler: &mut Scheduler) {
+                     scheduler: &mut SchedulerFrontend) {
 
         let state = state_tree.get_by_path_mut(&self.get_full_path())
             .as_checkbox_mut();

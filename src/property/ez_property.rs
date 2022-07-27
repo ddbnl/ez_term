@@ -10,7 +10,7 @@ use crossterm::style::Color;
 use crate::CallbackConfig;
 use crate::property::ez_values::EzValues;
 use crate::scheduler::definitions::GenericEzFunction;
-use crate::scheduler::scheduler::Scheduler;
+use crate::scheduler::scheduler::SchedulerFrontend;
 use crate::states::definitions::{HorizontalAlignment, VerticalAlignment};
 
 
@@ -73,7 +73,7 @@ impl<T> EzProperty<T> where EzValues: From<T> {
     /// Bind a custom callback to this property which will be called when the value changes. This
     /// is unrelated to binding widgets to one another. This is only used to allow end-users to
     /// bind a callback to an EzProperty.
-    pub fn bind(&self, callback: GenericEzFunction, scheduler: &mut Scheduler) {
+    pub fn bind(&self, callback: GenericEzFunction, scheduler: &mut SchedulerFrontend) {
 
         let config = CallbackConfig::from_on_value_change(callback);
         scheduler.set_callback_config(self.get_name().as_str(), config);

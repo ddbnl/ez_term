@@ -3,7 +3,7 @@ use crossterm::event::KeyCode;
 use crossterm::style::Color;
 use crate::property::ez_property::EzProperty;
 use crate::scheduler::definitions::{GenericEzFunction, KeyboardCallbackFunction, MouseCallbackFunction, MouseDragCallbackFunction, OptionalMouseCallbackFunction};
-use crate::scheduler::scheduler::Scheduler;
+use crate::scheduler::scheduler::{SchedulerFrontend};
 use crate::scheduler::scheduler_funcs::clean_up_property;
 
 
@@ -105,7 +105,7 @@ pub struct TableConfig {
 }
 impl TableConfig {
 
-    pub fn new(name: String, scheduler: &mut Scheduler) -> Self {
+    pub fn new(name: String, scheduler: &mut SchedulerFrontend) -> Self {
 
         let rows_property = scheduler.new_usize_property(
             format!("{}/table_rows", name).as_str(), 0);
@@ -134,7 +134,7 @@ impl TableConfig {
         }
     }
 
-    pub fn clean_up_properties(&self, scheduler: &mut Scheduler) {
+    pub fn clean_up_properties(&self, scheduler: &mut SchedulerFrontend) {
         clean_up_property(scheduler, &self.rows.name);
         clean_up_property(scheduler, &self.columns.name);
         clean_up_property(scheduler, &self.force_default_height.name);
@@ -153,7 +153,7 @@ pub struct StateSize {
 }
 impl StateSize {
 
-    pub fn new(width: usize, height: usize, name: String, scheduler: &mut Scheduler) -> Self {
+    pub fn new(width: usize, height: usize, name: String, scheduler: &mut SchedulerFrontend) -> Self {
 
         let width_property = scheduler.new_usize_property(
             format!("{}/width", name).as_str(), width);
@@ -167,7 +167,7 @@ impl StateSize {
         }
     }
 
-    pub fn clean_up_properties(&self, scheduler: &mut Scheduler) {
+    pub fn clean_up_properties(&self, scheduler: &mut SchedulerFrontend) {
         clean_up_property(scheduler, &self.width.name);
         clean_up_property(scheduler, &self.height.name);
     }
@@ -181,7 +181,7 @@ pub struct StateCoordinates {
     pub y: EzProperty<usize>,
 }
 impl StateCoordinates {
-    pub fn new(x: usize, y: usize, name: String, scheduler: &mut Scheduler) -> Self {
+    pub fn new(x: usize, y: usize, name: String, scheduler: &mut SchedulerFrontend) -> Self {
 
         let x_property =
             scheduler.new_usize_property(format!("{}/x", name).as_str(), x);
@@ -193,7 +193,7 @@ impl StateCoordinates {
         }
     }
 
-    pub fn clean_up_properties(&self, scheduler: &mut Scheduler) {
+    pub fn clean_up_properties(&self, scheduler: &mut SchedulerFrontend) {
         clean_up_property(scheduler, &self.x.name);
         clean_up_property(scheduler, &self.y.name);
     }
@@ -208,7 +208,7 @@ pub struct AutoScale {
 }
 impl AutoScale {
 
-    pub fn new(width: bool, height: bool, name: String, scheduler: &mut Scheduler) -> Self {
+    pub fn new(width: bool, height: bool, name: String, scheduler: &mut SchedulerFrontend) -> Self {
         let width_property =
             scheduler.new_bool_property(format!("{}/autoscale_width", name).as_str(),
                                         width);
@@ -218,7 +218,7 @@ impl AutoScale {
         AutoScale{width: width_property, height: height_property}
     }
 
-    pub fn clean_up_properties(&self, scheduler: &mut Scheduler) {
+    pub fn clean_up_properties(&self, scheduler: &mut SchedulerFrontend) {
         clean_up_property(scheduler, &self.width.name);
         clean_up_property(scheduler, &self.height.name);
     }
@@ -232,7 +232,8 @@ pub struct SizeHint {
     pub y: EzProperty<Option<f64>>,
 }
 impl SizeHint {
-    pub fn new(x: Option<f64>, y: Option<f64>, name: String, scheduler: &mut Scheduler) -> Self {
+    pub fn new(x: Option<f64>, y: Option<f64>, name: String, scheduler: &mut SchedulerFrontend)
+        -> Self {
         let x_property =
             scheduler.new_size_hint_property(format!("{}/size_hint_width", name).as_str(),
                                         x);
@@ -242,7 +243,7 @@ impl SizeHint {
         SizeHint{x: x_property, y: y_property}
     }
 
-    pub fn clean_up_properties(&self, scheduler: &mut Scheduler) {
+    pub fn clean_up_properties(&self, scheduler: &mut SchedulerFrontend) {
         clean_up_property(scheduler, &self.x.name);
         clean_up_property(scheduler, &self.y.name);
     }
@@ -258,7 +259,7 @@ pub struct PosHint {
 impl PosHint {
 
     pub fn new(x: Option<(HorizontalAlignment, f64)>, y: Option<(VerticalAlignment, f64)>,
-               name: String, scheduler: &mut Scheduler) -> Self {
+               name: String, scheduler: &mut SchedulerFrontend) -> Self {
         let x_property =
             scheduler.new_horizontal_pos_hint_property(
                 format!("{}/pos_hint_x", name).as_str(),x);
@@ -268,7 +269,7 @@ impl PosHint {
         PosHint{x: x_property, y: y_property}
     }
 
-    pub fn clean_up_properties(&self, scheduler: &mut Scheduler) {
+    pub fn clean_up_properties(&self, scheduler: &mut SchedulerFrontend) {
         clean_up_property(scheduler, &self.x.name);
         clean_up_property(scheduler, &self.y.name);
     }
@@ -507,7 +508,7 @@ pub struct ScrollingConfig {
 }
 impl ScrollingConfig {
 
-    pub fn new(enable_x: bool, enable_y: bool, name: String, scheduler: &mut Scheduler) -> Self {
+    pub fn new(enable_x: bool, enable_y: bool, name: String, scheduler: &mut SchedulerFrontend) -> Self {
 
         let x_property =
             scheduler.new_bool_property(format!("{}/scrolling_enable_x", name).as_str(),
@@ -526,7 +527,7 @@ impl ScrollingConfig {
             original_width: 0
         }
     }
-    pub fn clean_up_properties(&self, scheduler: &mut Scheduler) {
+    pub fn clean_up_properties(&self, scheduler: &mut SchedulerFrontend) {
         clean_up_property(scheduler, &self.enable_x.name);
         clean_up_property(scheduler, &self.enable_y.name);
     }
@@ -567,7 +568,7 @@ pub struct BorderConfig {
 
 impl BorderConfig {
 
-    pub fn new(enable: bool, name: String, scheduler: &mut Scheduler) -> Self {
+    pub fn new(enable: bool, name: String, scheduler: &mut SchedulerFrontend) -> Self {
 
         let enabled_property =
             scheduler.new_bool_property(format!("{}/border_enabled", name).as_str(),
@@ -610,7 +611,7 @@ impl BorderConfig {
        } 
     }
 
-    pub fn clean_up_properties(&self, scheduler: &mut Scheduler) {
+    pub fn clean_up_properties(&self, scheduler: &mut SchedulerFrontend) {
         clean_up_property(scheduler, &self.enabled.name);
         clean_up_property(scheduler, &self.horizontal_symbol.name);
         clean_up_property(scheduler, &self.vertical_symbol.name);
@@ -674,7 +675,7 @@ pub struct ColorConfig {
     pub cursor: EzProperty<Color>,
 }
 impl ColorConfig {
-    pub fn new(name: String, scheduler: &mut Scheduler) -> Self {
+    pub fn new(name: String, scheduler: &mut SchedulerFrontend) -> Self {
 
         let foreground = scheduler.new_color_property(
             format!("{}/color_fg", name).as_str(), Color::White);
@@ -733,7 +734,7 @@ impl ColorConfig {
         }
     }
 
-    pub fn clean_up_properties(&self, scheduler: &mut Scheduler) {
+    pub fn clean_up_properties(&self, scheduler: &mut SchedulerFrontend) {
         clean_up_property(scheduler, &self.foreground.name);
         clean_up_property(scheduler, &self.background.name);
         clean_up_property(scheduler, &self.selection_foreground.name);
@@ -762,7 +763,7 @@ pub struct Padding {
 }
 impl Padding {
     pub fn new(top: usize, bottom: usize, left: usize, right: usize, name: String,
-               scheduler: &mut Scheduler) -> Padding{
+               scheduler: &mut SchedulerFrontend) -> Padding{
 
 
         let top_property = scheduler.new_usize_property(
@@ -781,7 +782,7 @@ impl Padding {
         }
     }
 
-    pub fn clean_up_properties(&self, scheduler: &mut Scheduler) {
+    pub fn clean_up_properties(&self, scheduler: &mut SchedulerFrontend) {
         clean_up_property(scheduler, &self.top.name);
         clean_up_property(scheduler, &self.bottom.name);
         clean_up_property(scheduler, &self.left.name);

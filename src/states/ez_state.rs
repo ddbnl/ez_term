@@ -1,23 +1,23 @@
 //! # Widget state:
 //! A module containing the base structs and traits for widget states.
-use std::iter::successors;
 use crossterm::style::Color;
+
 use crate::EzProperty;
 use crate::run::definitions::{Coordinates, IsizeCoordinates, Size};
-use crate::scheduler::scheduler::Scheduler;
-use crate::states::canvas_state::{CanvasState};
-use crate::states::label_state::{LabelState};
-use crate::states::button_state::{ButtonState};
-use crate::states::checkbox_state::{CheckboxState};
+use crate::scheduler::scheduler::SchedulerFrontend;
+use crate::states::button_state::ButtonState;
+use crate::states::canvas_state::CanvasState;
+use crate::states::checkbox_state::CheckboxState;
 use crate::states::definitions::{AutoScale, BorderConfig, ColorConfig,
-                                 HorizontalAlignment, Padding, PosHint, StateSize, SizeHint,
-                                 StateCoordinates, VerticalAlignment};
+                                 HorizontalAlignment, Padding, PosHint, SizeHint, StateCoordinates,
+                                 StateSize, VerticalAlignment};
 use crate::states::dropdown_state::{DropdownState, DroppedDownMenuState};
+use crate::states::label_state::LabelState;
 use crate::states::layout_state::LayoutState;
 use crate::states::progress_bar_state::ProgressBarState;
-use crate::states::radio_button_state::{RadioButtonState};
+use crate::states::radio_button_state::RadioButtonState;
 use crate::states::slider_state::SliderState;
-use crate::states::text_input_state::{TextInputState};
+use crate::states::text_input_state::TextInputState;
 
 
 /// Widget states are used to keep track of dynamic run time information of widgets, such as the
@@ -43,7 +43,7 @@ pub enum EzState {
 impl EzState {
 
     /// Get an EzState based on a string containing the base widget type.
-    pub fn from_string(type_name: &str, path: String, scheduler: &mut Scheduler) -> Self {
+    pub fn from_string(type_name: &str, path: String, scheduler: &mut SchedulerFrontend) -> Self {
 
         match type_name {
             "Layout" => EzState::Layout(LayoutState::new(path, scheduler)),
@@ -543,9 +543,9 @@ pub trait GenericState {
 
     fn get_selected(&self) -> bool { false }
 
-    fn update(&self, scheduler: &mut Scheduler)  {
+    fn update(&self, scheduler: &mut SchedulerFrontend)  {
         scheduler.update_widget(self.get_path().to_string())
     }
 
-    fn clean_up_properties(&self, scheduler: &mut Scheduler);
+    fn clean_up_properties(&self, scheduler: &mut SchedulerFrontend);
 }

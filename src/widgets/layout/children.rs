@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use crate::{CallbackConfig, EzContext, EzObject};
 use crate::run::definitions::{IsizeCoordinates, PixelMap, StateTree};
-use crate::scheduler::scheduler::Scheduler;
+use crate::scheduler::scheduler::SchedulerFrontend;
 use crate::states::ez_state::GenericState;
 use crate::states::definitions::{LayoutMode, LayoutOrientation};
 use crate::widgets::button::Button;
@@ -157,7 +157,7 @@ impl Layout {
     }
 
     /// Add a child ([layout] or [EzWidget]) to this layout.
-    pub fn add_child(&mut self, mut child: EzObjects, scheduler: &mut Scheduler) {
+    pub fn add_child(&mut self, mut child: EzObjects, scheduler: &mut SchedulerFrontend) {
         
         let generic_child = child.as_ez_object_mut();
         let id = generic_child.get_id();
