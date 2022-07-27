@@ -14,6 +14,9 @@ pub struct LabelState {
     /// Path to the widget to which this state belongs
     pub path: String,
 
+    /// Optional file path to retrieve text from
+    from_file: EzProperty<String>,
+
     /// Text currently being displayed by the label
     text: EzProperty<String>,
 
@@ -62,6 +65,10 @@ impl LabelState {
 
        LabelState {
            path: path.clone(),
+           from_file: scheduler.new_string_property(format!("{}/from_file", path).as_str(),
+                                               String::new()),
+           text: scheduler.new_string_property(format!("{}/text", path).as_str(),
+                                               String::new()),
            position: StateCoordinates::new(0, 0, path.clone(), scheduler),
            absolute_position: IsizeCoordinates::default(),
            size_hint: SizeHint::new(Some(1.0), Some(1.0), path.clone(), scheduler),
@@ -73,8 +80,6 @@ impl LabelState {
                 format!("{}/halign", path).as_str(), HorizontalAlignment::Left),
            valign: scheduler.new_vertical_alignment_property(
                 format!("{}/valign", path).as_str(), VerticalAlignment::Top),
-           text: scheduler.new_string_property(format!("{}/text", path).as_str(),
-                                               String::new()),
            border_config: BorderConfig::new(false, path.clone(), scheduler),
            colors: ColorConfig::new(path.clone(), scheduler),
            disabled: scheduler.new_bool_property(format!("{}/disabled", path).as_str(),false),
@@ -167,6 +172,10 @@ impl GenericState for LabelState {
     }
 }
 impl LabelState {
+
+    pub fn set_from_file(&mut self, fp: String) { self.from_file.set(fp); }
+
+    pub fn get_from_file(&self) -> String { self.from_file.value.clone() }
 
     pub fn get_text(&self) -> String { self.text.value.clone() }
 

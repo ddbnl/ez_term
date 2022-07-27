@@ -6,8 +6,10 @@ use std::io::{Error, ErrorKind};
 use std::io::prelude::*;
 
 use unicode_segmentation::UnicodeSegmentation;
+use crate::parser::load_base_properties::load_ez_string_property;
 
 use crate::parser::load_common_properties::load_common_property;
+use crate::property::ez_values::EzValues;
 use crate::run::definitions::{Pixel, PixelMap, StateTree};
 use crate::scheduler::scheduler::SchedulerFrontend;
 use crate::states::canvas_state::CanvasState;
@@ -24,12 +26,6 @@ pub struct Canvas {
     /// Full path to this widget, e.g. "/root_layout/layout_2/THIS_ID"
     pub path: String,
 
-    /// Optional file path to retrieve contents from
-    pub from_file: Option<String>,
-
-    /// Grid of pixels that will be written to screen for this widget
-    pub contents: PixelMap,
-
     /// Runtime state of this widget, see [CanvasState] and [State]
     pub state: CanvasState,
 }
@@ -42,8 +38,6 @@ impl Canvas {
         Canvas {
             id,
             path: path.clone(),
-            from_file: None,
-            contents: Vec::new(),
             state: CanvasState::new(path, scheduler),
         }
     }
@@ -53,16 +47,29 @@ impl Canvas {
         Canvas {
             id,
             path: path.clone(),
-            from_file: None,
-            contents: Vec::new(),
             state: state.as_canvas().to_owned(),
         }
     }
 
+    fn load_from_file_property(&mut self, parameter_value: &str, scheduler: &mut SchedulerFrontend)
+                                   -> Result<(), Error> {
+
+        let path = self.path.clone();
+        self.state.set_from_file(load_ez_string_property(
+            parameter_value.trim(), scheduler, path.clone(),
+            Box::new(move |state_tree: &mut StateTree, val: EzValues| {
+                let state = state_tree.get_by_path_mut(&path)
+                    .as_canvas_mut();
+                state.set_from_file(val.as_string().to_string());
+                path.clone()
+            }))?);
+        Ok(())
+    }
 }
 
 
 impl EzObject for Canvas {
+
     fn load_ez_parameter(&mut self, parameter_name: String, parameter_value: String,
                          scheduler: &mut SchedulerFrontend) -> Result<(), Error> {
 
@@ -70,7 +77,8 @@ impl EzObject for Canvas {
             &parameter_name, parameter_value.clone(),self, scheduler)?;
         if consumed { return Ok(()) }
         match parameter_name.as_str() {
-            "from_file" => self.from_file = Some(parameter_value.trim().to_string()),
+            "from_file" =>
+                self.load_from_file_property(parameter_value.trim(), scheduler)?,
             _ => return Err(
                 Error::new(ErrorKind::InvalidData,
                            format!("Invalid parameter name for canvas: {}", parameter_name)))
@@ -90,28 +98,19 @@ impl EzObject for Canvas {
 
     fn get_state_mut(&mut self) -> &mut dyn GenericState { &mut self.state }
 
-    /// Set the content of this Widget. You must manually fill a [PixelMap] of the same
-    /// [height] and [width] as this widget and pass it here.
-    fn set_contents(&mut self, contents: PixelMap) {
-       let mut valid_contents = Vec::new();
-       for x in 0..self.state.get_size().get_width() as usize {
-           valid_contents.push(Vec::new());
-           for y in 0..self.state.get_size().get_height() as usize {
-               valid_contents[x].push(contents[x][y].clone())
-           }
-       }
-       self.contents = valid_contents
-    }
-
     fn get_contents(&self, state_tree: &mut StateTree) -> PixelMap {
 
         let state = state_tree
             .get_by_path_mut(&self.get_full_path()).as_canvas_mut();
         let mut contents;
-        if let Some(path) = self.from_file.clone() {
-            let mut file = File::open(path).expect("Unable to open file");
+        if !state.get_from_file().is_empty() {
+            let mut file = File::open(state.get_from_file())
+                .expect(format!("Unable to open file for canvas widget: {}",
+                                state.get_from_file()).as_str());
             let mut file_content = String::new();
-            file.read_to_string(&mut file_content).expect("Unable to read file");
+            file.read_to_string(&mut file_content).expect(
+                format!("Unable to read file for canvas widget: {}", state.get_from_file())
+                    .as_str());
             let mut lines: Vec<String> = file_content.lines()
                 .map(|x| x.graphemes(true).rev().collect())
                 .collect();
@@ -152,7 +151,7 @@ impl EzObject for Canvas {
             }
             contents = widget_content;
         } else {
-            contents = self.contents.clone();
+            contents = state.get_contents().clone();
         }
         if state.get_border_config().get_enabled() {
             contents = add_border(contents, state.get_border_config(),

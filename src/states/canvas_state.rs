@@ -1,5 +1,5 @@
 use crate::EzProperty;
-use crate::run::definitions::{IsizeCoordinates};
+use crate::run::definitions::{IsizeCoordinates, PixelMap};
 use crate::scheduler::scheduler::SchedulerFrontend;
 use crate::scheduler::scheduler_funcs::clean_up_property;
 use crate::states::definitions::{StateCoordinates, SizeHint, PosHint, StateSize, AutoScale, Padding,
@@ -13,6 +13,12 @@ pub struct CanvasState {
 
     /// Path to the widget to which this state belongs
     pub path: String,
+
+    /// Optional file path to retrieve contents from
+    from_file: EzProperty<String>,
+
+    /// Grid of pixels that will be written to screen for this widget
+    contents: PixelMap,
 
     /// Position of this widget relative to its' parent [layout]
     position: StateCoordinates,
@@ -59,6 +65,9 @@ impl CanvasState {
 
         CanvasState{
             path: path.clone(),
+            from_file: scheduler.new_string_property(
+                format!("{}/from_file", path).as_str(), String::new()),
+            contents: Vec::new(),
             position: StateCoordinates::new(0, 0, path.clone(), scheduler),
             absolute_position: IsizeCoordinates::default(),
             pos_hint: PosHint::new(None, None, path.clone(), scheduler),
@@ -153,5 +162,33 @@ impl GenericState for CanvasState {
         clean_up_property(scheduler, &self.selection_order.name);
         self.border_config.clean_up_properties(scheduler);
         self.colors.clean_up_properties(scheduler);
+    }
+}
+
+impl CanvasState {
+    
+    /// Set the content of this Widget. You must manually fill a [PixelMap] of the same
+    /// [height] and [width] as this widget and pass it here.
+    pub fn set_contents(&mut self, contents: PixelMap) {
+        let mut valid_contents = Vec::new();
+        for x in 0..self.get_size().get_width() as usize {
+            valid_contents.push(Vec::new());
+            for y in 0..self.get_size().get_height() as usize {
+                valid_contents[x].push(contents[x][y].clone())
+            }
+        }
+        self.contents = valid_contents
+    }
+
+    pub fn get_contents(&self) -> &PixelMap {
+        &self.contents
+    }
+    
+    pub fn set_from_file(&mut self, fp: String) {
+        self.from_file.set(fp);
+    }
+    
+    pub fn get_from_file(&self) -> String {
+        self.from_file.value.clone()
     }
 }

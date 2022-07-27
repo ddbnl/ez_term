@@ -23,9 +23,6 @@ pub struct Label {
     /// Full path to this widget, e.g. "/root_layout/layout_2/THIS_ID"
     pub path: String,
 
-    /// Optional file path to retrieve text from
-    pub from_file: Option<String>,
-
     /// Runtime state of this widget, see [LabelState] and [State]
     pub state: LabelState,
 }
@@ -35,7 +32,6 @@ impl Label {
         Label {
             id,
             path: path.clone(),
-            from_file: None,
             state: LabelState::new(path, scheduler),
         }
     }
@@ -44,11 +40,39 @@ impl Label {
         Label {
             id,
             path: path.clone(),
-            from_file: None,
             state: state.as_label().to_owned(),
         }
     }
 
+    fn load_from_file_property(&mut self, parameter_value: &str, scheduler: &mut SchedulerFrontend)
+                               -> Result<(), Error> {
+
+        let path = self.path.clone();
+        self.state.set_from_file(load_ez_string_property(
+            parameter_value.trim(), scheduler, path.clone(),
+            Box::new(move |state_tree: &mut StateTree, val: EzValues| {
+                let state = state_tree.get_by_path_mut(&path)
+                    .as_label_mut();
+                state.set_from_file(val.as_string().to_string());
+                path.clone()
+            }))?);
+        Ok(())
+    }
+
+    fn load_text_property(&mut self, parameter_value: &str, scheduler: &mut SchedulerFrontend)
+                               -> Result<(), Error> {
+
+        let path = self.path.clone();
+        self.state.set_text(load_ez_string_property(
+            parameter_value.trim(), scheduler, path.clone(),
+            Box::new(move |state_tree: &mut StateTree, val: EzValues| {
+                let state = state_tree.get_by_path_mut(&path)
+                    .as_label_mut();
+                state.set_text(val.as_string().to_string());
+                path.clone()
+            }))?);
+        Ok(())
+    }
 }
 
 
@@ -61,18 +85,9 @@ impl EzObject for Label {
             &parameter_name, parameter_value.clone(),self, scheduler)?;
         if consumed { return Ok(()) }
         match parameter_name.as_str() {
-            "text" => {
-                let path = self.path.clone();
-                self.state.set_text(load_ez_string_property(
-                    parameter_value.trim(), scheduler, path.clone(),
-                    Box::new(move |state_tree: &mut StateTree, val: EzValues| {
-                        let state = state_tree.get_by_path_mut(&path)
-                            .as_label_mut();
-                        state.set_text(val.as_string().clone());
-                        path.clone()
-                    }))?)
-            },
-            "from_file" => self.from_file = Some(parameter_value.trim().to_string()),
+            "from_file" =>
+                self.load_from_file_property(parameter_value.trim(), scheduler)?,
+            "text" => self.load_text_property(parameter_value.trim(), scheduler)?,
             _ => panic!("Invalid parameter name for label: {}", parameter_name)
         }
         Ok(())
@@ -96,10 +111,13 @@ impl EzObject for Label {
             .get_by_path_mut(&self.get_full_path()).as_label_mut();
         let mut text;
         // Load text from file
-        if let Some(path) = self.from_file.clone() {
-            let mut file = File::open(path).expect("Unable to open file");
+        if !state.get_from_file().is_empty() {
+            let mut file = File::open(state.get_from_file())
+                .expect(format!(
+                    "Unable to open file {} for label", state.get_from_file()).as_str());
             text = String::new();
-            file.read_to_string(&mut text).expect("Unable to read file");
+            file.read_to_string(&mut text).expect(format!(
+                "Unable to read file {} for label", state.get_from_file()).as_str());
         // or take text from widget state
         } else {
             text = state.get_text();
