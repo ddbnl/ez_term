@@ -5,8 +5,17 @@
 //! you want to) and no need to write code except for callbacks. Focus on coding your app, not the
 //! UI.
 //!
+//! If you are new to EzTerm, it is recommended to at least read the [Project structure](#structure)
+//! section below. It takes only a few minutes to read, and explains how to set up a new cargo
+//! project for an EzTerm project. After you have a [Minimal example](#minimal_example), you can
+//! either continue reading the general tutorial at the [EzLanguage](#ez_lang) section, or use
+//! the [Examples](#examples) if you prefer that over reading.
+//!
+//! Once you are familiar with the basics and working on your own projects, you can use the
+//! [Reference](#reference) section to look up details on available properties, callbacks, etc.
+//!
 //! **Docs table of contents:**
-//! 1. [How to use](#how_to_use)
+//! 1. [How to use EzTerm](#how_to_use)
 //!     1. [Project structure](#structure)
 //!     2. [Minimal example](#minimal_example)
 //!     3. [Ez language](#)
@@ -20,38 +29,47 @@
 //!             5. [Tab Mode](#)
 //!             6. [Screen Mode](#)
 //!             7. [Scrolling](#)
-//!         4. [Widgets](#)
-//!         5. [Sizing and positioning](#)
-//!         6. [Keyboard selection]
-//!         7. [Binding properties](#)
+//!         4. [Widget overview](#)
+//!         5. [Sizing](#)
+//!             1. [Relative sizing: size hints]
+//!             2. [Auto-scaling]
+//!             3. [Absolute size]
+//!         6. [Positioning](#)
+//!             1. [Automatic positioning: layout modes]
+//!             2. [Relative positioning: position hints]
+//!             3. [Absolute positions]
+//!             4. [Adjusting position: aligning and padding]
+//!         7. [Keyboard selection]
+//!         8. [Binding properties](#)
 //!     4. [Scheduler](#)
 //!         1. [Setting callbacks]
 //!         2. [Opening popups]
-//!         3. [Creating widget programmatically]
+//!         3. [Creating widgets programmatically]
 //!         4. [Creating ez properties](#)
 //!     5. [Global (key)bindings](#)
-//! 2. Layouts
-//!     1. [General]
-//!     2. [General - scrolling]
-//!     3. [General - Properties]
-//!     4. [Box Layout]
-//!     5. [Stack Layout]
-//!     6. [Table Layout]
-//!     7. [Float Layout]
-//!     8. [Tab Layout]
-//!     9. [Screen Layout]
-//! 3. Widgets
-//!     1. [General]
-//!     2. [General - Properties]
-//!     3. [Label widget]
-//!     4. [Button widget]
-//!     5. [Checkbox widget]
-//!     6. [Radio button widget]
-//!     7. [Slider widget]
-//!     8. [Text input widget]
-//!     9. [Dropdown widget]
-//!     10. [Progress bar widget]
-//!     11. [Canvas widget]
+//! 2. [Reference]
+//!     1. Layouts
+//!         1. [General]
+//!         2. [General - scrolling]
+//!         3. [General - Properties]
+//!         4. [Box Layout]
+//!         5. [Stack Layout]
+//!         6. [Table Layout]
+//!         7. [Float Layout]
+//!         8. [Tab Layout]
+//!         9. [Screen Layout]
+//!     2. Widgets
+//!         1. [General]
+//!         2. [General - Properties]
+//!         3. [Label widget]
+//!         4. [Button widget]
+//!         5. [Checkbox widget]
+//!         6. [Radio button widget]
+//!         7. [Slider widget]
+//!         8. [Text input widget]
+//!         9. [Dropdown widget]
+//!         10. [Progress bar widget]
+//!         11. [Canvas widget]
 //! 4. Examples
 //!
 //!
@@ -263,8 +281,8 @@
 //!     - Label:
 //!         text: Hello World!
 //! ```
-//! Here is an example of nested layouts creating multiple screens (note we still have only one
-//! root layout):
+//! This example contained only one Layout (the root). Here is an example of nested layouts
+//! creating multiple screens (note we still have only one root layout):
 //! ```
 //! - Layout:
 //!     mode: screen
@@ -281,8 +299,9 @@
 //! ```
 //! In the above example we gave the screen layouts an ID through the 'id' property; the ID is
 //! optional but becomes necessary when you want to refer to your layout/widget (either from code
-//! or from EzLang). It also makes the config file more readable. We will learn how to use the IO
-//! when we discuss callbacks and EzProperties.
+//! or from EzLang). It also makes the config file more readable. We will learn how to use the ID
+//! when we discuss callbacks and EzProperties. Don't worry if the properties look unfamiliar,
+//! we'll get into them later; for now we are just discussing the basics of the syntax.
 //!
 //! ### 2.2 Templates
 //!
@@ -313,7 +332,7 @@
 //! The name of the template can be anything you like. The BaseWidget is the widget the template
 //! inherits from. This can be a basic widget type (Label, Layout, Checkbox, etc.) or another
 //! template. It's possible for templates to inherit from other templates, but in the end it must
-//! always inherit from a basic widget widget. Here is the template for our label:
+//! always inherit from a basic widget. Here is the template for our label:
 //! ```
 //! - <MyCustomLabel@Label>:
 //!     fg_color: yellow
@@ -328,8 +347,10 @@
 //!     - MyCustomLabel:
 //!         text: Label 2
 //! ```
-//! This looks much cleaner! It is possible to overwrite properties of a template; properties
-//! defined when using a template always overwrite the properties of the template definition:
+//! This looks much cleaner! We no longer have to define common properties over and over again. They
+//! will instead be inherited from the template. It is possible to overwrite properties of a
+//! template; properties defined when using a template always overwrite the properties of the
+//! template definition:
 //! ```
 //! - MyCustomLabel:
 //!     text: Red Label
@@ -340,8 +361,8 @@
 //!
 //! Templates are not just useful for reusing widgets. They can also be used for widgets used only
 //! once, usually to make your .ez file easier to read. This is especially true for layouts. There
-//! can be only one root layout, but you can define as many layouts as you like on the root level.
-//! Consider our earlier example creating multiple screens:
+//! can be only one root layout, but you can define as many layouts templates as you like on the
+//! root level. Consider our earlier example creating multiple screens:
 //! ```
 //! - Layout:
 //!     mode: screen
@@ -413,12 +434,10 @@
 //! short overview of the layout modes (for detailed info, see the dedicated entries in the table
 //! of contents at the top of this page).
 //!
-//! > You can try all the code examples below by pasting them into the 'ui.ez' file of the project
-//! we created in the last chapter.
 //!
 //! #### 2.3.1 Box mode
 //!
-//! In Box mode layouts are placed from left to right (orientation: horizontal) or top to bottom
+//! In Box mode objects are placed from left to right (orientation: horizontal) or top to bottom
 //! (orientation: vertical). This is the simplest layout mode and is useful in many scenarios. An
 //! example of a vertical box mode layout could be a menu (a set of buttons placed under one
 //! another):
@@ -606,8 +625,8 @@
 //!         pos_hint: right, bottom
 //! ```
 //! You can also specify an offset with positions hints, for example 'right: 0.2' means 20% of
-//! the right side of the screen. So if the screen is 10 wide, 'right: 0.2' resolves to the x
-//! position '2'. If the screen is 10 wide and you use 'center: 0.2' (20% of center of the screen,
+//! the right side of the parent. So if the parent is 10 wide, 'right: 0.2' resolves to the x
+//! position '2'. If the parent is 10 wide and you use 'center: 0.2' (20% of center of the parent,
 //! which is 5) it will resolve to the x position '1':
 //! ```
 //! - Layout:
@@ -694,8 +713,9 @@
 //! Note that the active_screen property is optional, by default the first screen is active.
 //! Unlike tabs, there is no default way for users to switch between screens. You will have to
 //! write callbacks for this. An obvious example would be switching screen after clicking a button
-//! (for example in a main menu). Here is an example of the EzLang an rust code needed for this:
-//! **EzLang screens with buttons**
+//! (for example in a main menu). Here is an example of the EzLang and rust code needed for this:
+//!
+//! **EzLang**
 //! ```
 //! - Layout:
 //!     id: my_screen_layout
@@ -720,7 +740,7 @@
 //!             id: to_screen_1_btn
 //!             text: Go to screen 1
 //! ```
-//! **Rust code for button callbacks**
+//! **Rust code**
 //! ```
 //! use ez_term::*;
 //! // We load the UI from the .ez files
@@ -776,7 +796,17 @@
 //! the height of a widget relative to the height of the layout, and when scrolling the height is
 //! infinite.
 //!
-//! ### 2.4 Widgets
+//! Here is an example of scrolling a large amount of text in a label:
+//! ```
+//! - Layout:
+//!     mode: box
+//!     scrolling_y: true
+//!     - Label:
+//!         auto_scale_height: true
+//!         from_file: lorem_ipsum.txt
+//! ```
+//!
+//! ### 2.4 Widget overview
 //!
 //! Widgets are the actual content of the UI and are always placed inside Layouts. It is not
 //! possible to place widgets in other widgets. Widgets are defined in the same way as layouts:
@@ -796,7 +826,7 @@
 //! options are on the roadmap with priority.
 //!
 //! **Text input:**
-//! The text input essentially an interactive Label. The user can select the input through mouse or
+//! The text input is essentially an interactive Label. The user can select the input through mouse or
 //! keyboard, and then type content into it. Selecting the widget will spawn a cursor that the user
 //! can control with the left/right buttons. Backspace and delete will remove content as expected.
 //! If the text of the input grows larger than the widget, the view will automatically move with
@@ -841,17 +871,16 @@
 //! You can load the content from a text file using the EzLang property 'from_file'.
 //!
 //!
-//! ### 2.3 Sizing and positioning
+//! ### 2.5 Sizing
 //!
-//! Now that we know which layouts and widgets are available, we'll learn more about how we can
-//! (dynamically) size and position those widgets in the layouts.
+//! Now we'll learn about the different ways to size widgets and layouts.
 //!
-//! #### 2.3.1 Absolute and relative sizing
-//!
-//! There are three ways to size widgets:
+//! There are three ways to size widgets and layouts:
 //! - Size relative to parent layout;
 //! - Auto scale to content;
 //! - Absolute size.
+//!
+//! #### 2.3.1 Relate sizing: size hints
 //!
 //! Size hints can be used to size a widget relative to its parent layout. This is the default way
 //! widgets are sized across the framework; this is important to keep in mind! Size hints are
@@ -861,8 +890,9 @@
 //! by default. If a layout has multiple widgets, and they **all** have default size hints, their
 //! size hints will be se to "1 / number_of_widgets". So four widgets with default size hints will
 //! receive 0.25 size hints. This gives all layout children equal size by default.
-//! For example, lets say we have two labels; we want one label to be 75% of the layout height and
-//! the other one 25%. They can both be 100% width:
+//!
+//! As an example of using size hints, lets say we have two labels; we want one label to be 75% of
+//! the layout height and the other one 25%. They can both be 100% width:
 //! ```
 //! - Layout:
 //!     mode: box
@@ -876,11 +906,10 @@
 //!         size_hint_y: 0.25
 //!         size_hint_x: 1
 //! ```
-//! When the window resizes, the widgets will automatically be resized along with the screen to
-//! respect their size hints. We can make the above example shorter by removing the 'size_hint_x'
-//! properties, because they are already set to '1' by default. As a convenience, there is also
-//! a 'size_hint' property which allows you to specify both size hints on one line in the format
-//! 'size_hint: x, y':
+//! The widgets will always respect their size hints, even when the window resizes. We can make the
+//! above example shorter by removing the 'size_hint_x' properties, because they are already set to
+//! '1' by default. As a convenience, there is also a 'size_hint' property which allows you to
+//! specify both size hints on one line in the format 'size_hint: x, y':
 //! ```
 //! - Layout:
 //!     mode: box
@@ -892,6 +921,314 @@
 //!         text: Small label
 //!         size_hint: 1, 0.25
 //! ```
+//!
+//! #### 2.3.2 Auto scaling
+//!
+//! All widgets support auto-scaling; when enabled, they will automatically size themselves to their
+//! contents. Auto-scaling is turned off by default, and overwrites size_hint if enabled.
+//! A widget with auto-scaling enabled for one of both axes (auto_scale_height and/or
+//! auto_scale_width) will initially be given infinite size on those axes to create their content.
+//! Once they have created their content, their size is then set to the size of their content.
+//! For example, a label with text "Hello world" and "auto_scale_width" enabled will have infinite
+//! width to create its' content. After creating the label, the width of the content will be 11
+//! pixels; the size of the label will then be set to 11. Let's see how auto_scaling works in
+//! practice; first we look at a label without auto_scaling:
+//! ```
+//! - Layout:
+//!     mode: box
+//!     - Label:
+//!         text: Hello world
+//!         border: true
+//! ```
+//! Since the default for widgets is "size_hint: 1, 1", this label now takes up the entire screen.
+//! Let's enable auto_scale_width:
+//! ```
+//! - Layout:
+//!     mode: box
+//!     - Label:
+//!         text: Hello world
+//!         border: true
+//!         auto_scale_width: true
+//! ```
+//! The label still takes up the entire height of the screen, but the width is now cropped to the
+//! content of the label. We could enable scaling on both axes, using the convenience "auto_scale"
+//! property that allows us to set both at the same time in the format: "auto_scale: width, height":
+//! ```
+//! - Layout:
+//!     mode: box
+//!     - Label:
+//!         text: Hello world
+//!         border: true
+//!         auto_scale: true, true
+//! ```
+//! The label is now cropped entirely to its' content. Another good use of auto_scale is to allow
+//! a widget to grow on one axis. Let's say for example we have a Label with a large amount of text;
+//! we could set "auto_scale_height: true" for it. Since the default sizing is "size_hint: 1, 1",
+//! and since auto_scale overwrites size_hint, this means the Label will have the width of the
+//! parent layout, but its height will now be auto-scaled to its content. In other words: the
+//! label is horizontally fixed in size, but can grow vertically:
+//! ```
+//! - Layout:
+//!     mode: box
+//!     - Label:
+//!         auto_scale_height: true
+//!         from_file: ./ui/lorem_ipsum.txt
+//!         border: true
+//! ```
+//! The Label is now growing vertically.
+//!
+//! #### 2.3.3 Absolute size:
+//!
+//! It is possible to set an absolute size for widgets manually. Keep in mind that size_hint will
+//! overwrite any manual sizes, so it has to be turned off in those cases. Let's say you want a
+//! button to always have 10 width and 3 height:
+//! ```
+//! - Layout:
+//!     mode: box
+//!     - Button:
+//!         text: Click me
+//!         size_hint: none, none
+//!         size: 10, 3
+//! ```
+//! The button will now always be fixed in size. It is of course possible to use absolute size
+//! for only one axis, while the other axis uses size_hint or auto_scale:
+//! ```
+//! - Layout:
+//!     mode: box
+//!     - Button:
+//!         text: Click me
+//!         size_hint_y: none
+//!         height: 3
+//! ```
+//! The button will now be fixed to height 3, but its width will scale to the width of the parent
+//! layout (because the default is "size_hint: 1, 1").
+//!
+//! ### 2.6 Positioning:
+//!
+//! There a multiple ways to control the positioning of widgets; which ways are available depends
+//! on the mode a layout is in. There are four ways to control positioning:
+//! - Automatic positioning with layout modes
+//! - Relative positioning with position hints
+//! - Absolute positioning with manual positions
+//! - Adjust position through padding and aligning
+//!
+//! #### 2.6.1 Automatic positioning: layout modes:
+//!
+//! Most layout modes do not support manual positioning or relative positioning. This is because
+//! the point of these layouts is that they do the work for you. Only the float layout, which exists
+//! specifically to give you manual control over position, supports position hints or the manual
+//! position property. The other widgets, such as box mode, stack mode and table mode, will handle
+//! the positioning for you (see their docs for more info). It is however possible to adjust the
+//! position of widgets in these modes; see the entry on padding and aligning below for more on that.
+//!
+//! #### 2.6.2 Relative positioning: position hints
+//!
+//! Position hints can only be used for widgets that are in a layout in float mode. With position
+//! hints you give the relative position you want the widget to be in, and it will be handled for
+//! you. There are horizontal position hints (pos_hint_x) and vertical position hints (pos_hint_y).
+//!
+//! The available setting for pos_hint_x are:
+//! - Left
+//! - Center
+//! - Right
+//!
+//! The available settings for pos_hint_y are:
+//! - Top
+//! - Middle
+//! - Bottom
+//!
+//! If you want a widget to be in the top left of the screen, you would give a widget:
+//! "pos_hint_x: left" and "pos_hint_y: top". For convenience you could use the "pos_hint" property
+//! to set both at the same time in the format: "pos_hint: x, y":
+//! ```
+//! - Layout:
+//!     mode: float
+//!     - Label:
+//!         text: Hello world
+//!         auto_scale: true, true
+//!         pos_hint: left, top
+//! ```
+//! Note that in the example we auto_scale the label. If we don't, it would take up the entire
+//! screen and positioning would be pointless.
+//!
+//! It is possible to be more specific with position hints. Instead of just specifying "bottom" for
+//! example, we could use "bottom: 0.9". This would position the widget 90% towards the bottom of
+//! the layout. The number goes from 0 to 1. This method can be used for 'center', 'right', 'middle'
+//! and 'bottom'. It is not useful with 'left' and 'top', because they represent position (0, 0) and
+//! cannot be scaled. Let's say we want a label to be 90% towards the right of the layout and 90%
+//! towards the bottom:
+//! to set both at the same time in the format: "pos_hint: x, y":
+//! ```
+//! - Layout:
+//!     mode: float
+//!     - Label:
+//!         text: Hello world
+//!         auto_scale: true, true
+//!         pos_hint: right: 0.9, bottom: 0.9
+//! ```
+//!
+//! #### 2.6.2 Absolute positioning: manual positions
+//!
+//! Manual positions can only be used with widgets in a layout in float mode. The properties "x" and
+//! "y" can be used to control one or both positions. It's also possible to use the "pos"
+//! convenience property to set both at the same time in the format "pos: x, y". Let's set a Label
+//! with absolute position:
+//! ```
+//! - Layout:
+//!     mode: float
+//!     - Label:
+//!         text: Hello world
+//!         pos: 10, 10
+//! ```
+//!
+//! #### 2.6.3 Adjusting position: padding and aligning
+//!
+//! It is not possible to control position in layout modes other that float. In the fixed layout
+//! modes it is still possible to adjust position. This can be done with padding and aligning.
+//!
+//! **Aligning:**
+//!
+//! Aligning can be done horizontally (halign) or vertically (valign). Aligning is only useful if
+//! the widget is smaller than the layout.
+//!
+//! Halign supports:
+//! - Left
+//! - Center
+//! - Right
+//!
+//! Valign supports:
+//! - Top
+//! - Middle
+//! - Bottom
+//!
+//! If a widget has "halign: center" and it is less wide than its parent layout, it will be centered
+//! horizontally. This can be useful for example in a box mode layout with vertical orientation. In
+//! that case, widgets will be stacked vertically and you have no control over horizontal position.
+//! By using halign, you can still control whether the widgets go left, right, or in the center.
+//! Here is an example of this with a label:
+//! ```
+//! - Layout:
+//!     mode: box
+//!     orientation: vertical
+//!     - Label:
+//!         text: Hello world
+//!         auto_scale: true, true
+//!         halign: center
+//! ```
+//!
+//! **Padding:**
+//!
+//! Padding adds empty space to the left, right, top, and/or bottom of a widget. It allows you to
+//! create some space between widgets, create a margin between the border of a layout and a widget,
+//! etc. There are 7 different padding properties:
+//! - padding: left, right, top, bottom (e.g. "padding: 1, 1, 1, 1")
+//! - padding_x: left, right (e.g. "padding_x: 1, 1")
+//! - padding_y: top, bottom (e.g. "padding_y: 1, 1")
+//! - padding_left: left (e.g. "padding_left: 1")
+//! - padding_right: left (e.g. "padding_right: 1")
+//! - padding_top: left (e.g. "padding_top: 1")
+//! - padding_bottom: left (e.g. "padding_bottom: 1")
+//!
+//! Here is an example layout with 2 labels without padding:
+//! ```
+//! - Layout:
+//!     mode: box
+//!     orientation: vertical
+//!     - Label:
+//!         text: Hello world
+//!         auto_scale: true, true
+//!     - Label:
+//!         text: Hello world
+//!         auto_scale: true, true
+//! ```
+//! Here is the same example with padding:
+//! ```
+//! - Layout:
+//!     mode: box
+//!     orientation: vertical
+//!     - Label:
+//!         text: Hello world
+//!         auto_scale: true, true
+//!         border: true
+//!         padding_left: 1
+//!         padding_bottom: 1
+//!     - Label:
+//!         text: Hello world
+//!         auto_scale: true, true
+//!         border: true
+//!         padding_left: 1
+//! ```
+//!
+//! ### 2.7 Keyboard selection:
+//!
+//! Keyboard selection, unlike mouse selection, requires the configuration of a property. You need
+//! to configure the selection order of each widget that should be selectable through keyboard.
+//! This selection order is global over the active screen or popup. The 'down arrow' button on the
+//! keyboard cycles down through the selection order (1 > 2 > 3, etc.). The 'up arrow' button on the
+//! keyboard cycles up (3 > 2 > 1, etc.). If the highest or lowest widget is reached, the selection
+//! cycles back around.
+//!
+//! For example, if you have a menu layout and you want to select buttons from top-to-bottom, you
+//! would use:
+//! ```
+//! - Layout:
+//!     mode: box
+//!     orientation: vertical
+//!     - Button:
+//!         text: Option 1
+//!         auto_scale_height: true
+//!         selection_order: 1
+//!     - Button:
+//!         text: Option 2
+//!         auto_scale_height: true
+//!         selection_order: 5
+//!     - Button:
+//!         text: Option 3
+//!         auto_scale_height: true
+//!         selection_order: 10
+//! ```
+//! Note that we did not use consecutive numbers. Instead we increased the order by 5 each time, so
+//! we can leave some space for possible future widgets.
+//!
+//! If we have multiple layouts, we do not reset the selection order. The order is global. So if
+//! we have two layouts:
+//! ```
+//! - Layout:
+//!     mode: box
+//!     - Layout:
+//!         mode: box
+//!         orientation: vertical
+//!         - Button:
+//!             text: Left Option 1
+//!             auto_scale_height: true
+//!             selection_order: 1
+//!         - Button:
+//!             text: Left Option 2
+//!             auto_scale_height: true
+//!             selection_order: 5
+//!         - Button:
+//!             text: Left Option 3
+//!             auto_scale_height: true
+//!             selection_order: 10
+//!     - Layout:
+//!         mode: box
+//!         orientation: vertical
+//!         - Button:
+//!             text: Right Option 1
+//!             auto_scale_height: true
+//!             selection_order: 15
+//!         - Button:
+//!             text: Right Option 2
+//!             auto_scale_height: true
+//!             selection_order: 20
+//!         - Button:
+//!             text: Right Option 3
+//!             auto_scale_height: true
+//!             selection_order: 25
+//! ```
+//!
+//! ### 2.8 Binding properties:
+//! 
 mod run;
 mod scheduler;
 mod widgets;
@@ -907,6 +1244,7 @@ pub use crate::run::definitions::Coordinates;
 pub use crossterm::event::KeyCode;
 
 pub use crate::scheduler::definitions::{EzContext, EzPropertiesMap};
+pub use crate::scheduler::scheduler::SchedulerFrontend;
 
 pub use crate::property::ez_properties::EzProperties;
 pub use crate::property::ez_property::EzProperty;
