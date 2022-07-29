@@ -166,9 +166,11 @@ impl EzObject for Dropdown {
 
 
     /// Called when the widgets is not dropped down and enter/left mouse click occurs on it.
-    fn on_press(&self, state_tree: &mut StateTree, _callback_tree: &mut CallbackTree,
+    fn on_press(&self, state_tree: &mut StateTree, callback_tree: &mut CallbackTree,
                 scheduler: &mut SchedulerFrontend) -> bool {
 
+        let consumed = self.on_press_callback(state_tree, callback_tree, scheduler);
+        if consumed { return consumed}
         let modal_id = format!("{}_modal", self.get_id());
         let modal_path = format!("/modal/{}", modal_id);
         if state_tree.objects.contains_key(&modal_path) {
@@ -224,15 +226,16 @@ impl EzObject for Dropdown {
             .open_modal(ez_object::EzObjects::DroppedDownMenu(new_modal));
         root_state.update(scheduler);
         state_tree.extend(extra_state_tree);
-        scheduler.set_callback_config(&modal_path, CallbackConfig::default());
+        scheduler.overwrite_callback_config(&modal_path, CallbackConfig::default());
         true
     }
 
     fn on_hover(&self, state_tree: &mut StateTree, callback_tree: &mut CallbackTree,
                 scheduler: &mut SchedulerFrontend, mouse_pos: Coordinates) -> bool {
 
+        let consumed = self.on_hover_callback(state_tree, callback_tree, scheduler);
+        if consumed { return consumed}
         scheduler.set_selected_widget(&self.path, Some(mouse_pos));
-        self.on_hover_callback(state_tree, callback_tree, scheduler, mouse_pos);
         true
     }
 }

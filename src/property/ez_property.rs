@@ -76,7 +76,7 @@ impl<T> EzProperty<T> where EzValues: From<T> {
     pub fn bind(&self, callback: GenericEzFunction, scheduler: &mut SchedulerFrontend) {
 
         let config = CallbackConfig::from_on_value_change(callback);
-        scheduler.set_callback_config(self.get_name().as_str(), config);
+        scheduler.overwrite_callback_config(self.get_name().as_str(), config);
     }
 }
 impl<T> PartialEq for EzProperty<T> where T: PartialEq {

@@ -3,6 +3,7 @@ use std::cmp::min;
 use std::io::{Error, ErrorKind};
 
 use crossterm::event::{Event, KeyCode};
+use crate::EzContext;
 
 use crate::parser::load_common_properties::load_common_property;
 use crate::run::definitions::{CallbackTree, Coordinates, Pixel, PixelMap, StateTree};
@@ -160,6 +161,16 @@ impl EzObject for Slider {
                 self.handle_right(state_tree, callback_tree, scheduler);
                 return true
             }
+            else if callback_tree.get_by_path(&self.get_full_path())
+                .keymap.contains_key(&key.code) {
+                let func =
+                    callback_tree.get_by_path_mut(&self.get_full_path())
+                        .keymap.get_mut(&key.code).unwrap();
+                let context = EzContext::new(
+                    self.get_full_path(), state_tree, scheduler);
+                func(context, key.code);
+                return true
+            }
         }
         false
     }
@@ -167,6 +178,8 @@ impl EzObject for Slider {
     fn on_left_mouse_click(&self, state_tree: &mut StateTree, callback_tree: &mut CallbackTree,
                            scheduler: &mut SchedulerFrontend, mouse_pos: Coordinates) -> bool {
 
+        let consumed = self.on_press_callback(state_tree, callback_tree, scheduler);
+        if consumed { return consumed}
         let state = state_tree.get_by_path_mut(&self.path).as_slider_mut();
         let value = self.value_from_mouse_pos(state, mouse_pos);
         state.set_value(value);
@@ -178,8 +191,9 @@ impl EzObject for Slider {
     fn on_hover(&self, state_tree: &mut StateTree, callback_tree: &mut CallbackTree,
                 scheduler: &mut SchedulerFrontend, mouse_pos: Coordinates) -> bool {
 
+        let consumed = self.on_hover_callback(state_tree, callback_tree, scheduler);
+        if consumed { return consumed}
         scheduler.set_selected_widget(&self.path, Some(mouse_pos));
-        self.on_hover_callback(state_tree, callback_tree, scheduler, mouse_pos);
         true
     }
 
@@ -187,6 +201,8 @@ impl EzObject for Slider {
                scheduler: &mut SchedulerFrontend, previous_pos: Option<Coordinates>,
                mouse_pos: Coordinates) -> bool {
 
+        let consumed = self.on_drag_callback(state_tree, callback_tree, scheduler);
+        if consumed { return consumed}
         let state = state_tree.get_by_path_mut(&self.path).as_slider_mut();
         let value = self.value_from_mouse_pos(state, mouse_pos);
         state.set_value(value);

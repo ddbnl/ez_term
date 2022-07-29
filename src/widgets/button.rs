@@ -156,18 +156,17 @@ impl EzObject for Button {
                 scheduler: &mut SchedulerFrontend) -> bool {
 
         let consumed = self.on_press_callback(state_tree, callback_tree, scheduler);
-        if !consumed {
-            self.handle_on_press(state_tree, scheduler);
-            return true
-        }
-        false
+        if consumed { return consumed}
+        self.handle_on_press(state_tree, scheduler);
+        return true
     }
 
     fn on_hover(&self, state_tree: &mut StateTree, callback_tree: &mut CallbackTree,
                 scheduler: &mut SchedulerFrontend, mouse_pos: Coordinates) -> bool {
 
+        let consumed = self.on_hover_callback(state_tree, callback_tree, scheduler);
+        if consumed { return consumed}
         scheduler.set_selected_widget(&self.path, Some(mouse_pos));
-        self.on_hover_callback(state_tree, callback_tree, scheduler, mouse_pos);
         true
     }
 

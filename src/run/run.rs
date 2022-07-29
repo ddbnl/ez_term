@@ -76,12 +76,12 @@ pub fn open_popup(template: String, state_tree: &mut StateTree, scheduler: &mut 
     let (path, sub_tree) = state.open_popup(template, scheduler);
     state_tree.extend(sub_tree);
     let state = state_tree.get_by_path_mut("/root").as_layout_mut();
-    scheduler.set_callback_config(path.as_str(),
-                                  CallbackConfig::default());
+    scheduler.overwrite_callback_config(path.as_str(),
+                                        CallbackConfig::default());
     let modal = state.get_modals().first().unwrap();
     if let EzObjects::Layout(ref i) = modal {
         for sub_widget in i.get_widgets_recursive().values() {
-            scheduler.set_callback_config(
+            scheduler.overwrite_callback_config(
                 sub_widget.as_ez_object().get_full_path().as_str(),
                 CallbackConfig::default());
         }

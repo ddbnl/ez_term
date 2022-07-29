@@ -205,6 +205,8 @@ impl EzObject for TextInput {
     fn on_left_mouse_click(&self, _state_tree: &mut StateTree, _callback_tree: &mut CallbackTree,
                            scheduler: &mut SchedulerFrontend, mouse_pos: Coordinates) -> bool {
 
+        let consumed = self.on_left_mouse_click_callback(state_tree, callback_tree, scheduler);
+        if consumed { return consumed}
         scheduler.deselect_widget(); // We deselect first to allow re-selecting in a different pos
         scheduler.set_selected_widget(&self.path, Some(mouse_pos));
         true
@@ -213,12 +215,16 @@ impl EzObject for TextInput {
     fn on_hover(&self, state_tree: &mut StateTree, callback_tree: &mut CallbackTree,
                 scheduler: &mut SchedulerFrontend, mouse_pos: Coordinates) -> bool {
 
-        self.on_hover_callback(state_tree, callback_tree, scheduler, mouse_pos);
+        let consumed = self.on_press_callback(state_tree, callback_tree, scheduler);
+        if consumed { return consumed}
         true
     }
 
     fn on_select(&self, state_tree: &mut StateTree, callback_tree: &mut CallbackTree,
                  scheduler: &mut SchedulerFrontend, mouse_pos: Option<Coordinates>) -> bool {
+
+        let consumed = self.on_select_callback(state_tree, callback_tree, scheduler);
+        if consumed { return consumed}
 
         let state = state_tree.get_by_path_mut(
             &self.get_full_path()).as_text_input_mut();
@@ -245,9 +251,6 @@ impl EzObject for TextInput {
             start_cursor_blink(target_pos, state, scheduler,
                                self.get_full_path());
         }
-
-        // Call user callback if any
-        self.on_select_callback(state_tree, callback_tree, scheduler, mouse_pos);
         true
     }
 }

@@ -8,47 +8,56 @@
 //! If you are new to EzTerm, it is recommended to at least read the [Project structure](#structure)
 //! section below. It takes only a few minutes to read, and explains how to set up a new cargo
 //! project for an EzTerm project. After you have a [Minimal example](#minimal_example), you can
-//! either continue reading the general tutorial at the [EzLanguage](#ez_lang) section, or use
+//! either continue reading the general tutorial with the [EzLanguage](#ez_lang) section, or use
 //! the [Examples](#examples) if you prefer that over reading.
 //!
-//! Once you are familiar with the basics and working on your own projects, you can use the
+//! Once you are familiar with the basics and are working on your own projects, you can use the
 //! [Reference](#reference) section to look up details on available properties, callbacks, etc.
 //!
 //! **Docs table of contents:**
 //! 1. [How to use EzTerm](#how_to_use)
 //!     1. [Project structure](#structure)
-//!     2. [Minimal example](#minimal_example)
-//!     3. [Ez language](#)
-//!         1. [General](#)
-//!         2. [Templates](#)
-//!         3. [Layouts Modes](#)
-//!             1. [Box Mode](#)
-//!             2. [Stack Mode](#)
-//!             3. [Table Mode](#)
-//!             4. [Float Mode](#)
-//!             5. [Tab Mode](#)
-//!             6. [Screen Mode](#)
-//!             7. [Scrolling](#)
-//!         4. [Widget overview](#)
-//!         5. [Sizing](#)
-//!             1. [Relative sizing: size hints]
-//!             2. [Auto-scaling]
-//!             3. [Absolute size]
+//!         1. [UI config files](#ui_config_files)
+//!         2. [UI Rust modules](#ui_rust_modules)
+//!         3. [Your app](#your_app)
+//!         4. [Minimal example](#minimal_example)
+//!     2. [Ez language](#ez_language)
+//!         1. [Basics](#ez_language_basics)
+//!         2. [Templates](#ez_language_templates)
+//!         3. [Layouts Modes](#ez_language_layout_modes)
+//!             1. [Box Mode](#ez_language_box)
+//!             2. [Stack Mode](#ez_language_stack)
+//!             3. [Table Mode](#ez_language_table)
+//!             4. [Float Mode](#ez_language_float)
+//!             5. [Tab Mode](#ez_language_tab)
+//!             6. [Screen Mode](#ez_language_screen)
+//!             7. [Scrolling](#ez_language_scrolling)
+//!         4. [Widget overview](#widget_overview)
+//!         5. [Sizing](#sizing)
+//!             1. [Relative sizing: size hints](#sizing_relative)
+//!             2. [Auto-scaling](#sizing_scaling)
+//!             3. [Absolute size](#sizing_absolute)
 //!         6. [Positioning](#)
-//!             1. [Automatic positioning: layout modes]
-//!             2. [Relative positioning: position hints]
-//!             3. [Absolute positions]
-//!             4. [Adjusting position: aligning and padding]
-//!         7. [Keyboard selection]
-//!         8. [Binding properties](#)
-//!     4. [Scheduler](#)
-//!         1. [Setting callbacks]
-//!         2. [Opening popups]
-//!         3. [Creating widgets programmatically]
-//!         4. [Creating ez properties](#)
-//!     5. [Global (key)bindings](#)
+//!             1. [Automatic positioning: layout modes](#positioning_automatic)
+//!             2. [Relative positioning: position hints](#positioning_relative)
+//!             3. [Absolute positions](#positioning_absolute)
+//!             4. [Adjusting position: aligning and padding](#positioning_adjusting)
+//!         7. [Keyboard selection](#keyboard_selection)
+//!         8. [Binding properties](#binding_properties)
+//!     3. [Scheduler](#scheduler)
+//!         1. [Widget states and the State Tree](#scheduler_states)
+//!         2. [Using the scheduler object](#scheduler_object)
+//!         3. [Managing callbacks](#scheduler_callbacks)
+//!             1. [Callback config][#scheduler_callbacks_config]
+//!         4. [Managing scheduled tasks](#scheduler_tasks)
+//!         5. [Opening popups](#scheduler_popups)
+//!         6. [Creating widgets programmatically](#scheduler_widgets_from_code)
+//!         7. [Creating custom properties](#)(#scheduler_properties)
+//!         8. [Updating widgets](#scheduler_updating)
+//!         9. [Managing widget selection](#scheduler_selection)
+//!     4. [Global (key)bindings](#)
 //! 2. [Reference]
-//!     1. Layouts
+//!     1. [Layouts]
 //!         1. [General]
 //!         2. [General - scrolling]
 //!         3. [General - Properties]
@@ -90,7 +99,8 @@
 //! - UI Rust module(s)
 //! - Your actual app (also Rust modules)
 //!
-//! #### 1.1.1 Project structure: UI config files
+//! <a name="ui_config_files"></a>
+//! #### 1.1.1 UI config files
 //!
 //! UI config files have the '.ez' extension. They define what your UI will look like using layouts
 //! and widgets. You can have as many .ez files as you like, so you can split up your UI along
@@ -119,7 +129,8 @@
 //! $env:EZ_FOLDER="C:\path\to\project\ui"
 //! ```
 
-//!  #### 1.1.2 Project structure: UI Rust module(s)
+//! <a name="ui_rust_modules"></a>
+//!  #### 1.1.2 UI Rust module(s)
 //!
 //! We now have our .ez files describing what our UI should look like. Now we need a rust module
 //! that will initialize the UI and start it. It makes sense for this to be main.rs, but it does
@@ -152,7 +163,8 @@
 //!     /my_ui.ez
 //! ```
 //!
-//! #### 1.1.3 Project structure: Your app
+//! <a name="your_app"></a>
+//! #### 1.1.3 Your app
 //!
 //! Finally your project will obviously contain the Rust modules of your actual app (that you are
 //! building the UI for). The UI will run in the main thread and will call (parts of) your App to
@@ -174,7 +186,7 @@
 //! ```
 //!
 //! <a name="small_example"></a>
-//! ### 1.2 Minimal example
+//! #### 1.1.4 Minimal example
 //!
 //! Now that we know the structure of an EzTerm project, we'll create the smallest working example
 //! possible to get the structure into our fingers. After that we will move on to explain the
@@ -255,8 +267,10 @@
 //! You should you be able to see the 'hello world' UI! Press Escape to quit.
 //! Now that you know how to create a basic UI, we'll dive into the specifics of the framework.
 //!
+//! <a name="ez_language"></a>
 //! ## 2. Ez language
 //!
+//! <a name="ez_basics"></a>
 //! ### 2.1 Basics
 //!
 //! With EzTerm, the UI is defined in the .ez files, using a YAML(ish) type syntax called EzLang.
@@ -303,6 +317,7 @@
 //! when we discuss callbacks and EzProperties. Don't worry if the properties look unfamiliar,
 //! we'll get into them later; for now we are just discussing the basics of the syntax.
 //!
+//! <a name="ez_language_templates"></a>
 //! ### 2.2 Templates
 //!
 //! When you start writing your own .ez files, you may notice yourself writing the same types of
@@ -423,6 +438,7 @@
 //!     - ScreenOne:
 //!         id: screen_1
 //! ```
+//! <a name="ez_language_layout_modes"></a>
 //! ### 2.3 Layout modes
 //!
 //! You may have noted the "mode" property of the Layouts; this is one of the most important
@@ -435,6 +451,7 @@
 //! of contents at the top of this page).
 //!
 //!
+//! <a name="ez_language_box"></a>
 //! #### 2.3.1 Box mode
 //!
 //! In Box mode objects are placed from left to right (orientation: horizontal) or top to bottom
@@ -480,6 +497,7 @@
 //!             text: Right option 3
 //! ```
 //!
+//! <a name="ez_language_stack"></a>
 //! #### 2.3.2 Stack mode
 //!
 //! Stack mode stacks widgets inside of the layout according to the primary and secondary
@@ -527,6 +545,7 @@
 //! widgets will remain visible even when the window resizes (as long as there ís enough is enough
 //! space in general of course).
 //!
+//! <a name="ez_language_table"></a>
 //! #### 2.3.3 Table mode
 //!
 //! Table mode divides widgets into rows and columns. You must specify how many rows or columns you
@@ -589,6 +608,7 @@
 //!         text: 4
 //! ```
 //!
+//! <a name="ez_language_float"></a>
 //! #### 2.3.4 Float mode
 //!
 //! In float mode, widgets can be placed freely anywhere in the layout. This mode does not have any
@@ -649,6 +669,7 @@
 //! if the terminal is resized. In most cases position hints are the better choice as they will
 //! scale with the terminal.
 //!
+//! <a name="ez_language_tab"></a>
 //! #### 2.3.4 Tab mode
 //!
 //! Tab mode creates tabs for you based on child layouts. This means that in tab mode, you can only
@@ -687,6 +708,7 @@
 //! }
 //! ```
 //!
+//! <a name="ez_language_screen"></a>
 //! #### 2.3.5 Screen mode
 //!
 //! Screen mode creates screens for you based on child layouts. This means that in screen mode,
@@ -773,6 +795,7 @@
 //! scheduled task. More on callbacks and scheduling tasks later (see table of contents at top of
 //! page).
 //!
+//! <a name="ez_language_scrolling"></a>
 //! #### 2.3.6 Scrolling
 //!
 //! Scrolling is *not* a dedicated layout mode. Instead, it is a property that can be enabled for
@@ -806,6 +829,7 @@
 //!         from_file: lorem_ipsum.txt
 //! ```
 //!
+//! <a name="widget_overview"></a>
 //! ### 2.4 Widget overview
 //!
 //! Widgets are the actual content of the UI and are always placed inside Layouts. It is not
@@ -824,6 +848,9 @@
 //! A textbox. Can be used to display (colored) text. If the label has a height higher than one,
 //! text will be automatically wrapped to respect word boundaries. Formatted text and justify
 //! options are on the roadmap with priority.
+//! ```
+//! - Label:
+//! ```
 //!
 //! **Text input:**
 //! The text input is essentially an interactive Label. The user can select the input through mouse or
@@ -831,16 +858,25 @@
 //! can control with the left/right buttons. Backspace and delete will remove content as expected.
 //! If the text of the input grows larger than the widget, the view will automatically move with
 //! the cursor.
+//! ```
+//! - TextInput:
+//! ```
 //!
 //! **Button:**
 //! Clickable button; displays a small animation when clicked. Bind an on_press callback to a button
 //! to make it functional. This will be explained in the callback section of the scheduler (see
 //! table of contents).
+//! ```
+//! - Button:
+//! ```
 //!
 //! **Checkbox:**
 //! A clickable switch; has two states: on or off. Bind an on_value_change callback to a checkbox
 //! to make it functional. This will be explained in the callback section of the scheduler (see
 //! table of contents).
+//! ```
+//! - Checkbox:
+//! ```
 //!
 //! **Radio button:**
 //! A radio button is also a clickable switch that can be either on or off. The difference with the
@@ -849,6 +885,9 @@
 //! clicks one, the others will be off. To make the radio buttons functional, bind on_value_change
 //! callbacks to each button in the group. Only the radio button that became active will receive
 //! an on_value_change event.
+//! ```
+//! - RadioButton:
+//! ```
 //!
 //! **Dropdown:**
 //! A dropdown is a list of items (including an optional empty choice). Initially, only the active
@@ -857,6 +896,9 @@
 //! 'allow_none' EzLang property to enable or disable an empty choice. Use the 'choice' EzLang
 //! property to set the initial choice; if you don't do this, the empty choice will be active if
 //! 'allow_none' is true; if not, then the first option will be active by default.
+//! ```
+//! - Dropdown:
+//! ```
 //!
 //! **Slider:**
 //! The slider allows a user to choose a numerical value by dragging the slider to the left or
@@ -864,13 +906,20 @@
 //! and a step value. The step value determines the minimum amount by which the value can be
 //! adjusted. A slider with minimum 0, maximum 20, and step 5, has 5 possible values (0, 5, 10
 //! , 15, 20).
+//! ```
+//! - Slider:
+//! ```
 //!
 //! **Canvas**:
 //! The canvas is a widget that you either 'paint' yourself, or that gets its' content from a text
 //! file. You can set the content of a canvas programmatically through its' "set_content" function.
 //! You can load the content from a text file using the EzLang property 'from_file'.
+//! ```
+//! - Canvas:
+//! ```
 //!
 //!
+//! <a name="sizing"></a>
 //! ### 2.5 Sizing
 //!
 //! Now we'll learn about the different ways to size widgets and layouts.
@@ -880,7 +929,8 @@
 //! - Auto scale to content;
 //! - Absolute size.
 //!
-//! #### 2.3.1 Relate sizing: size hints
+//! <a name="sizing_relative"></a>
+//! #### 2.3.1 Relative sizing: size hints
 //!
 //! Size hints can be used to size a widget relative to its parent layout. This is the default way
 //! widgets are sized across the framework; this is important to keep in mind! Size hints are
@@ -922,6 +972,7 @@
 //!         size_hint: 1, 0.25
 //! ```
 //!
+//! <a name="sizing_scaling"></a>
 //! #### 2.3.2 Auto scaling
 //!
 //! All widgets support auto-scaling; when enabled, they will automatically size themselves to their
@@ -977,6 +1028,7 @@
 //! ```
 //! The Label is now growing vertically.
 //!
+//! <a name="sizing_absolute"></a>
 //! #### 2.3.3 Absolute size:
 //!
 //! It is possible to set an absolute size for widgets manually. Keep in mind that size_hint will
@@ -1003,6 +1055,7 @@
 //! The button will now be fixed to height 3, but its width will scale to the width of the parent
 //! layout (because the default is "size_hint: 1, 1").
 //!
+//! <a name="positioning"></a>
 //! ### 2.6 Positioning:
 //!
 //! There a multiple ways to control the positioning of widgets; which ways are available depends
@@ -1012,6 +1065,7 @@
 //! - Absolute positioning with manual positions
 //! - Adjust position through padding and aligning
 //!
+//! <a name="positioning_automatic"></a>
 //! #### 2.6.1 Automatic positioning: layout modes:
 //!
 //! Most layout modes do not support manual positioning or relative positioning. This is because
@@ -1021,6 +1075,7 @@
 //! the positioning for you (see their docs for more info). It is however possible to adjust the
 //! position of widgets in these modes; see the entry on padding and aligning below for more on that.
 //!
+//! <a name="positioning_relative"></a>
 //! #### 2.6.2 Relative positioning: position hints
 //!
 //! Position hints can only be used for widgets that are in a layout in float mode. With position
@@ -1067,6 +1122,7 @@
 //!         pos_hint: right: 0.9, bottom: 0.9
 //! ```
 //!
+//! <a name="positioning_absolute"></a>
 //! #### 2.6.2 Absolute positioning: manual positions
 //!
 //! Manual positions can only be used with widgets in a layout in float mode. The properties "x" and
@@ -1081,6 +1137,7 @@
 //!         pos: 10, 10
 //! ```
 //!
+//! <a name="positioning_adjusting"></a>
 //! #### 2.6.3 Adjusting position: padding and aligning
 //!
 //! It is not possible to control position in layout modes other that float. In the fixed layout
@@ -1159,6 +1216,7 @@
 //!         padding_left: 1
 //! ```
 //!
+//! <a name="keyboard_selection"></a>
 //! ### 2.7 Keyboard selection:
 //!
 //! Keyboard selection, unlike mouse selection, requires the configuration of a property. You need
@@ -1227,8 +1285,321 @@
 //!             selection_order: 25
 //! ```
 //!
+//! <a name="binding_properties"></a>
 //! ### 2.8 Binding properties:
-//! 
+//!
+//! It is possible to bind one property to another in EzLang, as long as the properties are of the
+//! same type (you can find the type of each property in [Reference]. Here is an example of binding
+//! the width of one widget to another:
+//! ```
+//! - Layout:
+//!     mode: box
+//!     orientation: vertical
+//!     - Label:
+//!         id: longer_label
+//!         text: Long label text
+//!         auto_scale: true, true
+//!     - Label:
+//!         text: Short text
+//!         auto_scale_height: true
+//!         size_hint_x: none
+//!         width: parent.longer_label.width
+//! ```
+//!
+//! To bind one property to another, simply refer to that property instead of providing a value.
+//! The syntax to do this is a full or relative path to the property you want to bind to.
+//! To provide an absolute path start with "root.", e.g.:
+//! ```
+//! width: root.layout_1.layout_2.label_1.width
+//! ```
+//!
+//! To provide a relative path there are two possibilities: "self", "parent". "self" refers to the
+//! widget itself; it can be used to bind one property of a widget to another. E.g. to bind the
+//! width of a widget to its height:
+//! ```
+//! width: self.height
+//! ```
+//!
+//! "parent" refers to the parent layout and can be used recursively, so "parent.parent" is also
+//! valid. This is an easy way to refer to another widget in the same layout:
+//! ```
+//! width: parent.other_label.width
+//! ```
+//!
+//! There is one other piece of syntax: "property". This can be used to refer to custom properties
+//! that you have scheduled with the scheduler. We will discuss these in the coming [Scheduler]
+//! chapter. We'll just note for now that we can refer to custom properties from EzLang in the
+//! following format:
+//! ```
+//! width: properties.my_custom_property
+//! ```
+//!
+//! So far we have only used numerical (usize) properties in our examples, but any property can be
+//! bound:
+//! ```
+//! - Layout:
+//!     mode: box
+//!     orientation: vertical
+//!     - Label:
+//!         id: longer_label
+//!         text: Long label text
+//!         auto_scale: true, true
+//!         halign: center
+//!     - Label:
+//!         text: Short text
+//!         size_hint_x: none
+//!         width: parent.longer_label.width
+//!         halign: parent.longer_label.halign
+//!         auto_scale_height: parent.longer_label.auto_scale_height
+//! ```
+//!
+//! <a name="scheduler"></a>
+//! ## 3 Scheduler:
+//!
+//! The scheduler is an object that allows you to configure callbacks, scheduled tasks, widget- and
+//! full screen updates, etc. It is a core part of managing the user interface from code. In this
+//! chapter we will learn about all the features of the scheduler and how to use them.
+//!
+//! <a name="scheduler_states"></a>
+//! ### 3.1 Widget states and the State Tree:
+//!
+//! Before we go on to describe the scheduler, we have to look at widget states first. We said that
+//! the scheduler was how we manage the UI from code, and we do that by manipulating widget states.
+//! Every property of a widget (such as those we set from the .ez files) is contained in its widget
+//! state. If we change a property in the widget state and call the '.update' method on it, the
+//! widget will be redrawn on the next frame to reflect the new state. So if we wanted to change
+//! the text of a label from code it would look like this:
+//! ```
+//! label_state.set_text("new text".to_string());
+//! ```
+//! The state of every widget active in our UI is contained in the "State tree". The state tree is
+//! available to us when we initialize the UI, and is given to us in every callback. We can use the
+//! state tree to get a widget state using the "get_by_id" or "get_by_path" methods. So if we wanted
+//! to change the text of a label with the id "my_label" when initializing the UI, we would do this:
+//! ```
+//! use ez_term::*;
+//! let (root_widget, mut state_tree, mut scheduler) = load_ui();
+//! let label_state = state_tree.get_by_id_mut("my_label").as_label_mut();
+//! label_state.set_text("new text".to_string());
+//! ```
+//! Note that after getting the label state, we have to call the "to_label_mut" method to change
+//! the generic state into a label state. This is because the state tree contains generic states (due
+//! to Rusts strict type requirements), and so we have to cast the state into the right type before
+//! we use it. This will become second nature quickly when working with EzTerm.
+//!
+//! We will describe callbacks in details below, but we will note for now that the state tree is
+//! available in callbacks through the "context" parameter. So if we wanted to change the text of
+//! our label from a callback it would look like this:
+//! ```
+//! use ez_term::*;
+//! fn my_callback(context: EzContext) -> bool {
+//!
+//!     let label_state = context.state_tree.get_by_id_mut("my_label").as_label_mut();
+//!     label_state.set_text("new text".to_string());
+//!     label_state.update(context.scheduler);
+//!     true
+//! }
+//! ```
+//! Don't worry about the callback syntax for now, just note that we control widgets from code by
+//! manipulating the state, which we get from the state tree available in the callback context. We
+//! could also see in the example that each state has an ".update" method. When we call update, the
+//! widget will be redrawn on the next frame. You will want to call this when changing a state from
+//! a callback most of the time.
+//!
+//! Now we will start putting our new knowledge about states to use when discussing the features of
+//! the scheduler.
+//!
+//! <a name="scheduler_object"></a>
+//! ### 3.2 Using the scheduler object:
+//!
+//! The scheduler is an object which you can use in two places: when initializing the UI, and when
+//! inside of a callback. Here is an example of using the scheduler when initializing the UI:
+//! ```
+//! use ez_term::*;
+//! let (root_widget, mut state_tree, mut scheduler) = load_ui();
+//! scheduler.set_selected_widget("my_widget", None);
+//! run(root_widget, state_tree, scheduler);
+//! ```
+//! Don't worry about the 'set_selected_widget' method for now, we are just looking at accessing the
+//! scheduler. When we are inside of a callback, the scheduler is available to us from the context
+//! parameter:
+//! ```
+//! use ez_term::*;
+//! fn my_callback(context: EzContext) -> bool {
+//!
+//!     context.scheduler.set_selected_widget("my_widget", None);
+//!     true
+//! }
+//! ```
+//!
+//! Now that we know how to use the scheduler object when initializing the UI and from callbacks,
+//! we will look at the manu things we can do with the scheduler. Here is a short overview of the
+//! features we will look at:
+//! - Managing callbacks
+//! - Scheduling tasks
+//! - Managing popups
+//! - Creating/removing widgets from code
+//! - Creating custom properties
+//! - Updating widgets
+//! - Managing widget selection
+//!
+//!
+//! <a name="scheduler_callbacks"></a>
+//! ### 3.3 Managing callbacks
+//!
+//! There are many types of callbacks. We will discuss each of them later in this chapter.
+//! There is one import thing to mention right away: callbacks in general are executed in the main
+//! thread. This means that callbacks are expected to return immediately. Callbacks that only manage
+//! the UI will return immediately and can be used normally. If you want to use a callback to run your
+//! app, you can use a callback to spawn a [Threaded scheduled task]. We will learn more about this
+//! in the sections coming up, but this is important to keep in mind.
+//!
+//! Now, let's look at the general structure of callbacks:
+//!
+//! #### 3.3.1 General callback structure
+//!
+//! Callbacks can be created from a closure or from a function. We will see examples of both below.
+//!
+//! All callbacks take an "context: EzContext" parameter. The EzContext object contains the
+//! StateTree object (context.state_tree) and the Scheduler object (context.scheduler). We can use
+//! these to manage the UI, as is being explained in this chapter. The EzContext also contains the
+//! path of the widget for which the callback was called (context.widget_path). Some callbacks have
+//! more parameters (for example, mouse callbacks have a mouse_pos parameter), but we will discuss
+//! these seperately for each callback when relevant.
+//!
+//! Finally, each callback returns a bool. The bool indicates whether the event should be consumed.
+//! If the event is not consumed, the widget is allowed to execute its default behavior if it has
+//! any. For example, the checkbox has default "on_press" behavior: when pressed, it will toggle
+//! on/off. If you bind a custom "on_press" callback for a checkbox, you control whether the default
+//! behavior will be executed by returning 'true' (allowed to run) or 'false' (not allowed to run).
+//! This gives you the option to overwrite default widget behavior, or supplement it.
+//!
+//! To summarize, here are the two examples of default callback structure:
+//!
+//! **Callback from closure**
+//! ```
+//! use ez_term::*;
+//! let my_callback = |context: EzContext| {
+//!     true
+//! };
+//! ```
+//! **Callback from function**
+//! ```
+//! use ez_term::*;
+//! fn my_callback(context: EzContext) -> bool {
+//!     true
+//! };
+//! ```
+//!
+//! Now that we know what a callback should look like, let's see how to set new callbacks.
+//!
+//! #### 3.3.2 Callback config
+//!
+//! Each widget active in your UI has an associated callback config. This config contains all
+//! callbacks that are active for that widget. Initially, the callback config for each widget is
+//! empty. To manage the callbacks for a widget, we create a new CallbackConfig object and load
+//! our callbacks into it. When we have a new CallbackConfig object, we can either overwrite the
+//! current callback config of a widget, or update it. Overwriting it will delete the current config.
+//! When updating, any callbacks configured in the new config will be set on the current config
+//! (while leaving the the others intact).
+//! Let's say we want to set an "on_press" callback on a button with the ID: "my_button".
+//! We want the callback to change the text on a label. This is how we would do it:
+//! ```
+//! use ez_term::*;
+//! let (root_widget, mut state_tree, mut scheduler) = load_ui();
+//!
+//! let my_callback = |context: EzContext| {
+//!
+//!     let label_state = context.state_tree.get_by_id_mut("my_label").as_label_mut();
+//!     label_state.set_text("Button was clicked!".to_string());
+//!     label_state.update(context.scheduler);
+//!     true
+//! };
+//! let new_callback_config = CallbackConfig::from_on_press(Box::new(my_callback));
+//! scheduler.update_callback_config("my_button", new_callback_config);
+//! ```
+//! We created a new callback config using the "from_on_press" method. There is a "from_" method for
+//! each type of callback to make it easier to initialize a new CallbackConfig.
+//! Note that if you want to update a callback config by widget ID like we do in the above example
+//! (or find a widget state using ID), the ID must be globally unique. If the ID is not globally
+//! unique, you can use the full widget path. Since ID is more convenient, it is recommended to make
+//! all your widget IDs unique.
+//!
+//! We will go through another example accomplishing the same thing as above, but this time we will
+//! use a function instead of a closure, and we will overwrite the callback config instead of
+//! updating it:
+//! ```
+//! use ez_term::*;
+//! fn my_callback(context: EzContext) -> bool {
+//!
+//!     let label_state = context.state_tree.get_by_id_mut("my_label").as_label_mut();
+//!     label_state.set_text("Button was clicked!".to_string());
+//!     label_state.update(context.scheduler);
+//!     true
+//! };
+//!
+//! let (root_widget, mut state_tree, mut scheduler) = load_ui();
+//!
+//! let new_callback_config = CallbackConfig::from_on_press(Box::new(my_callback));
+//! scheduler.overwrite_callback_config("my_button", new_callback_config);
+//! ```
+//!
+//! As you can see, both closures and functions can be used to write callbacks. The advantage of
+//! closures however is that we can capture variables with the "move" keyword. Let's repeat the
+//! first example, but this time we want to update the label with a counter each time the button is
+//! pressed:
+//! ```
+//! use ez_term::*;
+//! let (root_widget, mut state_tree, mut scheduler) = load_ui();
+//!
+//! let counter: usize = 0;
+//! let my_callback = move |context: EzContext| {
+//!
+//!     let label_state = context.state_tree.get_by_id_mut("my_label").as_label_mut();
+//!     label_state.set_text(format!("Button was clicked {} times!", counter));
+//!     label_state.update(context.scheduler);
+//!     true
+//! };
+//! let new_callback_config = CallbackConfig::from_on_press(Box::new(my_callback));
+//! scheduler.update_callback_config("my_button", new_callback_config);
+//! ```
+//! Here we created a variable and moved it into the callback closure. This can be very useful, and
+//! it's a good pattern to keep in mind.
+//!
+//! Now that we know how to create a callback and bind it to an object, we will go over all callback
+//! types. Not all callbacks are available for all widgets. To see which callbacks are available for
+//! a widget, check the widget entry under [Reference]. Here is a quick overview of all callbacks:
+//!
+//! - on_keyboard_enter
+//! - on_left_mouse_click
+//! - on_press
+//! - on_select
+//! - on_deselect
+//! - on_right_mouse_click
+//! - on_hover
+//! - on_drag
+//! - on_scroll_up
+//! - on_scroll_down
+//! - on_value_change
+//! - Custom keymap
+//! - on_property_change
+//!
+//! #### 3.3.2 On_keyboard_enter
+//!
+//! This callback is activated when a widget is selected and the 'enter' key is pressed on the
+//! keyboard.
+//! To set this callback with a closure:
+//! ```
+//! use ez_term::*;
+//! let (root_widget, mut state_tree, mut scheduler) = load_ui();
+//!
+//! let my_callback = move |context: EzContext| {
+//!
+//!     true
+//! };
+//! let new_callback_config = CallbackConfig::from_on_press(Box::new(my_callback));
+//! scheduler.update_callback_config("my_button", new_callback_config);
+//! ```
 mod run;
 mod scheduler;
 mod widgets;

@@ -22,7 +22,15 @@ use crate::states::definitions::{HorizontalAlignment, VerticalAlignment};
 pub fn bind_ez_property(value: &str, scheduler: &mut SchedulerFrontend, path: String,
                         update_func: EzPropertyUpdater) -> bool {
 
-    if value.starts_with("parent.") {
+    if value.starts_with("self.") {
+        let new_path = value.replace("self.", &path).replace('.', "/");
+        scheduler.subscribe_to_ez_property(new_path.as_str(), update_func.clone());
+        true
+    } else if value.starts_with("root.") {
+        let new_path = value.replace(".root", "/root").replace('.', "/");
+        scheduler.subscribe_to_ez_property(new_path.as_str(), update_func.clone());
+        true
+    } else if value.starts_with("parent.") {
         let new_path = resolve_parent_path(path, value);
         scheduler.subscribe_to_ez_property(new_path.as_str(), update_func);
         true

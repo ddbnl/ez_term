@@ -232,7 +232,7 @@ impl SchedulerFrontend {
     /// scheduler.set_callback_config("my_button",
     ///                               CallbackConfig::from_on_press(Box::new(dismiss_delay)));
     /// ```
-    pub fn set_callback_config(&mut self, for_widget: &str, callback_config: CallbackConfig) {
+    pub fn overwrite_callback_config(&mut self, for_widget: &str, callback_config: CallbackConfig) {
         self.backend.new_callback_configs.push((for_widget.to_string(), callback_config));
     }
 

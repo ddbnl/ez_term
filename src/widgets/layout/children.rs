@@ -189,7 +189,7 @@ impl Layout {
                 };
                 let callback_config = CallbackConfig::from_on_press(
                     Box::new(tab_on_click));
-                scheduler.set_callback_config(tab_header.path.as_str(), callback_config);
+                scheduler.overwrite_callback_config(tab_header.path.as_str(), callback_config);
                 self.add_child(EzObjects::Button(tab_header), scheduler);
             }
         }
