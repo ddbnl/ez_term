@@ -1,10 +1,9 @@
 use crate::states::ez_state::GenericState;
-use crate::EzProperty;
+use crate::{EzProperty};
 use crate::run::definitions::{IsizeCoordinates};
 use crate::scheduler::scheduler::SchedulerFrontend;
 use crate::scheduler::scheduler_funcs::clean_up_property;
-use crate::states::definitions::{StateCoordinates, SizeHint, PosHint, StateSize, AutoScale, Padding,
-                                 HorizontalAlignment, VerticalAlignment, BorderConfig, ColorConfig};
+use crate::states::definitions::{StateCoordinates, SizeHint, PosHint, StateSize, AutoScale, Padding, HorizontalAlignment, VerticalAlignment, BorderConfig, ColorConfig, InfiniteSize};
 
 
 /// [State] implementation.
@@ -15,52 +14,55 @@ pub struct DropdownState {
     pub path: String,
 
     /// Position of this widget relative to its' parent [layout]
-    position: StateCoordinates,
+    pub position: StateCoordinates,
 
     /// Absolute position of this widget on screen. Automatically propagated, do not set manually
     absolute_position: IsizeCoordinates,
 
     /// Relative height/width of this widget to parent layout
-    size_hint: SizeHint,
+    pub size_hint: SizeHint,
 
     /// Pos hint of this widget
-    pos_hint: PosHint,
+    pub pos_hint: PosHint,
 
     /// size of this widget
-    size: StateSize,
+    pub size: StateSize,
+
+    /// Infinite size of this widget for x and y axes, used in scrolling
+    infinite_size: InfiniteSize,
 
     /// Automatically adjust size of widget to content
-    auto_scale: AutoScale,
+    pub auto_scale: AutoScale,
 
     /// Amount of space to leave between sides of the widget and other widgets
-    padding: Padding,
+    pub padding: Padding,
 
     /// Horizontal alignment of this widget
-    halign: EzProperty<HorizontalAlignment>,
+    pub halign: EzProperty<HorizontalAlignment>,
 
     /// Vertical alignment of this widget
-    valign: EzProperty<VerticalAlignment>,
+    pub valign: EzProperty<VerticalAlignment>,
 
     /// Bool representing whether widget is disabled, i.e. cannot be interacted with
-    disabled: EzProperty<bool>,
+    pub disabled: EzProperty<bool>,
 
     /// Global order number in which this widget will be selection when user presses down/up keys
-    selection_order: EzProperty<usize>,
+    pub selection_order: EzProperty<usize>,
 
     /// List of options this dropdown will display
     options: Vec<String>,
 
     /// Bool representing whether an empty value should be shown to choose from
-    allow_none: EzProperty<bool>,
+    pub allow_none: EzProperty<bool>,
 
     /// The currently active choice of the dropdown.
-    choice: EzProperty<String>,
+    pub choice: EzProperty<String>,
 
     /// [BorderConfig] object that will be used to draw the border if enabled
-    border_config: BorderConfig,
+    pub border_config: BorderConfig,
 
     /// Object containing colors to be used by this widget in different situations
-    colors: ColorConfig,
+    pub colors: ColorConfig,
 
     /// Bool representing whether this widget is currently selected. Internal only.
     selected: bool,
@@ -76,6 +78,7 @@ impl DropdownState {
            auto_scale: AutoScale::new(false, false, path.clone(), scheduler),
            pos_hint: PosHint::new(None, None, path.clone(), scheduler),
            size: StateSize::new(0, 0, path.clone(), scheduler),
+           infinite_size: InfiniteSize::default(),
            padding: Padding::new(0, 0, 0, 0, path.clone(), scheduler),
            halign: scheduler.new_horizontal_alignment_property(
                 format!("{}/halign", path).as_str(), HorizontalAlignment::Left),
@@ -114,6 +117,10 @@ impl GenericState for DropdownState {
     fn get_size(&self) -> &StateSize { &self.size }
 
     fn get_size_mut(&mut self) -> &mut StateSize { &mut self.size }
+
+    fn get_infinite_size(&self) -> &InfiniteSize { &self.infinite_size }
+
+    fn get_infinite_size_mut(&mut self) -> &mut InfiniteSize { &mut self.infinite_size }
 
     fn get_position(&self) -> &StateCoordinates { &self.position }
 
@@ -226,6 +233,9 @@ pub struct DroppedDownMenuState {
     /// size of this widget
     pub size: StateSize,
 
+    /// Infinite size of this widget for x and y axes, used in scrolling
+    infinite_size: InfiniteSize,
+
     /// Automatically adjust size of widget to content
     pub auto_scale: AutoScale,
 
@@ -293,6 +303,7 @@ impl DroppedDownMenuState {
             selection_order: scheduler.new_usize_property(
                 format!("{}/selection_order", path).as_str(), 0),
             dropped_down_selected_row: 0,
+            infinite_size: InfiniteSize::default(),
         }
     }
 }
@@ -317,6 +328,10 @@ impl GenericState for DroppedDownMenuState {
     fn get_size(&self) -> &StateSize { &self.size }
 
     fn get_size_mut(&mut self) -> &mut StateSize { &mut self.size }
+
+    fn get_infinite_size(&self) -> &InfiniteSize { &self.infinite_size }
+
+    fn get_infinite_size_mut(&mut self) -> &mut InfiniteSize { &mut self.infinite_size }
 
     fn get_position(&self) -> &StateCoordinates { &self.position }
 
@@ -382,6 +397,38 @@ impl GenericState for DroppedDownMenuState {
 }
 
 impl DroppedDownMenuState {
+
+    pub fn create(
+        path: String, size: StateSize, infinite_size: InfiniteSize, auto_scale: AutoScale,
+        options: Vec<String>, allow_none: EzProperty<bool>, size_hint: SizeHint,
+        position: StateCoordinates, padding: Padding, halign: EzProperty<HorizontalAlignment>,
+        valign: EzProperty<VerticalAlignment>, disabled: EzProperty<bool>,
+        selection_order: EzProperty<usize>, absolute_position: IsizeCoordinates, pos_hint: PosHint,
+        dropped_down_selected_row: usize, border_config: BorderConfig, colors: ColorConfig,
+        choice: EzProperty<String>, parent_path: String) -> Self {
+        DroppedDownMenuState {
+            path,
+            size,
+            infinite_size,
+            auto_scale,
+            options,
+            allow_none,
+            size_hint,
+            position,
+            padding,
+            halign,
+            valign,
+            disabled,
+            selection_order,
+            absolute_position,
+            pos_hint,
+            dropped_down_selected_row,
+            border_config,
+            colors,
+            choice,
+            parent_path
+        }
+    }
 
     pub fn set_choice(&mut self, choice: String) { self.choice.set(choice); }
 

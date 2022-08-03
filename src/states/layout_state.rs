@@ -1,5 +1,5 @@
 use std::collections::HashMap;
-use crate::states::definitions::{StateCoordinates, SizeHint, PosHint, StateSize, AutoScale, Padding, HorizontalAlignment, VerticalAlignment, BorderConfig, ColorConfig, LayoutMode, LayoutOrientation, ScrollingConfig, TableConfig};
+use crate::states::definitions::{StateCoordinates, SizeHint, PosHint, StateSize, AutoScale, Padding, HorizontalAlignment, VerticalAlignment, BorderConfig, ColorConfig, LayoutMode, LayoutOrientation, ScrollingConfig, TableConfig, InfiniteSize};
 use crate::{EzProperty};
 use crate::parser::ez_definition::Templates;
 use crate::run::definitions::{IsizeCoordinates, Size, StateTree};
@@ -18,68 +18,71 @@ pub struct LayoutState {
     pub path: String,
 
     /// Position of this widget relative to its' parent [layout]
-    position: StateCoordinates,
+    pub position: StateCoordinates,
 
     /// Absolute position of this widget on screen. Automatically propagated, do not set manually
     absolute_position: IsizeCoordinates,
 
     /// Relative height/width of this widget to parent layout
-    size_hint: SizeHint,
+    pub size_hint: SizeHint,
 
     /// Pos hint of this widget
-    pos_hint: PosHint,
+    pub pos_hint: PosHint,
 
     /// size of this widget
-    size: StateSize,
+    pub size: StateSize,
+
+    /// Infinite size of this widget for x and y axes, used in scrolling
+    infinite_size: InfiniteSize,
 
     /// Automatically adjust size of widget to content
-    auto_scale: AutoScale,
+    pub auto_scale: AutoScale,
 
     /// layout mode enum, see [LayoutMode] for options
-    mode: LayoutMode,
+    pub mode: LayoutMode,
 
     /// Orientation enum, see [LayoutOrientation] for options
-    orientation: LayoutOrientation,
+    pub orientation: LayoutOrientation,
 
     /// Amount of space to leave between sides of the widget and other widgets
-    padding: Padding,
+    pub padding: Padding,
 
     /// Horizontal alignment of this layout
-    halign: EzProperty<HorizontalAlignment>,
+    pub halign: EzProperty<HorizontalAlignment>,
 
     /// Vertical alignment of this layout
-    valign: EzProperty<VerticalAlignment>,
+    pub valign: EzProperty<VerticalAlignment>,
 
     /// [TableConfig] of this layout
-    table_config: TableConfig,
+    pub table_config: TableConfig,
 
     /// ID of the child that is the active screen (i.e. its content is visible)
-    active_screen: EzProperty<String>,
+    pub active_screen: EzProperty<String>,
 
     /// Name shown for tab if [is_tab] is true and parent [is_tabbed]
-    tab_name: EzProperty<String>,
+    pub tab_name: EzProperty<String>,
 
     /// ID of the active tab (i.e. its content is visible)
-    active_tab: EzProperty<String>,
+    pub active_tab: EzProperty<String>,
 
     /// Id of the active tab header button
     selected_tab_header: String,
 
     /// Bool representing whether this layout should be filled with [filler_symbol] in positions
     /// where it does not get other content from [get_contents]
-    fill: EzProperty<bool>,
+    pub fill: EzProperty<bool>,
 
     /// The [Pixel.Symbol] to use for filler pixels if [fill] is true
-    filler_symbol: EzProperty<String>,
+    pub filler_symbol: EzProperty<String>,
 
     /// [BorderConfig] object that will be used to draw the border if enabled
-    border_config: BorderConfig,
+    pub border_config: BorderConfig,
 
     /// Object containing colors to be used by this widget in different situations
-    colors: ColorConfig,
+    pub colors: ColorConfig,
 
     /// See [ScrollingConfig]
-    scrolling_config: ScrollingConfig,
+    pub scrolling_config: ScrollingConfig,
 
     /// A list of open modals. Modals are widgets that overlap other content; in other words, they
     /// open 'in front of' other content. Only one can be shown at a time (the first on in the
@@ -91,10 +94,10 @@ pub struct LayoutState {
     templates: Templates,
 
     /// Bool representing whether widget is disabled, i.e. cannot be interacted with
-    disabled: EzProperty<bool>,
+    pub disabled: EzProperty<bool>,
 
     /// Global order number in which this widget will be selection when user presses down/up keys
-    selection_order: EzProperty<usize>,
+    pub selection_order: EzProperty<usize>,
 
     /// Bool representing whether this widget is currently selected.
     selected: bool,
@@ -110,6 +113,7 @@ impl LayoutState {
             size_hint: SizeHint::new(Some(1.0), Some(1.0), path.clone(), scheduler),
             pos_hint: PosHint::new(None, None, path.clone(), scheduler),
             size: StateSize::new(0, 0, path.clone(), scheduler),
+            infinite_size: InfiniteSize::default(),
             auto_scale: AutoScale::new(false, false, path.clone(), scheduler),
             orientation: LayoutOrientation::Horizontal,
             mode: LayoutMode::Box,
@@ -129,8 +133,8 @@ impl LayoutState {
             fill: scheduler.new_bool_property(format!("{}/fill", path).as_str(),false),
             filler_symbol: scheduler.new_string_property(
                 format!("{}/filler_symbol", path).as_str(), String::new()),
-            scrolling_config: ScrollingConfig::new(false, false, path.clone(),
-                                                   scheduler),
+            scrolling_config: ScrollingConfig::new(false, false, 0.0, 0.0,
+                                                   path.clone(), scheduler),
             border_config: BorderConfig::new(false, path.clone(), scheduler),
             colors: ColorConfig::new(path.clone(), scheduler),
             open_modals: Vec::new(),
@@ -163,17 +167,21 @@ impl GenericState for LayoutState {
 
     fn get_size_mut(&mut self) -> &mut StateSize { &mut self.size }
 
+    fn get_infinite_size(&self) -> &InfiniteSize { &self.infinite_size }
+
+    fn get_infinite_size_mut(&mut self) -> &mut InfiniteSize { &mut self.infinite_size }
+
     fn get_effective_size(&self) -> Size {
 
         let width_result: isize = self.size.get_width() as isize
-            -if self.get_border_config().get_enabled() {2} else {0}
+            -if self.get_border_config().get_border() {2} else {0}
             -if self.scrolling_config.get_enable_y() {1} else {0}
-            -self.get_padding().get_left() as isize - self.get_padding().get_right() as isize;
+            -self.get_padding().get_padding_left() as isize - self.get_padding().get_padding_right() as isize;
         let width = if width_result < 0 {0} else { width_result};
         let height_result: isize = self.size.get_height() as isize
-            -if self.get_border_config().get_enabled() {2} else {0}
+            -if self.get_border_config().get_border() {2} else {0}
             -if self.scrolling_config.get_enable_x() {1} else {0}
-            -self.get_padding().get_top() as isize - self.get_padding().get_bottom() as isize;
+            -self.get_padding().get_padding_top() as isize - self.get_padding().get_padding_bottom() as isize;
         let height = if height_result < 0 {0} else { height_result};
         Size::new(width as usize, height as usize)
     }
@@ -181,9 +189,9 @@ impl GenericState for LayoutState {
     /// Set the how much width you want the actual content inside this widget to have. Width for
     /// e.g. border and padding will be added to this automatically.
     fn set_effective_width(&mut self, width: usize) {
-        let offset = if self.get_border_config().get_enabled() {2} else {0}
+        let offset = if self.get_border_config().get_border() {2} else {0}
             + if self.scrolling_config.get_enable_y() {1} else {0}
-            + self.get_padding().get_left() + self.get_padding().get_right();
+            + self.get_padding().get_padding_left() + self.get_padding().get_padding_right();
         self.get_size_mut().set_width(width + offset);
     }
 
@@ -191,9 +199,9 @@ impl GenericState for LayoutState {
     /// e.g. border and padding will be added to this automatically.
     fn set_effective_height(&mut self, height: usize) {
 
-        let offset = if self.get_border_config().get_enabled() {2} else {0}
+        let offset = if self.get_border_config().get_border() {2} else {0}
             + if self.scrolling_config.get_enable_x() {1} else {0}
-            + self.get_padding().get_top() + self.get_padding().get_bottom();
+            + self.get_padding().get_padding_top() + self.get_padding().get_padding_bottom();
         self.get_size_mut().set_height(height + offset);
     }
 

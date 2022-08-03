@@ -2,7 +2,7 @@
 use crossterm::style::Color;
 
 use crate::property::ez_property::EzProperty;
-use crate::states::definitions::{HorizontalAlignment, VerticalAlignment};
+use crate::states::definitions::{HorizontalAlignment, LayoutMode, LayoutOrientation, VerticalAlignment};
 
 
 /// An enum that contains all possible implementations of the generic [EzProperty].
@@ -24,6 +24,9 @@ pub enum EzProperties {
     /// usize EzProperty
     Usize(EzProperty<usize>),
 
+    /// f64 EzProperty
+    F64(EzProperty<f64>),
+
     /// Bool EzProperty
     Bool(EzProperty<bool>),
 
@@ -32,6 +35,12 @@ pub enum EzProperties {
 
     /// CrossTerm Color EzProperty
     Color(EzProperty<Color>),
+
+    /// [LayoutMode] EzProperty
+    LayoutMode(EzProperty<LayoutMode>),
+
+    /// [LayoutMode] EzProperty
+    LayoutOrientation(EzProperty<LayoutOrientation>),
 
     /// [VerticalAlignment] EzProperty
     VerticalAlignment(EzProperty<VerticalAlignment>),
@@ -62,6 +71,20 @@ impl EzProperties {
     pub fn as_usize_mut(&mut self) -> &mut EzProperty<usize> {
         if let EzProperties::Usize(i) = self { i }
             else { panic!("Wrong property, expected UsizeProperty") }
+    }
+
+    /// Get a [EzProperty<f64>] ref from this enum. You must be sure this is an f64 property
+    /// or it will panic.
+    pub fn as_f64(&self) -> &EzProperty<f64> {
+        if let EzProperties::F64(i) = self { i }
+        else {panic!("Wrong property, expected F64Property") }
+    }
+
+    /// Get a mutable ref [EzProperty<f64>] from this enum. You must be sure this is an f64
+    /// property or it will panic.
+    pub fn as_f64_mut(&mut self) -> &mut EzProperty<f64> {
+        if let EzProperties::F64(i) = self { i }
+        else { panic!("Wrong property, expected F64Property") }
     }
 
     /// Get a mutable ref [EzProperty<String>] from this enum. You must be sure this is a String
@@ -104,6 +127,34 @@ impl EzProperties {
     pub fn as_color_mut(&mut self) -> &mut EzProperty<Color> {
         if let EzProperties::Color(i) = self { i }
         else { panic!("Wrong property, expected ColorProperty") }
+    }
+
+    /// Get a mutable ref [EzProperty<LayoutMode>] from this enum. You must be sure this
+    /// is a LayoutMode property or it will panic.
+    pub fn as_layout_mode(&self) -> &EzProperty<LayoutMode> {
+        if let EzProperties::LayoutMode(i) = self { i }
+        else { panic!("Wrong property, expected LayoutMode") }
+    }
+
+    /// Get a mutable ref [EzProperty<LayoutMode>] from this enum. You must be sure this
+    /// is a LayoutMode property or it will panic.
+    pub fn as_layout_mode_mut(&mut self) -> &mut EzProperty<LayoutMode> {
+        if let EzProperties::LayoutMode(i) = self { i }
+        else { panic!("Wrong property, expected LayoutMode") }
+    }
+
+    /// Get a mutable ref [EzProperty<LayoutOrientation>] from this enum. You must be sure this
+    /// is a LayoutOrientation property or it will panic.
+    pub fn as_layout_orientation(&self) -> &EzProperty<LayoutOrientation> {
+        if let EzProperties::LayoutOrientation(i) = self { i }
+        else { panic!("Wrong property, expected LayoutOrientation") }
+    }
+
+    /// Get a mutable ref [EzProperty<LayoutOrientation>] from this enum. You must be sure this
+    /// is a LayoutOrientation property or it will panic.
+    pub fn as_layout_orientation_mut(&mut self) -> &mut EzProperty<LayoutOrientation> {
+        if let EzProperties::LayoutOrientation(i) = self { i }
+        else { panic!("Wrong property, expected LayoutOrientation") }
     }
 
     /// Get a mutable ref [EzProperty<VerticalAlignment>] from this enum. You must be sure this

@@ -1,6 +1,7 @@
 use crate::GenericState;
 use crate::run::definitions::{Coordinates, Pixel, PixelMap, Size, StateTree};
-use crate::states::definitions::{ColorConfig, LayoutOrientation, ScrollingConfig, StateSize, TableConfig};
+use crate::states::definitions::{ColorConfig, InfiniteSize, LayoutOrientation, ScrollingConfig,
+                                 TableConfig};
 use crate::widgets::helper_functions::{align_content_horizontally, align_content_vertically};
 use crate::widgets::ez_object::EzObject;
 use crate::widgets::layout::layout::Layout;
@@ -23,13 +24,13 @@ impl Layout{
             ‘lr-tb’, ‘tb-lr’, ‘rl-tb’, ‘tb-rl’, ‘lr-bt’, ‘bt-lr’, ‘rl-bt’ and ‘bt-rl’.",
             self.id)
         }
-        if own_table_config.get_rows() == 0 && own_table_config.get_columns() == 0 {
+        if own_table_config.get_rows() == 0 && own_table_config.get_cols() == 0 {
             panic!("Error in layout: {}. When in table mode, rows or columns (or both) should be \
             constrained. Set the \"rows\" or \"cols\" property to a value above 0.", self.id);
         }
 
         let own_effective_size = state.get_effective_size();
-        let own_size = state.get_size().clone();
+        let own_infinite_size = state.get_infinite_size().clone();
         let own_colors = state.get_color_config().clone();
         let own_scrolling = state.get_scrolling_config().clone();
 
@@ -39,14 +40,14 @@ impl Layout{
         // Initial cell size. Can change if force_default is false, in which case it will scale to
         // size of largest child
         let default_height =
-            if own_table_config.get_default_height() == 0 { own_effective_size.height / rows }
-            else { own_table_config.get_default_height() };
+            if own_table_config.get_row_default_height() == 0 { own_effective_size.height / rows }
+            else { own_table_config.get_row_default_height() };
         let default_width =
-            if own_table_config.get_default_width() == 0 { own_effective_size.width / cols }
-            else { own_table_config.get_default_width() };
+            if own_table_config.get_col_default_width() == 0 { own_effective_size.width / cols }
+            else { own_table_config.get_col_default_width() };
 
         let content_list = self.get_table_mode_child_content(
-            state_tree, &own_size, &own_scrolling, &own_effective_size);
+            state_tree, &own_infinite_size, &own_scrolling, &own_effective_size);
 
         self.draw_table(&child_table, content_list, rows, cols, &own_table_config, default_width,
                         default_height, &own_colors, state_tree)
@@ -56,16 +57,16 @@ impl Layout{
     fn get_rows_and_cols(&self, table_config: &TableConfig) -> (usize, usize){
 
         let (rows, cols);
-        if table_config.get_rows() > 0 && table_config.get_columns() > 0 {
+        if table_config.get_rows() > 0 && table_config.get_cols() > 0 {
             rows = table_config.get_rows();
-            cols = table_config.get_columns();
+            cols = table_config.get_cols();
         }
         else if table_config.get_rows() > 0 {
             rows = table_config.get_rows();
             cols =  (self.children.len() / rows) as usize +
                 if self.children.len() % rows != 0 { 1 } else { 0 };
         } else {
-            cols = table_config.get_columns();
+            cols = table_config.get_cols();
             rows =  (self.children.len() / cols) as usize +
                 if self.children.len() % cols != 0 { 1 } else { 0 };
         }
@@ -192,7 +193,7 @@ impl Layout{
                        default_height: usize) -> Vec<usize> {
 
         let mut row_heights = Vec::new();
-        if !table_config.get_force_default_height() {
+        if !table_config.get_force_default_row_height() {
             for y in 0..rows {
                 let mut largest = 0;
                 for x in 0..cols {
@@ -203,9 +204,9 @@ impl Layout{
                         if height > largest { largest = height };
                     }
                 }
-                if table_config.get_default_height() > 0 &&
-                    largest < table_config.get_default_height() {
-                    largest = table_config.get_default_height()
+                if table_config.get_row_default_height() > 0 &&
+                    largest < table_config.get_row_default_height() {
+                    largest = table_config.get_row_default_height()
                 }
                 row_heights.push(largest);
             }
@@ -222,7 +223,7 @@ impl Layout{
                       default_width: usize) -> Vec<usize> {
 
         let mut col_widths = Vec::new();
-        if !table_config.get_force_default_width() {
+        if !table_config.get_force_default_col_width() {
             for x in 0..cols {
                 let mut largest = 0;
                 for y in 0..rows {
@@ -231,9 +232,9 @@ impl Layout{
                         if width > largest { largest = width };
                     }
                 }
-                if table_config.get_default_width() > 0 &&
-                    largest < table_config.get_default_width() {
-                    largest = table_config.get_default_width()
+                if table_config.get_col_default_width() > 0 &&
+                    largest < table_config.get_col_default_width() {
+                    largest = table_config.get_col_default_width()
                 }
                 col_widths.push(largest);
 
@@ -245,7 +246,7 @@ impl Layout{
     }
 
     /// Get the content of each child, so we can draw it in a table after.
-    fn get_table_mode_child_content(&self, state_tree: &mut StateTree, size: &StateSize,
+    fn get_table_mode_child_content(&self, state_tree: &mut StateTree, infinite_size: &InfiniteSize,
                                     scrolling_config: &ScrollingConfig, effective_size: &Size)
                                     -> Vec<PixelMap> {
 
@@ -256,29 +257,29 @@ impl Layout{
             let state = state_tree
                 .get_by_path_mut(&generic_child.get_full_path().clone()).as_generic_mut();
 
-            if size.get_infinite_width() || scrolling_config.get_enable_x() {
-                state.get_size_mut().set_infinite_width(true);
+            if infinite_size.get_width() || scrolling_config.get_enable_x() {
+                state.get_infinite_size_mut().set_width(true);
             }
-            if size.get_infinite_height() || scrolling_config.get_enable_y() {
-                state.get_size_mut().set_infinite_height(true);
+            if infinite_size.get_height() || scrolling_config.get_enable_y() {
+                state.get_infinite_size_mut().set_height(true);
             }
 
             // If autoscaling is enabled set child size to max width. It is then expected to scale
             // itself according to its' content
-            if state.get_auto_scale().get_width() {
+            if state.get_auto_scale().get_auto_scale_width() {
                 state.get_size_mut().set_width(effective_size.width)
             }
-            if state.get_auto_scale().get_height() {
+            if state.get_auto_scale().get_auto_scale_height() {
                 state.get_size_mut().set_height(effective_size.height)
             }
 
             let child_content = generic_child.get_contents(state_tree);
             let state = state_tree.get_by_path_mut(&generic_child.get_full_path())
                 .as_generic_mut(); // re-borrow
-            if state.get_size().get_infinite_width() {
+            if state.get_infinite_size().width {
                 state.get_size_mut().set_width(child_content.len())
             }
-            if state.get_size().get_infinite_height() {
+            if state.get_infinite_size().height {
                 state.get_size_mut().set_height(
                     if !child_content.is_empty() { child_content[0].len() } else { 0 })
             }
@@ -301,8 +302,8 @@ impl Layout{
         let total_height: usize = row_heights.iter().sum();
         let total_width: usize = col_widths.iter().sum();
         let mut content = vec!(
-            vec!(Pixel::new(" ".to_string(), colors.get_foreground(),
-                            colors.get_background()); total_height); total_width);
+            vec!(Pixel::new(" ".to_string(), colors.get_fg_color(),
+                            colors.get_bg_color()); total_height); total_width);
 
         let mut write_pos = Coordinates::new(0, 0);
         for x in 0..cols {
@@ -318,13 +319,13 @@ impl Layout{
                 let (child_content, offset) = align_content_horizontally(
                     child_content,
                     state.get_horizontal_alignment(), row_heights[y],
-                    colors.get_foreground(),colors.get_background());
+                    colors.get_fg_color(), colors.get_bg_color());
                 state.get_position_mut().set_x(write_pos.x + offset);
 
                 let (child_content, offset) = align_content_vertically(
                     child_content,
                     state.get_vertical_alignment(), row_heights[y],
-                    colors.get_foreground(),colors.get_background());
+                    colors.get_fg_color(), colors.get_bg_color());
                 state.get_position_mut().set_y(write_pos.y + offset);
 
                 for child_x in 0..col_widths[x] {

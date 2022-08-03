@@ -1,7 +1,7 @@
 use crate::GenericState;
 use crate::run::definitions::{Coordinates, Pixel, PixelMap, Size, StateTree};
-use crate::states::definitions::{AutoScale, ColorConfig, LayoutOrientation, ScrollingConfig,
-                                 StateSize};
+use crate::states::definitions::{AutoScale, ColorConfig, InfiniteSize, LayoutOrientation,
+                                 ScrollingConfig};
 use crate::widgets::ez_object::EzObject;
 use crate::widgets::layout::layout::Layout;
 
@@ -24,12 +24,12 @@ impl Layout {
         }
 
         let own_effective_size = state.get_effective_size();
-        let own_size = state.get_size().clone();
+        let own_infinite_size = state.get_infinite_size().clone();
         let own_colors = state.get_color_config().clone();
         let own_scrolling = state.get_scrolling_config().clone();
 
         let content_list = self.get_stack_mode_child_content(
-            state_tree, &own_size, &own_scrolling, &own_effective_size);
+            state_tree, &own_infinite_size, &own_scrolling, &own_effective_size);
         self.get_orientated_content(own_orientation, state_tree, &content_list,
                                     &own_effective_size, &own_colors, &own_auto_scaling)
     }
@@ -68,7 +68,7 @@ impl Layout {
     }
 
     /// Get the content of each child
-    fn get_stack_mode_child_content(&self, state_tree: &mut StateTree, size: &StateSize,
+    fn get_stack_mode_child_content(&self, state_tree: &mut StateTree, infinite_size: &InfiniteSize,
                                     scrolling_config: &ScrollingConfig, effective_size: &Size)
                                     -> Vec<PixelMap> {
 
@@ -78,19 +78,19 @@ impl Layout {
             let state = state_tree
                 .get_by_path_mut(&generic_child.get_full_path().clone()).as_generic_mut();
 
-            if size.get_infinite_width() || scrolling_config.get_enable_x() {
-                state.get_size_mut().set_infinite_width(true);
+            if infinite_size.get_width() || scrolling_config.get_enable_x() {
+                state.get_infinite_size_mut().set_width(true);
             }
-            if size.get_infinite_height() || scrolling_config.get_enable_y() {
-                state.get_size_mut().set_infinite_height(true);
+            if infinite_size.get_height() || scrolling_config.get_enable_y() {
+                state.get_infinite_size_mut().set_height(true);
             }
 
             // If autoscaling is enabled set child size to max width. It is then expected to scale
             // itself according to its' content
-            if state.get_auto_scale().get_width() {
+            if state.get_auto_scale().get_auto_scale_width() {
                 state.get_size_mut().set_width(effective_size.width + 1);
             }
-            if state.get_auto_scale().get_height() {
+            if state.get_auto_scale().get_auto_scale_height() {
                 state.get_size_mut().set_height(effective_size.height + 1);
             }
 
@@ -98,10 +98,10 @@ impl Layout {
             if child_content.is_empty() { continue }  // handle empty widget
             let state =
                 state_tree.get_by_path_mut(&generic_child.get_full_path()).as_generic_mut(); // re-borrow
-            if state.get_size().get_infinite_width() {
+            if state.get_infinite_size().width {
                 state.get_size_mut().set_width(child_content.len())
             }
-            if state.get_size().get_infinite_height() {
+            if state.get_infinite_size().height {
                 state.get_size_mut().set_height(child_content[0].len())
             }
             content_list.push(child_content);
@@ -115,8 +115,8 @@ impl Layout {
 
         let mut merged_content = vec!(
             vec!(Pixel::new(" ".to_string(),
-                            colors.get_foreground(),
-                            colors.get_background()
+                            colors.get_fg_color(),
+                            colors.get_bg_color()
             ); effective_size.height); effective_size.width);
 
         let (mut largest_x, mut largest_y) = (0, 0);
@@ -147,10 +147,10 @@ impl Layout {
             pos.x += content.len();
         }
 
-        if auto_scaling.get_width() {
+        if auto_scaling.get_auto_scale_width() {
             merged_content = merged_content[0..=largest_x].to_vec();
         }
-        if auto_scaling.get_height() {
+        if auto_scaling.get_auto_scale_height() {
             merged_content = merged_content.iter()
                 .map(|x| x[0..=largest_y].to_vec()).collect();
         }
@@ -163,8 +163,8 @@ impl Layout {
 
         let mut merged_content = vec!(
             vec!(Pixel::new(" ".to_string(),
-                            colors.get_foreground(),
-                            colors.get_background()
+                            colors.get_fg_color(),
+                            colors.get_bg_color()
             ); effective_size.height); effective_size.width);
 
         let (mut largest_x, mut smallest_y) = (0, effective_size.height - 1);
@@ -194,10 +194,10 @@ impl Layout {
             }
             pos.x += content.len();
         }
-        if auto_scaling.get_width() {
+        if auto_scaling.get_auto_scale_width() {
             merged_content = merged_content[0..=largest_x].to_vec();
         }
-        if auto_scaling.get_height() {
+        if auto_scaling.get_auto_scale_height() {
             merged_content = merged_content.iter()
                 .map(|x| x[smallest_y..].to_vec()).collect();
         }
@@ -210,8 +210,8 @@ impl Layout {
 
         let mut merged_content = vec!(
             vec!(Pixel::new(" ".to_string(),
-                            colors.get_foreground(),
-                            colors.get_background()
+                            colors.get_fg_color(),
+                            colors.get_bg_color()
             ); effective_size.height); effective_size.width);
 
         let (mut smallest_x, mut largest_y) = (effective_size.width - 1, 0);
@@ -241,10 +241,10 @@ impl Layout {
                 }
             }
         }
-        if auto_scaling.get_width() {
+        if auto_scaling.get_auto_scale_width() {
             merged_content = merged_content[smallest_x..].to_vec();
         }
-        if auto_scaling.get_height() {
+        if auto_scaling.get_auto_scale_height() {
             merged_content = merged_content.iter()
                 .map(|x| x[0..=largest_y].to_vec()).collect();
         }
@@ -257,8 +257,8 @@ impl Layout {
 
         let mut merged_content = vec!(
             vec!(Pixel::new(" ".to_string(),
-                            colors.get_foreground(),
-                            colors.get_background()
+                            colors.get_fg_color(),
+                            colors.get_bg_color()
             ); effective_size.height); effective_size.width);
 
         let (mut smallest_x, mut smallest_y) =
@@ -291,10 +291,10 @@ impl Layout {
                 }
             }
         }
-        if auto_scaling.get_width() {
+        if auto_scaling.get_auto_scale_width() {
             merged_content = merged_content[smallest_x..].to_vec();
         }
-        if auto_scaling.get_height() {
+        if auto_scaling.get_auto_scale_height() {
             merged_content = merged_content.iter()
                 .map(|x| x[smallest_y..].to_vec()).collect();
         }
@@ -307,8 +307,8 @@ impl Layout {
 
         let mut merged_content = vec!(
             vec!(Pixel::new(" ".to_string(),
-                            colors.get_foreground(),
-                            colors.get_background()
+                            colors.get_fg_color(),
+                            colors.get_bg_color()
             ); effective_size.height); effective_size.width);
 
         let (mut largest_x, mut largest_y) = (0, 0);
@@ -339,10 +339,10 @@ impl Layout {
             pos.y += largest;
         }
 
-        if auto_scaling.get_width() {
+        if auto_scaling.get_auto_scale_width() {
             merged_content = merged_content[0..=largest_x].to_vec();
         }
-        if auto_scaling.get_height() {
+        if auto_scaling.get_auto_scale_height() {
             merged_content = merged_content.iter()
                 .map(|x| x[0..=largest_y].to_vec()).collect();
         }
@@ -355,8 +355,8 @@ impl Layout {
 
         let mut merged_content = vec!(
             vec!(Pixel::new(" ".to_string(),
-                            colors.get_foreground(),
-                            colors.get_background()
+                            colors.get_fg_color(),
+                            colors.get_bg_color()
             ); effective_size.height); effective_size.width);
 
         let (mut smallest_x, mut largest_y) = (effective_size.width - 1, 0);
@@ -387,10 +387,10 @@ impl Layout {
             pos.y += largest;
         }
 
-        if auto_scaling.get_width() {
+        if auto_scaling.get_auto_scale_width() {
             merged_content = merged_content[smallest_x..].to_vec();
         }
-        if auto_scaling.get_height() {
+        if auto_scaling.get_auto_scale_height() {
             merged_content = merged_content.iter()
                 .map(|x| x[0..=largest_y].to_vec()).collect();
         }
@@ -403,8 +403,8 @@ impl Layout {
 
         let mut merged_content = vec!(
             vec!(Pixel::new(" ".to_string(),
-                            colors.get_foreground(),
-                            colors.get_background()
+                            colors.get_fg_color(),
+                            colors.get_bg_color()
             ); effective_size.height); effective_size.width);
 
         let (mut largest_x, mut smallest_y) = (0, effective_size.height - 1);
@@ -438,10 +438,10 @@ impl Layout {
             }
         }
 
-        if auto_scaling.get_width() {
+        if auto_scaling.get_auto_scale_width() {
             merged_content = merged_content[0..=largest_x].to_vec();
         }
-        if auto_scaling.get_height() {
+        if auto_scaling.get_auto_scale_height() {
             merged_content = merged_content.iter()
                 .map(|x| x[smallest_y..].to_vec()).collect();
         }
@@ -453,8 +453,8 @@ impl Layout {
 
         let mut merged_content = vec!(
             vec!(Pixel::new(" ".to_string(),
-                            colors.get_foreground(),
-                            colors.get_background()
+                            colors.get_fg_color(),
+                            colors.get_bg_color()
             ); effective_size.height); effective_size.width);
 
         let (mut smallest_x, mut smallest_y) = (effective_size.width - 1,
@@ -491,10 +491,10 @@ impl Layout {
             }
         }
 
-        if auto_scaling.get_width() {
+        if auto_scaling.get_auto_scale_width() {
             merged_content = merged_content[smallest_x..].to_vec();
         }
-        if auto_scaling.get_height() {
+        if auto_scaling.get_auto_scale_height() {
             merged_content = merged_content.iter()
                 .map(|x| x[smallest_y..].to_vec()).collect();
         }

@@ -212,11 +212,17 @@
             auto_scale_height: true
             padding_bottom: 1
     - Layout:
-        id: Tab 5
+        id: Property binds
         mode: box
         orientation: vertical
         - Label:
-            text: This is a label on a fifth tab.
+            id: property_bind_source_label
+            text: We will bind a callback to the height and width property of this label. The callback will print the new size to the label underneath it.
+            auto_scale_height: true
+        - Label:
+            id: property_bind_show_label
+            auto_scale_height: true
+
 
 
 - <TableCell@Label>:

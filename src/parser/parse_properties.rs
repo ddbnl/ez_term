@@ -7,7 +7,7 @@ use std::str::FromStr;
 
 use crossterm::style::Color;
 
-use crate::states::definitions::{HorizontalAlignment, VerticalAlignment};
+use crate::states::definitions::{HorizontalAlignment, LayoutMode, LayoutOrientation, VerticalAlignment};
 
 
 pub fn parse_color_property(value: &str) -> Result<Color, Error> {
@@ -175,6 +175,44 @@ pub fn parse_vertical_pos_hint_property(value: &str)
 
     };
     Ok(Some((pos, fraction)))
+}
+
+
+/// Convenience function use by layouts to load a mode property defined in a .ez file.
+/// Looks like: "box"
+pub fn parse_layout_mode_property(value: &str) -> Result<LayoutMode, Error> {
+
+    match value.to_lowercase().trim() {
+        "box" => Ok(LayoutMode::Box),
+        "stack" =>Ok(LayoutMode::Stack),
+        "table" => Ok(LayoutMode::Table),
+        "float" => Ok(LayoutMode::Float),
+        "screen" => Ok(LayoutMode::Screen),
+        "tab" => Ok(LayoutMode::Tab),
+        _ => return Err(Error::new(ErrorKind::InvalidData,
+                          format!("Layout mode property must be box, stack, table,\
+                          float, screen or tab. Not : {}", value))) }
+}
+
+/// Convenience function use by layouts to load an orientation property defined in a .ez file.
+/// Looks like: "horizontal"
+pub fn parse_layout_orientation_property(value: &str) -> Result<LayoutOrientation, Error> {
+
+    match value.trim() {
+        "horizontal" => Ok(LayoutOrientation::Horizontal),
+        "vertical" =>Ok(LayoutOrientation::Vertical),
+        "lr-tb" =>Ok(LayoutOrientation::LeftRightTopBottom),
+        "tb-lr" =>Ok(LayoutOrientation::TopBottomLeftRight),
+        "rl-tb" =>Ok(LayoutOrientation::RightLeftTopBottom),
+        "tb-rl" =>Ok(LayoutOrientation::TopBottomRightLeft),
+        "lr-bt" =>Ok(LayoutOrientation::LeftRightBottomTop),
+        "bt-lr" =>Ok(LayoutOrientation::BottomTopLeftRight),
+        "rl-bt" =>Ok(LayoutOrientation::RightLeftBottomTop),
+        "bt-rl" =>Ok(LayoutOrientation::BottomTopRightLeft),
+        _ => return Err(Error::new(
+            ErrorKind::InvalidData,
+            format!("Layout mode property must be horizontal, vertical, \
+            tb-lr, tb-rl, bt-lr, bt-rl, lr-tb, lr-bt, rl-tb or rl-bt. Not: {}", value))) }
 }
 
 

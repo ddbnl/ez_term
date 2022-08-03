@@ -70,13 +70,10 @@ impl<T> EzProperty<T> where EzValues: From<T> {
         }
     }
 
-    /// Bind a custom callback to this property which will be called when the value changes. This
-    /// is unrelated to binding widgets to one another. This is only used to allow end-users to
-    /// bind a callback to an EzProperty.
+    /// Bind a custom callback to this property which will be called when the value changes
     pub fn bind(&self, callback: GenericEzFunction, scheduler: &mut SchedulerFrontend) {
 
-        let config = CallbackConfig::from_on_value_change(callback);
-        scheduler.overwrite_callback_config(self.get_name().as_str(), config);
+        scheduler.bind_property_callback(self.name.as_str(), callback);
     }
 }
 impl<T> PartialEq for EzProperty<T> where T: PartialEq {

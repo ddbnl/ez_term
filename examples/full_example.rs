@@ -10,7 +10,7 @@ fn main() {
     // subwidgets and make any changes we need before starting the app.
     // We can use the scheduler to schedule any (recurring) functions we need to before starting
     // the app.
-    let (root_widget, state_tree, mut scheduler) = load_ui();
+    let (root_widget, mut state_tree, mut scheduler) = load_ui();
 
     // Step 2: Customize widgets where needed. Here are some examples:
     // We will set up the menu screen buttons with closures.
@@ -116,7 +116,7 @@ fn main() {
         }
         let state = context.state_tree.get_by_id_mut(&context.widget_path)
             .as_canvas_mut();
-        state.get_color_config_mut().set_foreground(color);
+        state.get_color_config_mut().set_fg_color(color);
         state.update(context.scheduler);
         true
     };
@@ -130,6 +130,23 @@ fn main() {
             "/root/main_screen/tabbed_box/Generation");
         state.as_label_mut().set_text(format!("Generated label: {}", i));
     }
+
+    // We will bind a callback to a property
+    let size_callback = |context: EzContext | {
+        let width = context.state_tree.get_by_id_mut("property_bind_source_label")
+            .as_label_mut().get_width();
+        let height = context.state_tree.get_by_id_mut("property_bind_source_label")
+            .as_label_mut().get_height();
+        let state = context.state_tree.get_by_id_mut("property_bind_show_label")
+            .as_label_mut();
+        state.set_text(format!("Width: {}, Height: {}", width, height));
+        state.update(context.scheduler);
+        true
+    };
+    let state = state_tree.get_by_id_mut("property_bind_source_label")
+        .as_label_mut();
+    state.size.width.bind(Box::new(size_callback), &mut scheduler);
+    state.size.height.bind(Box::new(size_callback), &mut scheduler);
 
     // Step 3: Run app
     // Now everything must happen from bindings as root widget is passed over
@@ -154,7 +171,7 @@ fn test_checkbox_on_value_change(context: EzContext) -> bool {
     let label_state = context.state_tree
         .get_by_id_mut("checkbox_label").as_label_mut();
     label_state.get_text_mut().set(text.to_string());
-    label_state.get_color_config_mut().set_foreground(color);
+    label_state.get_color_config_mut().set_fg_color(color);
     false
 }
 
@@ -179,7 +196,7 @@ fn test_slider_on_value_change(context: EzContext) -> bool {
     let label_state = context.state_tree
         .get_by_id_mut("slider_label").as_label_mut();
     label_state.get_text_mut().set(text);
-    label_state.get_color_config_mut().set_foreground(color);
+    label_state.get_color_config_mut().set_fg_color(color);
     label_state.update(context.scheduler);
     false
 }
@@ -199,13 +216,13 @@ fn test_radio_button_on_value_change(context: EzContext) -> bool {
         .get_by_path(&context.widget_path).as_radio_button().get_id();
     // Now we will get the radio button state because we need to know its' color.
     let color = context.state_tree
-        .get_by_path(&context.widget_path).as_radio_button().get_color_config().get_foreground();
+        .get_by_path(&context.widget_path).as_radio_button().get_color_config().get_fg_color();
     // Next we will retrieve a label widget and change the 'text' field of its' state to the ID of
     // the radio button that became active. This will cause the text to change on the next frame.
     let label_state = context.state_tree
         .get_by_id_mut("radio_label").as_label_mut();
     label_state.get_text_mut().set(name);
-    label_state.get_color_config_mut().set_foreground(color);
+    label_state.get_color_config_mut().set_fg_color(color);
     false
 }
 

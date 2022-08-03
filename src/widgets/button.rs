@@ -3,7 +3,7 @@ use std::io::{Error, ErrorKind};
 use std::time::Duration;
 
 use crate::EzContext;
-use crate::parser::load_base_properties::load_ez_string_property;
+use crate::parser::load_base_properties::load_string_property;
 use crate::parser::load_common_properties::load_common_property;
 use crate::property::ez_values::EzValues;
 use crate::run::definitions::{CallbackTree, Coordinates, Pixel, PixelMap, StateTree};
@@ -50,7 +50,7 @@ impl Button {
         -> Result<(), Error> {
 
         let path = self.path.clone();
-        self.state.set_text(load_ez_string_property(
+        self.state.set_text(load_string_property(
             parameter_value.trim(), scheduler, self.path.clone(),
             Box::new(move |state_tree: &mut StateTree, val: EzValues| {
                 let state = state_tree.get_by_path_mut(&path)
@@ -100,18 +100,18 @@ impl EzObject for Button {
             .as_button_mut();
 
         let (fg_color, bg_color) =
-            if state.get_flashing() {(state.get_color_config().get_flash_foreground(),
-                                state.get_color_config().get_flash_background())}
+            if state.get_flashing() {(state.get_color_config().get_flash_fg_color(),
+                                      state.get_color_config().get_flash_bg_color())}
             else { state.get_context_colors() };
 
         let text = state.get_text();
 
-        let write_width = if state.get_size().get_infinite_width() ||
-            state.get_auto_scale().get_width() { text.len() + 1 }
+        let write_width = if state.get_infinite_size().width ||
+            state.get_auto_scale().get_auto_scale_width() { text.len() + 1 }
             else {state.get_effective_size().width };
         let content_lines = wrap_text(text, write_width);
         let write_height =
-            if state.get_size().get_infinite_height() || state.get_auto_scale().get_height()
+            if state.get_infinite_size().height || state.get_auto_scale().get_auto_scale_height()
             { content_lines.len() }
             else {state.get_effective_size().height };
 
@@ -128,10 +128,10 @@ impl EzObject for Button {
             }
             contents.push(new_y);
         }
-        if state.get_auto_scale().get_width() {
+        if state.get_auto_scale().get_auto_scale_width() {
             state.set_effective_width(contents.len());
         }
-        if state.get_auto_scale().get_height() {
+        if state.get_auto_scale().get_auto_scale_height() {
             let height = if !contents.is_empty() { contents[0].len() } else { 0 };
             state.set_effective_height(height);
         }
@@ -147,8 +147,8 @@ impl EzObject for Button {
         let parent_colors = state_tree.get_by_path(self.get_full_path()
             .rsplit_once('/').unwrap().0).as_generic().get_color_config();
         contents = add_padding(
-            contents, state.get_padding(), parent_colors.get_background(),
-            parent_colors.get_foreground());
+            contents, state.get_padding(), parent_colors.get_bg_color(),
+            parent_colors.get_fg_color());
         contents
     }
 
@@ -164,7 +164,7 @@ impl EzObject for Button {
     fn on_hover(&self, state_tree: &mut StateTree, callback_tree: &mut CallbackTree,
                 scheduler: &mut SchedulerFrontend, mouse_pos: Coordinates) -> bool {
 
-        let consumed = self.on_hover_callback(state_tree, callback_tree, scheduler);
+        let consumed = self.on_hover_callback(state_tree, callback_tree, scheduler, mouse_pos);
         if consumed { return consumed}
         scheduler.set_selected_widget(&self.path, Some(mouse_pos));
         true

@@ -5,6 +5,7 @@ use std::thread::{JoinHandle, spawn};
 use std::time::Instant;
 
 use crate::{CallbackConfig, EzContext};
+use crate::property::ez_values::EzValues;
 use crate::run::definitions::{CallbackTree, StateTree};
 use crate::run::select::{deselect_widget, select_widget};
 use crate::scheduler::scheduler::SchedulerFrontend;
@@ -135,34 +136,51 @@ pub fn update_properties(scheduler: &mut SchedulerFrontend, state_tree: &mut Sta
                          callback_tree: &mut CallbackTree) {
 
     let mut to_update = Vec::new();
-    let mut to_callback = Vec::new();
+    let mut to_callback: Vec<String> = Vec::new();
 
-    for (name, update_funcs) in
-            scheduler.backend.property_subscribers.iter_mut() {
-        let receiver = scheduler.backend.property_receivers.get(name).unwrap();
+    // Collect all property names that are either subscribed to or that have attached callbacks
+    let mut sb_names: Vec<String> = scheduler.backend.property_subscribers
+        .keys().map(|x| x.clone()).collect();
+    sb_names.extend(scheduler.backend.property_callbacks.clone());
+
+    for name in sb_names {
         let mut new_val = None;
+        let receiver =
+            scheduler.backend.property_receivers.get(&name).unwrap();
         // Drain all new values if any, we only care about the latest.
         while let Ok(new) = receiver.try_recv() {
             new_val = Some(new);
         }
         if let Some(val) = new_val {
-            to_callback.push(name.clone());
-            for update_func in update_funcs {
-                to_update.push(update_func(state_tree, val.clone()));
+            if scheduler.backend.property_subscribers.contains_key(&name) {
+                for update_func in scheduler.backend
+                        .property_subscribers.get_mut(&name).unwrap() {
+                    to_update.push(update_func(state_tree, val.clone()));
+                }
+            }
+            if scheduler.backend.property_callbacks.contains(&name) {
+                to_callback.push(name.clone());
             }
         }
     }
     for name in to_callback {
-        if callback_tree.objects.contains_key(&name) {
-            let context =
-                EzContext::new(name.clone(), state_tree, scheduler);
-            if let Some(ref mut callback) =
-                    callback_tree.get_by_path_mut(&name).on_value_change {
-                callback(context);
-            }
+        for callback in callback_tree.get_by_path_mut(&name)
+                .property_callbacks.iter_mut() {
+            let context = EzContext::new(name.to_string(), state_tree, scheduler);
+            callback(context);
         }
+
     }
+
     scheduler.backend.widgets_to_update.extend(to_update);
+}
+
+/// Take new property callbacks and add them to the existing callback config in the callback tree
+pub fn add_property_callbacks(scheduler: &mut SchedulerFrontend, callback_tree: &mut CallbackTree) {
+    for (name, callback) in scheduler.backend.new_property_callbacks.pop() {
+        callback_tree.get_by_path_mut(&name).property_callbacks.push(callback);
+    }
+
 }
 
 /// Drain channel values. Called occasionally to drain channels which have no subscribers.
@@ -177,7 +195,17 @@ pub fn drain_property_channels(scheduler: &mut SchedulerFrontend) {
 pub fn clean_up_property(scheduler: &mut SchedulerFrontend, name: &str) {
 
     scheduler.backend.properties.remove(name);
-    scheduler.backend.property_callbacks.remove(name);
+
+    let mut index = None;
+    for (i, callbacks) in scheduler.backend.property_callbacks.iter().enumerate() {
+        if callbacks == name {
+            index = Some(i);
+        }
+    }
+    if let Some(i) = index {
+        scheduler.backend.property_callbacks.remove(i);
+    }
+
     scheduler.backend.property_receivers.remove(name);
     scheduler.backend.property_subscribers.remove(name);
 }

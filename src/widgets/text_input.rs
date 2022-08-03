@@ -8,7 +8,7 @@ use std::time::Duration;
 use crossterm::event::{Event, KeyCode};
 
 use crate::EzContext;
-use crate::parser::load_base_properties::load_ez_string_property;
+use crate::parser::load_base_properties::load_string_property;
 use crate::parser::load_common_properties::load_common_property;
 use crate::property::ez_values::EzValues;
 use crate::run::definitions::{CallbackTree, Coordinates, Pixel, PixelMap, StateTree};
@@ -74,7 +74,7 @@ impl EzObject for TextInput {
             },
             "text" => {
                 let path = self.path.clone();
-                self.state.set_text(load_ez_string_property(
+                self.state.set_text(load_string_property(
                     parameter_value.trim(), scheduler, path.clone(),
                     Box::new(move |state_tree: &mut StateTree, val: EzValues| {
                         let state = state_tree.get_by_path_mut(&path)
@@ -121,7 +121,7 @@ impl EzObject for TextInput {
         let mut contents = Vec::new();
         text = text.chars().rev().collect::<String>();
 
-        let write_height = if !state.get_size().get_infinite_height() {
+        let write_height = if !state.get_infinite_size().height {
             if state.get_effective_size().height >= 1 {1} else {0}
         } else { 1 };
 
@@ -133,7 +133,7 @@ impl EzObject for TextInput {
                         symbol: text.pop().unwrap().to_string(),
                         foreground_color: fg_color,
                         background_color: if state.get_blink_switch() &&
-                            x == state.get_cursor_pos().x {state.get_color_config().get_cursor() }
+                            x == state.get_cursor_pos().x {state.get_color_config().get_cursor_color() }
                         else {bg_color},
                         underline: true})
                 } else {
@@ -141,7 +141,7 @@ impl EzObject for TextInput {
                         symbol: " ".to_string(),
                         foreground_color: fg_color,
                         background_color: if state.get_blink_switch() &&
-                            x == state.get_cursor_pos().x {state.get_color_config().get_cursor() }
+                            x == state.get_cursor_pos().x {state.get_color_config().get_cursor_color() }
                             else {bg_color},
                         underline: true})
                 }
@@ -149,13 +149,13 @@ impl EzObject for TextInput {
             contents.push(new_y);
         }
         state.set_effective_height(1); // Hack until multiline implementation
-        if state.get_auto_scale().get_width() {
+        if state.get_auto_scale().get_auto_scale_width() {
             state.set_effective_width(contents.len());
         }
-        if state.get_auto_scale().get_height() {
+        if state.get_auto_scale().get_auto_scale_height() {
             state.set_effective_height(1);
         }
-        if state.get_border_config().get_enabled() {
+        if state.get_border_config().get_border() {
             contents = add_border(
                 contents, state.get_border_config(), state.get_color_config());
         }
@@ -163,8 +163,8 @@ impl EzObject for TextInput {
         let parent_colors = state_tree.get_by_path(self.get_full_path()
             .rsplit_once('/').unwrap().0).as_generic().get_color_config();
         contents = add_padding(
-            contents, state.get_padding(),parent_colors.get_background(),
-            parent_colors.get_foreground());
+            contents, state.get_padding(), parent_colors.get_bg_color(),
+            parent_colors.get_fg_color());
         contents
     }
 
@@ -202,10 +202,11 @@ impl EzObject for TextInput {
         false
     }
 
-    fn on_left_mouse_click(&self, _state_tree: &mut StateTree, _callback_tree: &mut CallbackTree,
+    fn on_left_mouse_click(&self, state_tree: &mut StateTree, callback_tree: &mut CallbackTree,
                            scheduler: &mut SchedulerFrontend, mouse_pos: Coordinates) -> bool {
 
-        let consumed = self.on_left_mouse_click_callback(state_tree, callback_tree, scheduler);
+        let consumed = self.on_left_mouse_click_callback(
+            state_tree, callback_tree, scheduler, mouse_pos);
         if consumed { return consumed}
         scheduler.deselect_widget(); // We deselect first to allow re-selecting in a different pos
         scheduler.set_selected_widget(&self.path, Some(mouse_pos));
@@ -215,7 +216,7 @@ impl EzObject for TextInput {
     fn on_hover(&self, state_tree: &mut StateTree, callback_tree: &mut CallbackTree,
                 scheduler: &mut SchedulerFrontend, mouse_pos: Coordinates) -> bool {
 
-        let consumed = self.on_press_callback(state_tree, callback_tree, scheduler);
+        let consumed = self.on_hover_callback(state_tree, callback_tree, scheduler, mouse_pos);
         if consumed { return consumed}
         true
     }
@@ -223,7 +224,7 @@ impl EzObject for TextInput {
     fn on_select(&self, state_tree: &mut StateTree, callback_tree: &mut CallbackTree,
                  scheduler: &mut SchedulerFrontend, mouse_pos: Option<Coordinates>) -> bool {
 
-        let consumed = self.on_select_callback(state_tree, callback_tree, scheduler);
+        let consumed = self.on_select_callback(state_tree, callback_tree, scheduler, mouse_pos);
         if consumed { return consumed}
 
         let state = state_tree.get_by_path_mut(

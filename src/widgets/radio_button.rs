@@ -5,7 +5,7 @@
 //! called for the radio button that became active.
 use std::io::{Error, ErrorKind};
 
-use crate::parser::load_base_properties::{load_ez_bool_property, load_ez_string_property};
+use crate::parser::load_base_properties::{load_bool_property, load_string_property};
 use crate::parser::load_common_properties::load_common_property;
 use crate::property::ez_values::EzValues;
 use crate::run::definitions::{CallbackTree, Coordinates, Pixel, PixelMap, StateTree};
@@ -51,7 +51,7 @@ impl RadioButton {
         -> Result<(), Error> {
 
         let path = self.path.clone();
-        self.state.set_group(load_ez_string_property(
+        self.state.set_group(load_string_property(
             parameter_value.trim(), scheduler, path.clone(),
             Box::new(move |state_tree: &mut StateTree, val: EzValues| {
                 let state = state_tree.get_by_path_mut(&path)
@@ -66,7 +66,7 @@ impl RadioButton {
                             -> Result<(), Error> {
 
         let path = self.path.clone();
-        self.state.set_active(load_ez_bool_property(
+        self.state.set_active(load_bool_property(
             parameter_value.trim(), scheduler, path.clone(),
             Box::new(move |state_tree: &mut StateTree, val: EzValues| {
                 let state = state_tree.get_by_path_mut(&path)
@@ -81,7 +81,7 @@ impl RadioButton {
                                    -> Result<(), Error>{
 
         let path = self.path.clone();
-        self.state.set_active_symbol(load_ez_string_property(
+        self.state.set_active_symbol(load_string_property(
             parameter_value.trim(), scheduler, path.clone(),
             Box::new(move |state_tree: &mut StateTree, val: EzValues| {
                 let state = state_tree.get_by_path_mut(&path).as_checkbox_mut();
@@ -95,7 +95,7 @@ impl RadioButton {
                                      -> Result<(), Error>{
 
         let path = self.path.clone();
-        self.state.set_inactive_symbol(load_ez_string_property(
+        self.state.set_inactive_symbol(load_string_property(
             parameter_value.trim(), scheduler, path.clone(),
             Box::new(move |state_tree: &mut StateTree, val: EzValues| {
                 let state = state_tree.get_by_path_mut(&path).as_checkbox_mut();
@@ -168,7 +168,7 @@ impl EzObject for RadioButton {
             vec!(Pixel {symbol: ")".to_string(), foreground_color: fg_color,
                 background_color: bg_color, underline: false}),
         );
-        if state.get_border_config().get_enabled() {
+        if state.get_border_config().get_border() {
             contents = add_border(contents, state.get_border_config(),
                                 state.get_color_config());
         }
@@ -177,8 +177,8 @@ impl EzObject for RadioButton {
         let parent_colors = state_tree.get_by_path(self.get_full_path()
             .rsplit_once('/').unwrap().0).as_generic().get_color_config();
         contents = add_padding(
-            contents, state.get_padding(), parent_colors.get_background(),
-            parent_colors.get_foreground());
+            contents, state.get_padding(), parent_colors.get_bg_color(),
+            parent_colors.get_fg_color());
         contents
     }
 
@@ -194,7 +194,7 @@ impl EzObject for RadioButton {
     fn on_hover(&self, state_tree: &mut StateTree, callback_tree: &mut CallbackTree,
                 scheduler: &mut SchedulerFrontend, mouse_pos: Coordinates) -> bool {
 
-        let consumed = self.on_hover_callback(state_tree, callback_tree, scheduler);
+        let consumed = self.on_hover_callback(state_tree, callback_tree, scheduler, mouse_pos);
         if consumed { return consumed}
         scheduler.set_selected_widget(&self.path, Some(mouse_pos));
         true

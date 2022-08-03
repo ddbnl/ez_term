@@ -2,8 +2,7 @@ use crate::property::ez_property::EzProperty;
 use crate::run::definitions::{IsizeCoordinates};
 use crate::scheduler::scheduler::SchedulerFrontend;
 use crate::scheduler::scheduler_funcs::clean_up_property;
-use crate::states::definitions::{StateCoordinates, SizeHint, PosHint, StateSize, AutoScale, Padding,
-                                 HorizontalAlignment, VerticalAlignment, BorderConfig, ColorConfig};
+use crate::states::definitions::{StateCoordinates, SizeHint, PosHint, StateSize, AutoScale, Padding, HorizontalAlignment, VerticalAlignment, BorderConfig, ColorConfig, InfiniteSize};
 use crate::states::ez_state::GenericState;
 
 
@@ -15,46 +14,49 @@ pub struct LabelState {
     pub path: String,
 
     /// Optional file path to retrieve text from
-    from_file: EzProperty<String>,
+    pub from_file: EzProperty<String>,
 
     /// Text currently being displayed by the label
-    text: EzProperty<String>,
+    pub text: EzProperty<String>,
 
     /// Position of this widget relative to its' parent [layout]
-    position: StateCoordinates,
+    pub position: StateCoordinates,
 
     /// Absolute position of this widget on screen. Automatically propagated, do not set manually
     absolute_position: IsizeCoordinates,
 
     /// Relative height/width of this widget to parent layout
-    size_hint: SizeHint,
+    pub size_hint: SizeHint,
 
     /// Pos hint of this widget
-    pos_hint: PosHint,
+    pub pos_hint: PosHint,
 
     /// size of this widget
-    size: StateSize,
+    pub size: StateSize,
+
+    /// Infinite size of this widget for x and y axes, used in scrolling
+    infinite_size: InfiniteSize,
 
     /// Automatically adjust size of widget to content
-    auto_scale: AutoScale,
+    pub auto_scale: AutoScale,
 
     /// Amount of space to leave between sides of the widget and other widgets
-    padding: Padding,
+    pub padding: Padding,
 
     /// Horizontal alignment of this widget
-    halign: EzProperty<HorizontalAlignment>,
+    pub halign: EzProperty<HorizontalAlignment>,
 
     /// Vertical alignment of this widget
-    valign: EzProperty<VerticalAlignment>,
+    pub valign: EzProperty<VerticalAlignment>,
 
     /// [BorderConfig] object that will be used to draw the border if enabled
-    border_config: BorderConfig,
+    pub border_config: BorderConfig,
 
     /// Object containing colors to be used by this widget in different situations
-    colors: ColorConfig,
+    pub colors: ColorConfig,
 
     /// Bool representing whether widget is disabled, i.e. cannot be interacted with
-    disabled: EzProperty<bool>,
+    pub disabled: EzProperty<bool>,
 
     /// Global order number in which this widget will be selection when user presses down/up keys
     selection_order: EzProperty<usize>,
@@ -75,6 +77,7 @@ impl LabelState {
            pos_hint: PosHint::new(None, None, path.clone(), scheduler),
            auto_scale: AutoScale::new(false, false, path.clone(), scheduler),
            size: StateSize::new(0, 0, path.clone(), scheduler),
+           infinite_size: InfiniteSize::default(),
            padding: Padding::new(0, 0, 0, 0, path.clone(), scheduler),
            halign: scheduler.new_horizontal_alignment_property(
                 format!("{}/halign", path).as_str(), HorizontalAlignment::Left),
@@ -107,6 +110,10 @@ impl GenericState for LabelState {
     fn get_size(&self) -> &StateSize { &self.size  }
 
     fn get_size_mut(&mut self) -> &mut StateSize { &mut self.size }
+
+    fn get_infinite_size(&self) -> &InfiniteSize { &self.infinite_size }
+
+    fn get_infinite_size_mut(&mut self) -> &mut InfiniteSize { &mut self.infinite_size }
 
     fn get_position(&self) -> &StateCoordinates { &self.position }
 

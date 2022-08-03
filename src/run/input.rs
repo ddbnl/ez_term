@@ -247,8 +247,8 @@ pub fn handle_resize(view_tree: &mut ViewTree, state_tree: &mut StateTree, root_
 
     for state in state_tree.objects.values_mut() {
         if let EzState::Layout(_) = state {
-            state.as_layout_mut().get_scrolling_config_mut().set_view_start_x(0);
-            state.as_layout_mut().get_scrolling_config_mut().set_view_start_y(0);
+            state.as_layout_mut().get_scrolling_config_mut().set_view_start_x(0.0);
+            state.as_layout_mut().get_scrolling_config_mut().set_view_start_y(0.0);
         }
     }
     let state = state_tree.get_by_path_mut(&root_widget.path).as_generic_mut();

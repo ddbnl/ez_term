@@ -1,7 +1,7 @@
 //! A widget that displays text non-interactively.
 use std::io::{Error, ErrorKind};
 
-use crate::parser::load_base_properties::load_ez_usize_property;
+use crate::parser::load_base_properties::load_usize_property;
 use crate::parser::load_common_properties::load_common_property;
 use crate::property::ez_values::EzValues;
 use crate::run::definitions::{Pixel, PixelMap, StateTree};
@@ -46,7 +46,7 @@ impl ProgressBar {
                             -> Result<(), Error> {
         let path = self.path.clone();
         self.state.set_value(
-            load_ez_usize_property(
+            load_usize_property(
                 parameter_value.trim(), scheduler,
                 self.path.clone(),
                 Box::new(move |state_tree: &mut StateTree, val: EzValues| {
@@ -111,10 +111,10 @@ impl EzObject for ProgressBar {
         for x in 0..state.get_effective_size().width {
             let symbol = if value_pos != 0 && x <= value_pos { "█" } else {"░"};
             contents.push(vec!(Pixel::new(symbol.to_string(),
-                                          state.get_color_config().get_foreground(),
-                                     state.get_color_config().get_background())));
+                                          state.get_color_config().get_fg_color(),
+                                          state.get_color_config().get_bg_color())));
         }
-        if state.get_border_config().get_enabled() {
+        if state.get_border_config().get_border() {
             contents = add_border(contents, state.get_border_config(),
                                 state.get_color_config());
         }
@@ -123,8 +123,8 @@ impl EzObject for ProgressBar {
         let parent_colors = state_tree.get_by_path(self.get_full_path()
             .rsplit_once('/').unwrap().0).as_generic().get_color_config();
         contents = add_padding(
-            contents, state.get_padding(), parent_colors.get_background(),
-            parent_colors.get_foreground());
+            contents, state.get_padding(), parent_colors.get_bg_color(),
+            parent_colors.get_fg_color());
         contents
     }
 }

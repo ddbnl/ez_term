@@ -17,8 +17,8 @@ impl Layout {
 
         // Fill self with background first. Then overlay widgets.
         let filler = Pixel::new(own_state.get_filler_symbol(),
-                                own_state.get_color_config().get_filler_foreground(),
-                                own_state.get_color_config().get_filler_background());
+                                own_state.get_color_config().get_filler_fg_color(),
+                                own_state.get_color_config().get_filler_bg_color());
         for _ in 0..own_width {
             content.push(Vec::new());
             for _ in 0..own_height {
@@ -28,8 +28,8 @@ impl Layout {
                     content.last_mut().unwrap().push(
                         Pixel::new(
                             " ".to_string(),
-                            own_state.get_color_config().get_foreground(),
-                            own_state.get_color_config().get_background()));
+                            own_state.get_color_config().get_fg_color(),
+                            own_state.get_color_config().get_bg_color()));
                 }
             }
         }
@@ -42,10 +42,10 @@ impl Layout {
 
             // If autoscaling is enabled set child size to max width. It is then expected to scale
             // itself according to its' content
-            if state.get_auto_scale().get_width() {
+            if state.get_auto_scale().get_auto_scale_width() {
                 state.get_size_mut().set_width(own_width)
             }
-            if state.get_auto_scale().get_height() {
+            if state.get_auto_scale().get_auto_scale_height() {
                 state.get_size_mut().set_height(own_height)
             }
             // Scale down child to remaining size in the case that the child is too large, rather

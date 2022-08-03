@@ -116,7 +116,7 @@ impl EzObject for Slider {
         }
 
         state.set_height(1);
-        if state.get_auto_scale().get_width() {
+        if state.get_auto_scale().get_auto_scale_width() {
             state.set_effective_width(((state.get_maximum() - state.get_minimum()) /
                 state.get_step()) as usize + 1);
         }
@@ -129,13 +129,13 @@ impl EzObject for Slider {
                 as usize;
         for x in 0..state.get_effective_size().width {
             let fg_color =
-                if state.get_disabled() {state.get_color_config().get_disabled_foreground() }
+                if state.get_disabled() {state.get_color_config().get_disabled_fg_color() }
                 else if x == value_pos &&
-                    state.get_selected() { state.get_color_config().get_selection_foreground() }
-                else { state.get_color_config().get_foreground() };
+                    state.get_selected() { state.get_color_config().get_selection_fg_color() }
+                else { state.get_color_config().get_fg_color() };
             let bg_color =
-                if state.get_disabled() {state.get_color_config().get_disabled_background() }
-                else {state.get_color_config().get_background()};
+                if state.get_disabled() {state.get_color_config().get_disabled_bg_color() }
+                else {state.get_color_config().get_bg_color()};
             contents.push(vec!(Pixel::new(
                 if x == value_pos { "🮚".to_string() } else { "━".to_string() },
                 fg_color, bg_color)));
@@ -145,8 +145,8 @@ impl EzObject for Slider {
         let parent_colors = state_tree.get_by_path(self.get_full_path()
             .rsplit_once('/').unwrap().0).as_generic().get_color_config();
         contents = add_padding(
-            contents, state.get_padding(), parent_colors.get_background(),
-            parent_colors.get_foreground());
+            contents, state.get_padding(), parent_colors.get_bg_color(),
+            parent_colors.get_fg_color());
         contents
     }
 
@@ -191,7 +191,7 @@ impl EzObject for Slider {
     fn on_hover(&self, state_tree: &mut StateTree, callback_tree: &mut CallbackTree,
                 scheduler: &mut SchedulerFrontend, mouse_pos: Coordinates) -> bool {
 
-        let consumed = self.on_hover_callback(state_tree, callback_tree, scheduler);
+        let consumed = self.on_hover_callback(state_tree, callback_tree, scheduler, mouse_pos);
         if consumed { return consumed}
         scheduler.set_selected_widget(&self.path, Some(mouse_pos));
         true
@@ -201,7 +201,8 @@ impl EzObject for Slider {
                scheduler: &mut SchedulerFrontend, previous_pos: Option<Coordinates>,
                mouse_pos: Coordinates) -> bool {
 
-        let consumed = self.on_drag_callback(state_tree, callback_tree, scheduler);
+        let consumed = self.on_drag_callback(state_tree, callback_tree, scheduler,
+                                             previous_pos, mouse_pos);
         if consumed { return consumed}
         let state = state_tree.get_by_path_mut(&self.path).as_slider_mut();
         let value = self.value_from_mouse_pos(state, mouse_pos);

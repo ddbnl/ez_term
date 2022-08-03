@@ -2,8 +2,7 @@ use crate::EzProperty;
 use crate::run::definitions::{IsizeCoordinates};
 use crate::scheduler::scheduler::SchedulerFrontend;
 use crate::scheduler::scheduler_funcs::clean_up_property;
-use crate::states::definitions::{StateCoordinates, SizeHint, PosHint, StateSize, AutoScale, Padding,
-                                 HorizontalAlignment, VerticalAlignment, BorderConfig, ColorConfig};
+use crate::states::definitions::{StateCoordinates, SizeHint, PosHint, StateSize, AutoScale, Padding, HorizontalAlignment, VerticalAlignment, BorderConfig, ColorConfig, InfiniteSize};
 use crate::states::ez_state::GenericState;
 
 
@@ -16,55 +15,58 @@ pub struct RadioButtonState {
 
     /// Group this radio button belongs to. Set the same group value for a number of radio buttons
     /// to make them mutually exclusive.
-    group: EzProperty<String>,
+    pub group: EzProperty<String>,
 
     /// Position of this widget relative to its' parent [layout]
-    position: StateCoordinates,
+    pub position: StateCoordinates,
 
     /// Absolute position of this widget on screen. Internal only.
     absolute_position: IsizeCoordinates,
 
     /// size of this widget
-    size: StateSize,
+    pub size: StateSize,
+
+    /// Infinite size of this widget for x and y axes, used in scrolling
+    infinite_size: InfiniteSize,
 
     /// Automatically adjust size of widget to content
-    auto_scale: AutoScale,
+    pub auto_scale: AutoScale,
 
     /// Cannot be set for Radio Button, size is always 5,1
-    size_hint: SizeHint,
+    pub size_hint: SizeHint,
 
     /// Pos hint of this widget
-    pos_hint: PosHint,
+    pub pos_hint: PosHint,
 
     /// Amount of space to leave between sides of the widget and other widgets
-    padding: Padding,
+    pub padding: Padding,
 
     /// Horizontal alignment of this widget
-    halign: EzProperty<HorizontalAlignment>,
+    pub halign: EzProperty<HorizontalAlignment>,
 
     /// Vertical alignment of this widget
-    valign: EzProperty<VerticalAlignment>,
+    pub valign: EzProperty<VerticalAlignment>,
 
     /// Bool representing whether this widget is currently active (i.e. checkbox is checked)
-    active: EzProperty<bool>,
+    pub active: EzProperty<bool>,
 
     /// [Pixel.symbol] used when the Checkbox is active
-    active_symbol: EzProperty<String>,
+    pub active_symbol: EzProperty<String>,
 
     /// [Pixel.symbol] used when the Checkbox is not active
-    inactive_symbol: EzProperty<String>,
+    pub inactive_symbol: EzProperty<String>,
 
     /// [BorderConfig] object that will be used to draw the border if enabled
-    border_config: BorderConfig,
+    pub border_config: BorderConfig,
 
     /// Object containing colors to be used by this widget in different situations
-    colors: ColorConfig,
+    pub colors: ColorConfig,
 
     /// Bool representing whether widget is disabled, i.e. cannot be interacted with
-    disabled: EzProperty<bool>,
+    pub disabled: EzProperty<bool>,
 
     /// Global order number in which this widget will be selection when user presses down/up keys
-    selection_order: EzProperty<usize>,
+    pub selection_order: EzProperty<usize>,
 
     /// Bool representing whether this widget is currently selected.
     selected: bool,
@@ -80,6 +82,7 @@ impl RadioButtonState {
            position: StateCoordinates::new(0, 0, path.clone(), scheduler),
            absolute_position: IsizeCoordinates::default(),
            size: StateSize::new(0, 0, path.clone(), scheduler),
+           infinite_size: InfiniteSize::default(),
            auto_scale: AutoScale::new(false, false, path.clone(), scheduler),
            size_hint: SizeHint::new(Some(1.0), Some(1.0), path.clone(), scheduler),
            pos_hint: PosHint::new(None, None, path.clone(), scheduler),
@@ -122,6 +125,10 @@ impl GenericState for RadioButtonState {
     fn get_size(&self) -> &StateSize { &self.size  }
 
     fn get_size_mut(&mut self) -> &mut StateSize { &mut self.size }
+
+    fn get_infinite_size(&self) -> &InfiniteSize { &self.infinite_size }
+
+    fn get_infinite_size_mut(&mut self) -> &mut InfiniteSize { &mut self.infinite_size }
 
     fn get_position(&self) -> &StateCoordinates { &self.position }
 

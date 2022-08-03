@@ -6,7 +6,7 @@ use std::io::{Error, ErrorKind};
 use std::io::prelude::*;
 
 use unicode_segmentation::UnicodeSegmentation;
-use crate::parser::load_base_properties::load_ez_string_property;
+use crate::parser::load_base_properties::load_string_property;
 
 use crate::parser::load_common_properties::load_common_property;
 use crate::property::ez_values::EzValues;
@@ -55,7 +55,7 @@ impl Canvas {
                                    -> Result<(), Error> {
 
         let path = self.path.clone();
-        self.state.set_from_file(load_ez_string_property(
+        self.state.set_from_file(load_string_property(
             parameter_value.trim(), scheduler, path.clone(),
             Box::new(move |state_tree: &mut StateTree, val: EzValues| {
                 let state = state_tree.get_by_path_mut(&path)
@@ -115,17 +115,17 @@ impl EzObject for Canvas {
                 .map(|x| x.graphemes(true).rev().collect())
                 .collect();
 
-            if state.get_auto_scale().get_width() {
+            if state.get_auto_scale().get_auto_scale_width() {
                 let longest_line = lines.iter().map(|x| x.chars().count()).max();
                 let auto_scale_width =
                     if let Some(i) = longest_line { i } else { 0 };
-                if auto_scale_width < state.get_effective_size().width || state.get_size().get_infinite_width() {
+                if auto_scale_width < state.get_effective_size().width || state.get_infinite_size().width {
                     state.set_effective_width(auto_scale_width);
                 }
             }
-            if state.get_auto_scale().get_height() {
+            if state.get_auto_scale().get_auto_scale_height() {
                 let auto_scale_height = lines.len();
-                if auto_scale_height < state.get_effective_size().height || state.get_size().get_infinite_height(){
+                if auto_scale_height < state.get_effective_size().height || state.get_infinite_size().height{
                     state.set_effective_height(auto_scale_height);
                 }
             }
@@ -137,14 +137,14 @@ impl EzObject for Canvas {
                     if y < lines.len() && !lines[y].is_empty() {
                         widget_content[x].push(Pixel {
                             symbol: lines[y].pop().unwrap().to_string(),
-                            foreground_color: state.get_color_config().get_foreground(),
-                            background_color: state.get_color_config().get_background(),
+                            foreground_color: state.get_color_config().get_fg_color(),
+                            background_color: state.get_color_config().get_bg_color(),
                             underline: false})
                     } else {
                         widget_content[x].push(Pixel {
                             symbol: " ".to_string(),
-                            foreground_color: state.get_color_config().get_foreground(),
-                            background_color: state.get_color_config().get_background(),
+                            foreground_color: state.get_color_config().get_fg_color(),
+                            background_color: state.get_color_config().get_bg_color(),
                             underline: false})
                     }
                 }
@@ -153,7 +153,7 @@ impl EzObject for Canvas {
         } else {
             contents = state.get_contents().clone();
         }
-        if state.get_border_config().get_enabled() {
+        if state.get_border_config().get_border() {
             contents = add_border(contents, state.get_border_config(),
                                  state.get_color_config());
         }
@@ -161,8 +161,8 @@ impl EzObject for Canvas {
         let parent_colors = state_tree.get_by_path(self.get_full_path()
             .rsplit_once('/').unwrap().0).as_generic().get_color_config();
         contents = add_padding(
-            contents, state.get_padding(),parent_colors.get_background(),
-            parent_colors.get_foreground());
+            contents, state.get_padding(), parent_colors.get_bg_color(),
+            parent_colors.get_fg_color());
         contents
     }
 }

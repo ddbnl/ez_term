@@ -50,7 +50,7 @@ impl Layout {
 
         if self.children.is_empty() { return PixelMap::new() }
         let state = state_tree.get_by_path_mut(&self.path).as_layout_mut();
-        let own_size = state.get_size().clone();
+        let own_infinite_size = state.get_infinite_size().clone();
         let own_effective_size = state.get_effective_size();
         let own_pos = state.get_effective_absolute_position();
         let own_colors = state.get_color_config().clone();
@@ -89,16 +89,16 @@ impl Layout {
                     state_tree.get_by_path_mut(&i.path).as_button_mut();
 
                 let tab_text = child_state.get_text();
-                child_state.get_color_config_mut().set_foreground(
-                    if selection == i.id { own_colors.get_selection_foreground() }
+                child_state.get_color_config_mut().set_fg_color(
+                    if selection == i.id { own_colors.get_selection_fg_color() }
                     else if active_tab == tab_text {
-                        own_colors.get_active_foreground()
-                    } else { own_colors.get_tab_foreground() });
-                child_state.get_color_config_mut().set_background(
-                    if selection == i.id { own_colors.get_selection_background() }
+                        own_colors.get_active_fg_color()
+                    } else { own_colors.get_tab_fg_color() });
+                child_state.get_color_config_mut().set_bg_color(
+                    if selection == i.id { own_colors.get_selection_bg_color() }
                     else if active_tab == tab_text {
-                        own_colors.get_active_background()
-                    } else { own_colors.get_tab_background() });
+                        own_colors.get_active_bg_color()
+                    } else { own_colors.get_tab_bg_color() });
 
                 child_state.set_auto_scale_width(true);
                 child_state.set_auto_scale_height(true);
@@ -112,7 +112,7 @@ impl Layout {
                 custom_size.height = 3;
                 button_content = self.merge_horizontal_contents(
                     button_content, content,
-                    custom_size.height, own_size.get_infinite_height(),
+                    custom_size.height, own_infinite_size.height,
                     own_colors.clone(),
                     child_state);
                 child_state.set_absolute_position(
@@ -129,8 +129,8 @@ impl Layout {
             }
         }
         let fill_pixel = Pixel::new(" ".to_string(),
-                                    own_colors.get_foreground(),
-                                    own_colors.get_background());
+                                    own_colors.get_fg_color(),
+                                    own_colors.get_bg_color());
         if own_effective_size.width < button_content.len()  {
             let mut difference;
             if own_effective_size.width <= selected_pos_x + selected_width {
@@ -169,7 +169,7 @@ impl Layout {
         self.merge_vertical_contents(
             button_content,
             tab_content,
-            own_effective_size.width, own_size.get_infinite_width(),
+            own_effective_size.width, own_infinite_size.width,
             own_colors, state)
     }
 }

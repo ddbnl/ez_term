@@ -32,7 +32,7 @@ impl Layout{
 
         let state = state_tree.get_by_path_mut(&self.get_full_path()).as_layout();
         let own_effective_size = state.get_effective_size();
-        let own_size = state.get_size().clone();
+        let own_infinite_size = state.get_infinite_size().clone();
         let own_colors = state.get_color_config().clone();
         let own_scrolling = state.get_scrolling_config().clone();
 
@@ -44,32 +44,32 @@ impl Layout{
             let state = state_tree
                 .get_by_path_mut(&generic_child.get_full_path().clone()).as_generic_mut();
 
-            if own_size.get_infinite_width() || own_scrolling.get_enable_x() {
-                state.get_size_mut().set_infinite_width(true);
+            if own_infinite_size.width || own_scrolling.get_enable_x() {
+                state.get_infinite_size_mut().set_width(true);
             }
-            if own_size.get_infinite_height() || own_scrolling.get_enable_y() {
-                state.get_size_mut().set_infinite_height(true);
+            if own_infinite_size.height || own_scrolling.get_enable_y() {
+                state.get_infinite_size_mut().set_height(true);
             }
 
             let width_left =
-                if !own_scrolling.get_enable_x() && !own_size.get_infinite_width() &&
-                    !state.get_size().get_infinite_width() && own_effective_size.width >= position.x
+                if !own_scrolling.get_enable_x() && !own_infinite_size.width &&
+                    !state.get_infinite_size().width && own_effective_size.width >= position.x
                     {own_effective_size.width - position.x} else {0};
             // If autoscaling is enabled set child size to max width. It is then expected to scale
             // itself according to its' content
-            if state.get_auto_scale().get_width() {
+            if state.get_auto_scale().get_auto_scale_width() {
                 state.get_size_mut().set_width(width_left)
             }
-            if state.get_auto_scale().get_height() {
+            if state.get_auto_scale().get_auto_scale_height() {
                 state.get_size_mut().set_height(own_effective_size.height)
             }
             // Scale down child to remaining size in the case that the child is too large, rather
             // panicking.
-            if !own_scrolling.get_enable_x() && !own_size.get_infinite_width() &&
+            if !own_scrolling.get_enable_x() && !own_infinite_size.width &&
                 state.get_size().get_width() > width_left {
                 state.get_size_mut().set_width(width_left);
             }
-            if !own_scrolling.get_enable_y() && !own_size.get_infinite_height() &&
+            if !own_scrolling.get_enable_y() && !own_infinite_size.height &&
                 state.get_size().get_height() > own_effective_size.height {
                 state.get_size_mut().set_height(own_effective_size.height);
             }
@@ -80,10 +80,10 @@ impl Layout{
             if child_content.is_empty() { continue }  // handle empty widget
             let state = state_tree.get_by_path_mut(&generic_child.get_full_path())
                 .as_generic_mut(); // re-borrow
-            if state.get_size().get_infinite_width() {
+            if state.get_infinite_size().width {
                 state.get_size_mut().set_width(child_content.len())
             }
-            if state.get_size().get_infinite_height() {
+            if state.get_infinite_size().height {
                 state.get_size_mut().set_height(child_content[0].len())
             }
 
@@ -99,7 +99,7 @@ impl Layout{
             merged_content = self.merge_horizontal_contents(
                 merged_content, content,
                 own_effective_size.height,
-                own_size.get_infinite_height(),own_colors.clone(),
+                own_infinite_size.height,own_colors.clone(),
                 state_tree.get_by_path_mut(
                     &self.children.get(i).unwrap().as_ez_object()
                     .get_full_path()).as_generic_mut());
@@ -115,7 +115,7 @@ impl Layout{
 
         let state = state_tree.get_by_path_mut(&self.get_full_path()).as_layout();
         let own_effective_size = state.get_effective_size();
-        let own_size = state.get_size().clone();
+        let own_infinite_size = state.get_infinite_size().clone();
         let own_colors = state.get_color_config().clone();
         let own_scrolling = state.get_scrolling_config().clone();
 
@@ -128,37 +128,37 @@ impl Layout{
                 state_tree.get_by_path_mut(&generic_child.get_full_path()).as_generic_mut();
 
             // If we're scrolling on an axis then the child can be infinite size on that axis
-            if own_size.get_infinite_width() || own_scrolling.get_enable_x() {
-                child_state.get_size_mut().set_infinite_width(true);
+            if own_infinite_size.width || own_scrolling.get_enable_x() {
+                child_state.get_infinite_size_mut().set_width(true);
             }
-            if own_size.get_infinite_height() || own_scrolling.get_enable_y() {
-                child_state.get_size_mut().set_infinite_height(true);
+            if own_infinite_size.height || own_scrolling.get_enable_y() {
+                child_state.get_infinite_size_mut().set_height(true);
             }
 
             // Determine how much height we have left to give the child. Can be 0 if we're scrolling
             // as we use [size.get_infinite_height()]
             let height_left =
-                if !own_scrolling.get_enable_y() && !own_size.get_infinite_height() &&
+                if !own_scrolling.get_enable_y() && !own_infinite_size.height &&
                     own_effective_size.height >= position.y &&
-                    !child_state.get_size().get_infinite_height()
+                    !child_state.get_infinite_size().height
                 {own_effective_size.height - position.y } else { 0 };
             // If autoscaling is enabled set child size to max width. It is then expected to scale
             // itself according to its' content
-            if child_state.get_auto_scale().get_width() {
+            if child_state.get_auto_scale().get_auto_scale_width() {
                 child_state.get_size_mut().set_width(own_effective_size.width)
             }
-            if child_state.get_auto_scale().get_height() {
+            if child_state.get_auto_scale().get_auto_scale_height() {
                 child_state.get_size_mut().set_height(height_left)
             }
             // Scale down child to remaining size in the case that the child is too large, rather
             // panicking.
-            if !own_scrolling.get_enable_x() && !own_size.get_infinite_width() &&
-                !child_state.get_size().get_infinite_width() &&
+            if !own_scrolling.get_enable_x() && !own_infinite_size.width &&
+                !child_state.get_infinite_size().width &&
                 child_state.get_size().get_width() > own_effective_size.width {
                 child_state.get_size_mut().set_width(own_effective_size.width);
             }
-            if !own_scrolling.get_enable_y() && !own_size.get_infinite_height() &&
-                !child_state.get_size().get_infinite_height() &&
+            if !own_scrolling.get_enable_y() && !own_infinite_size.height &&
+                !child_state.get_infinite_size().height &&
                 child_state.get_size().get_height() > height_left {
                 child_state.get_size_mut().set_height(height_left);
             }
@@ -168,10 +168,10 @@ impl Layout{
             let child_content = generic_child.get_contents(state_tree);
             let state = state_tree.get_by_path_mut(&generic_child.get_full_path())
                 .as_generic_mut(); // re-borrow
-            if state.get_size().get_infinite_width() {
+            if state.get_infinite_size().width {
                 state.get_size_mut().set_width(child_content.len())
             }
-            if state.get_size().get_infinite_height() {
+            if state.get_infinite_size().height {
                 state.get_size_mut().set_height(
                     if !child_content.is_empty() { child_content[0].len() } else { 0 })
             }
@@ -185,7 +185,7 @@ impl Layout{
         for (i, content) in content_list.into_iter().enumerate() {
             merged_content = self.merge_vertical_contents(
                 merged_content, content,
-                own_effective_size.width, own_size.get_infinite_width(),
+                own_effective_size.width, own_infinite_size.width,
                 own_colors.clone(),
                 state_tree.get_by_path_mut(
                     &self.children.get(i).unwrap().as_ez_object()
@@ -204,8 +204,8 @@ impl Layout{
             let offset;
             (new, offset) = align_content_vertically(
                 new, state.get_vertical_alignment(), parent_height,
-                parent_colors.get_foreground(),
-                parent_colors.get_background());
+                parent_colors.get_fg_color(),
+                parent_colors.get_bg_color());
             state.set_y(state.get_position().get_y() + offset);
         }
 
@@ -229,12 +229,12 @@ impl Layout{
         if parent_width > new.len() && !parent_infinite_width {
             (new, offset) = align_content_horizontally(
                 new, state.get_horizontal_alignment(), parent_width,
-                parent_colors.get_foreground(),
-                parent_colors.get_background());
+                parent_colors.get_fg_color(),
+                parent_colors.get_bg_color());
             state.set_x(state.get_position().get_x() + offset);
         }
 
-        let write_width = if !state.get_size().get_infinite_width() { parent_width }
+        let write_width = if !state.get_infinite_size().width { parent_width }
                               else { new.len() };
         for x in 0..write_width {
             for y in 0..new[0].len() {
@@ -245,8 +245,8 @@ impl Layout{
                     merged_content[x].push(new[x][y].clone())
                 } else {
                     merged_content[x].push(Pixel { symbol: " ".to_string(),
-                        foreground_color: parent_colors.get_foreground(),
-                        background_color: parent_colors.get_background(),
+                        foreground_color: parent_colors.get_fg_color(),
+                        background_color: parent_colors.get_bg_color(),
                         underline: false});
                 }
             }

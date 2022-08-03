@@ -3,7 +3,7 @@
 //! This module implements the [EzValues] enum.
 use crossterm::style::Color;
 
-use crate::states::definitions::{HorizontalAlignment, VerticalAlignment};
+use crate::states::definitions::{HorizontalAlignment, LayoutMode, LayoutOrientation, VerticalAlignment};
 
 
 /// An enum containing a variant for each value type an [EzProperty] may have.
@@ -18,9 +18,12 @@ use crate::states::definitions::{HorizontalAlignment, VerticalAlignment};
 #[derive(Clone, Debug)]
 pub enum EzValues {
     Usize(usize),
+    F64(f64),
     Bool(bool),
     String(String),
     Color(Color),
+    LayoutMode(LayoutMode),
+    LayoutOrientation(LayoutOrientation),
     HorizontalAlignment(HorizontalAlignment),
     VerticalAlignment(VerticalAlignment),
     SizeHint(Option<f64>),
@@ -32,6 +35,11 @@ impl EzValues {
     pub fn as_usize(&self) -> &usize {
         if let EzValues::Usize(i) = self { i }
             else { panic!("Wrong property, expected UsizeProperty") }
+    }
+
+    pub fn as_f64(&self) -> &f64 {
+        if let EzValues::F64(i) = self { i }
+        else { panic!("Wrong property, expected F64Property") }
     }
 
     pub fn as_string(&self) -> &String {
@@ -47,6 +55,16 @@ impl EzValues {
     pub fn as_color(&self) -> &Color {
         if let EzValues::Color(i) = self { i }
         else { panic!("Wrong property, expected ColorProperty") }
+    }
+
+    pub fn as_layout_mode(&self) -> &LayoutMode {
+        if let EzValues::LayoutMode(i) = self { i }
+        else { panic!("Wrong property, expected LayoutMode") }
+    }
+
+    pub fn as_layout_orientation(&self) -> &LayoutOrientation {
+        if let EzValues::LayoutOrientation(i) = self { i }
+        else { panic!("Wrong property, expected LayoutOrientation") }
     }
 
     pub fn as_vertical_alignment(&self) -> &VerticalAlignment {
@@ -77,6 +95,9 @@ impl EzValues {
 impl From<usize> for EzValues {
     fn from(inner: usize) -> EzValues { EzValues::Usize(inner) }
 }
+impl From<f64> for EzValues {
+    fn from(inner: f64) -> EzValues { EzValues::F64(inner) }
+}
 impl From<bool> for EzValues {
     fn from(inner: bool) -> EzValues { EzValues::Bool(inner) }
 }
@@ -85,6 +106,12 @@ impl From<String> for EzValues {
 }
 impl From<Color> for EzValues {
     fn from(inner: Color) -> EzValues { EzValues::Color(inner) }
+}
+impl From<LayoutMode> for EzValues {
+    fn from(inner: LayoutMode) -> EzValues { EzValues::LayoutMode(inner) }
+}
+impl From<LayoutOrientation> for EzValues {
+    fn from(inner: LayoutOrientation) -> EzValues { EzValues::LayoutOrientation(inner) }
 }
 impl From<VerticalAlignment> for EzValues {
     fn from(inner: VerticalAlignment) -> EzValues { EzValues::VerticalAlignment(inner) }

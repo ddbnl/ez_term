@@ -11,7 +11,7 @@ use crossterm::style::Color;
 use crate::parser::parse_properties;
 use crate::scheduler::definitions::EzPropertyUpdater;
 use crate::scheduler::scheduler::{SchedulerFrontend};
-use crate::states::definitions::{HorizontalAlignment, VerticalAlignment};
+use crate::states::definitions::{HorizontalAlignment, LayoutMode, LayoutOrientation, VerticalAlignment};
 
 /// Bind an [EzProperty] to another EzProperty if the user-passed property declares it. Returns true
 /// if the property was bound, else false. Referenced can contain ".parent" which resolved to the
@@ -24,11 +24,11 @@ pub fn bind_ez_property(value: &str, scheduler: &mut SchedulerFrontend, path: St
 
     if value.starts_with("self.") {
         let new_path = value.replace("self.", &path).replace('.', "/");
-        scheduler.subscribe_to_ez_property(new_path.as_str(), update_func.clone());
+        scheduler.subscribe_to_ez_property(new_path.as_str(), update_func);
         true
     } else if value.starts_with("root.") {
         let new_path = value.replace(".root", "/root").replace('.', "/");
-        scheduler.subscribe_to_ez_property(new_path.as_str(), update_func.clone());
+        scheduler.subscribe_to_ez_property(new_path.as_str(), update_func);
         true
     } else if value.starts_with("parent.") {
         let new_path = resolve_parent_path(path, value);
@@ -63,8 +63,8 @@ fn resolve_parent_path(mut path: String, mut value: &str) -> String {
 
 /// Load a usize [EzProperty]. It is either bound to another usize property and initialized with 0
 /// or parsed from the user defined string from the .ez file.
-pub fn load_ez_usize_property(value: &str, scheduler: &mut SchedulerFrontend, path: String,
-                              update_func: EzPropertyUpdater) -> Result<usize, Error> {
+pub fn load_usize_property(value: &str, scheduler: &mut SchedulerFrontend, path: String,
+                           update_func: EzPropertyUpdater) -> Result<usize, Error> {
     return if bind_ez_property(value, scheduler, path, update_func) {
         Ok(0)
     } else {
@@ -76,11 +76,25 @@ pub fn load_ez_usize_property(value: &str, scheduler: &mut SchedulerFrontend, pa
     }
 }
 
+/// Load a f64 [EzProperty]. It is either bound to another f64 property and initialized with 0.0
+/// or parsed from the user defined string from the .ez file.
+pub fn load_f64_property(value: &str, scheduler: &mut SchedulerFrontend, path: String,
+                         update_func: EzPropertyUpdater) -> Result<f64, Error> {
+    return if bind_ez_property(value, scheduler, path, update_func) {
+        Ok(0.0)
+    } else {
+        match value.trim().parse() {
+            Ok(i) => Ok(i),
+            Err(e) => Err(Error::new(ErrorKind::InvalidData, format!(
+                "Could not parse f64 property with error: {}", e)))
+        }
+    }
+}
 
 /// Load a bool [EzProperty]. It is either bound to another bool property and initialized with false
 /// or parsed from the user defined string from the .ez file.
-pub fn load_ez_bool_property(value: &str, scheduler: &mut SchedulerFrontend, path: String,
-                             update_func: EzPropertyUpdater) -> Result<bool, Error> {
+pub fn load_bool_property(value: &str, scheduler: &mut SchedulerFrontend, path: String,
+                          update_func: EzPropertyUpdater) -> Result<bool, Error> {
 
     if bind_ez_property(value, scheduler, path, update_func) {
         Ok(false)
@@ -92,8 +106,8 @@ pub fn load_ez_bool_property(value: &str, scheduler: &mut SchedulerFrontend, pat
 
 /// Load a string [EzProperty]. It is either bound to another string property and initialized with 
 /// "" or parsed from the user defined string from the .ez file.
-pub fn load_ez_string_property(value: &str, scheduler: &mut SchedulerFrontend, path: String,
-                               update_func: EzPropertyUpdater) -> Result<String, Error> {
+pub fn load_string_property(value: &str, scheduler: &mut SchedulerFrontend, path: String,
+                            update_func: EzPropertyUpdater) -> Result<String, Error> {
 
     if bind_ez_property(value, scheduler, path, update_func) {
         Ok(String::new())
@@ -105,8 +119,8 @@ pub fn load_ez_string_property(value: &str, scheduler: &mut SchedulerFrontend, p
 
 /// Load a [Color] [EzProperty]. It is either bound to another Color property and initialized with 
 /// [Color::Black] or parsed from the user defined string from the .ez file.
-pub fn load_ez_color_property(value: &str, scheduler: &mut SchedulerFrontend, path: String,
-                              update_func: EzPropertyUpdater) -> Result<Color, Error> {
+pub fn load_color_property(value: &str, scheduler: &mut SchedulerFrontend, path: String,
+                           update_func: EzPropertyUpdater) -> Result<Color, Error> {
 
     if bind_ez_property(value, scheduler, path, update_func) {
         Ok(Color::Black)
@@ -116,12 +130,40 @@ pub fn load_ez_color_property(value: &str, scheduler: &mut SchedulerFrontend, pa
 }
 
 
+/// Load a [LayoutMode] [EzProperty]. It is either bound to another LayoutMode property and
+/// initialized with [LayoutMode::Top] or parsed from the user defined string from the
+/// .ez file.
+pub fn load_layout_mode_property(value: &str, scheduler: &mut SchedulerFrontend, path: String,
+                            update_func: EzPropertyUpdater) -> Result<LayoutMode, Error> {
+
+    if bind_ez_property(value, scheduler, path, update_func) {
+        Ok(LayoutMode::Box)
+    } else {
+        parse_properties::parse_layout_mode_property(value)
+    }
+}
+
+
+/// Load a [LayoutOrientation] [EzProperty]. It is either bound to another LayoutOrientation
+/// property and initialized with [LayoutOrientation::Horizontal] or parsed from the user defined
+/// string from the .ez file.
+pub fn load_layout_orientation_property(value: &str, scheduler: &mut SchedulerFrontend, path: String,
+                                 update_func: EzPropertyUpdater) -> Result<LayoutOrientation, Error> {
+
+    if bind_ez_property(value, scheduler, path, update_func) {
+        Ok(LayoutOrientation::Horizontal)
+    } else {
+        parse_properties::parse_layout_orientation_property(value)
+    }
+}
+
+
 /// Load a [VerticalAlignment] [EzProperty]. It is either bound to another valign property and
 /// initialized with [VerticalAlignment::Top] or parsed from the user defined string from the
 /// .ez file.
-pub fn load_ez_valign_property(value: &str, scheduler: &mut SchedulerFrontend, path: String,
-                               update_func: EzPropertyUpdater)
-    -> Result<VerticalAlignment, Error> {
+pub fn load_valign_property(value: &str, scheduler: &mut SchedulerFrontend, path: String,
+                            update_func: EzPropertyUpdater)
+                            -> Result<VerticalAlignment, Error> {
 
     if bind_ez_property(value, scheduler, path, update_func) {
         Ok(VerticalAlignment::Top)
@@ -134,9 +176,9 @@ pub fn load_ez_valign_property(value: &str, scheduler: &mut SchedulerFrontend, p
 /// Load a [HorizontalAlignment] [EzProperty]. It is either bound to another halign property and
 /// initialized with [HorizontalAlignment::Left] or parsed from the user defined string from the
 /// .ez file.
-pub fn load_ez_halign_property(value: &str, scheduler: &mut SchedulerFrontend, path: String,
-                               update_func: EzPropertyUpdater)
-    -> Result<HorizontalAlignment, Error> {
+pub fn load_halign_property(value: &str, scheduler: &mut SchedulerFrontend, path: String,
+                            update_func: EzPropertyUpdater)
+                            -> Result<HorizontalAlignment, Error> {
 
     if bind_ez_property(value, scheduler, path, update_func) {
         Ok(HorizontalAlignment::Left)
@@ -148,9 +190,9 @@ pub fn load_ez_halign_property(value: &str, scheduler: &mut SchedulerFrontend, p
 
 /// Load a horizontal position hint [EzProperty]. It is either bound to another hposhint property and
 /// initialized with None or parsed from the user defined string from the .ez file.
-pub fn load_ez_horizontal_pos_hint_property(value: &str, scheduler: &mut SchedulerFrontend, path: String,
-                                            update_func: EzPropertyUpdater)
-                                            -> Result<Option<(HorizontalAlignment, f64)>, Error> {
+pub fn load_horizontal_pos_hint_property(value: &str, scheduler: &mut SchedulerFrontend, path: String,
+                                         update_func: EzPropertyUpdater)
+                                         -> Result<Option<(HorizontalAlignment, f64)>, Error> {
 
     if bind_ez_property(value, scheduler, path, update_func) {
         Ok(None)
@@ -162,9 +204,9 @@ pub fn load_ez_horizontal_pos_hint_property(value: &str, scheduler: &mut Schedul
 
 /// Load a vertical position hint [EzProperty]. It is either bound to another vposhint property and
 /// initialized with None or parsed from the user defined string from the .ez file.
-pub fn load_ez_vertical_pos_hint_property(value: &str, scheduler: &mut SchedulerFrontend, path: String,
-                                          update_func: EzPropertyUpdater)
-                                          -> Result<Option<(VerticalAlignment, f64)>, Error> {
+pub fn load_vertical_pos_hint_property(value: &str, scheduler: &mut SchedulerFrontend, path: String,
+                                       update_func: EzPropertyUpdater)
+                                       -> Result<Option<(VerticalAlignment, f64)>, Error> {
 
     if bind_ez_property(value, scheduler, path, update_func) {
         Ok(None)
@@ -176,8 +218,8 @@ pub fn load_ez_vertical_pos_hint_property(value: &str, scheduler: &mut Scheduler
 
 /// Load a [SizeHint] [EzProperty]. It is either bound to another SizeHint property and
 /// initialized with Some(1.0) or parsed from the user defined string from the .ez file.
-pub fn load_ez_size_hint_property(value: &str, scheduler: &mut SchedulerFrontend, path: String,
-                                  update_func: EzPropertyUpdater) -> Result<Option<f64>, Error> {
+pub fn load_size_hint_property(value: &str, scheduler: &mut SchedulerFrontend, path: String,
+                               update_func: EzPropertyUpdater) -> Result<Option<f64>, Error> {
     if bind_ez_property(value, scheduler, path, update_func) {
         Ok(Some(1.0))
     } else {

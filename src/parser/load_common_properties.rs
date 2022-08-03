@@ -26,7 +26,7 @@ pub fn load_full_pos_hint_property(state: &mut dyn GenericState, property_value:
 pub fn load_horizontal_pos_hint_property(state: &mut dyn GenericState, property_value: &str,
                                          scheduler: &mut SchedulerFrontend, path: String) -> Result<(), Error>  {
 
-    state.set_pos_hint_x(load_base_properties::load_ez_horizontal_pos_hint_property(
+    state.set_pos_hint_x(load_base_properties::load_horizontal_pos_hint_property(
         property_value.trim(), scheduler, path.clone(),
         Box::new(move |state_tree: &mut StateTree, val: EzValues| {
             let state = state_tree.get_by_path_mut(&path.clone())
@@ -41,7 +41,7 @@ pub fn load_horizontal_pos_hint_property(state: &mut dyn GenericState, property_
 pub fn load_vertical_pos_hint_property(state: &mut dyn GenericState, property_value: &str,
                                        scheduler: &mut SchedulerFrontend, path: String) -> Result<(), Error>  {
 
-    state.set_pos_hint_y(load_base_properties::load_ez_vertical_pos_hint_property(
+    state.set_pos_hint_y(load_base_properties::load_vertical_pos_hint_property(
         property_value.trim(), scheduler, path.clone(),
         Box::new(move |state_tree: &mut StateTree, val: EzValues| {
             let state = state_tree.get_by_path_mut(&path.clone())
@@ -68,7 +68,7 @@ pub fn load_full_size_hint_property(state: &mut dyn GenericState, property_value
 pub fn load_size_hint_x_property(state: &mut dyn GenericState, property_value: &str,
                                           scheduler: &mut SchedulerFrontend, path: String) -> Result<(), Error>  {
 
-    state.set_size_hint_x(load_base_properties::load_ez_size_hint_property(
+    state.set_size_hint_x(load_base_properties::load_size_hint_property(
         property_value.trim(), scheduler, path.clone(),
         Box::new(move |state_tree: &mut StateTree, val: EzValues| {
             let state = state_tree.get_by_path_mut(&path.clone())
@@ -83,7 +83,7 @@ pub fn load_size_hint_x_property(state: &mut dyn GenericState, property_value: &
 pub fn load_size_hint_y_property(state: &mut dyn GenericState, property_value: &str,
                                   scheduler: &mut SchedulerFrontend, path: String) -> Result<(), Error>  {
 
-    state.set_size_hint_y(load_base_properties::load_ez_size_hint_property(
+    state.set_size_hint_y(load_base_properties::load_size_hint_property(
         property_value.trim(), scheduler, path.clone(),
         Box::new(move |state_tree: &mut StateTree, val: EzValues| {
             let state = state_tree.get_by_path_mut(&path.clone())
@@ -108,7 +108,7 @@ pub fn load_full_auto_scale_property(state: &mut dyn GenericState, property_valu
 pub fn load_auto_scale_width_property(state: &mut dyn GenericState, property_value: &str,
                                        scheduler: &mut SchedulerFrontend, path: String) -> Result<(), Error>  {
 
-    state.set_auto_scale_width(load_base_properties::load_ez_bool_property(
+    state.set_auto_scale_width(load_base_properties::load_bool_property(
         property_value.trim(), scheduler, path.clone(),
         Box::new(move |state_tree: &mut StateTree, val: EzValues| {
             let state = state_tree.get_by_path_mut(&path.clone())
@@ -123,7 +123,7 @@ pub fn load_auto_scale_width_property(state: &mut dyn GenericState, property_val
 pub fn load_auto_scale_height_property(state: &mut dyn GenericState, property_value: &str,
                                         scheduler: &mut SchedulerFrontend, path: String) -> Result<(), Error>  {
 
-    state.set_auto_scale_height(load_base_properties::load_ez_bool_property(
+    state.set_auto_scale_height(load_base_properties::load_bool_property(
         property_value.trim(), scheduler, path.clone(),
         Box::new(move |state_tree: &mut StateTree, val: EzValues| {
             let state = state_tree.get_by_path_mut(&path.clone())
@@ -138,12 +138,12 @@ pub fn load_auto_scale_height_property(state: &mut dyn GenericState, property_va
 pub fn load_border_enable_property(state: &mut dyn GenericState, property_value: &str,
                                     scheduler: &mut SchedulerFrontend, path: String) -> Result<(), Error>  {
 
-    state.get_border_config_mut().set_enabled(load_base_properties::load_ez_bool_property(
+    state.get_border_config_mut().set_border(load_base_properties::load_bool_property(
         property_value.trim(), scheduler, path.clone(),
         Box::new(move |state_tree: &mut StateTree, val: EzValues| {
             let state = state_tree.get_by_path_mut(&path.clone())
                 .as_generic_mut();
-            state.get_border_config_mut().set_enabled(*val.as_bool());
+            state.get_border_config_mut().set_border(*val.as_bool());
             path.clone()
         }))?);
     Ok(())
@@ -153,7 +153,7 @@ pub fn load_border_enable_property(state: &mut dyn GenericState, property_value:
 pub fn load_x_property(state: &mut dyn GenericState, property_value: &str,
                         scheduler: &mut SchedulerFrontend, path: String) -> Result<(), Error>  {
 
-    state.set_x(load_base_properties::load_ez_usize_property(
+    state.set_x(load_base_properties::load_usize_property(
         property_value.trim(), scheduler, path.clone(),
         Box::new(move |state_tree: &mut StateTree, val: EzValues| {
             let state = state_tree.get_by_path_mut(&path.clone())
@@ -168,7 +168,7 @@ pub fn load_x_property(state: &mut dyn GenericState, property_value: &str,
 pub fn load_y_property(state: &mut dyn GenericState, property_value: &str,
                         scheduler: &mut SchedulerFrontend, path: String) -> Result<(), Error>  {
 
-    state.set_y(load_base_properties::load_ez_usize_property(
+    state.set_y(load_base_properties::load_usize_property(
         property_value.trim(), scheduler, path.clone(),
         Box::new(move |state_tree: &mut StateTree, val: EzValues| {
             let state = state_tree.get_by_path_mut(&path.clone())
@@ -183,7 +183,7 @@ pub fn load_y_property(state: &mut dyn GenericState, property_value: &str,
 pub fn load_width_property(state: &mut dyn GenericState, property_value: &str,
                             scheduler: &mut SchedulerFrontend, path: String) -> Result<(), Error>  {
 
-    state.set_width(load_base_properties::load_ez_usize_property(
+    state.set_width(load_base_properties::load_usize_property(
         property_value.trim(), scheduler, path.clone(),
         Box::new(move |state_tree: &mut StateTree, val: EzValues| {
             let state = state_tree.get_by_path_mut(&path.clone())
@@ -198,7 +198,7 @@ pub fn load_width_property(state: &mut dyn GenericState, property_value: &str,
 pub fn load_height_property(state: &mut dyn GenericState, property_value: &str,
                             scheduler: &mut SchedulerFrontend, path: String) -> Result<(), Error>  {
 
-    state.set_height(load_base_properties::load_ez_usize_property(
+    state.set_height(load_base_properties::load_usize_property(
         property_value.trim(), scheduler, path.clone(),
         Box::new(move |state_tree: &mut StateTree, val: EzValues| {
             let state = state_tree.get_by_path_mut(&path.clone())
@@ -213,7 +213,7 @@ pub fn load_height_property(state: &mut dyn GenericState, property_value: &str,
 pub fn load_padding_top_property(state: &mut dyn GenericState, property_value: &str,
                              scheduler: &mut SchedulerFrontend, path: String) -> Result<(), Error>  {
 
-    state.set_padding_top(load_base_properties::load_ez_usize_property(
+    state.set_padding_top(load_base_properties::load_usize_property(
         property_value.trim(), scheduler, path.clone(),
         Box::new(move |state_tree: &mut StateTree, val: EzValues| {
             let state = state_tree.get_by_path_mut(&path.clone())
@@ -228,7 +228,7 @@ pub fn load_padding_top_property(state: &mut dyn GenericState, property_value: &
 pub fn load_padding_bottom_property(state: &mut dyn GenericState, property_value: &str,
                                   scheduler: &mut SchedulerFrontend, path: String) -> Result<(), Error>  {
 
-    state.set_padding_bottom(load_base_properties::load_ez_usize_property(
+    state.set_padding_bottom(load_base_properties::load_usize_property(
         property_value.trim(), scheduler, path.clone(),
         Box::new(move |state_tree: &mut StateTree, val: EzValues| {
             let state = state_tree.get_by_path_mut(&path.clone())
@@ -243,7 +243,7 @@ pub fn load_padding_bottom_property(state: &mut dyn GenericState, property_value
 pub fn load_padding_left_property(state: &mut dyn GenericState, property_value: &str,
                                   scheduler: &mut SchedulerFrontend, path: String) -> Result<(), Error>  {
 
-    state.set_padding_left(load_base_properties::load_ez_usize_property(
+    state.set_padding_left(load_base_properties::load_usize_property(
         property_value.trim(), scheduler, path.clone(),
         Box::new(move |state_tree: &mut StateTree, val: EzValues| {
             let state = state_tree.get_by_path_mut(&path.clone())
@@ -258,7 +258,7 @@ pub fn load_padding_left_property(state: &mut dyn GenericState, property_value: 
 pub fn load_padding_right_property(state: &mut dyn GenericState, property_value: &str,
                                   scheduler: &mut SchedulerFrontend, path: String) -> Result<(), Error>  {
 
-    state.set_padding_right(load_base_properties::load_ez_usize_property(
+    state.set_padding_right(load_base_properties::load_usize_property(
         property_value.trim(), scheduler, path.clone(),
         Box::new(move |state_tree: &mut StateTree, val: EzValues| {
             let state = state_tree.get_by_path_mut(&path.clone())
@@ -273,7 +273,7 @@ pub fn load_padding_right_property(state: &mut dyn GenericState, property_value:
 pub fn load_border_horizontal_property(state: &mut dyn GenericState, property_value: &str,
                                         scheduler: &mut SchedulerFrontend, path: String) -> Result<(), Error>  {
 
-    state.get_border_config_mut().set_horizontal_symbol(load_base_properties::load_ez_string_property(
+    state.get_border_config_mut().set_horizontal_symbol(load_base_properties::load_string_property(
         property_value.trim(), scheduler, path.clone(),
         Box::new(move |state_tree: &mut StateTree, val: EzValues| {
             let state = state_tree.get_by_path_mut(&path)
@@ -288,7 +288,7 @@ pub fn load_border_horizontal_property(state: &mut dyn GenericState, property_va
 pub fn load_border_vertical_property(state: &mut dyn GenericState, property_value: &str,
                                         scheduler: &mut SchedulerFrontend, path: String) -> Result<(), Error>  {
 
-    state.get_border_config_mut().set_vertical_symbol(load_base_properties::load_ez_string_property(
+    state.get_border_config_mut().set_vertical_symbol(load_base_properties::load_string_property(
         property_value.trim(), scheduler, path.clone(),
         Box::new(move |state_tree: &mut StateTree, val: EzValues| {
             let state = state_tree.get_by_path_mut(&path.clone())
@@ -303,7 +303,7 @@ pub fn load_border_vertical_property(state: &mut dyn GenericState, property_valu
 pub fn load_border_top_left_property(state: &mut dyn GenericState, property_value: &str,
                                      scheduler: &mut SchedulerFrontend, path: String) -> Result<(), Error>  {
 
-    state.get_border_config_mut().set_top_left_symbol(load_base_properties::load_ez_string_property(
+    state.get_border_config_mut().set_top_left_symbol(load_base_properties::load_string_property(
         property_value.trim(), scheduler, path.clone(),
         Box::new(move |state_tree: &mut StateTree, val: EzValues| {
             let state = state_tree.get_by_path_mut(&path.clone())
@@ -318,7 +318,7 @@ pub fn load_border_top_left_property(state: &mut dyn GenericState, property_valu
 pub fn load_border_top_right_property(state: &mut dyn GenericState, property_value: &str,
                                       scheduler: &mut SchedulerFrontend, path: String) -> Result<(), Error>  {
 
-    state.get_border_config_mut().set_top_right_symbol(load_base_properties::load_ez_string_property(
+    state.get_border_config_mut().set_top_right_symbol(load_base_properties::load_string_property(
         property_value.trim(), scheduler, path.clone(),
         Box::new(move |state_tree: &mut StateTree, val: EzValues| {
             let state = state_tree.get_by_path_mut(&path.clone())
@@ -332,7 +332,7 @@ pub fn load_border_top_right_property(state: &mut dyn GenericState, property_val
 
 pub fn load_border_bottom_left_property(state: &mut dyn GenericState, property_value: &str,
                                         scheduler: &mut SchedulerFrontend, path: String) -> Result<(), Error>  {
-    state.get_border_config_mut().set_bottom_left_symbol(load_base_properties::load_ez_string_property(
+    state.get_border_config_mut().set_bottom_left_symbol(load_base_properties::load_string_property(
         property_value.trim(), scheduler, path.clone(),
         Box::new(move |state_tree: &mut StateTree, val: EzValues| {
             let state = state_tree.get_by_path_mut(&path.clone())
@@ -347,7 +347,7 @@ pub fn load_border_bottom_left_property(state: &mut dyn GenericState, property_v
 pub fn load_border_bottom_right_property(state: &mut dyn GenericState, property_value: &str,
                                          scheduler: &mut SchedulerFrontend, path: String) -> Result<(), Error>  {
 
-    state.get_border_config_mut().set_bottom_right_symbol(load_base_properties::load_ez_string_property(
+    state.get_border_config_mut().set_bottom_right_symbol(load_base_properties::load_string_property(
         property_value.trim(), scheduler, path.clone(),
         Box::new(move |state_tree: &mut StateTree, val: EzValues| {
             let state = state_tree.get_by_path_mut(&path.clone())
@@ -362,12 +362,12 @@ pub fn load_border_bottom_right_property(state: &mut dyn GenericState, property_
 pub fn load_border_foreground_color_property(state: &mut dyn GenericState, property_value: &str,
                                       scheduler: &mut SchedulerFrontend, path: String) -> Result<(), Error>  {
 
-    state.get_color_config_mut().set_border_foreground(load_base_properties::load_ez_color_property(
+    state.get_color_config_mut().set_border_fg_color(load_base_properties::load_color_property(
         property_value.trim(), scheduler, path.clone(),
         Box::new(move |state_tree: &mut StateTree, val: EzValues| {
             let state = state_tree.get_by_path_mut(&path.clone())
                 .as_generic_mut();
-            state.get_color_config_mut().set_border_foreground(*val.as_color());
+            state.get_color_config_mut().set_border_fg_color(*val.as_color());
             path.clone()
         }))?);
     Ok(())
@@ -377,12 +377,12 @@ pub fn load_border_foreground_color_property(state: &mut dyn GenericState, prope
 pub fn load_border_background_color_property(state: &mut dyn GenericState, property_value: &str,
                                       scheduler: &mut SchedulerFrontend, path: String) -> Result<(), Error>  {
 
-    state.get_color_config_mut().set_border_background(load_base_properties::load_ez_color_property(
+    state.get_color_config_mut().set_border_bg_color(load_base_properties::load_color_property(
         property_value.trim(), scheduler, path.clone(),
         Box::new(move |state_tree: &mut StateTree, val: EzValues| {
             let state = state_tree.get_by_path_mut(&path.clone())
                 .as_generic_mut();
-            state.get_color_config_mut().set_border_background(*val.as_color());
+            state.get_color_config_mut().set_border_bg_color(*val.as_color());
             path.clone()
         }))?);
     Ok(())
@@ -392,12 +392,12 @@ pub fn load_border_background_color_property(state: &mut dyn GenericState, prope
 pub fn load_foreground_color_property(state: &mut dyn GenericState, property_value: &str,
                                              scheduler: &mut SchedulerFrontend, path: String) -> Result<(), Error>  {
 
-    state.get_color_config_mut().set_foreground(load_base_properties::load_ez_color_property(
+    state.get_color_config_mut().set_fg_color(load_base_properties::load_color_property(
         property_value.trim(), scheduler, path.clone(),
         Box::new(move |state_tree: &mut StateTree, val: EzValues| {
             let state = state_tree.get_by_path_mut(&path.clone())
                 .as_generic_mut();
-            state.get_color_config_mut().set_foreground(*val.as_color());
+            state.get_color_config_mut().set_fg_color(*val.as_color());
             path.clone()
         }))?);
     Ok(())
@@ -407,12 +407,12 @@ pub fn load_foreground_color_property(state: &mut dyn GenericState, property_val
 pub fn load_background_color_property(state: &mut dyn GenericState, property_value: &str,
                                              scheduler: &mut SchedulerFrontend, path: String) -> Result<(), Error>  {
 
-    state.get_color_config_mut().set_background(load_base_properties::load_ez_color_property(
+    state.get_color_config_mut().set_bg_color(load_base_properties::load_color_property(
         property_value.trim(), scheduler, path.clone(),
         Box::new(move |state_tree: &mut StateTree, val: EzValues| {
             let state = state_tree.get_by_path_mut(&path.clone())
                 .as_generic_mut();
-            state.get_color_config_mut().set_background(*val.as_color());
+            state.get_color_config_mut().set_bg_color(*val.as_color());
             path.clone()
         }))?);
     Ok(())
@@ -422,12 +422,12 @@ pub fn load_background_color_property(state: &mut dyn GenericState, property_val
 pub fn load_selection_foreground_color_property(state: &mut dyn GenericState, property_value: &str,
                                              scheduler: &mut SchedulerFrontend, path: String) -> Result<(), Error>  {
 
-    state.get_color_config_mut().set_selection_foreground(load_base_properties::load_ez_color_property(
+    state.get_color_config_mut().set_selection_fg_color(load_base_properties::load_color_property(
         property_value.trim(), scheduler, path.clone(),
         Box::new(move |state_tree: &mut StateTree, val: EzValues| {
             let state = state_tree.get_by_path_mut(&path.clone())
                 .as_generic_mut();
-            state.get_color_config_mut().set_selection_foreground(*val.as_color());
+            state.get_color_config_mut().set_selection_fg_color(*val.as_color());
             path.clone()
         }))?);
     Ok(())
@@ -437,12 +437,12 @@ pub fn load_selection_foreground_color_property(state: &mut dyn GenericState, pr
 pub fn load_selection_background_color_property(state: &mut dyn GenericState, property_value: &str,
                                              scheduler: &mut SchedulerFrontend, path: String) -> Result<(), Error>  {
 
-    state.get_color_config_mut().set_selection_background(load_base_properties::load_ez_color_property(
+    state.get_color_config_mut().set_selection_bg_color(load_base_properties::load_color_property(
         property_value.trim(), scheduler, path.clone(),
         Box::new(move |state_tree: &mut StateTree, val: EzValues| {
             let state = state_tree.get_by_path_mut(&path.clone())
                 .as_generic_mut();
-            state.get_color_config_mut().set_selection_background(*val.as_color());
+            state.get_color_config_mut().set_selection_bg_color(*val.as_color());
             path.clone()
         }))?);
     Ok(())
@@ -452,12 +452,12 @@ pub fn load_selection_background_color_property(state: &mut dyn GenericState, pr
 pub fn load_disabled_foreground_color_property(state: &mut dyn GenericState, property_value: &str,
                                              scheduler: &mut SchedulerFrontend, path: String) -> Result<(), Error>  {
 
-    state.get_color_config_mut().set_disabled_foreground(load_base_properties::load_ez_color_property(
+    state.get_color_config_mut().set_disabled_fg_color(load_base_properties::load_color_property(
         property_value.trim(), scheduler, path.clone(),
         Box::new(move |state_tree: &mut StateTree, val: EzValues| {
             let state = state_tree.get_by_path_mut(&path.clone())
                 .as_generic_mut();
-            state.get_color_config_mut().set_disabled_foreground(*val.as_color());
+            state.get_color_config_mut().set_disabled_fg_color(*val.as_color());
             path.clone()
         }))?);
     Ok(())
@@ -467,12 +467,12 @@ pub fn load_disabled_foreground_color_property(state: &mut dyn GenericState, pro
 pub fn load_disabled_background_color_property(state: &mut dyn GenericState, property_value: &str,
                                              scheduler: &mut SchedulerFrontend, path: String) -> Result<(), Error>  {
 
-    state.get_color_config_mut().set_disabled_background(load_base_properties::load_ez_color_property(
+    state.get_color_config_mut().set_disabled_bg_color(load_base_properties::load_color_property(
         property_value.trim(), scheduler, path.clone(),
         Box::new(move |state_tree: &mut StateTree, val: EzValues| {
             let state = state_tree.get_by_path_mut(&path.clone())
                 .as_generic_mut();
-            state.get_color_config_mut().set_disabled_background(*val.as_color());
+            state.get_color_config_mut().set_disabled_bg_color(*val.as_color());
             path.clone()
         }))?);
     Ok(())
@@ -482,12 +482,12 @@ pub fn load_disabled_background_color_property(state: &mut dyn GenericState, pro
 pub fn load_tab_foreground_color_property(state: &mut dyn GenericState, property_value: &str,
                                              scheduler: &mut SchedulerFrontend, path: String) -> Result<(), Error>  {
 
-    state.get_color_config_mut().set_tab_foreground(load_base_properties::load_ez_color_property(
+    state.get_color_config_mut().set_tab_fg_color(load_base_properties::load_color_property(
         property_value.trim(), scheduler, path.clone(),
         Box::new(move |state_tree: &mut StateTree, val: EzValues| {
             let state = state_tree.get_by_path_mut(&path.clone())
                 .as_generic_mut();
-            state.get_color_config_mut().set_tab_foreground(*val.as_color());
+            state.get_color_config_mut().set_tab_fg_color(*val.as_color());
             path.clone()
         }))?);
     Ok(())
@@ -497,12 +497,12 @@ pub fn load_tab_foreground_color_property(state: &mut dyn GenericState, property
 pub fn load_tab_background_color_property(state: &mut dyn GenericState, property_value: &str,
                                              scheduler: &mut SchedulerFrontend, path: String) -> Result<(), Error>  {
 
-    state.get_color_config_mut().set_tab_background(load_base_properties::load_ez_color_property(
+    state.get_color_config_mut().set_tab_bg_color(load_base_properties::load_color_property(
         property_value.trim(), scheduler, path.clone(),
         Box::new(move |state_tree: &mut StateTree, val: EzValues| {
             let state = state_tree.get_by_path_mut(&path.clone())
                 .as_generic_mut();
-            state.get_color_config_mut().set_tab_background(*val.as_color());
+            state.get_color_config_mut().set_tab_bg_color(*val.as_color());
             path.clone()
         }))?);
     Ok(())
@@ -513,12 +513,12 @@ pub fn load_flash_foreground_color_property(state: &mut dyn GenericState, proper
                                              scheduler: &mut SchedulerFrontend, path: String)
     -> Result<(), Error>  {
 
-    state.get_color_config_mut().set_flash_foreground(load_base_properties::load_ez_color_property(
+    state.get_color_config_mut().set_flash_fg_color(load_base_properties::load_color_property(
         property_value.trim(), scheduler, path.clone(),
         Box::new(move |state_tree: &mut StateTree, val: EzValues| {
             let state = state_tree.get_by_path_mut(&path.clone())
                 .as_generic_mut();
-            state.get_color_config_mut().set_flash_foreground(*val.as_color());
+            state.get_color_config_mut().set_flash_fg_color(*val.as_color());
             path.clone()
         }))?);
     Ok(())
@@ -529,12 +529,12 @@ pub fn load_flash_background_color_property(state: &mut dyn GenericState, proper
                                              scheduler: &mut SchedulerFrontend, path: String)
     -> Result<(), Error>  {
 
-    state.get_color_config_mut().set_flash_background(load_base_properties::load_ez_color_property(
+    state.get_color_config_mut().set_flash_bg_color(load_base_properties::load_color_property(
         property_value.trim(), scheduler, path.clone(),
         Box::new(move |state_tree: &mut StateTree, val: EzValues| {
             let state = state_tree.get_by_path_mut(&path.clone())
                 .as_generic_mut();
-            state.get_color_config_mut().set_flash_background(*val.as_color());
+            state.get_color_config_mut().set_flash_bg_color(*val.as_color());
             path.clone()
         }))?);
     Ok(())
@@ -545,12 +545,12 @@ pub fn load_fill_foreground_color_property(state: &mut dyn GenericState, propert
                                              scheduler: &mut SchedulerFrontend, path: String)
     -> Result<(), Error>  {
 
-    state.get_color_config_mut().set_filler_foreground(load_base_properties::load_ez_color_property(
+    state.get_color_config_mut().set_filler_fg_color(load_base_properties::load_color_property(
         property_value.trim(), scheduler, path.clone(),
         Box::new(move |state_tree: &mut StateTree, val: EzValues| {
             let state = state_tree.get_by_path_mut(&path.clone())
                 .as_generic_mut();
-            state.get_color_config_mut().set_filler_foreground(*val.as_color());
+            state.get_color_config_mut().set_filler_fg_color(*val.as_color());
             path.clone()
         }))?);
     Ok(())
@@ -561,13 +561,13 @@ pub fn load_fill_background_color_property(state: &mut dyn GenericState, propert
                                              scheduler: &mut SchedulerFrontend, path: String)
     -> Result<(), Error>  {
 
-    state.get_color_config_mut().set_filler_background(
-        load_base_properties::load_ez_color_property(
+    state.get_color_config_mut().set_filler_bg_color(
+        load_base_properties::load_color_property(
         property_value.trim(), scheduler, path.clone(),
         Box::new(move |state_tree: &mut StateTree, val: EzValues| {
             let state = state_tree.get_by_path_mut(&path.clone())
                 .as_generic_mut();
-            state.get_color_config_mut().set_filler_background(*val.as_color());
+            state.get_color_config_mut().set_filler_bg_color(*val.as_color());
             path.clone()
         }))?);
     Ok(())
@@ -578,12 +578,12 @@ pub fn load_cursor_background_color_property(state: &mut dyn GenericState, prope
                                            scheduler: &mut SchedulerFrontend, path: String)
     -> Result<(), Error>  {
 
-    state.get_color_config_mut().set_cursor(load_base_properties::load_ez_color_property(
+    state.get_color_config_mut().set_cursor_color(load_base_properties::load_color_property(
         property_value.trim(), scheduler, path.clone(),
         Box::new(move |state_tree: &mut StateTree, val: EzValues| {
             let state = state_tree.get_by_path_mut(&path.clone())
                 .as_generic_mut();
-            state.get_color_config_mut().set_cursor(*val.as_color());
+            state.get_color_config_mut().set_cursor_color(*val.as_color());
             path.clone()
         }))?);
     Ok(())
@@ -593,7 +593,7 @@ pub fn load_cursor_background_color_property(state: &mut dyn GenericState, prope
 pub fn load_valign_property(state: &mut dyn GenericState, property_value: &str,
                             scheduler: &mut SchedulerFrontend, path: String) -> Result<(), Error>  {
 
-    state.set_vertical_alignment(load_base_properties::load_ez_valign_property(
+    state.set_vertical_alignment(load_base_properties::load_valign_property(
         property_value.trim(), scheduler, path.clone(),
         Box::new(move |state_tree: &mut StateTree, val: EzValues| {
             let state = state_tree.get_by_path_mut(&path.clone())
@@ -608,7 +608,7 @@ pub fn load_valign_property(state: &mut dyn GenericState, property_value: &str,
 pub fn load_halign_property(state: &mut dyn GenericState, property_value: &str,
                             scheduler: &mut SchedulerFrontend, path: String) -> Result<(), Error>  {
 
-    state.set_horizontal_alignment(load_base_properties::load_ez_halign_property(
+    state.set_horizontal_alignment(load_base_properties::load_halign_property(
         property_value.trim(), scheduler, path.clone(),
         Box::new(move |state_tree: &mut StateTree, val: EzValues| {
             let state = state_tree.get_by_path_mut(&path.clone())
@@ -623,7 +623,7 @@ pub fn load_halign_property(state: &mut dyn GenericState, property_value: &str,
 pub fn load_disabled_property(state: &mut dyn GenericState, property_value: &str,
                               scheduler: &mut SchedulerFrontend, path: String) -> Result<(), Error>  {
 
-    state.set_disabled(load_base_properties::load_ez_bool_property(
+    state.set_disabled(load_base_properties::load_bool_property(
         property_value.trim(), scheduler, path.clone(),
         Box::new(move |state_tree: &mut StateTree, val: EzValues| {
             let state = state_tree.get_by_path_mut(&path.clone())
@@ -638,7 +638,7 @@ pub fn load_disabled_property(state: &mut dyn GenericState, property_value: &str
 pub fn load_selection_order_property(state: &mut dyn GenericState, property_value: &str,
                               scheduler: &mut SchedulerFrontend, path: String) -> Result<(), Error> {
 
-    state.set_selection_order(load_base_properties::load_ez_usize_property(
+    state.set_selection_order(load_base_properties::load_usize_property(
         property_value.trim(), scheduler, path.clone(),
         Box::new(move |state_tree: &mut StateTree, val: EzValues| {
             let state = state_tree.get_by_path_mut(&path.clone())

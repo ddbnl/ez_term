@@ -15,8 +15,8 @@ use crate::property::ez_property::EzProperty;
 use crate::property::ez_values::EzValues;
 use crate::run::definitions::{Coordinates, StateTree};
 use crate::run::run::{open_popup, stop};
-use crate::scheduler::definitions::{EzPropertyUpdater, EzThread, GenericEzTask};
-use crate::states::definitions::{HorizontalAlignment, VerticalAlignment};
+use crate::scheduler::definitions::{EzPropertyUpdater, EzThread, GenericEzFunction, GenericEzTask};
+use crate::states::definitions::{HorizontalAlignment, LayoutMode, LayoutOrientation, VerticalAlignment};
 use crate::states::ez_state::EzState;
 
 
@@ -303,6 +303,21 @@ impl SchedulerFrontend {
     /// you want to bind a value in your app to a widget property, use this func to get a property
     /// and pass it to your app. Then use property.set() to update it. Any widget properties bound
     /// to this property will update automatically.
+    pub fn new_f64_property(&mut self, name: &str, value: f64) -> EzProperty<f64> {
+
+        let (property, receiver) =
+            EzProperty::new(name.to_string(), value);
+        self.backend.properties.insert(name.to_string(),
+                                       EzProperties::F64(property.clone()));
+        self.backend.property_receivers.insert(name.to_string(), receiver);
+        property
+    }
+
+    /// Register a new property and return it. After a property has been registered it's possible
+    /// for widget properties to subscribe to it, meaning their values will be kept in sync. If
+    /// you want to bind a value in your app to a widget property, use this func to get a property
+    /// and pass it to your app. Then use property.set() to update it. Any widget properties bound
+    /// to this property will update automatically.
     pub fn new_string_property(&mut self, name: &str, value: String) -> EzProperty<String> {
 
         let (property, receiver) =
@@ -339,6 +354,38 @@ impl SchedulerFrontend {
             EzProperty::new(name.to_string(), value);
         self.backend.properties.insert(name.to_string(),
                                        EzProperties::Color(property.clone()));
+        self.backend.property_receivers.insert(name.to_string(), receiver);
+        property
+    }
+
+    /// Register a new property and return it. After a property has been registered it's possible
+    /// for widget properties to subscribe to it, meaning their values will be kept in sync. If
+    /// you want to bind a value in your app to a widget property, use this func to get a property
+    /// and pass it to your app. Then use property.set() to update it. Any widget properties bound
+    /// to this property will update automatically.
+    pub fn new_layout_mode_property(&mut self, name: &str, value: LayoutMode)
+                                           -> EzProperty<LayoutMode> {
+
+        let (property, receiver) =
+            EzProperty::new(name.to_string(), value);
+        self.backend.properties.insert(name.to_string(),
+                                       EzProperties::LayoutMode(property.clone()));
+        self.backend.property_receivers.insert(name.to_string(), receiver);
+        property
+    }
+
+    /// Register a new property and return it. After a property has been registered it's possible
+    /// for widget properties to subscribe to it, meaning their values will be kept in sync. If
+    /// you want to bind a value in your app to a widget property, use this func to get a property
+    /// and pass it to your app. Then use property.set() to update it. Any widget properties bound
+    /// to this property will update automatically.
+    pub fn new_layout_orientation_property(&mut self, name: &str, value: LayoutOrientation)
+                                    -> EzProperty<LayoutOrientation> {
+
+        let (property, receiver) =
+            EzProperty::new(name.to_string(), value);
+        self.backend.properties.insert(name.to_string(),
+                                       EzProperties::LayoutOrientation(property.clone()));
         self.backend.property_receivers.insert(name.to_string(), receiver);
         property
     }
@@ -467,11 +514,16 @@ impl SchedulerFrontend {
     ///
     /// scheduler.bind_ez_property_callback("my_property", Box::new(my_callback));
     /// ```
-    pub fn bind_ez_property_callback(&mut self, name: &str, callback: Box<dyn FnMut(EzContext)>) {
+    pub fn bind_property_callback(&mut self, name: &str, callback: GenericEzFunction) {
 
-        let callbacks =
-            self.backend.property_callbacks.entry(name.to_string()).or_insert(Vec::new());
-        callbacks.push(callback);
+        if self.backend.property_callbacks.contains(&name.to_string()) {
+            self.backend.new_property_callbacks.push((name.to_string(), callback));
+        } else {
+            let mut config = CallbackConfig::default();
+            config.property_callbacks.push(callback);
+            self.overwrite_callback_config(name, config);
+            self.backend.property_callbacks.push(name.to_string());
+        }
     }
     
     /// Set the passed widget (can be ID or path) as selected. Automatically deselects the current
@@ -548,7 +600,11 @@ pub struct Scheduler {
 
     /// A <Widget path, user_callback> HashMap, used to store callbacks the user has registered to
     /// the changing of a value of an [EzProperty]. When the value changes, the callback is called.
-    pub property_callbacks: HashMap<String, Vec<Box<dyn FnMut(EzContext)>>>,
+    pub property_callbacks: Vec<String>,
+
+    /// Every frame these property callbacks are registered. Allows user to add property callbacks
+    /// without having access to the CallbackTree.
+    pub new_property_callbacks: Vec<(String, GenericEzFunction)>,
 
     /// The widget (ID or path) set here will be selected on the next frame, deselecting the current
     /// selection if any and calling the appropriate callbacks. The optional mouse_position will be

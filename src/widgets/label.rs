@@ -3,7 +3,7 @@ use std::fs::File;
 use std::io::Error;
 use std::io::prelude::*;
 
-use crate::parser::load_base_properties::load_ez_string_property;
+use crate::parser::load_base_properties::load_string_property;
 use crate::parser::load_common_properties::load_common_property;
 use crate::property::ez_values::EzValues;
 use crate::run::definitions::{Pixel, PixelMap, StateTree};
@@ -48,7 +48,7 @@ impl Label {
                                -> Result<(), Error> {
 
         let path = self.path.clone();
-        self.state.set_from_file(load_ez_string_property(
+        self.state.set_from_file(load_string_property(
             parameter_value.trim(), scheduler, path.clone(),
             Box::new(move |state_tree: &mut StateTree, val: EzValues| {
                 let state = state_tree.get_by_path_mut(&path)
@@ -63,7 +63,7 @@ impl Label {
                                -> Result<(), Error> {
 
         let path = self.path.clone();
-        self.state.set_text(load_ez_string_property(
+        self.state.set_text(load_string_property(
             parameter_value.trim(), scheduler, path.clone(),
             Box::new(move |state_tree: &mut StateTree, val: EzValues| {
                 let state = state_tree.get_by_path_mut(&path)
@@ -124,30 +124,30 @@ impl EzObject for Label {
         }
         
         let chunk_size =
-            if state.get_size().get_infinite_width() ||
-                state.get_auto_scale().get_width() {text.len() + 1}
+            if state.get_infinite_size().width ||
+                state.get_auto_scale().get_auto_scale_width() {text.len() + 1}
             else {state.get_effective_size().width};
         let content_lines = wrap_text(text, chunk_size);
         // If content is scrolled simply scale to length of content on that axis
-        if state.get_size().get_infinite_width() {
+        if state.get_infinite_size().width {
             let longest_line = content_lines.iter().map(|x| x.len()).max();
             let width = if let Some(i) = longest_line { i } else { 0 };
             state.set_effective_width(width);
         }
-        if state.get_size().get_infinite_height() {
+        if state.get_infinite_size().height {
             let height = content_lines.len();
             state.set_effective_height(height);
         }
         // If user wants to autoscale we set size to size of content or if that does not it to
         // size of the widget
-        if state.get_auto_scale().get_width() {
+        if state.get_auto_scale().get_auto_scale_width() {
             let longest_line = content_lines.iter().map(|x| x.len()).max();
             let auto_scale_width = if let Some(i) = longest_line { i } else { 0 };
             if auto_scale_width < state.get_effective_size().width {
                 state.set_effective_width(auto_scale_width);
             }
         }
-        if state.get_auto_scale().get_height() {
+        if state.get_auto_scale().get_auto_scale_height() {
             let auto_scale_height = content_lines.len();
             if auto_scale_height < state.get_effective_size().height {
                 state.set_effective_height(auto_scale_height);
@@ -162,22 +162,22 @@ impl EzObject for Label {
                 if y < content_lines.len() && x < content_lines[y].len() {
                     new_y.push(Pixel {
                         symbol: content_lines[y][x..x+1].to_string(),
-                        foreground_color: state.get_color_config().get_foreground(),
-                        background_color: state.get_color_config().get_background(),
+                        foreground_color: state.get_color_config().get_fg_color(),
+                        background_color: state.get_color_config().get_bg_color(),
                         underline: false
                     })
                 } else {
                     new_y.push(Pixel {
                         symbol: " ".to_string(),
-                        foreground_color: state.get_color_config().get_foreground(),
-                        background_color: state.get_color_config().get_background(),
+                        foreground_color: state.get_color_config().get_fg_color(),
+                        background_color: state.get_color_config().get_bg_color(),
                         underline: false
                     })
                 }
             }
             contents.push(new_y);
         }
-        if state.get_border_config().get_enabled() {
+        if state.get_border_config().get_border() {
             contents = add_border(contents, state.get_border_config(),
                                  state.get_color_config());
         }
@@ -185,8 +185,8 @@ impl EzObject for Label {
         let parent_colors = state_tree.get_by_path(self.get_full_path()
             .rsplit_once('/').unwrap().0).as_generic().get_color_config();
         contents = add_padding(
-            contents, state.get_padding(), parent_colors.get_background(),
-            parent_colors.get_foreground());
+            contents, state.get_padding(), parent_colors.get_bg_color(),
+            parent_colors.get_fg_color());
         contents
     }
 }

@@ -48,7 +48,21 @@
 //!         1. [Widget states and the State Tree](#scheduler_states)
 //!         2. [Using the scheduler object](#scheduler_object)
 //!         3. [Managing callbacks](#scheduler_callbacks)
-//!             1. [Callback config][#scheduler_callbacks_config]
+//!             1. [General callback structure][#scheduler_callbacks_structure]
+//!             2. [Callback config][#scheduler_callbacks_config]
+//!             3. [On_keyboard_enter][#scheduler_callbacks_enter]
+//!             4. [On_left_mouse_click][#scheduler_callbacks_left]
+//!             5. [On_press][#scheduler_callbacks_press]
+//!             6. [On_select][#scheduler_callbacks_select]
+//!             7. [On_deselect][#scheduler_callbacks_deselect]
+//!             8. [On_right_mouse_click][#scheduler_callbacks_right]
+//!             9. [On_hover][#scheduler_callbacks_hover]
+//!             10. [On_drag][#scheduler_callbacks_drag]
+//!             11. [On_scroll_up][#scheduler_callbacks_up]
+//!             12. [On_scroll_down][#scheduler_callbacks_down]
+//!             13. [On_value_change][#scheduler_callbacks_value]
+//!             14. [Custom key binds][#scheduler_callbacks_keymap]
+//!             15. [Property binds][#scheduler_callbacks_property]
 //!         4. [Managing scheduled tasks](#scheduler_tasks)
 //!         5. [Opening popups](#scheduler_popups)
 //!         6. [Creating widgets programmatically](#scheduler_widgets_from_code)
@@ -268,10 +282,10 @@
 //! Now that you know how to create a basic UI, we'll dive into the specifics of the framework.
 //!
 //! <a name="ez_language"></a>
-//! ## 2. Ez language
+//! ### 1.2 Ez language
 //!
 //! <a name="ez_basics"></a>
-//! ### 2.1 Basics
+//! #### 1.2.1 Basics
 //!
 //! With EzTerm, the UI is defined in the .ez files, using a YAML(ish) type syntax called EzLang.
 //! Like everything in EzTerm, this language is designed to be simple to use. There are only two
@@ -318,7 +332,7 @@
 //! we'll get into them later; for now we are just discussing the basics of the syntax.
 //!
 //! <a name="ez_language_templates"></a>
-//! ### 2.2 Templates
+//! #### 1.2.2 Templates
 //!
 //! When you start writing your own .ez files, you may notice yourself writing the same types of
 //! widgets over and over again. To make your .ez files more readable and more ergonomic, you can
@@ -439,7 +453,7 @@
 //!         id: screen_1
 //! ```
 //! <a name="ez_language_layout_modes"></a>
-//! ### 2.3 Layout modes
+//! #### 1.2.3 Layout modes
 //!
 //! You may have noted the "mode" property of the Layouts; this is one of the most important
 //! properties to learn about, because it does most of the heavy lifting in the framework. One of
@@ -452,7 +466,7 @@
 //!
 //!
 //! <a name="ez_language_box"></a>
-//! #### 2.3.1 Box mode
+//! ##### 1.2.3.1 Box mode
 //!
 //! In Box mode objects are placed from left to right (orientation: horizontal) or top to bottom
 //! (orientation: vertical). This is the simplest layout mode and is useful in many scenarios. An
@@ -498,7 +512,7 @@
 //! ```
 //!
 //! <a name="ez_language_stack"></a>
-//! #### 2.3.2 Stack mode
+//! ##### 1.2.3.2 Stack mode
 //!
 //! Stack mode stacks widgets inside of the layout according to the primary and secondary
 //! orientation. This can be useful if you want a bunch of widgets to fit into a layout
@@ -546,7 +560,7 @@
 //! space in general of course).
 //!
 //! <a name="ez_language_table"></a>
-//! #### 2.3.3 Table mode
+//! ##### 1.2.3.3 Table mode
 //!
 //! Table mode divides widgets into rows and columns. You must specify how many rows or columns you
 //! want, or both. If you specify the amount of columns, the table will grow the amount of rows to
@@ -609,7 +623,7 @@
 //! ```
 //!
 //! <a name="ez_language_float"></a>
-//! #### 2.3.4 Float mode
+//! ##### 1.2.3.4 Float mode
 //!
 //! In float mode, widgets can be placed freely anywhere in the layout. This mode does not have any
 //! orientations. Placing widgets can be done using hardcoded positions, or using position hints.
@@ -670,7 +684,7 @@
 //! scale with the terminal.
 //!
 //! <a name="ez_language_tab"></a>
-//! #### 2.3.4 Tab mode
+//! ##### 1.2.3.4 Tab mode
 //!
 //! Tab mode creates tabs for you based on child layouts. This means that in tab mode, you can only
 //! add other layouts, not individual widgets. A tab button will automatically be created for each
@@ -709,7 +723,7 @@
 //! ```
 //!
 //! <a name="ez_language_screen"></a>
-//! #### 2.3.5 Screen mode
+//! ##### 1.2.3.5 Screen mode
 //!
 //! Screen mode creates screens for you based on child layouts. This means that in screen mode,
 //! you can only add other layouts, not individual widgets. Furthermore, only the root layout is
@@ -796,7 +810,7 @@
 //! page).
 //!
 //! <a name="ez_language_scrolling"></a>
-//! #### 2.3.6 Scrolling
+//! ##### 1.2.3.6 Scrolling
 //!
 //! Scrolling is *not* a dedicated layout mode. Instead, it is a property that can be enabled for
 //! Box, Stack, Table and Float layouts. If vertical scrolling is enabled and the content height
@@ -920,7 +934,7 @@
 //!
 //!
 //! <a name="sizing"></a>
-//! ### 2.5 Sizing
+//! #### 1.2.5 Sizing
 //!
 //! Now we'll learn about the different ways to size widgets and layouts.
 //!
@@ -930,7 +944,7 @@
 //! - Absolute size.
 //!
 //! <a name="sizing_relative"></a>
-//! #### 2.3.1 Relative sizing: size hints
+//! ##### 1.2.3.1 Relative sizing: size hints
 //!
 //! Size hints can be used to size a widget relative to its parent layout. This is the default way
 //! widgets are sized across the framework; this is important to keep in mind! Size hints are
@@ -973,7 +987,7 @@
 //! ```
 //!
 //! <a name="sizing_scaling"></a>
-//! #### 2.3.2 Auto scaling
+//! ##### 1.2.3.2 Auto scaling
 //!
 //! All widgets support auto-scaling; when enabled, they will automatically size themselves to their
 //! contents. Auto-scaling is turned off by default, and overwrites size_hint if enabled.
@@ -1029,7 +1043,7 @@
 //! The Label is now growing vertically.
 //!
 //! <a name="sizing_absolute"></a>
-//! #### 2.3.3 Absolute size:
+//! ##### 1.2.3.3 Absolute size:
 //!
 //! It is possible to set an absolute size for widgets manually. Keep in mind that size_hint will
 //! overwrite any manual sizes, so it has to be turned off in those cases. Let's say you want a
@@ -1056,7 +1070,7 @@
 //! layout (because the default is "size_hint: 1, 1").
 //!
 //! <a name="positioning"></a>
-//! ### 2.6 Positioning:
+//! #### 1.2.6 Positioning:
 //!
 //! There a multiple ways to control the positioning of widgets; which ways are available depends
 //! on the mode a layout is in. There are four ways to control positioning:
@@ -1066,7 +1080,7 @@
 //! - Adjust position through padding and aligning
 //!
 //! <a name="positioning_automatic"></a>
-//! #### 2.6.1 Automatic positioning: layout modes:
+//! ##### 1.2.6.1 Automatic positioning: layout modes:
 //!
 //! Most layout modes do not support manual positioning or relative positioning. This is because
 //! the point of these layouts is that they do the work for you. Only the float layout, which exists
@@ -1076,7 +1090,7 @@
 //! position of widgets in these modes; see the entry on padding and aligning below for more on that.
 //!
 //! <a name="positioning_relative"></a>
-//! #### 2.6.2 Relative positioning: position hints
+//! ##### 1.2.6.2 Relative positioning: position hints
 //!
 //! Position hints can only be used for widgets that are in a layout in float mode. With position
 //! hints you give the relative position you want the widget to be in, and it will be handled for
@@ -1123,7 +1137,7 @@
 //! ```
 //!
 //! <a name="positioning_absolute"></a>
-//! #### 2.6.2 Absolute positioning: manual positions
+//! ##### 1.2.6.2 Absolute positioning: manual positions
 //!
 //! Manual positions can only be used with widgets in a layout in float mode. The properties "x" and
 //! "y" can be used to control one or both positions. It's also possible to use the "pos"
@@ -1138,7 +1152,7 @@
 //! ```
 //!
 //! <a name="positioning_adjusting"></a>
-//! #### 2.6.3 Adjusting position: padding and aligning
+//! ##### 1.2.6.3 Adjusting position: padding and aligning
 //!
 //! It is not possible to control position in layout modes other that float. In the fixed layout
 //! modes it is still possible to adjust position. This can be done with padding and aligning.
@@ -1217,7 +1231,7 @@
 //! ```
 //!
 //! <a name="keyboard_selection"></a>
-//! ### 2.7 Keyboard selection:
+//! #### 1.2.7 Keyboard selection:
 //!
 //! Keyboard selection, unlike mouse selection, requires the configuration of a property. You need
 //! to configure the selection order of each widget that should be selectable through keyboard.
@@ -1286,7 +1300,7 @@
 //! ```
 //!
 //! <a name="binding_properties"></a>
-//! ### 2.8 Binding properties:
+//! #### 1.2.8 Binding properties:
 //!
 //! It is possible to bind one property to another in EzLang, as long as the properties are of the
 //! same type (you can find the type of each property in [Reference]. Here is an example of binding
@@ -1354,14 +1368,14 @@
 //! ```
 //!
 //! <a name="scheduler"></a>
-//! ## 3 Scheduler:
+//! ### 1.3 Scheduler:
 //!
 //! The scheduler is an object that allows you to configure callbacks, scheduled tasks, widget- and
 //! full screen updates, etc. It is a core part of managing the user interface from code. In this
 //! chapter we will learn about all the features of the scheduler and how to use them.
 //!
 //! <a name="scheduler_states"></a>
-//! ### 3.1 Widget states and the State Tree:
+//! #### 1.3.1 Widget states and the State Tree:
 //!
 //! Before we go on to describe the scheduler, we have to look at widget states first. We said that
 //! the scheduler was how we manage the UI from code, and we do that by manipulating widget states.
@@ -1410,7 +1424,7 @@
 //! the scheduler.
 //!
 //! <a name="scheduler_object"></a>
-//! ### 3.2 Using the scheduler object:
+//! #### 1.3.2 Using the scheduler object:
 //!
 //! The scheduler is an object which you can use in two places: when initializing the UI, and when
 //! inside of a callback. Here is an example of using the scheduler when initializing the UI:
@@ -1445,7 +1459,7 @@
 //!
 //!
 //! <a name="scheduler_callbacks"></a>
-//! ### 3.3 Managing callbacks
+//! #### 1.3.3 Managing callbacks
 //!
 //! There are many types of callbacks. We will discuss each of them later in this chapter.
 //! There is one import thing to mention right away: callbacks in general are executed in the main
@@ -1456,7 +1470,8 @@
 //!
 //! Now, let's look at the general structure of callbacks:
 //!
-//! #### 3.3.1 General callback structure
+//! <a name="scheduler_callbacks_structure"></a>
+//! ##### 1.3.3.1 General callback structure
 //!
 //! Callbacks can be created from a closure or from a function. We will see examples of both below.
 //!
@@ -1465,14 +1480,16 @@
 //! these to manage the UI, as is being explained in this chapter. The EzContext also contains the
 //! path of the widget for which the callback was called (context.widget_path). Some callbacks have
 //! more parameters (for example, mouse callbacks have a mouse_pos parameter), but we will discuss
-//! these seperately for each callback when relevant.
+//! these separately for each callback when relevant.
 //!
 //! Finally, each callback returns a bool. The bool indicates whether the event should be consumed.
 //! If the event is not consumed, the widget is allowed to execute its default behavior if it has
 //! any. For example, the checkbox has default "on_press" behavior: when pressed, it will toggle
 //! on/off. If you bind a custom "on_press" callback for a checkbox, you control whether the default
 //! behavior will be executed by returning 'true' (allowed to run) or 'false' (not allowed to run).
-//! This gives you the option to overwrite default widget behavior, or supplement it.
+//! This gives you the option to overwrite default widget behavior, or supplement it. If you want to
+//! know if returning true for a widget callback would overwrite default behavior, see the
+//! [reference] entry for that widget and check the callback chapter.
 //!
 //! To summarize, here are the two examples of default callback structure:
 //!
@@ -1493,7 +1510,8 @@
 //!
 //! Now that we know what a callback should look like, let's see how to set new callbacks.
 //!
-//! #### 3.3.2 Callback config
+//! <a name="scheduler_callbacks_config"></a>
+//! ##### 1.3.3.2 Callback config
 //!
 //! Each widget active in your UI has an associated callback config. This config contains all
 //! callbacks that are active for that widget. Initially, the callback config for each widget is
@@ -1581,10 +1599,11 @@
 //! - on_scroll_up
 //! - on_scroll_down
 //! - on_value_change
-//! - Custom keymap
-//! - on_property_change
+//! - Custom key binds
+//! - Property binds
 //!
-//! #### 3.3.2 On_keyboard_enter
+//! <a name="scheduler_callbacks_enter"></a>
+//! ##### 1.3.3.3 On_keyboard_enter
 //!
 //! This callback is activated when a widget is selected and the 'enter' key is pressed on the
 //! keyboard.
@@ -1600,6 +1619,418 @@
 //! let new_callback_config = CallbackConfig::from_on_press(Box::new(my_callback));
 //! scheduler.update_callback_config("my_button", new_callback_config);
 //! ```
+//! To set this callback with a function:
+//! ```
+//! use ez_term::*;
+//! let (root_widget, mut state_tree, mut scheduler) = load_ui();
+//!
+//! fn my_callback(context: EzContext) -> bool {
+//!
+//!     true
+//! };
+//! let new_callback_config = CallbackConfig::from_on_press(Box::new(my_callback));
+//! scheduler.update_callback_config("my_button", new_callback_config);
+//! ```
+//! <a name="scheduler_callbacks_left"></a>
+//! ##### 1.3.3.4 On_left_mouse_click
+//!
+//! This callback is activated when a widget is clicked by the left mouse button. Keep in mind that
+//! when a widget is clicked, any layouts underneath it are also clicked. The root layout is the
+//! first to receive the mouse click event, followed by sub layouts, and finally the widget. If any
+//! layout has a callback that returns true, the event is consumed and does not reach further
+//! layouts or widgets. To set this callback with a closure:
+//! ```
+//! use ez_term::*;
+//! let (root_widget, mut state_tree, mut scheduler) = load_ui();
+//!
+//! let my_callback = move |context: EzContext, mouse_pos: Coordinates| {
+//!
+//!     true
+//! };
+//! let new_callback_config = CallbackConfig::from_on_left_mouse_click(Box::new(my_callback));
+//! scheduler.update_callback_config("my_label", new_callback_config);
+//! ```
+//! To set this callback with a function:
+//! ```
+//! use ez_term::*;
+//! let (root_widget, mut state_tree, mut scheduler) = load_ui();
+//!
+//! fn my_callback(context: EzContext, mouse_pos: Coordinates) -> bool {
+//!
+//!     true
+//! };
+//! let new_callback_config = CallbackConfig::from_on_left_mouse_click(Box::new(my_callback));
+//! scheduler.update_callback_config("my_label", new_callback_config);
+//! ```
+//! <a name="scheduler_callbacks_press"></a>
+//! ##### 1.3.3.5 On_press
+//!
+//! This callback is activated when a widget is either clicked by the left mouse button, or
+//! keyboard entered when it is selected. In other words, it is a composite callback containing both
+//! on_keyboard_enter and on_left_mouse_click. This can be useful for example with buttons, where
+//! you want something done regardless of whether the user used his mouse or keyboard to press the
+//! button. To set this callback with a closure:
+//! ```
+//! use ez_term::*;
+//! let (root_widget, mut state_tree, mut scheduler) = load_ui();
+//!
+//! let my_callback = move |context: EzContext| {
+//!
+//!     true
+//! };
+//! let new_callback_config = CallbackConfig::from_on_press(Box::new(my_callback));
+//! scheduler.update_callback_config("my_button", new_callback_config);
+//! ```
+//! To set this callback with a function:
+//! ```
+//! use ez_term::*;
+//! let (root_widget, mut state_tree, mut scheduler) = load_ui();
+//!
+//! fn my_callback(context: EzContext) -> bool {
+//!
+//!     true
+//! };
+//! let new_callback_config = CallbackConfig::from_on_press(Box::new(my_callback));
+//! scheduler.update_callback_config("my_button", new_callback_config);
+//! ```
+//!
+//! <a name="scheduler_callbacks_select"></a>
+//! ##### 1.3.3.6 On_select
+//!
+//! This callback is activated when a widget is selected. A selection can occur when the user uses
+//! the keyboard up/down buttons (and the widget has a selection_order) or when the widget is
+//! hovered. Selectable widgets are: buttons, checkboxes, dropdowns, radio buttons and sliders.
+//! Text inputs are selectable by keyboard, but not by mouse hovering; instead they have to be
+//! clicked to be selected. The second argument in a on_select callback is an Option<Coordinates>.
+//! Is a widget was selected by keyboard, this argument will be None. If it was selected by mouse,
+//! it will contains coordinates.To set this callback with a closure:
+//! ```
+//! use ez_term::*;
+//! let (root_widget, mut state_tree, mut scheduler) = load_ui();
+//!
+//! let my_callback = move |context: EzContext, mouse_pos: Option<Coordinates>| {
+//!
+//!     true
+//! };
+//! let new_callback_config = CallbackConfig::from_on_select(Box::new(my_callback));
+//! scheduler.update_callback_config("my_button", new_callback_config);
+//! ```
+//! To set this callback with a function:
+//! ```
+//! use ez_term::*;
+//! let (root_widget, mut state_tree, mut scheduler) = load_ui();
+//!
+//! fn my_callback(context: EzContext, mouse_pos: Option<Coordinates>) -> bool {
+//!
+//!     true
+//! };
+//! let new_callback_config = CallbackConfig::from_on_select(Box::new(my_callback));
+//! scheduler.update_callback_config("my_button", new_callback_config);
+//! ```
+//! <a name="scheduler_callbacks_deselect"></a>
+//! ##### 1.3.3.7 On_deselect
+//!
+//! This callback is activated when a widget is deselected. A deselection occurs when the mouse
+//! cursor leaves the selection widget, or when the user uses the keyboard up/down buttons to move
+//! on from the selected widget. To set this callback with a closure:
+//! ```
+//! use ez_term::*;
+//! let (root_widget, mut state_tree, mut scheduler) = load_ui();
+//!
+//! let my_callback = move |context: EzContext| {
+//!
+//!     true
+//! };
+//! let new_callback_config = CallbackConfig::from_on_deselect(Box::new(my_callback));
+//! scheduler.update_callback_config("my_button", new_callback_config);
+//! ```
+//! To set this callback with a function:
+//! ```
+//! use ez_term::*;
+//! let (root_widget, mut state_tree, mut scheduler) = load_ui();
+//!
+//! fn my_callback(context: EzContext) -> bool {
+//!
+//!     true
+//! };
+//! let new_callback_config = CallbackConfig::from_on_deselect(Box::new(my_callback));
+//! scheduler.update_callback_config("my_button", new_callback_config);
+//! ```
+//!
+//! <a name="scheduler_callbacks_right"></a>
+//! ##### 1.3.3.8 On_right_mouse_click
+//!
+//! This callback is activated when a widget is clicked by the right mouse button. Keep in mind that
+//! when a widget is clicked, any layouts underneath it are also clicked. The root layout is the
+//! first to receive the mouse click event, followed by sub layouts, and finally the widget. If any
+//! layout has a callback that returns true, the event is consumed and does not reach further
+//! layouts or widgets. To set this callback with a closure:
+//! ```
+//! use ez_term::*;
+//! let (root_widget, mut state_tree, mut scheduler) = load_ui();
+//!
+//! let my_callback = move |context: EzContext, mouse_pos: Coordinates| {
+//!
+//!     true
+//! };
+//! let new_callback_config = CallbackConfig::from_on_right_mouse_click(Box::new(my_callback));
+//! scheduler.update_callback_config("my_button", new_callback_config);
+//! ```
+//! To set this callback with a function:
+//! ```
+//! use ez_term::*;
+//! let (root_widget, mut state_tree, mut scheduler) = load_ui();
+//!
+//! fn my_callback(context: EzContext, mouse_pos: Coordinates) -> bool {
+//!
+//!     true
+//! };
+//! let new_callback_config = CallbackConfig::from_on_right_mouse_click(Box::new(my_callback));
+//! scheduler.update_callback_config("my_button", new_callback_config);
+//! ```
+//! <a name="scheduler_callbacks_hover"></a>
+//! ##### 1.3.3.9 On_hover
+//!
+//! This callback is activated when a widget is hovered by the mouse. Keep in mind that
+//! when a widget is hovered, any layouts underneath it are also hovered. The root layout is the
+//! first to receive the hover event, followed by sub layouts, and finally the widget. If any
+//! layout has a callback that returns true, the event is consumed and does not reach further
+//! layouts or widgets. To set this callback with a closure:
+//! ```
+//! use ez_term::*;
+//! let (root_widget, mut state_tree, mut scheduler) = load_ui();
+//!
+//! let my_callback = move |context: EzContext, mouse_pos: Coordinates| {
+//!
+//!     true
+//! };
+//! let new_callback_config = CallbackConfig::from_on_hover(Box::new(my_callback));
+//! scheduler.update_callback_config("my_label", new_callback_config);
+//! ```
+//! To set this callback with a function:
+//! ```
+//! use ez_term::*;
+//! let (root_widget, mut state_tree, mut scheduler) = load_ui();
+//!
+//! fn my_callback(context: EzContext, mouse_pos: Coordinates) -> bool {
+//!
+//!     true
+//! };
+//! let new_callback_config = CallbackConfig::from_on_hover(Box::new(my_callback));
+//! scheduler.update_callback_config("my_label", new_callback_config);
+//! ```
+//! <a name="scheduler_callbacks_drag"></a>
+//! ##### 1.3.3.10 On_drag
+//!
+//! This callback is activated when a widget is left mouse clicked and the click is not released.
+//! As long as the click is not released, the widget will receive a new event every time the mouse
+//! cursor changes position, as long as the mouse cursor stays on that widget. The callback receives
+//! two extra arguments: one is the previous drag position, and one is the current drag position.
+//! The previous drag position argument is an Option<Coordinates>; on the very first drag event,
+//! the previous drag position will be None. This is how you know the drag is new. Subsequently,
+//! the previous drag position will contain Coordinates. Because you have both the current and the
+//! previous position, you know which direction the drag is going.
+//! To set this callback with a closure:
+//! ```
+//! use ez_term::*;
+//! let (root_widget, mut state_tree, mut scheduler) = load_ui();
+//!
+//! let my_callback = move |context: EzContext, previous_mouse_pos: Option<Coordinates>,
+//!                         mouse_pos: Coordinates| {
+//!
+//!     true
+//! };
+//! let new_callback_config = CallbackConfig::from_on_drag(Box::new(my_callback));
+//! scheduler.update_callback_config("my_label", new_callback_config);
+//! ```
+//! To set this callback with a function:
+//! ```
+//! use ez_term::*;
+//! let (root_widget, mut state_tree, mut scheduler) = load_ui();
+//!
+//! fn my_callback(context: EzContext, previous_mouse_pos: Option<Coordinates>,
+//!                mouse_pos: Coordinates) -> bool {
+//!
+//!     true
+//! };
+//! let new_callback_config = CallbackConfig::from_on_drag(Box::new(my_callback));
+//! scheduler.update_callback_config("my_label", new_callback_config);
+//! ```
+//! <a name="scheduler_callbacks_up"></a>
+//! ##### 1.3.3.11 On_scroll_up
+//!
+//! This callback is activated when a widget is scrolled up by the mouse. Keep in mind that
+//! when a widget is scrolled, any layouts underneath it are also scrolled. The root layout is the
+//! first to receive the scroll event, followed by sub layouts, and finally the widget. If any
+//! layout has a callback that returns true, the event is consumed and does not reach further
+//! layouts or widgets. To set this callback with a closure:
+//! ```
+//! use ez_term::*;
+//! let (root_widget, mut state_tree, mut scheduler) = load_ui();
+//!
+//! let my_callback = move |context: EzContex| {
+//!
+//!     true
+//! };
+//! let new_callback_config = CallbackConfig::from_on_scroll_up(Box::new(my_callback));
+//! scheduler.update_callback_config("my_label", new_callback_config);
+//! ```
+//! To set this callback with a function:
+//! ```
+//! use ez_term::*;
+//! let (root_widget, mut state_tree, mut scheduler) = load_ui();
+//!
+//! fn my_callback(context: EzContext) -> bool {
+//!
+//!     true
+//! };
+//! let new_callback_config = CallbackConfig::from_on_scroll_up(Box::new(my_callback));
+//! scheduler.update_callback_config("my_label", new_callback_config);
+//! ```
+//! <a name="scheduler_callbacks_down"></a>
+//! ##### 1.3.3.12 On_scroll_down
+//!
+//! This callback is activated when a widget is scrolled down by the mouse. Keep in mind that
+//! when a widget is scrolled, any layouts underneath it are also scrolled. The root layout is the
+//! first to receive the scroll event, followed by sub layouts, and finally the widget. If any
+//! layout has a callback that returns true, the event is consumed and does not reach further
+//! layouts or widgets. To set this callback with a closure:
+//! ```
+//! use ez_term::*;
+//! let (root_widget, mut state_tree, mut scheduler) = load_ui();
+//!
+//! let my_callback = move |context: EzContex| {
+//!
+//!     true
+//! };
+//! let new_callback_config = CallbackConfig::from_on_scroll_down(Box::new(my_callback));
+//! scheduler.update_callback_config("my_label", new_callback_config);
+//! ```
+//! To set this callback with a function:
+//! ```
+//! use ez_term::*;
+//! let (root_widget, mut state_tree, mut scheduler) = load_ui();
+//!
+//! fn my_callback(context: EzContext) -> bool {
+//!
+//!     true
+//! };
+//! let new_callback_config = CallbackConfig::from_on_scroll_down(Box::new(my_callback));
+//! scheduler.update_callback_config("my_label", new_callback_config);
+//! ```
+//! <a name="scheduler_callbacks_value"></a>
+//! ##### 1.3.3.13 On_value_change
+//!
+//! This callback is activated when the value of a widget has changed. Only widgets with values
+//! support this, which are: checkbox, dropdown, radio button, text input and slider. The only
+//! special case is the radio button; when a radio button is activated, all other radio buttons in
+//! that group are deactivated (because they're mutually exclusive). For radio buttons,
+//! on_value_change is only called when a button becomes *active*.
+//! To set this callback with a closure:
+//! ```
+//! use ez_term::*;
+//! let (root_widget, mut state_tree, mut scheduler) = load_ui();
+//!
+//! let my_callback = move |context: EzContext| {
+//!
+//!     true
+//! };
+//! let new_callback_config = CallbackConfig::from_on_value_change(Box::new(my_callback));
+//! scheduler.update_callback_config("my_checkbox", new_callback_config);
+//! ```
+//! To set this callback with a function:
+//! ```
+//! use ez_term::*;
+//! let (root_widget, mut state_tree, mut scheduler) = load_ui();
+//!
+//! fn my_callback(context: EzContext) -> bool {
+//!
+//!     true
+//! };
+//! let new_callback_config = CallbackConfig::from_on_value_change(Box::new(my_callback));
+//! scheduler.update_callback_config("my_checkbox", new_callback_config);
+//! ```
+//! <a name="scheduler_callbacks_keymap"></a>
+//! ##### 1.3.3.14 Custom key binds
+//!
+//! Custom keymaps allow you to bind keyboard keys to a callback. Keep in mind that for this to work,
+//! a widget must already be selected; only then will it receive the keyboard event.
+//! To bind a custom key, you must first create a KeyMap object This KeyMap object is then inserted
+//! into a CallbackConfig object, which is bound to a widget as normal. To bind for example the "a"
+//! key with a closure:
+//! ```
+//! use ez_term::*;
+//! let (root_widget, mut state_tree, mut scheduler) = load_ui();
+//!
+//! let my_callback = move |context: EzContext, keycode: KeyCode| {
+//!
+//!     true
+//! };
+//!
+//! let mut keymap = KeyMap::new();
+//! keymap.insert(KeyCode::Char('a'), Box::new(my_callback));
+//!
+//! let new_callback_config = CallbackConfig::from_keymap(keymap);
+//! scheduler.update_callback_config("my_checkbox", new_callback_config);
+//! ```
+//! To do the same with a function:
+//! ```
+//! use ez_term::*;
+//! let (root_widget, mut state_tree, mut scheduler) = load_ui();
+//!
+//! fn my_callback(context: EzContext, keycode: KeyCode) -> bool {
+//!
+//!     true
+//! };
+//!
+//! let mut keymap = KeyMap::new();
+//! keymap.insert(KeyCode::Char('a'), Box::new(my_callback));
+//!
+//! let new_callback_config = CallbackConfig::from_keymap(keymap);
+//! scheduler.update_callback_config("my_checkbox", new_callback_config);
+//! ```
+//! <a name="scheduler_callbacks_property"></a>
+//! ##### 1.3.3.15 Property binds
+//!
+//! You can bind callbacks to changes in widget properties or custom properties. This is done
+//! differently from widget callbacks. Instead, you can use the "bind" method on the property you
+//! wish to bind to. There is an example of how to bind to each property of each widget in
+//! [reference]. Here is an example of binding a callback to a labels height property,
+//! using a closure:
+//! ```
+//! use ez_term::*;
+//! let (root_widget, mut state_tree, mut scheduler) = load_ui();
+//!
+//! let my_callback = |context: EzContext| {
+//!
+//!     true
+//! };
+//!
+//! let state = state_tree.get_by_id("my_label").as_label_mut();
+//! state.size.height.bind(Box::new(my_callback), &mut scheduler);
+//! ```
+//! The same example but using a function:
+//! ```
+//! use ez_term::*;
+//! let (root_widget, mut state_tree, mut scheduler) = load_ui();
+//!
+//! fn my_callback(context: EzContext) -> bool {
+//!
+//!     true
+//! };
+//!
+//! let state = state_tree.get_by_id("my_label").as_label_mut();
+//! state.size.height.bind(Box::new(my_callback), &mut scheduler);
+//! ```
+//!
+//! ### 1.3.4 Managing scheduled tasks
+//!
+//! Scheduled tasks are closures or functions that are executed according to time parameters. There
+//! are three types of schedules tasks:
+//!
+//! - Single execution
+//! - Regular execution
+//! - Threaded execution
 mod run;
 mod scheduler;
 mod widgets;
@@ -1620,7 +2051,7 @@ pub use crate::scheduler::scheduler::SchedulerFrontend;
 pub use crate::property::ez_properties::EzProperties;
 pub use crate::property::ez_property::EzProperty;
 
-pub use crate::states::definitions::CallbackConfig;
+pub use crate::states::definitions::{CallbackConfig, KeyMap};
 pub use crate::states::ez_state::GenericState;
 pub use crate::widgets::ez_object::EzObject;
 

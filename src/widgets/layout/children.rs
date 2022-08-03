@@ -75,10 +75,10 @@ impl Layout {
             let state = state_tree
                 .get_by_path(&generic_child.get_full_path()).as_generic();
             if let LayoutOrientation::Horizontal = own_orientation {
-                if let Some(size_hint_x) = state.get_size_hint().get_x()
+                if let Some(size_hint_x) = state.get_size_hint().get_size_hint_x()
                 {
-                    if size_hint_x != 1.0 || state.get_auto_scale().get_width() ||
-                        state.get_auto_scale().get_height() || state.get_size().get_width() > 0 {
+                    if size_hint_x != 1.0 || state.get_auto_scale().get_auto_scale_width() ||
+                        state.get_auto_scale().get_auto_scale_height() || state.get_size().get_width() > 0 {
                         all_default_size_hint_x = false;
                     }
                 } else {
@@ -88,9 +88,9 @@ impl Layout {
                 all_default_size_hint_x = false;
             }
             if let LayoutOrientation::Vertical = own_orientation {
-                if let Some(size_hint_y) = state.get_size_hint().get_y() {
-                    if size_hint_y != 1.0 || state.get_auto_scale().get_height() ||
-                        state.get_auto_scale().get_width() || state.get_size().get_height() > 0 {
+                if let Some(size_hint_y) = state.get_size_hint().get_size_hint_y() {
+                    if size_hint_y != 1.0 || state.get_auto_scale().get_auto_scale_height() ||
+                        state.get_auto_scale().get_auto_scale_width() || state.get_size().get_height() > 0 {
                         all_default_size_hint_y = false;
                     }
                 } else {
@@ -109,8 +109,8 @@ impl Layout {
     pub fn propagate_absolute_positions(&self, state_tree: &mut StateTree) {
         let absolute_position = state_tree.get_by_path(&self.path).as_generic()
             .get_effective_absolute_position();
-        let size = state_tree.get_by_path(&self.path).as_layout()
-            .get_size().clone();
+        let effective_size = state_tree.get_by_path(&self.path).as_layout()
+            .get_effective_size().clone();
         let scrolling = state_tree.get_by_path(&self.path).as_layout()
             .get_scrolling_config().clone();
         for child in self.get_children() {
@@ -122,7 +122,7 @@ impl Layout {
                     absolute_position.x + pos.get_x() as isize,
                     absolute_position.y + pos.get_y() as isize);
                 new_absolute_position = offset_scrolled_absolute_position(
-                    new_absolute_position, &scrolling, &size);
+                    new_absolute_position, &scrolling, &effective_size);
                 child_state.set_absolute_position(new_absolute_position);
                 i.propagate_absolute_positions(state_tree);
             } else {
@@ -133,7 +133,7 @@ impl Layout {
                     absolute_position.x + pos.get_x() as isize,
                     absolute_position.y + pos.get_y() as isize);
                 new_absolute_position = offset_scrolled_absolute_position(
-                    new_absolute_position, &scrolling, &size);
+                    new_absolute_position, &scrolling, &effective_size);
                 child_state.set_absolute_position(new_absolute_position);
             }
         }
@@ -241,8 +241,12 @@ impl Layout {
             else { return None }
         };
         while !paths.is_empty() {
-            if let Some(i) = root.as_layout().get_child(paths.pop().unwrap()) {
-                root = i;
+            if let EzObjects::Layout(layout) = root {
+                if let Some(i) = layout.get_child(paths.pop().unwrap()) {
+                    root = i;
+                } else {
+                    return None
+                }
             } else {
                 return None
             }
@@ -297,7 +301,7 @@ impl Layout {
     pub fn scale_to_largest_child(&self, content_list: &[PixelMap], state_tree: &mut StateTree){
 
         let state = state_tree.get_by_path_mut(&self.path).as_layout_mut();
-        if state.get_auto_scale().get_width() {
+        if state.get_auto_scale().get_auto_scale_width() {
             state.set_effective_width(
                 if state.get_orientation() == &LayoutOrientation::Vertical {
                     content_list.iter().map(|x| x.len()).max().unwrap_or(0)
@@ -305,7 +309,7 @@ impl Layout {
                     content_list.iter().map(|x| x.len()).sum()
                 });
         }
-        if state.get_auto_scale().get_height() {
+        if state.get_auto_scale().get_auto_scale_height() {
             state.set_effective_height(
                 if state.get_orientation() == &LayoutOrientation::Horizontal {
                     content_list.iter().map(

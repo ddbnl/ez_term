@@ -1,6 +1,7 @@
 use crossterm::style::{Color};
-use crate::run::definitions::{IsizeCoordinates, Pixel, PixelMap};
-use crate::states::definitions::{Padding, BorderConfig, VerticalAlignment, HorizontalAlignment, ScrollingConfig, StateSize, ColorConfig};
+use crate::run::definitions::{IsizeCoordinates, Pixel, PixelMap, Size};
+use crate::states::definitions::{Padding, BorderConfig, VerticalAlignment, HorizontalAlignment,
+                                 ScrollingConfig, ColorConfig};
 use crate::states::ez_state::{EzState, GenericState};
 
 
@@ -9,13 +10,13 @@ use crate::states::ez_state::{EzState, GenericState};
 pub fn resize_with_size_hint(state: &mut EzState, parent_width: usize, parent_height: usize) {
 
     let mut_state = state.as_generic_mut();
-    if let Some(size_hint_x) = mut_state.get_size_hint().get_x() {
+    if let Some(size_hint_x) = mut_state.get_size_hint().get_size_hint_x() {
         let raw_child_size = parent_width as f64 * size_hint_x;
         let child_size = raw_child_size.round() as usize;
         mut_state.get_size_mut().set_width(child_size);
     }
 
-    if let Some(size_hint_y) = mut_state.get_size_hint().get_y() {
+    if let Some(size_hint_y) = mut_state.get_size_hint().get_size_hint_y() {
         let raw_child_size = parent_height as f64 * size_hint_y;
         let child_size = raw_child_size.round() as usize;
         mut_state.get_size_mut().set_height(child_size);
@@ -28,7 +29,7 @@ pub fn reposition_with_pos_hint(parent_width: usize, parent_height: usize,
                                 child_state: &mut dyn GenericState) {
 
     // Set x by pos_hint if any
-    if let Some((keyword, fraction)) = child_state.get_pos_hint().get_x() {
+    if let Some((keyword, fraction)) = child_state.get_pos_hint().get_pos_hint_x() {
         let initial_pos = match keyword {
             HorizontalAlignment::Left => 0,
             HorizontalAlignment::Right => parent_width - child_state.get_size().get_width(),
@@ -40,7 +41,7 @@ pub fn reposition_with_pos_hint(parent_width: usize, parent_height: usize,
         child_state.get_position_mut().set_x(x);
     }
     // Set y by pos hint if any
-    if let Some((keyword, fraction)) = child_state.get_pos_hint().get_y() {
+    if let Some((keyword, fraction)) = child_state.get_pos_hint().get_pos_hint_y() {
         let initial_pos = match keyword {
             VerticalAlignment::Top => 0,
             VerticalAlignment::Bottom => parent_height - child_state.get_size().get_height(),
@@ -59,7 +60,7 @@ pub fn add_border(mut content: PixelMap, config: &BorderConfig, colors: &ColorCo
     if content.is_empty() { return content }
     // Create border elements
     let (foreground_color, background_color) =
-        (colors.get_border_foreground(), colors.get_border_background());
+        (colors.get_border_fg_color(), colors.get_border_bg_color());
     let horizontal_border = Pixel::new(config.get_horizontal_symbol(),
                                        foreground_color.clone(), background_color.clone());
     let vertical_border = Pixel::new(config.get_vertical_symbol(),
@@ -119,22 +120,22 @@ pub fn add_padding(mut content: PixelMap, padding: &Padding, bg_color: Color, fg
     for _ in 0..content[0].len() {
         vertical_padding.push(padding_pixel.clone());
     }
-    for _ in 0..padding.get_left() {
+    for _ in 0..padding.get_padding_left() {
         content.insert(0, vertical_padding.clone());
     }
-    for _ in 0..padding.get_right() {
+    for _ in 0..padding.get_padding_right() {
         content.push(vertical_padding.clone());
     }
-    if padding.get_top() != 0 {
+    if padding.get_padding_top() != 0 {
         for x in content.iter_mut() {
-            for _ in 0..padding.get_top() {
+            for _ in 0..padding.get_padding_top() {
                 x.insert(0, padding_pixel.clone());
             }
         }
     }
-    if padding.get_bottom() != 0 {
+    if padding.get_padding_bottom() != 0 {
         for x in content.iter_mut() {
-            for _ in 0..padding.get_bottom() {
+            for _ in 0..padding.get_padding_bottom() {
                 x.push(padding_pixel.clone());
             }
         }
@@ -305,17 +306,19 @@ pub fn wrap_text (mut text: String, width: usize) -> Vec<String> {
 
 /// Adjust an absolute position based on scrolling config and size of the parent layout.
 pub fn offset_scrolled_absolute_position(mut absolute_position: IsizeCoordinates,
-                                         scrolling: &ScrollingConfig, size: &StateSize)
+                                         scrolling: &ScrollingConfig, size: &Size)
                                          -> IsizeCoordinates {
     
-    if scrolling.get_is_scrolling_x() && size.get_width() > 0 {
-        let offset = ((scrolling.get_view_start_x() / size.get_width()) * size.get_width()) +
-            (scrolling.get_view_start_x() % size.get_width());
+    if scrolling.get_is_scrolling_x() && size.width > 0 {
+        let view_start = scrolling.get_absolute_view_start_y(size.height);
+        let offset = ((view_start / size.width) * size.width) +
+            (view_start % size.width);
         absolute_position.x -= offset as isize;
     }
-    if scrolling.get_is_scrolling_y() && size.get_height() > 0 {
-        let offset = ((scrolling.get_view_start_y() / size.get_height()) * size.get_height()) +
-            (scrolling.get_view_start_y() % size.get_height());
+    if scrolling.get_is_scrolling_y() && size.height > 0 {
+        let view_start = scrolling.get_absolute_view_start_y(size.height);
+        let offset = ((view_start / size.height) * size.height) +
+            (view_start % size.height);
         absolute_position.y -= offset as isize;
     }
     absolute_position

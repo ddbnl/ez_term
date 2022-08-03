@@ -181,8 +181,8 @@ pub fn get_widget_by_position<'a>(pos: Coordinates, root_widget: &'a Layout,
                     root_widget.get_child_by_path(widget_path).unwrap().as_ez_object());
             }
         } else if state.as_generic().collides_effective(pos) {
-                results.push(
-                    root_widget.get_child_by_path(widget_path).unwrap().as_ez_object());
+            results.push(
+                root_widget.get_child_by_path(widget_path).unwrap().as_ez_object());
         }
     }
     results
@@ -291,16 +291,18 @@ pub fn is_in_view(path: String, state_tree: &StateTree) -> bool {
             // check if it is scrolling. If it is, we must check if each subsequent subwidget is in
             // this scrollview.
             if state.as_layout().get_scrolling_config().get_is_scrolling_x() {
+                let view_start_x = state.as_layout().get_scrolling_config()
+                    .get_absolute_view_start_x(state.as_generic().get_effective_size().width);
                 visible_width =
-                    Some((state.as_layout().get_scrolling_config().get_view_start_x(),
-                          state.as_layout().get_scrolling_config().get_view_start_x() +
-                              state.as_layout().get_effective_size().width));
+                    Some((view_start_x,
+                          view_start_x + state.as_layout().get_effective_size().width));
             }
             if state.as_layout().get_scrolling_config().get_is_scrolling_y() {
+                let view_start_y = state.as_layout().get_scrolling_config()
+                    .get_absolute_view_start_y(state.as_generic().get_effective_size().height);
                 visible_height =
-                    Some((state.as_layout().get_scrolling_config().get_view_start_y(),
-                          state.as_layout().get_scrolling_config().get_view_start_y() +
-                              state.as_layout().get_effective_size().height));
+                    Some((view_start_y,
+                          view_start_y + state.as_layout().get_effective_size().height));
             }
             working_path = format!("{}/{}", working_path, paths.pop().unwrap());
         } else {

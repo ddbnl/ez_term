@@ -7,7 +7,7 @@ use crate::scheduler::scheduler::{SchedulerFrontend};
 use crate::scheduler::scheduler_funcs::clean_up_property;
 
 
-/// Different modes determining how widgets are placed in a [layout].
+/// The mode determining how widgets are placed in a [layout]. Default is box.
 #[derive(Clone, PartialEq, Debug)]
 pub enum LayoutMode {
 
@@ -42,7 +42,8 @@ pub enum LayoutMode {
 }
 
 
-/// Used with Box mode [layout], determines whether widgets are placed below or above each other.
+/// Used with Box, stack and table mode [layout]. Default is horizontal for box,
+/// or TopBottomLeftRight for the other modes.
 #[derive(Clone, PartialEq, Debug)]
 pub enum LayoutOrientation {
     Horizontal,
@@ -58,6 +59,7 @@ pub enum LayoutOrientation {
 }
 
 
+/// Property determining how content is placed horizontally in a layout; default is left.
 #[derive(PartialEq, Clone, Copy, Debug)]
 pub enum HorizontalAlignment {
     Left,
@@ -66,6 +68,7 @@ pub enum HorizontalAlignment {
 }
 
 
+/// Property determining how content is placed vertically in a layout; default is top.
 #[derive(PartialEq, Clone, Copy, Debug)]
 pub enum VerticalAlignment {
     Top,
@@ -73,64 +76,63 @@ pub enum VerticalAlignment {
     Middle
 }
 
-/// Convenience wrapper around settings for Layout Table mode.
+/// Composite object containing properties for table mode layout. If you want to bind a callback to
+/// any of the properties, access them directly first.
 #[derive(PartialEq, Clone, Debug)]
 pub struct TableConfig {
 
     /// Maximum amount of rows. Usually you want to set either the maximum amount of rows or the
     /// maximum amount of columns, and let the other one grow with the amount of content
-    rows: EzProperty<usize>,
+    pub rows: EzProperty<usize>,
 
     /// Maximum amount of columns. Usually you want to set either the maximum amount of rows or the
     /// maximum amount of columns, and let the other one grow with the amount of content
-    columns: EzProperty<usize>,
+    pub columns: EzProperty<usize>,
 
     /// Default height of rows. If kept at 0, it will be set to the height of the parent divided by
     /// the amount of rows. If force_default_height is false, widgets are allowed to be larger
     /// than default_height, in which case each row will grow to its' largest widget.
-    default_height: EzProperty<usize>,
+    pub row_default_height: EzProperty<usize>,
 
     /// Default width of columns. If kept at 0, it will be set to the width of the parent divided by
     /// the amount of columns. If force_default_width is false, widgets are allowed to be larger
     /// than default_width, in which case each column will grow to its' largest widget.
-    default_width: EzProperty<usize>,
+    pub col_default_width: EzProperty<usize>,
 
     /// Each row will be exactly default_height. If default_height is 0, it will be set to the
     /// height of the parent divided by the amount of rows.
-    force_default_height: EzProperty<bool>,
+    pub force_default_row_height: EzProperty<bool>,
 
     /// Each column will be exactly default_width. If default_width is 0, it will be set to the
     /// width of the parent divided by the amount of columns.
-    force_default_width: EzProperty<bool>,
+    pub force_default_col_width: EzProperty<bool>,
 }
 impl TableConfig {
 
     pub fn new(name: String, scheduler: &mut SchedulerFrontend) -> Self {
 
         let rows_property = scheduler.new_usize_property(
-            format!("{}/table_rows", name).as_str(), 0);
+            format!("{}/rows", name).as_str(), 0);
         let columns_property = scheduler.new_usize_property(
-            format!("{}/table_columns", name).as_str(), 4);
+            format!("{}/cols", name).as_str(), 4);
 
         let default_height_property = scheduler.new_usize_property(
-            format!("{}/table_default_height", name).as_str(), 0);
+            format!("{}/row_default_height", name).as_str(), 0);
         let default_width_property = scheduler.new_usize_property(
-            format!("{}/table_default_width", name).as_str(), 0);
+            format!("{}/col_default_width", name).as_str(), 0);
 
         let force_default_height_property = scheduler.new_bool_property(
-            format!("{}/table_default_row_height", name).as_str(),
-            false);
+            format!("{}/force_default_row_height", name).as_str(),false);
         let force_default_width_property = scheduler.new_bool_property(
-            format!("{}/table_default_column_width", name).as_str(),
-            false);
+            format!("{}/force_default_col_width", name).as_str(),false);
 
         TableConfig {
             rows: rows_property,
             columns: columns_property,
-            default_height: default_height_property,
-            default_width: default_width_property,
-            force_default_height: force_default_height_property,
-            force_default_width: force_default_width_property,
+            row_default_height: default_height_property,
+            col_default_width: default_width_property,
+            force_default_row_height: force_default_height_property,
+            force_default_col_width: force_default_width_property,
         }
     }
 
@@ -142,62 +144,61 @@ impl TableConfig {
         self.rows.value
     }
 
-    pub fn set_columns(&mut self, columns: usize) {
+    pub fn set_cols(&mut self, columns: usize) {
         self.columns.set(columns);
     }
 
-    pub fn get_columns(&self) -> usize {
+    pub fn get_cols(&self) -> usize {
         self.columns.value
     }
 
-    pub fn set_default_height(&mut self, default: usize) {
-        self.default_height.set(default);
+    pub fn set_row_default_height(&mut self, default: usize) {
+        self.row_default_height.set(default);
     }
 
-    pub fn get_default_height(&self) -> usize {
-        self.default_height.value
+    pub fn get_row_default_height(&self) -> usize {
+        self.row_default_height.value
     }
 
-    pub fn set_default_width(&mut self, default: usize) {
-        self.default_width.set(default);
+    pub fn set_col_default_width(&mut self, default: usize) {
+        self.col_default_width.set(default);
     }
 
-    pub fn get_default_width(&self) -> usize {
-        self.default_width.value
+    pub fn get_col_default_width(&self) -> usize {
+        self.col_default_width.value
     }
 
-    pub fn set_force_default_height(&mut self, force: bool) {
-        self.force_default_height.set(force);
+    pub fn set_force_default_row_height(&mut self, force: bool) {
+        self.force_default_row_height.set(force);
     }
 
-    pub fn get_force_default_height(&self) -> bool {
-        self.force_default_height.value
+    pub fn get_force_default_row_height(&self) -> bool {
+        self.force_default_row_height.value
     }
 
-    pub fn set_force_default_width(&mut self, force: bool) {
-        self.force_default_width.set(force);
+    pub fn set_force_default_col_width(&mut self, force: bool) {
+        self.force_default_col_width.set(force);
     }
 
-    pub fn get_force_default_width(&self) -> bool {
-        self.force_default_width.value
+    pub fn get_force_default_col_width(&self) -> bool {
+        self.force_default_col_width.value
     }
 
     pub fn clean_up_properties(&self, scheduler: &mut SchedulerFrontend) {
         clean_up_property(scheduler, &self.rows.name);
         clean_up_property(scheduler, &self.columns.name);
-        clean_up_property(scheduler, &self.force_default_height.name);
-        clean_up_property(scheduler, &self.force_default_width.name);
+        clean_up_property(scheduler, &self.force_default_row_height.name);
+        clean_up_property(scheduler, &self.force_default_col_width.name);
     }
 }
 
 
-/// Convenience wrapper around a size tuple.
+/// Composite object containing size related properties. If you want to bind a callback to height
+/// or width, access them directly first.
 #[derive(PartialEq, Clone, Debug)]
 pub struct StateSize {
-    width: EzProperty<usize>,
-    height: EzProperty<usize>,
-    infinite_width: bool,
-    infinite_height: bool,
+    pub width: EzProperty<usize>,
+    pub height: EzProperty<usize>,
 }
 impl StateSize {
 
@@ -210,8 +211,6 @@ impl StateSize {
         StateSize {
             width: width_property,
             height: height_property,
-            infinite_width: false,
-            infinite_height: false
         }
     }
 
@@ -223,18 +222,6 @@ impl StateSize {
 
     pub fn get_height(&self) -> usize { self.height.value }
 
-    pub fn set_infinite_width(&mut self, force: bool) {
-        self.infinite_width = force;
-    }
-
-    pub fn get_infinite_width(&self) -> bool { self.infinite_width }
-
-    pub fn set_infinite_height(&mut self, force: bool) {
-        self.infinite_height = force;
-    }
-
-    pub fn get_infinite_height(&self) -> bool { self.infinite_height }
-
     pub fn clean_up_properties(&self, scheduler: &mut SchedulerFrontend) {
         clean_up_property(scheduler, &self.width.name);
         clean_up_property(scheduler, &self.height.name);
@@ -242,11 +229,36 @@ impl StateSize {
 }
 
 
-/// Convenience wrapper around an XY tuple.
+/// Object containing infinite size properties. These are used for scrolling, indicating that
+/// content can theoretically be infinite size on that axis.
+#[derive(PartialEq, Clone, Debug, Default)]
+pub struct InfiniteSize {
+    pub width: bool,
+    pub height: bool,
+}
+impl InfiniteSize {
+
+    pub fn set_width(&mut self, force: bool) {
+        self.width = force;
+    }
+
+    pub fn get_width(&self) -> bool { self.width }
+
+    pub fn set_height(&mut self, force: bool) {
+        self.height = force;
+    }
+
+    pub fn get_height(&self) -> bool { self.height }
+
+}
+
+
+/// Composite object containing both an X and a Y coordinate. If you want to set a callback for
+/// position access the 'x' or 'y' property first.
 #[derive(PartialEq, Clone, Debug)]
 pub struct StateCoordinates {
-    x: EzProperty<usize>,
-    y: EzProperty<usize>,
+    pub x: EzProperty<usize>,
+    pub y: EzProperty<usize>,
 }
 impl StateCoordinates {
     pub fn new(x: usize, y: usize, name: String, scheduler: &mut SchedulerFrontend) -> Self {
@@ -282,93 +294,98 @@ impl StateCoordinates {
 }
 
 
-/// Convenience wrapper around an size_hint tuple.
+/// Composite object containing both width and height autoscaling. If you want to set a callback for
+/// either, access the 'width' or 'height' property first.
 #[derive(PartialEq, Clone, Debug)]
 pub struct AutoScale {
-    width: EzProperty<bool>,
-    height: EzProperty<bool>,
+    pub auto_scale_width: EzProperty<bool>,
+    pub auto_scale_height: EzProperty<bool>,
 }
 impl AutoScale {
 
     pub fn new(width: bool, height: bool, name: String, scheduler: &mut SchedulerFrontend) -> Self {
         let width_property =
-            scheduler.new_bool_property(format!("{}/autoscale_width", name).as_str(),
+            scheduler.new_bool_property(format!("{}/auto_scale_width", name).as_str(),
                                         width);
         let height_property =
-            scheduler.new_bool_property(format!("{}/autoscale_height", name).as_str(),
+            scheduler.new_bool_property(format!("{}/auto_scale_height", name).as_str(),
                                         height);
-        AutoScale{width: width_property, height: height_property}
+        AutoScale{ auto_scale_width: width_property, auto_scale_height: height_property}
     }
 
-    pub fn set_width(&mut self, width: bool) {
-        self.width.set(width);
+    pub fn set_auto_scale_width(&mut self, width: bool) {
+        self.auto_scale_width.set(width);
     }
 
-    pub fn get_width(&self) -> bool {
-        self.width.value
+    pub fn get_auto_scale_width(&self) -> bool {
+        self.auto_scale_width.value
     }
 
-    pub fn set_height(&mut self, height: bool) {
-        self.height.set(height);
+    pub fn set_auto_scale_height(&mut self, height: bool) {
+        self.auto_scale_height.set(height);
     }
 
-    pub fn get_height(&self) -> bool {
-        self.height.value
+    pub fn get_auto_scale_height(&self) -> bool {
+        self.auto_scale_height.value
     }
+
     pub fn clean_up_properties(&self, scheduler: &mut SchedulerFrontend) {
-        clean_up_property(scheduler, &self.width.name);
-        clean_up_property(scheduler, &self.height.name);
+        clean_up_property(scheduler, &self.auto_scale_width.name);
+        clean_up_property(scheduler, &self.auto_scale_height.name);
     }
 }
 
 
-/// Convenience wrapper around an size_hint tuple.
+/// Composite object containing both x and y size hints. If you want to set a callback for
+/// either, access the 'x' or 'y' property first.
 #[derive(PartialEq, Clone, Debug)]
 pub struct SizeHint {
-    x: EzProperty<Option<f64>>,
-    y: EzProperty<Option<f64>>,
+    size_hint_x: EzProperty<Option<f64>>,
+    size_hint_y: EzProperty<Option<f64>>,
 }
 impl SizeHint {
 
     pub fn new(x: Option<f64>, y: Option<f64>, name: String, scheduler: &mut SchedulerFrontend)
         -> Self {
         let x_property =
-            scheduler.new_size_hint_property(format!("{}/size_hint_width", name).as_str(),
+            scheduler.new_size_hint_property(format!("{}/size_hint_x", name).as_str(),
                                         x);
         let y_property =
-            scheduler.new_size_hint_property(format!("{}/size_hint_height", name).as_str(),
+            scheduler.new_size_hint_property(format!("{}/size_hint_y", name).as_str(),
                                         y);
-        SizeHint{x: x_property, y: y_property}
+        SizeHint{ size_hint_x: x_property, size_hint_y: y_property}
     }
 
-    pub fn set_x(&mut self, x: Option<f64>) {
-        self.x.set(x);
+    pub fn set_size_hint_x(&mut self, x: Option<f64>) {
+        self.size_hint_x.set(x);
     }
 
-    pub fn get_x(&self) -> Option<f64> {
-        self.x.value
+    pub fn get_size_hint_x(&self) -> Option<f64> {
+        self.size_hint_x.value
     }
 
-    pub fn set_y(&mut self, y: Option<f64>) {
-        self.y.set(y);
+    pub fn set_size_hint_y(&mut self, y: Option<f64>) {
+        self.size_hint_y.set(y);
     }
 
-    pub fn get_y(&self) -> Option<f64> {
-        self.y.value
+    pub fn get_size_hint_y(&self) -> Option<f64> {
+        self.size_hint_y.value
     }
 
     pub fn clean_up_properties(&self, scheduler: &mut SchedulerFrontend) {
-        clean_up_property(scheduler, &self.x.name);
-        clean_up_property(scheduler, &self.y.name);
+        clean_up_property(scheduler, &self.size_hint_x.name);
+        clean_up_property(scheduler, &self.size_hint_y.name);
     }
 }
 
 
-/// Convenience wrapper around an pos_hint tuple.
+
+/// Composite object containing both x and y pos hints. If you want to set a callback for
+/// either, access the 'x' or 'y' property first.
 #[derive(PartialEq, Clone, Debug)]
 pub struct PosHint {
-    x: EzProperty<Option<(HorizontalAlignment, f64)>>,
-    y: EzProperty<Option<(VerticalAlignment, f64)>>,
+    pox_hint_x: EzProperty<Option<(HorizontalAlignment, f64)>>,
+    pos_hint_y: EzProperty<Option<(VerticalAlignment, f64)>>,
 }
 impl PosHint {
 
@@ -380,72 +397,429 @@ impl PosHint {
         let y_property =
             scheduler.new_vertical_pos_hint_property(
                 format!("{}/pos_hint_y", name).as_str(),y);
-        PosHint{x: x_property, y: y_property}
+        PosHint{ pox_hint_x: x_property, pos_hint_y: y_property}
     }
 
-    pub fn set_x(&mut self, x: Option<(HorizontalAlignment, f64)>) {
-        self.x.set(x);
+    pub fn set_pos_hint_x(&mut self, x: Option<(HorizontalAlignment, f64)>) {
+        self.pox_hint_x.set(x);
     }
 
-    pub fn get_x(&self) -> Option<(HorizontalAlignment, f64)> {
-        self.x.value
+    pub fn get_pos_hint_x(&self) -> Option<(HorizontalAlignment, f64)> {
+        self.pox_hint_x.value
     }
 
-    pub fn set_y(&mut self, y: Option<(VerticalAlignment, f64)>) {
-        self.y.set(y);
+    pub fn set_pos_hint_y(&mut self, y: Option<(VerticalAlignment, f64)>) {
+        self.pos_hint_y.set(y);
     }
 
-    pub fn get_y(&self) -> Option<(VerticalAlignment, f64)> {
-        self.y.value
+    pub fn get_pos_hint_y(&self) -> Option<(VerticalAlignment, f64)> {
+        self.pos_hint_y.value
     }
 
     pub fn clean_up_properties(&self, scheduler: &mut SchedulerFrontend) {
-        clean_up_property(scheduler, &self.x.name);
-        clean_up_property(scheduler, &self.y.name);
+        clean_up_property(scheduler, &self.pox_hint_x.name);
+        clean_up_property(scheduler, &self.pos_hint_y.name);
     }
 }
 
 
-// Convenience wrapper around a callback configuration
+/// Convenience wrapper around a callback configuration. Here is an example of how to use this
+/// object; we will set an on_press callback:
+/// ```
+/// use ez_term::*;
+/// let (root_widget, mut state_tree, mut scheduler) = load_ui();
+///
+/// let my_callback = move |context: EzContext| {
+///
+///     true
+/// };
+/// let new_callback_config = CallbackConfig::from_on_press(Box::new(my_callback));
+/// scheduler.update_callback_config("my_button", new_callback_config);
+/// ```
+/// For more information on each callback, see the docs on the properties of this struct.
 #[derive(Default)]
 pub struct CallbackConfig {
 
-    /// Function to call when an object is selected.
+    /// This callback is activated when a widget is selected. A selection can occur when the user uses
+    /// the keyboard up/down buttons (and the widget has a selection_order) or when the widget is
+    /// hovered. Selectable widgets are: buttons, checkboxes, dropdowns, radio buttons and sliders.
+    /// Text inputs are selectable by keyboard, but not by mouse hovering; instead they have to be
+    /// clicked to be selected. The second argument in a on_select callback is an Option<Coordinates>.
+    /// Is a widget was selected by keyboard, this argument will be None. If it was selected by mouse,
+    /// it will contains coordinates.To set this callback with a closure:
+    /// ```
+    /// use ez_term::*;
+    /// let (root_widget, mut state_tree, mut scheduler) = load_ui();
+    ///
+    /// let my_callback = move |context: EzContext, mouse_pos: Option<Coordinates>| {
+    ///
+    ///     true
+    /// };
+    /// let new_callback_config = CallbackConfig::from_on_select(Box::new(my_callback));
+    /// scheduler.update_callback_config("my_button", new_callback_config);
+    /// ```
+    /// To set this callback with a function:
+    /// ```
+    /// use ez_term::*;
+    /// let (root_widget, mut state_tree, mut scheduler) = load_ui();
+    ///
+    /// fn my_callback(context: EzContext, mouse_pos: Option<Coordinates>) -> bool {
+    ///
+    ///     true
+    /// };
+    /// let new_callback_config = CallbackConfig::from_on_select(Box::new(my_callback));
+    /// scheduler.update_callback_config("my_button", new_callback_config);
+    /// ```
     pub on_select: Option<OptionalMouseCallbackFunction> ,
 
-    /// Function to call when an object is deselected.
+    /// This callback is activated when a widget is deselected. A deselection occurs when the mouse
+    /// cursor leaves the selection widget, or when the user uses the keyboard up/down buttons to move
+    /// on from the selected widget. To set this callback with a closure:
+    /// ```
+    /// use ez_term::*;
+    /// let (root_widget, mut state_tree, mut scheduler) = load_ui();
+    ///
+    /// let my_callback = move |context: EzContext| {
+    ///
+    ///     true
+    /// };
+    /// let new_callback_config = CallbackConfig::from_on_deselect(Box::new(my_callback));
+    /// scheduler.update_callback_config("my_button", new_callback_config);
+    /// ```
+    /// To set this callback with a function:
+    /// ```
+    /// use ez_term::*;
+    /// let (root_widget, mut state_tree, mut scheduler) = load_ui();
+    ///
+    /// fn my_callback(context: EzContext) -> bool {
+    ///
+    ///     true
+    /// };
+    /// let new_callback_config = CallbackConfig::from_on_deselect(Box::new(my_callback));
+    /// scheduler.update_callback_config("my_button", new_callback_config);
+    /// ```
     pub on_deselect: Option<GenericEzFunction>,
 
-    /// Function to call when an object is keyboard entered or left clicked,
+    /// This callback is activated when a widget is either clicked by the left mouse button, or
+    /// keyboard entered when it is selected. In other words, it is a composite callback containing both
+    /// on_keyboard_enter and on_left_mouse_click. This can be useful for example with buttons, where
+    /// you want something done regardless of whether the user used his mouse or keyboard to press the
+    /// button. To set this callback with a closure:
+    /// ```
+    /// use ez_term::*;
+    /// let (root_widget, mut state_tree, mut scheduler) = load_ui();
+    ///
+    /// let my_callback = move |context: EzContext| {
+    ///
+    ///     true
+    /// };
+    /// let new_callback_config = CallbackConfig::from_on_press(Box::new(my_callback));
+    /// scheduler.update_callback_config("my_button", new_callback_config);
+    /// ```
+    /// To set this callback with a function:
+    /// ```
+    /// use ez_term::*;
+    /// let (root_widget, mut state_tree, mut scheduler) = load_ui();
+    ///
+    /// fn my_callback(context: EzContext) -> bool {
+    ///
+    ///     true
+    /// };
+    /// let new_callback_config = CallbackConfig::from_on_press(Box::new(my_callback));
+    /// scheduler.update_callback_config("my_button", new_callback_config);
+    /// ```
     pub on_press: Option<GenericEzFunction>,
 
-    /// Function to call when this widget is right clicked
+    /// This callback is activated when a widget is selected and the 'enter' key is pressed on the
+    /// keyboard.
+    /// To set this callback with a closure:
+    /// ```
+    /// use ez_term::*;
+    /// let (root_widget, mut state_tree, mut scheduler) = load_ui();
+    ///
+    /// let my_callback = move |context: EzContext| {
+    ///
+    ///     true
+    /// };
+    /// let new_callback_config = CallbackConfig::from_on_press(Box::new(my_callback));
+    /// scheduler.update_callback_config("my_button", new_callback_config);
+    /// ```
+    /// To set this callback with a function:
+    /// ```
+    /// use ez_term::*;
+    /// let (root_widget, mut state_tree, mut scheduler) = load_ui();
+    ///
+    /// fn my_callback(context: EzContext) -> bool {
+    ///
+    ///     true
+    /// };
+    /// let new_callback_config = CallbackConfig::from_on_press(Box::new(my_callback));
+    /// scheduler.update_callback_config("my_button", new_callback_config);
+    /// ```
     pub on_keyboard_enter: Option<GenericEzFunction>,
 
-    /// Function to call when this widget is right clicked
+    /// This callback is activated when a widget is clicked by the left mouse button. Keep in mind that
+    /// when a widget is clicked, any layouts underneath it are also clicked. The root layout is the
+    /// first to receive the mouse click event, followed by sub layouts, and finally the widget. If any
+    /// layout has a callback that returns true, the event is consumed and does not reach further
+    /// layouts or widgets. To set this callback with a closure:
+    /// ```
+    /// use ez_term::*;
+    /// let (root_widget, mut state_tree, mut scheduler) = load_ui();
+    ///
+    /// let my_callback = move |context: EzContext, mouse_pos: Coordinates| {
+    ///
+    ///     true
+    /// };
+    /// let new_callback_config = CallbackConfig::from_on_left_mouse_click(Box::new(my_callback));
+    /// scheduler.update_callback_config("my_label", new_callback_config);
+    /// ```
+    /// To set this callback with a function:
+    /// ```
+    /// use ez_term::*;
+    /// let (root_widget, mut state_tree, mut scheduler) = load_ui();
+    ///
+    /// fn my_callback(context: EzContext, mouse_pos: Coordinates) -> bool {
+    ///
+    ///     true
+    /// };
+    /// let new_callback_config = CallbackConfig::from_on_left_mouse_click(Box::new(my_callback));
+    /// scheduler.update_callback_config("my_label", new_callback_config);
+    /// ```
     pub on_left_mouse_click: Option<MouseCallbackFunction>,
 
-    /// Function to call when this widget is right clicked
+    /// This callback is activated when a widget is clicked by the right mouse button. Keep in mind that
+    /// when a widget is clicked, any layouts underneath it are also clicked. The root layout is the
+    /// first to receive the mouse click event, followed by sub layouts, and finally the widget. If any
+    /// layout has a callback that returns true, the event is consumed and does not reach further
+    /// layouts or widgets. To set this callback with a closure:
+    /// ```
+    /// use ez_term::*;
+    /// let (root_widget, mut state_tree, mut scheduler) = load_ui();
+    ///
+    /// let my_callback = move |context: EzContext, mouse_pos: Coordinates| {
+    ///
+    ///     true
+    /// };
+    /// let new_callback_config = CallbackConfig::from_on_right_mouse_click(Box::new(my_callback));
+    /// scheduler.update_callback_config("my_button", new_callback_config);
+    /// ```
+    /// To set this callback with a function:
+    /// ```
+    /// use ez_term::*;
+    /// let (root_widget, mut state_tree, mut scheduler) = load_ui();
+    ///
+    /// fn my_callback(context: EzContext, mouse_pos: Coordinates) -> bool {
+    ///
+    ///     true
+    /// };
+    /// let new_callback_config = CallbackConfig::from_on_right_mouse_click(Box::new(my_callback));
+    /// scheduler.update_callback_config("my_button", new_callback_config);
+    /// ```
     pub on_right_mouse_click: Option<MouseCallbackFunction>,
 
-    /// Function to call when this widget is mouse hovered
+    /// This callback is activated when a widget is hovered by the mouse. Keep in mind that
+    /// when a widget is hovered, any layouts underneath it are also hovered. The root layout is the
+    /// first to receive the hover event, followed by sub layouts, and finally the widget. If any
+    /// layout has a callback that returns true, the event is consumed and does not reach further
+    /// layouts or widgets. To set this callback with a closure:
+    /// ```
+    /// use ez_term::*;
+    /// let (root_widget, mut state_tree, mut scheduler) = load_ui();
+    ///
+    /// let my_callback = move |context: EzContext, mouse_pos: Coordinates| {
+    ///
+    ///     true
+    /// };
+    /// let new_callback_config = CallbackConfig::from_on_hover(Box::new(my_callback));
+    /// scheduler.update_callback_config("my_label", new_callback_config);
+    /// ```
+    /// To set this callback with a function:
+    /// ```
+    /// use ez_term::*;
+    /// let (root_widget, mut state_tree, mut scheduler) = load_ui();
+    ///
+    /// fn my_callback(context: EzContext, mouse_pos: Coordinates) -> bool {
+    ///
+    ///     true
+    /// };
+    /// let new_callback_config = CallbackConfig::from_on_hover(Box::new(my_callback));
+    /// scheduler.update_callback_config("my_label", new_callback_config);
+    /// ```
     pub on_hover: Option<MouseCallbackFunction>,
 
-    /// Function to call when this widget is left mouse dragged
+    /// This callback is activated when a widget is left mouse clicked and the click is not released.
+    /// As long as the click is not released, the widget will receive a new event every time the mouse
+    /// cursor changes position, as long as the mouse cursor stays on that widget. The callback receives
+    /// two extra arguments: one is the previous drag position, and one is the current drag position.
+    /// The previous drag position argument is an Option<Coordinates>; on the very first drag event,
+    /// the previous drag position will be None. This is how you know the drag is new. Subsequently,
+    /// the previous drag position will contain Coordinates. Because you have both the current and the
+    /// previous position, you know which direction the drag is going.
+    /// To set this callback with a closure:
+    /// ```
+    /// use ez_term::*;
+    /// let (root_widget, mut state_tree, mut scheduler) = load_ui();
+    ///
+    /// let my_callback = move |context: EzContext, previous_mouse_pos: Option<Coordinates>,
+    ///                         mouse_pos: Coordinates| {
+    ///
+    ///     true
+    /// };
+    /// let new_callback_config = CallbackConfig::from_on_drag(Box::new(my_callback));
+    /// scheduler.update_callback_config("my_label", new_callback_config);
+    /// ```
+    /// To set this callback with a function:
+    /// ```
+    /// use ez_term::*;
+    /// let (root_widget, mut state_tree, mut scheduler) = load_ui();
+    ///
+    /// fn my_callback(context: EzContext, previous_mouse_pos: Option<Coordinates>,
+    ///                mouse_pos: Coordinates) -> bool {
+    ///
+    ///     true
+    /// };
+    /// let new_callback_config = CallbackConfig::from_on_drag(Box::new(my_callback));
+    /// scheduler.update_callback_config("my_label", new_callback_config);
+    /// ```
     pub on_drag: Option<MouseDragCallbackFunction>,
 
-    /// Function to call when this widget is scrolled up
+    /// This callback is activated when a widget is scrolled up by the mouse. Keep in mind that
+    /// when a widget is scrolled, any layouts underneath it are also scrolled. The root layout is the
+    /// first to receive the scroll event, followed by sub layouts, and finally the widget. If any
+    /// layout has a callback that returns true, the event is consumed and does not reach further
+    /// layouts or widgets. To set this callback with a closure:
+    /// ```
+    /// use ez_term::*;
+    /// let (root_widget, mut state_tree, mut scheduler) = load_ui();
+    ///
+    /// let my_callback = move |context: EzContex| {
+    ///
+    ///     true
+    /// };
+    /// let new_callback_config = CallbackConfig::from_on_scroll_up(Box::new(my_callback));
+    /// scheduler.update_callback_config("my_label", new_callback_config);
+    /// ```
+    /// To set this callback with a function:
+    /// ```
+    /// use ez_term::*;
+    /// let (root_widget, mut state_tree, mut scheduler) = load_ui();
+    ///
+    /// fn my_callback(context: EzContext) -> bool {
+    ///
+    ///     true
+    /// };
+    /// let new_callback_config = CallbackConfig::from_on_scroll_up(Box::new(my_callback));
+    /// scheduler.update_callback_config("my_label", new_callback_config);
+    /// ```
     pub on_scroll_up: Option<GenericEzFunction>,
 
-    /// Function to call when this widget is scrolled down
+    /// This callback is activated when a widget is scrolled down by the mouse. Keep in mind that
+    /// when a widget is scrolled, any layouts underneath it are also scrolled. The root layout is the
+    /// first to receive the scroll event, followed by sub layouts, and finally the widget. If any
+    /// layout has a callback that returns true, the event is consumed and does not reach further
+    /// layouts or widgets. To set this callback with a closure:
+    /// ```
+    /// use ez_term::*;
+    /// let (root_widget, mut state_tree, mut scheduler) = load_ui();
+    ///
+    /// let my_callback = move |context: EzContex| {
+    ///
+    ///     true
+    /// };
+    /// let new_callback_config = CallbackConfig::from_on_scroll_down(Box::new(my_callback));
+    /// scheduler.update_callback_config("my_label", new_callback_config);
+    /// ```
+    /// To set this callback with a function:
+    /// ```
+    /// use ez_term::*;
+    /// let (root_widget, mut state_tree, mut scheduler) = load_ui();
+    ///
+    /// fn my_callback(context: EzContext) -> bool {
+    ///
+    ///     true
+    /// };
+    /// let new_callback_config = CallbackConfig::from_on_scroll_down(Box::new(my_callback));
+    /// scheduler.update_callback_config("my_label", new_callback_config);
+    /// ```
     pub on_scroll_down: Option<GenericEzFunction>,
 
-    /// Function to call when the value of an object changes
+    /// This callback is activated when the value of a widget has changed. Only widgets with values
+    /// support this, which are: checkbox, dropdown, radio button, text input and slider. The only
+    /// special case is the radio button; when a radio button is activated, all other radio buttons in
+    /// that group are deactivated (because they're mutually exclusive). For radio buttons,
+    /// on_value_change is only called when a button becomes *active*.
+    /// To set this callback with a closure:
+    /// ```
+    /// use ez_term::*;
+    /// let (root_widget, mut state_tree, mut scheduler) = load_ui();
+    ///
+    /// let my_callback = move |context: EzContext| {
+    ///
+    ///     true
+    /// };
+    /// let new_callback_config = CallbackConfig::from_on_value_change(Box::new(my_callback));
+    /// scheduler.update_callback_config("my_checkbox", new_callback_config);
+    /// ```
+    /// To set this callback with a function:
+    /// ```
+    /// use ez_term::*;
+    /// let (root_widget, mut state_tree, mut scheduler) = load_ui();
+    ///
+    /// fn my_callback(context: EzContext) -> bool {
+    ///
+    ///     true
+    /// };
+    /// let new_callback_config = CallbackConfig::from_on_value_change(Box::new(my_callback));
+    /// scheduler.update_callback_config("my_checkbox", new_callback_config);
+    /// ```
     pub on_value_change: Option<GenericEzFunction>,
 
-    /// A Key to callback function lookup used to store keybinds for this widget. See
-    /// [KeyboardCallbackFunction] type for callback function signature.
+    /// Custom keymaps allow you to bind keyboard keys to a callback. Keep in mind that for this to work,
+    /// a widget must already be selected; only then will it receive the keyboard event.
+    /// To bind a custom key, you must first create a KeyMap object This KeyMap object is then inserted
+    /// into a CallbackConfig object, which is bound to a widget as normal. To bind for example the "a"
+    /// key with a closure:
+    /// ```
+    /// use ez_term::*;
+    /// let (root_widget, mut state_tree, mut scheduler) = load_ui();
+    ///
+    /// let my_callback = move |context: EzContext, keycode: KeyCode| {
+    ///
+    ///     true
+    /// };
+    ///
+    /// let mut keymap = KeyMap::new();
+    /// keymap.insert(KeyCode::Char('a'), Box::new(my_callback));
+    ///
+    /// let new_callback_config = CallbackConfig::from_keymap(keymap);
+    /// scheduler.update_callback_config("my_checkbox", new_callback_config);
+    /// ```
+    /// To do the same with a function:
+    /// ```
+    /// use ez_term::*;
+    /// let (root_widget, mut state_tree, mut scheduler) = load_ui();
+    ///
+    /// fn my_callback(context: EzContext, keycode: KeyCode) -> bool {
+    ///
+    ///     true
+    /// };
+    ///
+    /// let mut keymap = KeyMap::new();
+    /// keymap.insert(KeyCode::Char('a'), Box::new(my_callback));
+    ///
+    /// let new_callback_config = CallbackConfig::from_keymap(keymap);
+    /// scheduler.update_callback_config("my_checkbox", new_callback_config);
+    /// ```
     pub keymap: KeyMap,
+
+    /// A list of callbacks to call when a property changes. It's recommended to call the 'bind'
+    /// method on a property directly rather than using this directly.
+    /// ```
+    /// let state = state_tree.get_by_id_mut("my_widget").as_generic();
+    /// state.size.height.bind(callback_func, scheduler);
+    /// ```
+    pub property_callbacks: Vec<GenericEzFunction>,
 }
 impl CallbackConfig {
 
@@ -601,26 +975,28 @@ impl CallbackConfig {
 }
 
 
-/// ## Key map
-/// A crossterm KeyCode > Callback function lookup. Used for custom user keybinds
+/// A HashMap containg a KeyCode as key and a callback as Value. This is used for setting the
+/// keymap property of a [CallbackConfig]
 pub type KeyMap = HashMap<KeyCode, KeyboardCallbackFunction>;
 
 
-/// Convenience wrapper around a [LayoutState] scrolling configuration
+/// Composite object containing all properties related to scrolling. As an end-user, you should
+/// only set enable_x, enable_y, view_start_x and/or view_start_y. The other properties are set
+/// automatically when constructing the layout.
 #[derive(PartialEq, Clone, Debug)]
 pub struct ScrollingConfig {
 
     /// Bool representing whether the x axis should be able to scroll
-    enable_x: EzProperty<bool>,
+    pub enable_x: EzProperty<bool>,
 
     /// Bool representing whether the y axis should be able to scroll
-    enable_y: EzProperty<bool>,
+    pub enable_y: EzProperty<bool>,
 
     /// Start of the view on the x axis, content is shown from here until view_start_x + width
-    view_start_x: usize,
+    pub view_start_x: EzProperty<f64>,
 
     /// Start of the view on the y axis, content is shown from here until view_start_y + height
-    view_start_y: usize,
+    pub view_start_y: EzProperty<f64>,
 
     /// Bool representing whether the owning object is actually scrolling, as it is possible for
     /// scrolling to be enabled but not active (i.e. content already fits within object)
@@ -638,19 +1014,26 @@ pub struct ScrollingConfig {
 }
 impl ScrollingConfig {
 
-    pub fn new(enable_x: bool, enable_y: bool, name: String, scheduler: &mut SchedulerFrontend) -> Self {
+    pub fn new(enable_x: bool, enable_y: bool, view_start_x: f64, view_start_y: f64,
+               name: String, scheduler: &mut SchedulerFrontend) -> Self {
 
         let x_property =
-            scheduler.new_bool_property(format!("{}/scrolling_enable_x", name).as_str(),
+            scheduler.new_bool_property(format!("{}/enable_x", name).as_str(),
                                         enable_x);
         let y_property =
-            scheduler.new_bool_property(format!("{}/scrolling_enable_y", name).as_str(),
+            scheduler.new_bool_property(format!("{}/enable_y", name).as_str(),
                                         enable_y);
+        let view_start_x_property =
+            scheduler.new_f64_property(format!("{}/view_start_x", name).as_str(),
+                                        view_start_x);
+        let view_start_y_property =
+            scheduler.new_f64_property(format!("{}/view_start_y", name).as_str(),
+                                        view_start_y);
         ScrollingConfig {
             enable_x: x_property,
             enable_y: y_property,
-            view_start_x: 0,
-            view_start_y: 0,
+            view_start_x: view_start_x_property,
+            view_start_y: view_start_y_property,
             is_scrolling_x: false,
             is_scrolling_y: false,
             original_height: 0,
@@ -674,20 +1057,20 @@ impl ScrollingConfig {
         self.enable_y.value
     }
 
-    pub fn set_view_start_x(&mut self, view_start: usize) {
-        self.view_start_x = view_start;
+    pub fn set_view_start_x(&mut self, view_start: f64) {
+        self.view_start_x.set(view_start);
     }
 
-    pub fn get_view_start_x(&self) -> usize {
-        self.view_start_x
+    pub fn get_view_start_x(&self) -> f64 {
+        self.view_start_x.value
     }
 
-    pub fn set_view_start_y(&mut self, view_start: usize) {
-        self.view_start_y = view_start;
+    pub fn set_view_start_y(&mut self, view_start: f64) {
+        self.view_start_y.set(view_start);
     }
 
-    pub fn get_view_start_y(&self) -> usize {
-        self.view_start_y
+    pub fn get_view_start_y(&self) -> f64 {
+        self.view_start_y.value
     }
 
     pub fn set_original_height(&mut self, height: usize) {
@@ -722,6 +1105,24 @@ impl ScrollingConfig {
         self.is_scrolling_y
     }
 
+    pub fn get_max_view_start_x(&self, effective_widget_width: usize) -> usize {
+        self.get_original_width() - effective_widget_width
+    }
+
+    pub fn get_absolute_view_start_x(&self, effective_widget_width: usize) -> usize {
+        (self.get_max_view_start_x(effective_widget_width) as f64 *
+            self.get_view_start_x()).round() as usize
+    }
+
+    pub fn get_max_view_start_y(&self, effective_widget_height: usize) -> usize {
+        self.get_original_height() - effective_widget_height
+    }
+
+    pub fn get_absolute_view_start_y(&self, effective_widget_height: usize) -> usize {
+        (self.get_max_view_start_y(effective_widget_height) as f64 *
+            self.get_view_start_y()).round() as usize
+    }
+
     pub fn clean_up_properties(&self, scheduler: &mut SchedulerFrontend) {
         clean_up_property(scheduler, &self.enable_x.name);
         clean_up_property(scheduler, &self.enable_y.name);
@@ -729,12 +1130,13 @@ impl ScrollingConfig {
 }
 
 
-/// Convenience wrapper around a border configuration
+/// Composite object containing properties related to layout/widget borders. If you want to bind a
+/// callback to one of the properties, access them directly first.
 #[derive(PartialEq, Clone, Debug)]
 pub struct BorderConfig {
 
     /// Bool representing whether an object should have a border
-    enabled: EzProperty<bool>,
+    border: EzProperty<bool>,
 
     /// The [Pixel.symbol] to use for the horizontal border if [border] is true
     horizontal_symbol: EzProperty<String>,
@@ -760,30 +1162,30 @@ impl BorderConfig {
     pub fn new(enable: bool, name: String, scheduler: &mut SchedulerFrontend) -> Self {
 
         let enabled_property =
-            scheduler.new_bool_property(format!("{}/border_enabled", name).as_str(),
+            scheduler.new_bool_property(format!("{}/border", name).as_str(),
                                         enable);
         let horizontal_symbol =
-            scheduler.new_string_property(format!("{}/border_horizontal", name).as_str(),
+            scheduler.new_string_property(format!("{}/horizontal_symbol", name).as_str(),
                                           "─".to_string());
         let vertical_symbol =
-            scheduler.new_string_property(format!("{}/border_vertical", name).as_str(),
+            scheduler.new_string_property(format!("{}/vertical_symbol", name).as_str(),
                                           "│".to_string());
         let top_left_symbol =
-            scheduler.new_string_property(format!("{}/border_top_left", name).as_str(),
+            scheduler.new_string_property(format!("{}/top_left_symbol", name).as_str(),
                                           "┌".to_string());
         let top_right_symbol =
-            scheduler.new_string_property(format!("{}/border_top_right", name).as_str(),
+            scheduler.new_string_property(format!("{}/top_right_symbol", name).as_str(),
                                           "┐".to_string());
         let bottom_left_symbol =
-            scheduler.new_string_property(format!("{}/border_bottom_left", name).as_str(),
+            scheduler.new_string_property(format!("{}/bottom_left_symbol", name).as_str(),
                                           "└".to_string());
         let bottom_right_symbol =
-            scheduler.new_string_property(format!("{}/border_bottom_right", name).as_str(),
+            scheduler.new_string_property(format!("{}/bottom_right_symbol", name).as_str(),
                                           "┘".to_string());
 
 
        BorderConfig {
-           enabled: enabled_property,
+           border: enabled_property,
            horizontal_symbol,
            vertical_symbol,
            top_left_symbol,
@@ -793,12 +1195,12 @@ impl BorderConfig {
        }
     }
 
-    pub fn set_enabled(&mut self, enabled: bool) {
-        self.enabled.set(enabled);
+    pub fn set_border(&mut self, enabled: bool) {
+        self.border.set(enabled);
     }
 
-    pub fn get_enabled(&self) -> bool {
-        self.enabled.value
+    pub fn get_border(&self) -> bool {
+        self.border.value
     }
 
     pub fn set_horizontal_symbol(&mut self, symbol: String) {
@@ -850,7 +1252,7 @@ impl BorderConfig {
     }
 
     pub fn clean_up_properties(&self, scheduler: &mut SchedulerFrontend) {
-        clean_up_property(scheduler, &self.enabled.name);
+        clean_up_property(scheduler, &self.border.name);
         clean_up_property(scheduler, &self.horizontal_symbol.name);
         clean_up_property(scheduler, &self.vertical_symbol.name);
         clean_up_property(scheduler, &self.top_left_symbol.name);
@@ -861,292 +1263,296 @@ impl BorderConfig {
 }
 
 
+/// Composite object containing properties related to the colors of a widget or layout. If you want
+/// to bind a callback to one of the properties, access it directly first.
 #[derive(PartialEq, Clone, Debug)]
 pub struct ColorConfig {
 
     /// The [Pixel.foreground_color] to use for this widgets' content
-    foreground: EzProperty<Color>,
+    fg_color: EzProperty<Color>,
 
     /// The [Pixel.background_color] to use for this widgets' content
-    background: EzProperty<Color>,
+    bg_color: EzProperty<Color>,
 
     /// The [Pixel.foreground_color] to use for this widgets' content when selected
-    selection_foreground: EzProperty<Color>,
+    selection_fg_color: EzProperty<Color>,
 
     /// The [Pixel.background_color] to use for this widgets' content when selected
-    selection_background: EzProperty<Color>,
+    selection_bg_color: EzProperty<Color>,
 
     /// The [Pixel.foreground_color] to use for this widgets' content is disabled
-    disabled_foreground: EzProperty<Color>,
+    disabled_fg_color: EzProperty<Color>,
 
     /// The [Pixel.background_color] to use for this widgets' content is disabled
-    disabled_background: EzProperty<Color>,
+    disabled_bg_color: EzProperty<Color>,
 
     /// The [Pixel.foreground_color] to use for this widgets' content is active
-    active_foreground: EzProperty<Color>,
+    active_fg_color: EzProperty<Color>,
 
     /// The [Pixel.background_color] to use for this widgets' content is active
-    active_background: EzProperty<Color>,
+    active_bg_color: EzProperty<Color>,
 
     /// The [Pixel.foreground_color] to use for this widgets' content when flashed
-    flash_foreground: EzProperty<Color>,
+    flash_fg_color: EzProperty<Color>,
 
     /// The [Pixel.background_color] to use for this widgets' content when flashed
-    flash_background: EzProperty<Color>,
+    flash_bg_color: EzProperty<Color>,
 
     /// The [Pixel.foreground_color] to use for tab headers
-    tab_foreground: EzProperty<Color>,
+    tab_fg_color: EzProperty<Color>,
 
     /// The [Pixel.background_color] to use for tab headers
-    tab_background: EzProperty<Color>,
+    tab_bg_color: EzProperty<Color>,
 
     /// The [Pixel.foreground_color] to use for filler pixels if [fill] is true
-    filler_foreground: EzProperty<Color>,
+    filler_fg_color: EzProperty<Color>,
 
     /// The [Pixel.background_color] to use for filler pixels if [fill] is true
-    filler_background: EzProperty<Color>,
+    filler_bg_color: EzProperty<Color>,
 
     /// The [Pixel.foreground_color] to use for border pixels
-    border_foreground: EzProperty<Color>,
+    border_fg_color: EzProperty<Color>,
 
     /// The [Pixel.background_color] to use for border pixels
-    border_background: EzProperty<Color>,
+    border_bg_color: EzProperty<Color>,
 
     /// The [Pixel.background_color] to use for this widgets' content when a position has been
     /// highlighted by the blinking cursor
-    cursor: EzProperty<Color>,
+    cursor_color: EzProperty<Color>,
 }
 impl ColorConfig {
     pub fn new(name: String, scheduler: &mut SchedulerFrontend) -> Self {
 
         let foreground = scheduler.new_color_property(
-            format!("{}/color_fg", name).as_str(), Color::White);
+            format!("{}/color_fg_color", name).as_str(), Color::White);
         let background = scheduler.new_color_property(
-            format!("{}/color_bg", name).as_str(), Color::Black);
+            format!("{}/color_bg_color", name).as_str(), Color::Black);
 
         let selection_foreground = scheduler.new_color_property(
-            format!("{}/color_selection_fg", name).as_str(), Color::Yellow);
+            format!("{}/selection_fg_color", name).as_str(), Color::Yellow);
         let selection_background = scheduler.new_color_property(
-            format!("{}/color_selection_bg", name).as_str(), Color::Blue);
+            format!("{}/selection_bg_color", name).as_str(), Color::Blue);
 
         let disabled_foreground = scheduler.new_color_property(
-            format!("{}/color_disabled_fg", name).as_str(), Color::White);
+            format!("{}/disabled_fg_color", name).as_str(), Color::White);
         let disabled_background = scheduler.new_color_property(
-            format!("{}/color_disabled_bg", name).as_str(), Color::Black);
+            format!("{}disabled_bg_color", name).as_str(), Color::Black);
 
         let active_foreground = scheduler.new_color_property(
-            format!("{}/color_active_fg", name).as_str(), Color::Red);
+            format!("{}/active_fg_color", name).as_str(), Color::Red);
         let active_background = scheduler.new_color_property(
-            format!("{}/color_active_bg", name).as_str(), Color::Black);
+            format!("{}/active_bg_color", name).as_str(), Color::Black);
 
         let flash_foreground = scheduler.new_color_property(
-            format!("{}/color_flash_fg", name).as_str(), Color::Yellow);
+            format!("{}/flash_fg_color", name).as_str(), Color::Yellow);
         let flash_background = scheduler.new_color_property(
-            format!("{}/color_flash_bg", name).as_str(), Color::White);
+            format!("{}/flash_bg_color", name).as_str(), Color::White);
 
         let filler_foreground = scheduler.new_color_property(
-            format!("{}/color_filler_fg", name).as_str(), Color::White);
+            format!("{}/filler_fg_color", name).as_str(), Color::White);
         let filler_background = scheduler.new_color_property(
-            format!("{}/color_filler_bg", name).as_str(), Color::Black);
+            format!("{}/filler_bg_color", name).as_str(), Color::Black);
 
         let tab_foreground = scheduler.new_color_property(
-            format!("{}/color_tab_fg", name).as_str(), Color::White);
+            format!("{}/tab_fg_color", name).as_str(), Color::White);
         let tab_background = scheduler.new_color_property(
-            format!("{}/color_tab_bg", name).as_str(), Color::Black);
+            format!("{}/tab_bg_color", name).as_str(), Color::Black);
 
         let border_foreground = scheduler.new_color_property(
-            format!("{}/color_border_fg", name).as_str(), Color::White);
+            format!("{}/border_fg_color", name).as_str(), Color::White);
         let border_background = scheduler.new_color_property(
-            format!("{}/color_border_bg", name).as_str(), Color::Black);
+            format!("{}/border_bg_color", name).as_str(), Color::Black);
 
         let cursor = scheduler.new_color_property(
-            format!("{}/color_cursor", name).as_str(), Color::DarkYellow);
+            format!("{}/cursor_color", name).as_str(), Color::DarkYellow);
 
         ColorConfig {
-            foreground,
-            background,
-            selection_foreground,
-            selection_background,
-            disabled_foreground,
-            disabled_background,
-            active_foreground,
-            active_background,
-            flash_foreground,
-            flash_background,
-            tab_foreground,
-            tab_background,
-            filler_foreground,
-            filler_background,
-            border_foreground,
-            border_background,
-            cursor,
+            fg_color: foreground,
+            bg_color: background,
+            selection_fg_color: selection_foreground,
+            selection_bg_color: selection_background,
+            disabled_fg_color: disabled_foreground,
+            disabled_bg_color: disabled_background,
+            active_fg_color: active_foreground,
+            active_bg_color: active_background,
+            flash_fg_color: flash_foreground,
+            flash_bg_color: flash_background,
+            tab_fg_color: tab_foreground,
+            tab_bg_color: tab_background,
+            filler_fg_color: filler_foreground,
+            filler_bg_color: filler_background,
+            border_fg_color: border_foreground,
+            border_bg_color: border_background,
+            cursor_color: cursor,
         }
     }
 
-    pub fn set_foreground(&mut self, color: Color) {
-        self.foreground.set(color);
+    pub fn set_fg_color(&mut self, color: Color) {
+        self.fg_color.set(color);
     }
 
-    pub fn get_foreground(&self) -> Color {
-        self.foreground.value
+    pub fn get_fg_color(&self) -> Color {
+        self.fg_color.value
     }
 
-    pub fn set_background(&mut self, color: Color) {
-        self.background.set(color);
+    pub fn set_bg_color(&mut self, color: Color) {
+        self.bg_color.set(color);
     }
 
-    pub fn get_background(&self) -> Color {
-        self.background.value
+    pub fn get_bg_color(&self) -> Color {
+        self.bg_color.value
     }
 
-    pub fn set_selection_foreground(&mut self, color: Color) {
-        self.selection_foreground.set(color);
+    pub fn set_selection_fg_color(&mut self, color: Color) {
+        self.selection_fg_color.set(color);
     }
 
-    pub fn get_selection_foreground(&self) -> Color {
-        self.selection_foreground.value
+    pub fn get_selection_fg_color(&self) -> Color {
+        self.selection_fg_color.value
     }
 
-    pub fn set_selection_background(&mut self, color: Color) {
-        self.selection_background.set(color);
+    pub fn set_selection_bg_color(&mut self, color: Color) {
+        self.selection_bg_color.set(color);
     }
 
-    pub fn get_selection_background(&self) -> Color {
-        self.selection_background.value
+    pub fn get_selection_bg_color(&self) -> Color {
+        self.selection_bg_color.value
     }
 
-    pub fn set_disabled_foreground(&mut self, color: Color) {
-        self.disabled_foreground.set(color);
+    pub fn set_disabled_fg_color(&mut self, color: Color) {
+        self.disabled_fg_color.set(color);
     }
 
-    pub fn get_disabled_foreground(&self) -> Color {
-        self.disabled_foreground.value
+    pub fn get_disabled_fg_color(&self) -> Color {
+        self.disabled_fg_color.value
     }
 
-    pub fn set_disabled_background(&mut self, color: Color) {
-        self.disabled_background.set(color);
+    pub fn set_disabled_bg_color(&mut self, color: Color) {
+        self.disabled_bg_color.set(color);
     }
 
-    pub fn get_disabled_background(&self) -> Color {
-        self.disabled_background.value
+    pub fn get_disabled_bg_color(&self) -> Color {
+        self.disabled_bg_color.value
     }
 
-    pub fn set_active_foreground(&mut self, color: Color) {
-        self.active_foreground.set(color);
+    pub fn set_active_fg_color(&mut self, color: Color) {
+        self.active_fg_color.set(color);
     }
 
-    pub fn get_active_foreground(&self) -> Color {
-        self.active_foreground.value
+    pub fn get_active_fg_color(&self) -> Color {
+        self.active_fg_color.value
     }
 
-    pub fn set_active_background(&mut self, color: Color) {
-        self.active_background.set(color);
+    pub fn set_active_bg_color(&mut self, color: Color) {
+        self.active_bg_color.set(color);
     }
 
-    pub fn get_active_background(&self) -> Color {
-        self.active_background.value
+    pub fn get_active_bg_color(&self) -> Color {
+        self.active_bg_color.value
     }
 
-    pub fn set_flash_foreground(&mut self, color: Color) {
-        self.flash_foreground.set(color);
+    pub fn set_flash_fg_color(&mut self, color: Color) {
+        self.flash_fg_color.set(color);
     }
 
-    pub fn get_flash_foreground(&self) -> Color {
-        self.flash_foreground.value
+    pub fn get_flash_fg_color(&self) -> Color {
+        self.flash_fg_color.value
     }
 
-    pub fn set_flash_background(&mut self, color: Color) {
-        self.flash_background.set(color);
+    pub fn set_flash_bg_color(&mut self, color: Color) {
+        self.flash_bg_color.set(color);
     }
 
-    pub fn get_flash_background(&self) -> Color {
-        self.flash_background.value
+    pub fn get_flash_bg_color(&self) -> Color {
+        self.flash_bg_color.value
     }
 
-    pub fn set_tab_foreground(&mut self, color: Color) {
-        self.tab_foreground.set(color);
+    pub fn set_tab_fg_color(&mut self, color: Color) {
+        self.tab_fg_color.set(color);
     }
 
-    pub fn get_tab_foreground(&self) -> Color {
-        self.tab_foreground.value
+    pub fn get_tab_fg_color(&self) -> Color {
+        self.tab_fg_color.value
     }
 
-    pub fn set_tab_background(&mut self, color: Color) {
-        self.tab_background.set(color);
+    pub fn set_tab_bg_color(&mut self, color: Color) {
+        self.tab_bg_color.set(color);
     }
 
-    pub fn get_tab_background(&self) -> Color {
-        self.tab_background.value
+    pub fn get_tab_bg_color(&self) -> Color {
+        self.tab_bg_color.value
     }
 
-    pub fn set_filler_foreground(&mut self, color: Color) {
-        self.filler_foreground.set(color);
+    pub fn set_filler_fg_color(&mut self, color: Color) {
+        self.filler_fg_color.set(color);
     }
 
-    pub fn get_filler_foreground(&self) -> Color {
-        self.filler_foreground.value
+    pub fn get_filler_fg_color(&self) -> Color {
+        self.filler_fg_color.value
     }
 
-    pub fn set_filler_background(&mut self, color: Color) {
-        self.filler_background.set(color);
+    pub fn set_filler_bg_color(&mut self, color: Color) {
+        self.filler_bg_color.set(color);
     }
 
-    pub fn get_filler_background(&self) -> Color {
-        self.filler_background.value
+    pub fn get_filler_bg_color(&self) -> Color {
+        self.filler_bg_color.value
     }
 
-    pub fn set_border_foreground(&mut self, color: Color) {
-        self.border_foreground.set(color);
+    pub fn set_border_fg_color(&mut self, color: Color) {
+        self.border_fg_color.set(color);
     }
 
-    pub fn get_border_foreground(&self) -> Color {
-        self.border_foreground.value
+    pub fn get_border_fg_color(&self) -> Color {
+        self.border_fg_color.value
     }
 
-    pub fn set_border_background(&mut self, color: Color) {
-        self.border_background.set(color);
+    pub fn set_border_bg_color(&mut self, color: Color) {
+        self.border_bg_color.set(color);
     }
 
-    pub fn get_border_background(&self) -> Color {
-        self.border_background.value
+    pub fn get_border_bg_color(&self) -> Color {
+        self.border_bg_color.value
     }
 
-    pub fn get_cursor(&self) -> Color {
-        self.cursor.value
+    pub fn get_cursor_color(&self) -> Color {
+        self.cursor_color.value
     }
 
-    pub fn set_cursor(&mut self, color: Color) {
-        self.cursor.set(color);
+    pub fn set_cursor_color(&mut self, color: Color) {
+        self.cursor_color.set(color);
     }
 
     pub fn clean_up_properties(&self, scheduler: &mut SchedulerFrontend) {
-        clean_up_property(scheduler, &self.foreground.name);
-        clean_up_property(scheduler, &self.background.name);
-        clean_up_property(scheduler, &self.selection_foreground.name);
-        clean_up_property(scheduler, &self.selection_background.name);
-        clean_up_property(scheduler, &self.disabled_foreground.name);
-        clean_up_property(scheduler, &self.disabled_background.name);
-        clean_up_property(scheduler, &self.active_foreground.name);
-        clean_up_property(scheduler, &self.active_background.name);
-        clean_up_property(scheduler, &self.flash_foreground.name);
-        clean_up_property(scheduler, &self.flash_background.name);
-        clean_up_property(scheduler, &self.tab_foreground.name);
-        clean_up_property(scheduler, &self.tab_background.name);
-        clean_up_property(scheduler, &self.filler_foreground.name);
-        clean_up_property(scheduler, &self.filler_background.name);
-        clean_up_property(scheduler, &self.border_foreground.name);
-        clean_up_property(scheduler, &self.border_background.name);
-        clean_up_property(scheduler, &self.cursor.name);
+        clean_up_property(scheduler, &self.fg_color.name);
+        clean_up_property(scheduler, &self.bg_color.name);
+        clean_up_property(scheduler, &self.selection_fg_color.name);
+        clean_up_property(scheduler, &self.selection_bg_color.name);
+        clean_up_property(scheduler, &self.disabled_fg_color.name);
+        clean_up_property(scheduler, &self.disabled_bg_color.name);
+        clean_up_property(scheduler, &self.active_fg_color.name);
+        clean_up_property(scheduler, &self.active_bg_color.name);
+        clean_up_property(scheduler, &self.flash_fg_color.name);
+        clean_up_property(scheduler, &self.flash_bg_color.name);
+        clean_up_property(scheduler, &self.tab_fg_color.name);
+        clean_up_property(scheduler, &self.tab_bg_color.name);
+        clean_up_property(scheduler, &self.filler_fg_color.name);
+        clean_up_property(scheduler, &self.filler_bg_color.name);
+        clean_up_property(scheduler, &self.border_fg_color.name);
+        clean_up_property(scheduler, &self.border_bg_color.name);
+        clean_up_property(scheduler, &self.cursor_color.name);
     }
 }
 
 
+/// Composite object containing properties related to padding. If you want to set a callback to a
+/// property, access is directly first.
 #[derive(PartialEq, Clone, Debug)]
 pub struct Padding {
-    top: EzProperty<usize>,
-    bottom: EzProperty<usize>,
-    left: EzProperty<usize>,
-    right: EzProperty<usize>,
+    padding_top: EzProperty<usize>,
+    padding_bottom: EzProperty<usize>,
+    padding_left: EzProperty<usize>,
+    padding_right: EzProperty<usize>,
 }
 impl Padding {
     pub fn new(top: usize, bottom: usize, left: usize, right: usize, name: String,
@@ -1162,49 +1568,49 @@ impl Padding {
         let right_property = scheduler.new_usize_property(
             format!("{}/padding_right", name).as_str(), right);
         Padding {
-            top: top_property,
-            bottom: bottom_property,
-            left: left_property,
-            right: right_property,
+            padding_top: top_property,
+            padding_bottom: bottom_property,
+            padding_left: left_property,
+            padding_right: right_property,
         }
     }
 
-    pub fn set_top(&mut self, padding: usize) {
-        self.top.set(padding);
+    pub fn set_padding_top(&mut self, padding: usize) {
+        self.padding_top.set(padding);
     }
 
-    pub fn get_top(&self) -> usize {
-        self.top.value
+    pub fn get_padding_top(&self) -> usize {
+        self.padding_top.value
     }
 
-    pub fn set_bottom(&mut self, padding: usize) {
-        self.bottom.set(padding);
+    pub fn set_padding_bottom(&mut self, padding: usize) {
+        self.padding_bottom.set(padding);
     }
 
-    pub fn get_bottom(&self) -> usize {
-        self.bottom.value
+    pub fn get_padding_bottom(&self) -> usize {
+        self.padding_bottom.value
     }
 
-    pub fn set_left(&mut self, padding: usize) {
-        self.left.set(padding);
+    pub fn set_padding_left(&mut self, padding: usize) {
+        self.padding_left.set(padding);
     }
 
-    pub fn get_left(&self) -> usize {
-        self.left.value
+    pub fn get_padding_left(&self) -> usize {
+        self.padding_left.value
     }
 
-    pub fn set_right(&mut self, padding: usize) {
-        self.right.set(padding);
+    pub fn set_padding_right(&mut self, padding: usize) {
+        self.padding_right.set(padding);
     }
 
-    pub fn get_right(&self) -> usize {
-        self.right.value
+    pub fn get_padding_right(&self) -> usize {
+        self.padding_right.value
     }
 
     pub fn clean_up_properties(&self, scheduler: &mut SchedulerFrontend) {
-        clean_up_property(scheduler, &self.top.name);
-        clean_up_property(scheduler, &self.bottom.name);
-        clean_up_property(scheduler, &self.left.name);
-        clean_up_property(scheduler, &self.right.name);
+        clean_up_property(scheduler, &self.padding_top.name);
+        clean_up_property(scheduler, &self.padding_bottom.name);
+        clean_up_property(scheduler, &self.padding_left.name);
+        clean_up_property(scheduler, &self.padding_right.name);
     }
 }

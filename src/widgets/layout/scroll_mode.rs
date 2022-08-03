@@ -1,3 +1,4 @@
+use std::cmp::min;
 use crate::run::definitions::{Pixel, PixelMap, StateTree};
 use crate::scheduler::scheduler::SchedulerFrontend;
 use crate::widgets::ez_object::EzObject;
@@ -12,15 +13,10 @@ impl Layout {
 
         let state = state_tree.get_by_path_mut(&self.path).as_layout_mut();
         if !state.get_scrolling_config().get_enable_y() { return }
-        let scroll_chunk = (state.get_effective_size().height as f32 * 0.75) as usize;
-        let new_view_start;
-        if state.get_scrolling_config().get_view_start_y() + scroll_chunk >
-            state.get_scrolling_config().get_original_height() - state.get_effective_size().height {
-            new_view_start =
-                state.get_scrolling_config().get_original_height() - state.get_effective_size().height;
-        } else {
-            new_view_start = state.get_scrolling_config().get_view_start_y() + scroll_chunk;
-        }
+        let scroll_chunk = (state.get_effective_size().height as f64 /
+            state.get_scrolling_config().get_original_height() as f64) * 0.75;
+        let new_view_start =
+            f64::min(1.0, state.get_scrolling_config().get_view_start_y() + scroll_chunk);
         state.get_scrolling_config_mut().set_view_start_y(new_view_start);
         state.update(scheduler);
         self.propagate_absolute_positions(state_tree);
@@ -31,16 +27,11 @@ impl Layout {
 
         let state = state_tree.get_by_path_mut(&self.path).as_layout_mut();
         if !state.get_scrolling_config().get_enable_y() { return }
-        let scroll_chunk = (state.get_effective_size().height as f32 * 0.75) as usize;
-        let new_view_start;
-        if state.get_scrolling_config().get_view_start_y() == 0 {
-            return
-        }
-        else if state.get_scrolling_config().get_view_start_y() < scroll_chunk {
-            new_view_start = 0;
-        } else {
-            new_view_start = state.get_scrolling_config().get_view_start_y() - scroll_chunk;
-        }
+        let scroll_chunk = (state.get_effective_size().height as f64 /
+            state.get_scrolling_config().get_original_height() as f64) * 0.75;
+        let new_view_start = if state.get_scrolling_config().get_view_start_y() > scroll_chunk {
+            state.get_scrolling_config().get_view_start_y() - scroll_chunk
+        } else { 0.0 };
         state.get_scrolling_config_mut().set_view_start_y(new_view_start);
         state.update(scheduler);
         self.propagate_absolute_positions(state_tree);
@@ -51,15 +42,10 @@ impl Layout {
 
         let state = state_tree.get_by_path_mut(&self.path).as_layout_mut();
         if !state.get_scrolling_config().get_enable_x() { return }
-        let scroll_chunk = (state.get_effective_size().width as f32 * 0.75) as usize;
-        let new_view_start;
-        if state.get_scrolling_config().get_view_start_x() + scroll_chunk >
-            state.get_scrolling_config().get_original_width() - state.get_effective_size().width {
-            new_view_start = state.get_scrolling_config().get_original_width()
-                - state.get_effective_size().width;
-        } else {
-            new_view_start = state.get_scrolling_config().get_view_start_x() + scroll_chunk;
-        }
+        let scroll_chunk = state.get_effective_size().width as f64 /
+            state.get_scrolling_config().get_original_width() as f64;
+        let new_view_start =
+            f64::min(1.0, state.get_scrolling_config().get_view_start_x() + scroll_chunk);
         state.get_scrolling_config_mut().set_view_start_x(new_view_start);
         state.update(scheduler);
         self.propagate_absolute_positions(state_tree);
@@ -70,16 +56,12 @@ impl Layout {
 
         let state = state_tree.get_by_path_mut(&self.path).as_layout_mut();
         if !state.get_scrolling_config().get_enable_x() { return }
-        let scroll_chunk = (state.get_effective_size().width as f32 * 0.75) as usize;
-        let new_view_start;
-        if state.get_scrolling_config().get_view_start_x() == 0 {
-            return
-        }
-        else if state.get_scrolling_config().get_view_start_x() < scroll_chunk {
-            new_view_start = 0;
-        } else {
-            new_view_start = state.get_scrolling_config().get_view_start_x() - scroll_chunk;
-        }
+        
+        let scroll_chunk = state.get_effective_size().width as f64 /
+            state.get_scrolling_config().get_original_width() as f64;
+        let new_view_start = if state.get_scrolling_config().get_view_start_x() > scroll_chunk {
+            state.get_scrolling_config().get_view_start_x() - scroll_chunk
+        } else { 0.0 };
         state.get_scrolling_config_mut().set_view_start_x(new_view_start);
         state.update(scheduler);
         self.propagate_absolute_positions(state_tree);
@@ -98,7 +80,8 @@ impl Layout {
         }
         state.get_scrolling_config_mut().set_original_width(contents.len());
         state.get_scrolling_config_mut().set_is_scrolling_x(true);
-        let view_start = state.get_scrolling_config().get_view_start_x();
+        let view_start = state.get_scrolling_config()
+            .get_absolute_view_start_x(state.get_effective_size().width);
         let view_end =
             if contents.len() - view_start > state.get_effective_size().width {
                 view_start + state.get_effective_size().width
@@ -107,7 +90,7 @@ impl Layout {
             };
         self.propagate_absolute_positions(state_tree);
         self.create_horizontal_scrollbar(
-            state_tree, contents[view_start..view_end].to_vec())
+            state_tree, contents[view_start..view_end].to_vec(), view_start)
     }
 
     /// Create a vertical scrollbox out of this layout if its contents width exceed its own width
@@ -123,7 +106,8 @@ impl Layout {
         }
         state.get_scrolling_config_mut().set_original_height(largest);
         state.get_scrolling_config_mut().set_is_scrolling_y(true);
-        let view_start = state.get_scrolling_config().get_view_start_y();
+        let view_start = state.get_scrolling_config()
+            .get_absolute_view_start_y(state.get_effective_size().height);
         let view_end =
             if largest - view_start > state.get_effective_size().height {
                 view_start + state.get_effective_size().height
@@ -133,21 +117,21 @@ impl Layout {
         let scrolled_contents: PixelMap =
             contents.iter().map(|x| x[view_start..view_end].to_vec()).collect();
         self.propagate_absolute_positions(state_tree);
-        self.create_vertical_scrollbar(state_tree, scrolled_contents)
+        self.create_vertical_scrollbar(state_tree, scrolled_contents, view_start)
     }
 
     /// Create a scrolling bar for a horizontal scrollbox
     fn create_horizontal_scrollbar(
-        &self, state_tree: &mut StateTree, mut contents: PixelMap) -> PixelMap {
+        &self, state_tree: &mut StateTree, mut contents: PixelMap, view_start: usize) -> PixelMap {
 
         let state = state_tree.get_by_path(&self.get_full_path()).as_layout();
         let (fg_color, _) = state.get_context_colors();
-        let bg_color = state.get_color_config().get_background();
+        let bg_color = state.get_color_config().get_bg_color();
 
         let (scrollbar_size, scrollbar_pos) = self.get_horizontal_scrollbar_parameters(
             state.get_scrolling_config().get_original_width(),
             state.get_effective_size().width,
-            state.get_scrolling_config().get_view_start_x());
+            view_start);
 
         for (i, x) in contents.iter_mut().enumerate() {
             let symbol = if i >= scrollbar_pos
@@ -160,17 +144,17 @@ impl Layout {
 
     /// Create a scrolling bar for a vertical scrollbox
     fn create_vertical_scrollbar(
-        &self, state_tree: &mut StateTree, mut contents: PixelMap) -> PixelMap {
+        &self, state_tree: &mut StateTree, mut contents: PixelMap, view_start: usize) -> PixelMap {
 
         let mut scrollbar = Vec::new();
         let state = state_tree.get_by_path(&self.get_full_path()).as_layout();
         let (fg_color, _) = state.get_context_colors();
-        let bg_color = state.get_color_config().get_background();
+        let bg_color = state.get_color_config().get_bg_color();
 
         let (scrollbar_size, scrollbar_pos) = self.get_vertical_scrollbar_parameters(
             state.get_scrolling_config().get_original_height(),
             state.get_effective_size().height,
-            state.get_scrolling_config().get_view_start_y());
+            view_start);
 
         for x in 0..state.get_effective_size().height {
             let symbol = if x >= scrollbar_pos
