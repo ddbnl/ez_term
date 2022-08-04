@@ -187,16 +187,16 @@ impl Button {
         let state = state_tree.get_by_path_mut(&self.get_full_path()).as_button_mut();
         state.set_flashing(true);
         state.update(scheduler);
+        let path = self.path.clone();
         let scheduled_func =
-            | context: EzContext | {
-                if !context.state_tree.objects.contains_key(&context.widget_path) { return false }
-                let state = context.state_tree.get_by_path_mut(&context.widget_path)
+            move | context: EzContext | {
+                if !context.state_tree.objects.contains_key(path.as_str()) { return }
+                let state = context.state_tree.get_by_path_mut(path.as_str())
                     .as_button_mut();
                 state.set_flashing(false);
                 state.update(context.scheduler);
-                true
             };
-        scheduler.schedule_once(self.get_full_path(),Box::new(scheduled_func),
+        scheduler.schedule_once(self.get_full_path().as_str(),Box::new(scheduled_func),
                                         Duration::from_millis(50));
     }
 }

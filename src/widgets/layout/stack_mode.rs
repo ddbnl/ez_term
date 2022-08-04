@@ -78,10 +78,10 @@ impl Layout {
             let state = state_tree
                 .get_by_path_mut(&generic_child.get_full_path().clone()).as_generic_mut();
 
-            if infinite_size.get_width() || scrolling_config.get_enable_x() {
+            if infinite_size.get_width() || scrolling_config.get_scroll_x() {
                 state.get_infinite_size_mut().set_width(true);
             }
-            if infinite_size.get_height() || scrolling_config.get_enable_y() {
+            if infinite_size.get_height() || scrolling_config.get_scroll_y() {
                 state.get_infinite_size_mut().set_height(true);
             }
 

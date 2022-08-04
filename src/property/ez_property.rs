@@ -7,11 +7,11 @@ use std::sync::mpsc::{channel, Receiver, Sender};
 
 use crossterm::style::Color;
 
-use crate::CallbackConfig;
 use crate::property::ez_values::EzValues;
-use crate::scheduler::definitions::GenericEzFunction;
+use crate::scheduler::definitions::GenericFunction;
 use crate::scheduler::scheduler::SchedulerFrontend;
-use crate::states::definitions::{HorizontalAlignment, VerticalAlignment};
+use crate::states::definitions::{HorizontalAlignment, LayoutMode, LayoutOrientation,
+                                 VerticalAlignment};
 
 
 /// A struct wrapping a property of a widget state.
@@ -60,20 +60,83 @@ impl<T> EzProperty<T> where EzValues: From<T> {
 
     /// Set the value of this property. If any other properties are subscribed to this property,
     /// they will automatically be updated as well.
-    pub fn set(&mut self, new: T) where T: PartialEq + Clone {
+    pub fn set(&mut self, new: T) -> bool where T: PartialEq + Clone {
 
         if new != self.value {
             self.value = new.clone();
             self.tx.send(EzValues::from(new)).unwrap_or_else(
                 |e| panic!("Error setting value \"{}\": {}.", self.name, e)
             );
+            true
+        } else {
+            false
         }
     }
 
     /// Bind a custom callback to this property which will be called when the value changes
-    pub fn bind(&self, callback: GenericEzFunction, scheduler: &mut SchedulerFrontend) {
+    pub fn bind(&self, callback: GenericFunction, scheduler: &mut SchedulerFrontend) {
 
         scheduler.bind_property_callback(self.name.as_str(), callback);
+    }
+}
+impl EzProperty<usize> {
+    pub fn set_from_ez_value(&mut self, value: EzValues) -> bool {
+        self.set(value.as_usize().to_owned())
+    }    
+}
+impl EzProperty<bool> {
+    pub fn set_from_ez_value(&mut self, value: EzValues) -> bool {
+        self.set(value.as_bool().to_owned())
+    }
+}
+impl EzProperty<f64> {
+    pub fn set_from_ez_value(&mut self, value: EzValues) -> bool {
+        self.set(value.as_f64().to_owned())
+    }
+}
+impl EzProperty<String> {
+    pub fn set_from_ez_value(&mut self, value: EzValues) -> bool {
+        self.set(value.as_string().to_owned())
+    }
+}
+impl EzProperty<Color> {
+    pub fn set_from_ez_value(&mut self, value: EzValues) -> bool {
+        self.set(value.as_color().to_owned())
+    }
+}
+impl EzProperty<LayoutMode> {
+    pub fn set_from_ez_value(&mut self, value: EzValues) -> bool {
+        self.set(value.as_layout_mode().to_owned())
+    }
+}
+impl EzProperty<LayoutOrientation> {
+    pub fn set_from_ez_value(&mut self, value: EzValues) -> bool {
+        self.set(value.as_layout_orientation().to_owned())
+    }
+}
+impl EzProperty<HorizontalAlignment> {
+    pub fn set_from_ez_value(&mut self, value: EzValues) -> bool {
+        self.set(value.as_horizontal_alignment().to_owned())
+    }
+}
+impl EzProperty<VerticalAlignment> {
+    pub fn set_from_ez_value(&mut self, value: EzValues) -> bool {
+        self.set(value.as_vertical_alignment().to_owned())
+    }
+}
+impl EzProperty<Option<f64>> {
+    pub fn set_from_ez_value(&mut self, value: EzValues) -> bool {
+        self.set(*value.as_size_hint())
+    }
+}
+impl EzProperty<Option<(VerticalAlignment, f64)>> {
+    pub fn set_from_ez_value(&mut self, value: EzValues) -> bool {
+        self.set(*value.as_vertical_pos_hint())
+    }
+}
+impl EzProperty<Option<(HorizontalAlignment, f64)>> {
+    pub fn set_from_ez_value(&mut self, value: EzValues) -> bool {
+        self.set(*value.as_horizontal_pos_hint())
     }
 }
 impl<T> PartialEq for EzProperty<T> where T: PartialEq {

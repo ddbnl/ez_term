@@ -8,14 +8,14 @@ use std::time::{Duration, Instant};
 
 use crossterm::style::Color;
 
-use crate::{CallbackConfig, EzContext, EzPropertiesMap};
+use crate::{CallbackConfig, EzPropertiesMap};
 use crate::parser::ez_definition::Templates;
 use crate::property::ez_properties::EzProperties;
 use crate::property::ez_property::EzProperty;
 use crate::property::ez_values::EzValues;
 use crate::run::definitions::{Coordinates, StateTree};
 use crate::run::run::{open_popup, stop};
-use crate::scheduler::definitions::{EzPropertyUpdater, EzThread, GenericEzFunction, GenericEzTask};
+use crate::scheduler::definitions::{EzPropertyUpdater, EzThread, GenericFunction, GenericRecurringTask, GenericTask};
 use crate::states::definitions::{HorizontalAlignment, LayoutMode, LayoutOrientation, VerticalAlignment};
 use crate::states::ez_state::EzState;
 
@@ -67,16 +67,31 @@ impl SchedulerFrontend {
     ///     let state = context.state_tree.get_by_id_mut("my_label").as_label_mut();
     ///     state.set_text("New text!".to_string());
     ///     state.update(context.scheduler);
-    ///     true
     /// };
-    /// scheduler.schedule_once(state.get_id(), Box::new(my_closure), Duration::from_secs(0));
+    /// scheduler.schedule_once("my_task", Box::new(my_closure), Duration::from_secs(0));
     /// ```
     /// Note that we used the 'move' keyword to move our counting variable into our task.
-    pub fn schedule_once(&mut self, widget: String, func: GenericEzTask, after: Duration) {
+    pub fn schedule_once(&mut self, name: &str, func: GenericTask, after: Duration) {
 
-        let task = Task::new(widget, func, false, after,
-                             Some(Instant::now()));
+        let task = Task::new(name.to_string(), func,after);
         self.backend.tasks.push(task);
+    }
+
+    /// Cancel a run-once task by name.
+    /// ```
+    /// scheduler.cancel_task("my_task")
+    /// ```
+    pub fn cancel_task(&mut self, name: &str) {
+
+        let mut to_cancel = None;
+        for (i, task) in self.backend.tasks.iter().enumerate() {
+            if &task.name == name {
+                to_cancel = Some(i);
+            }
+        }
+        if let Some(i) = to_cancel {
+            self.backend.tasks.remove(i);
+        }
     }
 
     /// Schedule a [GenericEzTask] to be executed repeatedly on an interval. As long as the passed
@@ -104,26 +119,42 @@ impl SchedulerFrontend {
     /// ```
     /// use ez_term::*;
     /// use std::time::Duration;
-    /// let increment: usize = 1;
+    ///
+    /// let mut counter: usize = 1;
     /// let my_counter_func = move |context: EzContext| {
     ///     let state = context.state_tree.get_by_id_mut("my_label").as_label_mut();
-    ///     state.set_text(format!("Counting {}", increment));
+    ///     state.set_text(format!("Counting {}", counter));
     ///     state.update(context.scheduler);
-    ///     return if increment <= 10 {
+    ///     counter += 1;
+    ///     return if counter <= 10 {
     ///         true
     ///     } else {
     ///         false
-    ///     }
+    ///     };
     /// };
-    /// scheduler.schedule_interval("my_label".to_string(), Box::new(my_counter), Duration::from_secs(1))
+    /// scheduler.schedule_recurring("my_task", Box::new(my_counter), Duration::from_secs(1))
     /// ```
-    pub fn schedule_interval(&mut self, widget: String,  func: GenericEzTask, interval: Duration)
-        -> &mut Task {
-        let task = Task::new(widget, func, true, interval, None);
-        self.backend.tasks.push(task);
-        self.backend.tasks.last_mut().unwrap()
+    pub fn schedule_recurring(&mut self, name: &str, func: GenericRecurringTask, interval: Duration) {
+        let task = RecurringTask::new(name.to_string(), func, interval);
+        self.backend.recurring_tasks.push(task);
     }
 
+    /// Cancel a recurring task by name.
+    /// ```
+    /// scheduler.cancel_recurring_task("my_task")
+    /// ```
+    pub fn cancel_recurring_task(&mut self, name: &str) {
+
+        let mut to_cancel = None;
+        for (i, task) in self.backend.recurring_tasks.iter().enumerate() {
+            if &task.name == name {
+                to_cancel = Some(i);
+            }
+        }
+        if let Some(i) = to_cancel {
+            self.backend.recurring_tasks.remove(i);
+        }
+    }
     /// Schedule to immediately run a function or closure in a background thread. Use this for
     /// any kind of task that is longer running. If you are making a UI for your app, this is where
     /// you would start running your app. The first argument is the function to run in a background
@@ -165,8 +196,9 @@ impl SchedulerFrontend {
     /// scheduler.schedule_threaded(Box::new(progress_example_app), None);
     /// ```
     ///
-    pub fn schedule_threaded(&mut self, threaded_func: Box<dyn FnOnce(EzPropertiesMap) + Send>,
-                             on_finish: Option<GenericEzTask>) {
+    pub fn schedule_threaded(
+        &mut self, threaded_func: Box<dyn FnOnce(EzPropertiesMap, StateTree) + Send>,
+        on_finish: Option<GenericTask>) {
 
         self.backend.threads_to_start.push((threaded_func, on_finish));
     }
@@ -514,7 +546,7 @@ impl SchedulerFrontend {
     ///
     /// scheduler.bind_ez_property_callback("my_property", Box::new(my_callback));
     /// ```
-    pub fn bind_property_callback(&mut self, name: &str, callback: GenericEzFunction) {
+    pub fn bind_property_callback(&mut self, name: &str, callback: GenericFunction) {
 
         if self.backend.property_callbacks.contains(&name.to_string()) {
             self.backend.new_property_callbacks.push((name.to_string(), callback));
@@ -557,20 +589,23 @@ pub struct Scheduler {
     /// closures that are spawned in background threads, as [EzProperty] is thread-safe.
     pub properties: HashMap<String, EzProperties>,
 
-    /// A list of scheduled tasks. Can be run-once or interval tasks. These are checked on every
-    /// frame, and ran if the 'after' Duration has passed for run-once tasks, or after the 'interval'
-    /// duration has passed for interval tasks.
+    /// A list of scheduled tasks. These are checked on every frame, and ran if the 'after'
+    /// delay has passed.
     pub tasks: Vec<Task>,
+
+    /// A list of scheduled recurring tasks.These are checked on every frame, and ran after the
+    /// 'interval' duration has passed.
+    pub recurring_tasks: Vec<RecurringTask>,
 
     /// List of <Function, Optional on_finish callback>. This list is checked every frame. If
     /// theres an item in here, it will be used to spawn a background thread based on the passed
     /// function. Once the function is finished running, the optional callback will be executed if
     /// there was one.
-    pub threads_to_start: Vec<(EzThread, Option<GenericEzTask>)>,
+    pub threads_to_start: Vec<(EzThread, Option<GenericTask>)>,
 
     /// List of thread handles with optional callbacks. If a thread is finished running, the
     /// JoinHandle is joined and the callback executed if there was any.
-    pub thread_handles: Vec<(JoinHandle<()>, Option<GenericEzTask>)>,
+    pub thread_handles: Vec<(JoinHandle<()>, Option<GenericTask>)>,
 
     /// Templates defined in the .ez files. Used by [create_widget]
     pub templates: Templates,
@@ -604,7 +639,7 @@ pub struct Scheduler {
 
     /// Every frame these property callbacks are registered. Allows user to add property callbacks
     /// without having access to the CallbackTree.
-    pub new_property_callbacks: Vec<(String, GenericEzFunction)>,
+    pub new_property_callbacks: Vec<(String, GenericFunction)>,
 
     /// The widget (ID or path) set here will be selected on the next frame, deselecting the current
     /// selection if any and calling the appropriate callbacks. The optional mouse_position will be
@@ -615,22 +650,43 @@ pub struct Scheduler {
     pub deselect: bool,
 }
 
-/// A struct representing a run-once- or recurring task. This struct is not directly used by the
+/// A struct representing a run-once. This struct is not directly used by the
 /// end-user, but created when they schedule a task through the [Scheduler].
 pub struct Task {
 
-    /// The widget for which this task was scheduled. Convenience property as this is passed to the
-    /// task callback func, allowed the user to easily retrieve the state of the widget.
-    pub widget: String,
+    /// Name which can be used to cancel the task
+    pub name: String,
 
     /// Function that will be called when this task is executed.
-    pub func: GenericEzTask,
+    pub func: GenericTask,
 
-    /// This task is run-once if this is false, in which case it will be executed if the 'after'
-    /// Duration has passed. This task is recurring if this is true, in which case it will be
-    /// executed after the 'interval' Duration has passed, and scheduled again as long as the
-    /// function keeps returning true.
-    pub recurring: bool,
+    /// Task will be dropped if this is true. Mainly used to cancel a run-once task before it is
+    /// executed.
+    pub canceled: bool,
+
+    /// The schedule on which a recurring task must run.
+    pub delay: Duration,
+
+    pub created: Instant,
+}
+
+impl Task {
+
+    pub fn new(name: String, func: GenericTask, delay: Duration)
+               -> Self { Task { name, func, delay, canceled: false, created: Instant::now() } }
+
+    pub fn cancel(&mut self) { self.canceled = true; }
+
+}
+/// A struct representing a run-once- or recurring task. This struct is not directly used by the
+/// end-user, but created when they schedule a task through the [Scheduler].
+pub struct RecurringTask {
+
+    /// Name which can be used to cancel the task
+    pub name: String,
+
+    /// Function that will be called when this task is executed.
+    pub func: GenericRecurringTask,
 
     /// Task will be dropped if this is true. Mainly used to cancel a run-once task before it is
     /// executed.
@@ -643,11 +699,11 @@ pub struct Task {
     pub last_execution: Option<Instant>,
 }
 
-impl Task {
+impl RecurringTask {
 
-    pub fn new(widget: String, func: GenericEzTask, recurring: bool,
-               interval: Duration, last_execution: Option<Instant>)
-        -> Self { Task { widget, func, recurring, interval, canceled: false, last_execution } }
+    pub fn new(name: String, func: GenericRecurringTask, interval: Duration)
+               -> Self { RecurringTask { name, func, interval, canceled: false,
+        last_execution: None } }
 
     pub fn cancel(&mut self) { self.canceled = true; }
 

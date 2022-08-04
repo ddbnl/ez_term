@@ -173,17 +173,19 @@ impl Layout {
 
         if self.state.get_mode() == &LayoutMode::Tab {
             if let EzObjects::Layout(_) = child.clone() {
-                let new_id = format!("{}_tab_header", id);
+                let tab_name = child.as_layout().state.get_tab_name();
+                let tab_path = child.as_layout().get_full_path();
+                let new_id = format!("{}_tab_header", tab_name);
                 let new_path = format!("{}/{}", parent_path, new_id);
-                let mut tab_header = Button::new(new_id, new_path, scheduler);
+                let mut tab_header = Button::new(new_id, new_path.clone(), scheduler);
                 tab_header.state.set_size_hint_x(None);
                 tab_header.state.set_size_hint_y(None);
-                tab_header.state.set_text(id.clone());
+                tab_header.state.set_text(tab_name.clone());
 
                 let tab_on_click = move |context: EzContext| {
                     let state = context.state_tree
                         .get_by_path_mut(&parent_path).as_layout_mut();
-                    state.set_active_tab(&id);
+                    state.set_active_tab(&tab_path.clone());
                     state.update(context.scheduler);
                     true
                 };

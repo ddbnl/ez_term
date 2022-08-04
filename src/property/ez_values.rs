@@ -31,7 +31,7 @@ pub enum EzValues {
     HorizontalPosHint(Option<(HorizontalAlignment, f64)>),
 }
 impl EzValues {
-
+    
     pub fn as_usize(&self) -> &usize {
         if let EzValues::Usize(i) = self { i }
             else { panic!("Wrong property, expected UsizeProperty") }

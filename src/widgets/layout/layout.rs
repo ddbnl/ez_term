@@ -105,6 +105,21 @@ impl Layout {
         Ok(())
     }
 
+    fn load_tab_name_property(&mut self, parameter_value: &str, scheduler: &mut SchedulerFrontend)
+                                -> Result<(), Error> {
+
+        let path = self.path.clone();
+        self.state.set_tab_name(&load_string_property(
+            parameter_value.trim(), scheduler, path.clone(),
+            Box::new(move |state_tree: &mut StateTree, val: EzValues| {
+                let state = state_tree.get_by_path_mut(&path)
+                    .as_layout_mut();
+                state.set_tab_name(val.as_string());
+                path.clone()
+            }))?);
+        Ok(())
+    }
+
     fn load_active_screen_property(&mut self, parameter_value: &str, scheduler: &mut SchedulerFrontend)
                                    -> Result<(), Error> {
 
@@ -154,12 +169,12 @@ impl Layout {
                                         scheduler: &mut SchedulerFrontend) -> Result<(), Error> {
 
         let path = self.path.clone();
-        self.state.get_scrolling_config_mut().set_enable_x(load_bool_property(
+        self.state.get_scrolling_config_mut().set_scroll_x(load_bool_property(
             parameter_value.trim(), scheduler, path.clone(),
             Box::new(move |state_tree: &mut StateTree, val: EzValues| {
                 let state = state_tree.get_by_path_mut(&path)
                     .as_layout_mut();
-                state.get_scrolling_config_mut().set_enable_x(val.as_bool().to_owned());
+                state.get_scrolling_config_mut().set_scroll_x(val.as_bool().to_owned());
                 path.clone()
             }))?);
         Ok(())
@@ -169,12 +184,12 @@ impl Layout {
                                         scheduler: &mut SchedulerFrontend) -> Result<(), Error> {
 
         let path = self.path.clone();
-        self.state.get_scrolling_config_mut().set_enable_y(load_bool_property(
+        self.state.get_scrolling_config_mut().set_scroll_y(load_bool_property(
             parameter_value.trim(), scheduler, path.clone(),
             Box::new(move |state_tree: &mut StateTree, val: EzValues| {
                 let state = state_tree.get_by_path_mut(&path)
                     .as_layout_mut();
-                state.get_scrolling_config_mut().set_enable_y(val.as_bool().to_owned());
+                state.get_scrolling_config_mut().set_scroll_y(val.as_bool().to_owned());
                 path.clone()
             }))?);
         Ok(())
@@ -317,6 +332,8 @@ impl EzObject for Layout {
                 self.load_layout_orientation_property(parameter_value.trim(), scheduler)?,
             "active_tab" =>
                 self.load_active_tab_property(parameter_value.trim(), scheduler)?,
+            "tab_name" =>
+                self.load_tab_name_property(parameter_value.trim(), scheduler)?,
             "active_screen" =>
                 self.load_active_screen_property(parameter_value.trim(), scheduler)?,
             "scroll" => {
@@ -459,8 +476,11 @@ impl EzObject for Layout {
         if self.on_keyboard_enter_callback(state_tree, callback_tree, scheduler) { return true }
         let state = state_tree.get_by_path_mut(&self.path).as_layout_mut();
         if !state.get_selected_tab_header().is_empty() {
-            state.set_active_tab(state.get_selected_tab_header()
-                .strip_suffix("_tab_header").unwrap());
+            let tab_name = state.get_selected_tab_header()
+                .strip_suffix("_tab_header").unwrap().to_string();
+            let tab_path = self.resolve_tab_name(&tab_name, state_tree);
+            let state = state_tree.get_by_path_mut(&self.path).as_layout_mut();
+            state.set_active_tab(&tab_path);
             state.update(scheduler);
             return true
         }

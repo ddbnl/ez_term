@@ -44,15 +44,15 @@ impl Layout{
             let state = state_tree
                 .get_by_path_mut(&generic_child.get_full_path().clone()).as_generic_mut();
 
-            if own_infinite_size.width || own_scrolling.get_enable_x() {
+            if own_infinite_size.width || own_scrolling.get_scroll_x() {
                 state.get_infinite_size_mut().set_width(true);
             }
-            if own_infinite_size.height || own_scrolling.get_enable_y() {
+            if own_infinite_size.height || own_scrolling.get_scroll_y() {
                 state.get_infinite_size_mut().set_height(true);
             }
 
             let width_left =
-                if !own_scrolling.get_enable_x() && !own_infinite_size.width &&
+                if !own_scrolling.get_scroll_x() && !own_infinite_size.width &&
                     !state.get_infinite_size().width && own_effective_size.width >= position.x
                     {own_effective_size.width - position.x} else {0};
             // If autoscaling is enabled set child size to max width. It is then expected to scale
@@ -65,11 +65,11 @@ impl Layout{
             }
             // Scale down child to remaining size in the case that the child is too large, rather
             // panicking.
-            if !own_scrolling.get_enable_x() && !own_infinite_size.width &&
+            if !own_scrolling.get_scroll_x() && !own_infinite_size.width &&
                 state.get_size().get_width() > width_left {
                 state.get_size_mut().set_width(width_left);
             }
-            if !own_scrolling.get_enable_y() && !own_infinite_size.height &&
+            if !own_scrolling.get_scroll_y() && !own_infinite_size.height &&
                 state.get_size().get_height() > own_effective_size.height {
                 state.get_size_mut().set_height(own_effective_size.height);
             }
@@ -128,17 +128,17 @@ impl Layout{
                 state_tree.get_by_path_mut(&generic_child.get_full_path()).as_generic_mut();
 
             // If we're scrolling on an axis then the child can be infinite size on that axis
-            if own_infinite_size.width || own_scrolling.get_enable_x() {
+            if own_infinite_size.width || own_scrolling.get_scroll_x() {
                 child_state.get_infinite_size_mut().set_width(true);
             }
-            if own_infinite_size.height || own_scrolling.get_enable_y() {
+            if own_infinite_size.height || own_scrolling.get_scroll_y() {
                 child_state.get_infinite_size_mut().set_height(true);
             }
 
             // Determine how much height we have left to give the child. Can be 0 if we're scrolling
             // as we use [size.get_infinite_height()]
             let height_left =
-                if !own_scrolling.get_enable_y() && !own_infinite_size.height &&
+                if !own_scrolling.get_scroll_y() && !own_infinite_size.height &&
                     own_effective_size.height >= position.y &&
                     !child_state.get_infinite_size().height
                 {own_effective_size.height - position.y } else { 0 };
@@ -152,12 +152,12 @@ impl Layout{
             }
             // Scale down child to remaining size in the case that the child is too large, rather
             // panicking.
-            if !own_scrolling.get_enable_x() && !own_infinite_size.width &&
+            if !own_scrolling.get_scroll_x() && !own_infinite_size.width &&
                 !child_state.get_infinite_size().width &&
                 child_state.get_size().get_width() > own_effective_size.width {
                 child_state.get_size_mut().set_width(own_effective_size.width);
             }
-            if !own_scrolling.get_enable_y() && !own_infinite_size.height &&
+            if !own_scrolling.get_scroll_y() && !own_infinite_size.height &&
                 !child_state.get_infinite_size().height &&
                 child_state.get_size().get_height() > height_left {
                 child_state.get_size_mut().set_height(height_left);

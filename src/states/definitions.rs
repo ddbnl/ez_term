@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use crossterm::event::KeyCode;
 use crossterm::style::Color;
 use crate::property::ez_property::EzProperty;
-use crate::scheduler::definitions::{GenericEzFunction, KeyboardCallbackFunction, MouseCallbackFunction, MouseDragCallbackFunction, OptionalMouseCallbackFunction};
+use crate::scheduler::definitions::{GenericFunction, KeyboardCallbackFunction, MouseCallbackFunction, MouseDragCallbackFunction, OptionalMouseCallbackFunction};
 use crate::scheduler::scheduler::{SchedulerFrontend};
 use crate::scheduler::scheduler_funcs::clean_up_property;
 
@@ -87,7 +87,7 @@ pub struct TableConfig {
 
     /// Maximum amount of columns. Usually you want to set either the maximum amount of rows or the
     /// maximum amount of columns, and let the other one grow with the amount of content
-    pub columns: EzProperty<usize>,
+    pub cols: EzProperty<usize>,
 
     /// Default height of rows. If kept at 0, it will be set to the height of the parent divided by
     /// the amount of rows. If force_default_height is false, widgets are allowed to be larger
@@ -128,7 +128,7 @@ impl TableConfig {
 
         TableConfig {
             rows: rows_property,
-            columns: columns_property,
+            cols: columns_property,
             row_default_height: default_height_property,
             col_default_width: default_width_property,
             force_default_row_height: force_default_height_property,
@@ -145,11 +145,11 @@ impl TableConfig {
     }
 
     pub fn set_cols(&mut self, columns: usize) {
-        self.columns.set(columns);
+        self.cols.set(columns);
     }
 
     pub fn get_cols(&self) -> usize {
-        self.columns.value
+        self.cols.value
     }
 
     pub fn set_row_default_height(&mut self, default: usize) {
@@ -186,7 +186,7 @@ impl TableConfig {
 
     pub fn clean_up_properties(&self, scheduler: &mut SchedulerFrontend) {
         clean_up_property(scheduler, &self.rows.name);
-        clean_up_property(scheduler, &self.columns.name);
+        clean_up_property(scheduler, &self.cols.name);
         clean_up_property(scheduler, &self.force_default_row_height.name);
         clean_up_property(scheduler, &self.force_default_col_width.name);
     }
@@ -340,8 +340,8 @@ impl AutoScale {
 /// either, access the 'x' or 'y' property first.
 #[derive(PartialEq, Clone, Debug)]
 pub struct SizeHint {
-    size_hint_x: EzProperty<Option<f64>>,
-    size_hint_y: EzProperty<Option<f64>>,
+    pub size_hint_x: EzProperty<Option<f64>>,
+    pub size_hint_y: EzProperty<Option<f64>>,
 }
 impl SizeHint {
 
@@ -384,8 +384,8 @@ impl SizeHint {
 /// either, access the 'x' or 'y' property first.
 #[derive(PartialEq, Clone, Debug)]
 pub struct PosHint {
-    pox_hint_x: EzProperty<Option<(HorizontalAlignment, f64)>>,
-    pos_hint_y: EzProperty<Option<(VerticalAlignment, f64)>>,
+    pub pos_hint_x: EzProperty<Option<(HorizontalAlignment, f64)>>,
+    pub pos_hint_y: EzProperty<Option<(VerticalAlignment, f64)>>,
 }
 impl PosHint {
 
@@ -397,15 +397,15 @@ impl PosHint {
         let y_property =
             scheduler.new_vertical_pos_hint_property(
                 format!("{}/pos_hint_y", name).as_str(),y);
-        PosHint{ pox_hint_x: x_property, pos_hint_y: y_property}
+        PosHint{ pos_hint_x: x_property, pos_hint_y: y_property}
     }
 
     pub fn set_pos_hint_x(&mut self, x: Option<(HorizontalAlignment, f64)>) {
-        self.pox_hint_x.set(x);
+        self.pos_hint_x.set(x);
     }
 
     pub fn get_pos_hint_x(&self) -> Option<(HorizontalAlignment, f64)> {
-        self.pox_hint_x.value
+        self.pos_hint_x.value
     }
 
     pub fn set_pos_hint_y(&mut self, y: Option<(VerticalAlignment, f64)>) {
@@ -417,7 +417,7 @@ impl PosHint {
     }
 
     pub fn clean_up_properties(&self, scheduler: &mut SchedulerFrontend) {
-        clean_up_property(scheduler, &self.pox_hint_x.name);
+        clean_up_property(scheduler, &self.pos_hint_x.name);
         clean_up_property(scheduler, &self.pos_hint_y.name);
     }
 }
@@ -498,7 +498,7 @@ pub struct CallbackConfig {
     /// let new_callback_config = CallbackConfig::from_on_deselect(Box::new(my_callback));
     /// scheduler.update_callback_config("my_button", new_callback_config);
     /// ```
-    pub on_deselect: Option<GenericEzFunction>,
+    pub on_deselect: Option<GenericFunction>,
 
     /// This callback is activated when a widget is either clicked by the left mouse button, or
     /// keyboard entered when it is selected. In other words, it is a composite callback containing both
@@ -528,7 +528,7 @@ pub struct CallbackConfig {
     /// let new_callback_config = CallbackConfig::from_on_press(Box::new(my_callback));
     /// scheduler.update_callback_config("my_button", new_callback_config);
     /// ```
-    pub on_press: Option<GenericEzFunction>,
+    pub on_press: Option<GenericFunction>,
 
     /// This callback is activated when a widget is selected and the 'enter' key is pressed on the
     /// keyboard.
@@ -556,7 +556,7 @@ pub struct CallbackConfig {
     /// let new_callback_config = CallbackConfig::from_on_press(Box::new(my_callback));
     /// scheduler.update_callback_config("my_button", new_callback_config);
     /// ```
-    pub on_keyboard_enter: Option<GenericEzFunction>,
+    pub on_keyboard_enter: Option<GenericFunction>,
 
     /// This callback is activated when a widget is clicked by the left mouse button. Keep in mind that
     /// when a widget is clicked, any layouts underneath it are also clicked. The root layout is the
@@ -712,7 +712,7 @@ pub struct CallbackConfig {
     /// let new_callback_config = CallbackConfig::from_on_scroll_up(Box::new(my_callback));
     /// scheduler.update_callback_config("my_label", new_callback_config);
     /// ```
-    pub on_scroll_up: Option<GenericEzFunction>,
+    pub on_scroll_up: Option<GenericFunction>,
 
     /// This callback is activated when a widget is scrolled down by the mouse. Keep in mind that
     /// when a widget is scrolled, any layouts underneath it are also scrolled. The root layout is the
@@ -742,7 +742,7 @@ pub struct CallbackConfig {
     /// let new_callback_config = CallbackConfig::from_on_scroll_down(Box::new(my_callback));
     /// scheduler.update_callback_config("my_label", new_callback_config);
     /// ```
-    pub on_scroll_down: Option<GenericEzFunction>,
+    pub on_scroll_down: Option<GenericFunction>,
 
     /// This callback is activated when the value of a widget has changed. Only widgets with values
     /// support this, which are: checkbox, dropdown, radio button, text input and slider. The only
@@ -773,7 +773,7 @@ pub struct CallbackConfig {
     /// let new_callback_config = CallbackConfig::from_on_value_change(Box::new(my_callback));
     /// scheduler.update_callback_config("my_checkbox", new_callback_config);
     /// ```
-    pub on_value_change: Option<GenericEzFunction>,
+    pub on_value_change: Option<GenericFunction>,
 
     /// Custom keymaps allow you to bind keyboard keys to a callback. Keep in mind that for this to work,
     /// a widget must already be selected; only then will it receive the keyboard event.
@@ -819,7 +819,7 @@ pub struct CallbackConfig {
     /// let state = state_tree.get_by_id_mut("my_widget").as_generic();
     /// state.size.height.bind(callback_func, scheduler);
     /// ```
-    pub property_callbacks: Vec<GenericEzFunction>,
+    pub property_callbacks: Vec<GenericFunction>,
 }
 impl CallbackConfig {
 
@@ -843,7 +843,7 @@ impl CallbackConfig {
     /// Create a [CallbackConfig] from an on_deselect callback.
     /// the callback function signature should be: (EzContext)
     /// See [EzContext] for more information on the context.
-    pub fn from_on_deselect(func: GenericEzFunction) -> Self {
+    pub fn from_on_deselect(func: GenericFunction) -> Self {
         let mut obj = CallbackConfig::default();
         obj.on_deselect = Some(func);
         obj
@@ -852,7 +852,7 @@ impl CallbackConfig {
     /// Create a [CallbackConfig] from an on_press callback.
     /// the callback function signature should be: (EzContext)
     /// See [EzContext] for more information on the context.
-    pub fn from_on_press(func: GenericEzFunction) -> Self {
+    pub fn from_on_press(func: GenericFunction) -> Self {
         let mut obj = CallbackConfig::default();
         obj.on_press = Some(func);
         obj
@@ -861,7 +861,7 @@ impl CallbackConfig {
     /// Create a [CallbackConfig] from an on_keyboard_enter callback.
     /// the callback function signature should be: (EzContext)
     /// See [EzContext] for more information on the context.
-    pub fn from_on_keyboard_enter(func: GenericEzFunction) -> Self {
+    pub fn from_on_keyboard_enter(func: GenericFunction) -> Self {
         let mut obj = CallbackConfig::default();
         obj.on_keyboard_enter = Some(func);
         obj
@@ -890,7 +890,7 @@ impl CallbackConfig {
     /// Create a [CallbackConfig] from an on_scroll_up callback.
     /// the callback function signature should be: (EzContext)
     /// See [EzContext] for more information on the context.
-    pub fn from_on_scroll_up(func: GenericEzFunction) -> Self {
+    pub fn from_on_scroll_up(func: GenericFunction) -> Self {
         let mut obj = CallbackConfig::default();
         obj.on_scroll_up = Some(func);
         obj
@@ -899,7 +899,7 @@ impl CallbackConfig {
     /// Create a [CallbackConfig] from an on_scroll_down callback.
     /// the callback function signature should be: (EzContext)
     /// See [EzContext] for more information on the context.
-    pub fn from_on_scroll_down(func: GenericEzFunction) -> Self {
+    pub fn from_on_scroll_down(func: GenericFunction) -> Self {
         let mut obj = CallbackConfig::default();
         obj.on_scroll_down = Some(func);
         obj
@@ -908,7 +908,7 @@ impl CallbackConfig {
     /// Create a [CallbackConfig] from an on_value_change callback.
     /// the callback function signature should be: (EzContext)
     /// See [EzContext] for more information on the context.
-    pub fn from_on_value_change(func: GenericEzFunction) -> Self {
+    pub fn from_on_value_change(func: GenericFunction) -> Self {
         let mut obj = CallbackConfig::default();
         obj.on_value_change = Some(func);
         obj
@@ -987,10 +987,10 @@ pub type KeyMap = HashMap<KeyCode, KeyboardCallbackFunction>;
 pub struct ScrollingConfig {
 
     /// Bool representing whether the x axis should be able to scroll
-    pub enable_x: EzProperty<bool>,
+    pub scroll_x: EzProperty<bool>,
 
     /// Bool representing whether the y axis should be able to scroll
-    pub enable_y: EzProperty<bool>,
+    pub scroll_y: EzProperty<bool>,
 
     /// Start of the view on the x axis, content is shown from here until view_start_x + width
     pub view_start_x: EzProperty<f64>,
@@ -1014,15 +1014,15 @@ pub struct ScrollingConfig {
 }
 impl ScrollingConfig {
 
-    pub fn new(enable_x: bool, enable_y: bool, view_start_x: f64, view_start_y: f64,
+    pub fn new(scroll_x: bool, scroll_y: bool, view_start_x: f64, view_start_y: f64,
                name: String, scheduler: &mut SchedulerFrontend) -> Self {
 
         let x_property =
-            scheduler.new_bool_property(format!("{}/enable_x", name).as_str(),
-                                        enable_x);
+            scheduler.new_bool_property(format!("{}/scroll_x", name).as_str(),
+                                        scroll_x);
         let y_property =
-            scheduler.new_bool_property(format!("{}/enable_y", name).as_str(),
-                                        enable_y);
+            scheduler.new_bool_property(format!("{}/scroll_y", name).as_str(),
+                                        scroll_y);
         let view_start_x_property =
             scheduler.new_f64_property(format!("{}/view_start_x", name).as_str(),
                                         view_start_x);
@@ -1030,8 +1030,8 @@ impl ScrollingConfig {
             scheduler.new_f64_property(format!("{}/view_start_y", name).as_str(),
                                         view_start_y);
         ScrollingConfig {
-            enable_x: x_property,
-            enable_y: y_property,
+            scroll_x: x_property,
+            scroll_y: y_property,
             view_start_x: view_start_x_property,
             view_start_y: view_start_y_property,
             is_scrolling_x: false,
@@ -1041,20 +1041,20 @@ impl ScrollingConfig {
         }
     }
 
-    pub fn set_enable_x(&mut self, x: bool) {
-        self.enable_x.set(x);
+    pub fn set_scroll_x(&mut self, x: bool) {
+        self.scroll_x.set(x);
     }
 
-    pub fn get_enable_x(&self) -> bool {
-        self.enable_x.value
+    pub fn get_scroll_x(&self) -> bool {
+        self.scroll_x.value
     }
 
-    pub fn set_enable_y(&mut self, y: bool) {
-        self.enable_y.set(y);
+    pub fn set_scroll_y(&mut self, y: bool) {
+        self.scroll_y.set(y);
     }
 
-    pub fn get_enable_y(&self) -> bool {
-        self.enable_y.value
+    pub fn get_scroll_y(&self) -> bool {
+        self.scroll_y.value
     }
 
     pub fn set_view_start_x(&mut self, view_start: f64) {
@@ -1124,8 +1124,8 @@ impl ScrollingConfig {
     }
 
     pub fn clean_up_properties(&self, scheduler: &mut SchedulerFrontend) {
-        clean_up_property(scheduler, &self.enable_x.name);
-        clean_up_property(scheduler, &self.enable_y.name);
+        clean_up_property(scheduler, &self.scroll_x.name);
+        clean_up_property(scheduler, &self.scroll_y.name);
     }
 }
 
@@ -1136,25 +1136,25 @@ impl ScrollingConfig {
 pub struct BorderConfig {
 
     /// Bool representing whether an object should have a border
-    border: EzProperty<bool>,
+    pub border: EzProperty<bool>,
 
     /// The [Pixel.symbol] to use for the horizontal border if [border] is true
-    horizontal_symbol: EzProperty<String>,
+    pub horizontal_symbol: EzProperty<String>,
     
     /// The [Pixel.symbol] to use for the vertical border if [border] is true
-    vertical_symbol: EzProperty<String>,
+    pub vertical_symbol: EzProperty<String>,
     
     /// The [Pixel.symbol] to use for the top left border if [border] is true
-    top_left_symbol: EzProperty<String>,
+    pub top_left_symbol: EzProperty<String>,
     
     /// The [Pixel.symbol] to use for the top right border if [border] is true
-    top_right_symbol: EzProperty<String>,
+    pub top_right_symbol: EzProperty<String>,
     
     /// The [Pixel.symbol] to use for the bottom left border if [border] is true
-    bottom_left_symbol: EzProperty<String>,
+    pub bottom_left_symbol: EzProperty<String>,
     
     /// The [Pixel.symbol] to use for the bottom right border if [border] is true
-    bottom_right_symbol: EzProperty<String>,
+    pub bottom_right_symbol: EzProperty<String>,
 }
 
 impl BorderConfig {
@@ -1269,64 +1269,64 @@ impl BorderConfig {
 pub struct ColorConfig {
 
     /// The [Pixel.foreground_color] to use for this widgets' content
-    fg_color: EzProperty<Color>,
+    pub fg_color: EzProperty<Color>,
 
     /// The [Pixel.background_color] to use for this widgets' content
-    bg_color: EzProperty<Color>,
+    pub bg_color: EzProperty<Color>,
 
     /// The [Pixel.foreground_color] to use for this widgets' content when selected
-    selection_fg_color: EzProperty<Color>,
+    pub selection_fg_color: EzProperty<Color>,
 
     /// The [Pixel.background_color] to use for this widgets' content when selected
-    selection_bg_color: EzProperty<Color>,
+    pub selection_bg_color: EzProperty<Color>,
 
     /// The [Pixel.foreground_color] to use for this widgets' content is disabled
-    disabled_fg_color: EzProperty<Color>,
+    pub disabled_fg_color: EzProperty<Color>,
 
     /// The [Pixel.background_color] to use for this widgets' content is disabled
-    disabled_bg_color: EzProperty<Color>,
+    pub disabled_bg_color: EzProperty<Color>,
 
     /// The [Pixel.foreground_color] to use for this widgets' content is active
-    active_fg_color: EzProperty<Color>,
+    pub active_fg_color: EzProperty<Color>,
 
     /// The [Pixel.background_color] to use for this widgets' content is active
-    active_bg_color: EzProperty<Color>,
+    pub active_bg_color: EzProperty<Color>,
 
     /// The [Pixel.foreground_color] to use for this widgets' content when flashed
-    flash_fg_color: EzProperty<Color>,
+    pub flash_fg_color: EzProperty<Color>,
 
     /// The [Pixel.background_color] to use for this widgets' content when flashed
-    flash_bg_color: EzProperty<Color>,
+    pub flash_bg_color: EzProperty<Color>,
 
     /// The [Pixel.foreground_color] to use for tab headers
-    tab_fg_color: EzProperty<Color>,
+    pub tab_fg_color: EzProperty<Color>,
 
     /// The [Pixel.background_color] to use for tab headers
-    tab_bg_color: EzProperty<Color>,
+    pub tab_bg_color: EzProperty<Color>,
 
     /// The [Pixel.foreground_color] to use for filler pixels if [fill] is true
-    filler_fg_color: EzProperty<Color>,
+    pub filler_fg_color: EzProperty<Color>,
 
     /// The [Pixel.background_color] to use for filler pixels if [fill] is true
-    filler_bg_color: EzProperty<Color>,
+    pub filler_bg_color: EzProperty<Color>,
 
     /// The [Pixel.foreground_color] to use for border pixels
-    border_fg_color: EzProperty<Color>,
+    pub border_fg_color: EzProperty<Color>,
 
     /// The [Pixel.background_color] to use for border pixels
-    border_bg_color: EzProperty<Color>,
+    pub border_bg_color: EzProperty<Color>,
 
     /// The [Pixel.background_color] to use for this widgets' content when a position has been
     /// highlighted by the blinking cursor
-    cursor_color: EzProperty<Color>,
+    pub cursor_color: EzProperty<Color>,
 }
 impl ColorConfig {
     pub fn new(name: String, scheduler: &mut SchedulerFrontend) -> Self {
 
         let foreground = scheduler.new_color_property(
-            format!("{}/color_fg_color", name).as_str(), Color::White);
+            format!("{}/fg_color", name).as_str(), Color::White);
         let background = scheduler.new_color_property(
-            format!("{}/color_bg_color", name).as_str(), Color::Black);
+            format!("{}/bg_color", name).as_str(), Color::Black);
 
         let selection_foreground = scheduler.new_color_property(
             format!("{}/selection_fg_color", name).as_str(), Color::Yellow);
@@ -1549,10 +1549,10 @@ impl ColorConfig {
 /// property, access is directly first.
 #[derive(PartialEq, Clone, Debug)]
 pub struct Padding {
-    padding_top: EzProperty<usize>,
-    padding_bottom: EzProperty<usize>,
-    padding_left: EzProperty<usize>,
-    padding_right: EzProperty<usize>,
+    pub padding_top: EzProperty<usize>,
+    pub padding_bottom: EzProperty<usize>,
+    pub padding_left: EzProperty<usize>,
+    pub padding_right: EzProperty<usize>,
 }
 impl Padding {
     pub fn new(top: usize, bottom: usize, left: usize, right: usize, name: String,

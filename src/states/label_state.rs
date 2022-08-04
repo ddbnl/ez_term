@@ -1,4 +1,5 @@
 use crate::property::ez_property::EzProperty;
+use crate::property::ez_values::EzValues;
 use crate::run::definitions::{IsizeCoordinates};
 use crate::scheduler::scheduler::SchedulerFrontend;
 use crate::scheduler::scheduler_funcs::clean_up_property;
@@ -94,7 +95,56 @@ impl LabelState {
 impl GenericState for LabelState {
 
     fn get_path(&self) -> &String { &self.path }
+    fn update_property(&mut self, name: &str, value: EzValues) -> bool {
 
+        match name {
+            "x" => self.position.x.set_from_ez_value(value),
+            "y" => self.position.y.set_from_ez_value(value),
+            "height" => self.size.height.set_from_ez_value(value),
+            "width" => self.size.width.set_from_ez_value(value),
+            "size_hint_x" => self.size_hint.size_hint_x.set_from_ez_value(value),
+            "size_hint_y" => self.size_hint.size_hint_y.set_from_ez_value(value),
+            "pos_hint_x" => self.pos_hint.pos_hint_x.set_from_ez_value(value),
+            "pos_hint_y" => self.pos_hint.pos_hint_y.set_from_ez_value(value),
+            "auto_scale_width" => self.auto_scale.auto_scale_width.set_from_ez_value(value),
+            "auto_scale_height" => self.auto_scale.auto_scale_height.set_from_ez_value(value),
+            "padding_top" => self.padding.padding_top.set_from_ez_value(value),
+            "padding_bottom" => self.padding.padding_bottom.set_from_ez_value(value),
+            "padding_left" => self.padding.padding_left.set_from_ez_value(value),
+            "padding_right" => self.padding.padding_right.set_from_ez_value(value),
+            "halign" => self.halign.set_from_ez_value(value),
+            "valign" => self.valign.set_from_ez_value(value),
+            "disabled" => self.disabled.set_from_ez_value(value),
+            "selection_order" => self.selection_order.set_from_ez_value(value),
+            "border" => self.border_config.border.set_from_ez_value(value),
+            "horizontal_symbol" => self.border_config.horizontal_symbol.set_from_ez_value(value),
+            "vertical_symbol" => self.border_config.vertical_symbol.set_from_ez_value(value),
+            "top_left_symbol" => self.border_config.top_left_symbol.set_from_ez_value(value),
+            "top_right_symbol" => self.border_config.top_right_symbol.set_from_ez_value(value),
+            "bottom_left_symbol" => self.border_config.bottom_left_symbol.set_from_ez_value(value),
+            "bottom_right_symbol" => self.border_config.bottom_right_symbol.set_from_ez_value(value),
+            "fg_color" => self.colors.fg_color.set_from_ez_value(value),
+            "bg_color" => self.colors.bg_color.set_from_ez_value(value),
+            "selection_fg_color" => self.colors.selection_fg_color.set_from_ez_value(value),
+            "selection_bg_color" => self.colors.selection_bg_color.set_from_ez_value(value),
+            "disabled_fg_color" => self.colors.disabled_fg_color.set_from_ez_value(value),
+            "disabled_bg_color" => self.colors.disabled_bg_color.set_from_ez_value(value),
+            "active_fg_color" => self.colors.active_fg_color.set_from_ez_value(value),
+            "active_bg_color" => self.colors.active_bg_color.set_from_ez_value(value),
+            "flash_fg_color" => self.colors.flash_fg_color.set_from_ez_value(value),
+            "flash_bg_color" => self.colors.flash_bg_color.set_from_ez_value(value),
+            "filler_fg_color" => self.colors.filler_fg_color.set_from_ez_value(value),
+            "filler_bg_color" => self.colors.filler_bg_color.set_from_ez_value(value),
+            "tab_fg_color" => self.colors.tab_fg_color.set_from_ez_value(value),
+            "tab_bg_color" => self.colors.tab_bg_color.set_from_ez_value(value),
+            "border_fg_color" => self.colors.border_fg_color.set_from_ez_value(value),
+            "border_bg_color" => self.colors.border_bg_color.set_from_ez_value(value),
+            "cursor_color" => self.colors.cursor_color.set_from_ez_value(value),
+            "text" => self.text.set_from_ez_value(value),
+            "from_file" => self.from_file.set_from_ez_value(value),
+            _ => panic!("Invalid property name for button state: {}", name),
+        }
+    }
     fn get_size_hint(&self) -> &SizeHint { &self.size_hint }
 
     fn get_size_hint_mut(&mut self) -> &mut SizeHint { &mut self.size_hint }
@@ -152,7 +202,7 @@ impl GenericState for LabelState {
     fn get_color_config_mut(&mut self) -> &mut ColorConfig { &mut self.colors }
 
     fn set_disabled(&mut self, disabled: bool) {
-        self.disabled.set(disabled)
+        self.disabled.set(disabled);
     }
 
     fn get_disabled(&self) -> bool { self.disabled.value }
@@ -188,5 +238,5 @@ impl LabelState {
 
     pub fn get_text_mut(&mut self) -> &mut EzProperty<String> { &mut self.text }
     
-    pub fn set_text(&mut self, text: String) { self.get_text_mut().set(text) }
+    pub fn set_text(&mut self, text: String) { self.get_text_mut().set(text); }
 }

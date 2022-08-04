@@ -337,9 +337,10 @@ fn start_cursor_blink(target_pos: Coordinates, state: &mut TextInputState,
     state.set_cursor_pos(target_pos);
     state.set_active_blink_task(true);
     state.update(scheduler);
+    let path = state.path.clone();
     let mut counter = 3;
     let blink_func = move | context: EzContext | {
-        let state = context.state_tree.get_by_path_mut(&context.widget_path)
+        let state = context.state_tree.get_by_path_mut(&path.clone())
             .as_text_input_mut();
         if !state.get_selected() {
             state.set_blink_switch(false);
@@ -356,8 +357,8 @@ fn start_cursor_blink(target_pos: Coordinates, state: &mut TextInputState,
         }
         true
     };
-    scheduler.schedule_interval(name, Box::new(blink_func),
-                                Duration::from_millis(100));
+    scheduler.schedule_recurring(name.as_str(), Box::new(blink_func),
+                                 Duration::from_millis(100));
 }
 
 

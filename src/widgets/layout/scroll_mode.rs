@@ -1,4 +1,3 @@
-use std::cmp::min;
 use crate::run::definitions::{Pixel, PixelMap, StateTree};
 use crate::scheduler::scheduler::SchedulerFrontend;
 use crate::widgets::ez_object::EzObject;
@@ -12,7 +11,7 @@ impl Layout {
     pub fn handle_scroll_down(&self, state_tree: &mut StateTree, scheduler: &mut SchedulerFrontend) {
 
         let state = state_tree.get_by_path_mut(&self.path).as_layout_mut();
-        if !state.get_scrolling_config().get_enable_y() { return }
+        if !state.get_scrolling_config().get_scroll_y() { return }
         let scroll_chunk = (state.get_effective_size().height as f64 /
             state.get_scrolling_config().get_original_height() as f64) * 0.75;
         let new_view_start =
@@ -26,7 +25,7 @@ impl Layout {
     pub fn handle_scroll_up(&self, state_tree: &mut StateTree, scheduler: &mut SchedulerFrontend) {
 
         let state = state_tree.get_by_path_mut(&self.path).as_layout_mut();
-        if !state.get_scrolling_config().get_enable_y() { return }
+        if !state.get_scrolling_config().get_scroll_y() { return }
         let scroll_chunk = (state.get_effective_size().height as f64 /
             state.get_scrolling_config().get_original_height() as f64) * 0.75;
         let new_view_start = if state.get_scrolling_config().get_view_start_y() > scroll_chunk {
@@ -41,7 +40,7 @@ impl Layout {
     pub fn handle_scroll_right(&self, state_tree: &mut StateTree, scheduler: &mut SchedulerFrontend) {
 
         let state = state_tree.get_by_path_mut(&self.path).as_layout_mut();
-        if !state.get_scrolling_config().get_enable_x() { return }
+        if !state.get_scrolling_config().get_scroll_x() { return }
         let scroll_chunk = state.get_effective_size().width as f64 /
             state.get_scrolling_config().get_original_width() as f64;
         let new_view_start =
@@ -55,7 +54,7 @@ impl Layout {
     pub fn handle_scroll_left(&self, state_tree: &mut StateTree, scheduler: &mut SchedulerFrontend) {
 
         let state = state_tree.get_by_path_mut(&self.path).as_layout_mut();
-        if !state.get_scrolling_config().get_enable_x() { return }
+        if !state.get_scrolling_config().get_scroll_x() { return }
         
         let scroll_chunk = state.get_effective_size().width as f64 /
             state.get_scrolling_config().get_original_width() as f64;
@@ -73,7 +72,7 @@ impl Layout {
 
         let state = state_tree.get_by_path_mut(&self.get_full_path())
             .as_layout_mut();
-        if !state.get_scrolling_config().get_enable_x()
+        if !state.get_scrolling_config().get_scroll_x()
             || contents.len() <= state.get_effective_size().width {
             state.get_scrolling_config_mut().set_is_scrolling_x(false);
             return contents
@@ -100,7 +99,7 @@ impl Layout {
         let state = state_tree.get_by_path_mut(&self.get_full_path())
             .as_layout_mut();
         let largest = contents.iter().map(|x| x.len()).max().unwrap_or(0);
-        if !state.get_scrolling_config().get_enable_y() || largest <= state.get_effective_size().height {
+        if !state.get_scrolling_config().get_scroll_y() || largest <= state.get_effective_size().height {
             state.get_scrolling_config_mut().set_is_scrolling_y(false);
             return contents
         }

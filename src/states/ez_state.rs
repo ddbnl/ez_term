@@ -1,6 +1,7 @@
 //! # Widget state:
 //! A module containing the base structs and traits for widget states.
 use crossterm::style::Color;
+use crate::property::ez_values::EzValues;
 
 use crate::run::definitions::{Coordinates, IsizeCoordinates, Size};
 use crate::scheduler::scheduler::SchedulerFrontend;
@@ -235,7 +236,8 @@ pub trait GenericState {
     fn get_path(&self) -> &String;
     
     fn get_id(&self) -> String { self.get_path().rsplit_once('/').unwrap().1.to_string() }
-
+    
+    fn update_property(&mut self, name: &str, value: EzValues) -> bool;
     /// Set to None for passing an absolute width, or to a value between 0 and 1 to
     /// automatically scale width based on parent width
     fn set_size_hint_x(&mut self, size_hint: Option<f64>) {

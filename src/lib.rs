@@ -688,20 +688,22 @@
 //!
 //! Tab mode creates tabs for you based on child layouts. This means that in tab mode, you can only
 //! add other layouts, not individual widgets. A tab button will automatically be created for each
-//! child layout, using the ID property of the child layout as a tab name. Here is an example with
-//! two tabs:
+//! child layout, using the tab_name property of the child layout as a tab name. If the tab_name
+//! property is not set, the child ID is used. Here is an example with two tabs:
 //! ```
 //! - Layout:
 //!     id: my_tab_layout
 //!     mode: tab
 //!     active_tab: Tab one
 //!     - Layout:
-//!         id: Tab one
+//!         id: tab_one
+//!         tab_name: Tab one
 //!         mode: box
 //!         - Label:
 //!             text: Hello tab one!
 //!     - Layout:
-//!         id: Tab two
+//!         id: tab_two
+//!         tab_name: Tab two
 //!         mode: box
 //!         - Label:
 //!             text: Hello tab two!
@@ -717,7 +719,7 @@
 //! use ez_term::*;
 //! fn change_tab_callback(context: EzContext) {
 //!     let state = context.state_tree.get_by_id("my_tab_layout").as_layout_mut();
-//!     state.set_active_tab("Tab two");
+//!     state.set_active_tab("tab_two");
 //!     state.update(context.scheduler);
 //! }
 //! ```
@@ -2029,8 +2031,164 @@
 //! are three types of schedules tasks:
 //!
 //! - Single execution
-//! - Regular execution
+//! - Recurring execution
 //! - Threaded execution
+//!
+//! **Important:** Single- and recurring tasks should only be used to manipulate the UI; this is
+//! because these tasks are expected to return immediately. If they do not, the UI will hang.
+//!
+//! Therefore, in order to execute (parts of) your personal app code, always use 'schedule_threaded',
+//! which will be explained below in the chapter "Threaded execution".
+//!
+//! #### 1.3.4.1 Single execution
+//!
+//! A single execution task is a closure or function that is executed only once, after a specified
+//! delay. As the delay can be 0, it can also be executed on the next frame. The scheduler method
+//! we will use is 'schedule_once'. The first parameter of this function is a &str which is the task
+//! name. You can use this name to cancel the task before it executes (see example at the bottom of
+//! this chapter). Here is  an example of scheduled a single execution task with a closure, changing
+//! a label text after 10 seconds:
+//! ```
+//! use std::time::Duration;
+//! use ez_term::*;
+//! let (root_widget, mut state_tree, mut scheduler) = load_ui();
+//!
+//! let my_task = |context: EzContext| {
+//!
+//!     let state = state_tree.get_by_id("my_label").as_label_mut();
+//!     state.set_text("10 seconds have passed!".to_string());
+//!     state.update(context.scheduler);
+//! };
+//!
+//! scheduler.schedule_once("my_task", Box::new(my_task), Duration::from_secs(10));
+//! ```
+//!
+//! The same example with a function:
+//! ```
+//! use std::time::Duration;
+//! use ez_term::*;
+//! let (root_widget, mut state_tree, mut scheduler) = load_ui();
+//!
+//! fn my_task(context: EzContext) {
+//!
+//!     let state = state_tree.get_by_id("my_label").as_label_mut();
+//!     state.set_text("10 seconds have passed!".to_string());
+//!     state.update(context.scheduler);
+//! };
+//!
+//! scheduler.schedule_once("my_task", Box::new(my_task), Duration::from_secs(10));
+//! ```
+//!
+//! It is of course possible to schedule a task from a callback. For example, scheduling a task with
+//! delay after a button is pushed. Here is an example: we will bind a callback to a button, that
+//! changed the text of a label after 10 seconds, using a closure:
+//! ```
+//! use std::time::Duration;
+//! use ez_term::*;
+//! let (root_widget, mut state_tree, mut scheduler) = load_ui();
+//!
+//! let my_task = |context: EzContext| {
+//!
+//!     let state = state_tree.get_by_id("my_label").as_label_mut();
+//!     state.set_text("Button was pressed 10 seconds ago!".to_string());
+//!     state.update(context.scheduler);
+//! };
+//!
+//! let my_callback = |context: EzContext| {
+//!
+//!     scheduler.schedule_once("my_task", Box::new(my_task), Duration::from_secs(10));
+//!     true
+//! };
+//! let new_callback_config = CallbackConfig::from_on_press(Box::new(my_callback));
+//! scheduler.update_callback_config("my_button", new_callback_config);
+//!
+//! ```
+//!
+//! To cancel a run-once task use the 'cancel_task' method of the scheduler. Of course, this only
+//! works if it is called before the task is executed. If the task no longer exists this method
+//! will not panic, so it is always safe to try. Example:
+//! ```
+//! scheduler.cancel_task("my_task");
+//! ```
+//!
+//! #### 1.3.4.2 Recurring execution
+//!
+//! A recurring execution task is executed according to its interval. If the interval is set to
+//! 1 second, then the task will be executed every second. The closure or function used to create
+//! this task must return a bool. If 'true' is returned, the function will be scheduled again. If
+//! 'false' is returned, the task is dropped and never executed again. To schedule a recurring task
+//! we will use the 'schedule_recurring' method of the scheduler. The first parameter is a &str,
+//! which is the task name. You can use this name to cancel the recurring task manually (as an
+//! alternative to returning 'false' from the function). See an example at the bottom of this chapter.
+//! Here is an example of updating the text of a label every second; the label text will be
+//! counting along with the seconds. Once 10 is reached we stop executing the task. For this we
+//! can only use a closure, because we cannot capture variables in regular functions:
+//! ```
+//! use ez_term::*;
+//! use std::time::Duration;
+//! let (root_widget, mut state_tree, mut scheduler) = load_ui();
+//!
+//! let mut counter: usize = 1;
+//! let my_task = move |context: EzContext| {
+//!
+//!     let state = context.state_tree.get_by_id_mut("my_label").as_label_mut();
+//!     state.set_text(format!("Counting {}", counter));
+//!     state.update(context.scheduler);
+//!     counter += 1;
+//!     return if counter <= 10 {
+//!         true
+//!     } else {
+//!         false
+//!     };
+//! };
+//!
+//! scheduler.schedule_once("my_task", Box::new(my_task), Duration::from_secs(1));
+//! ```
+//!
+//! It is of course possible to schedule a task from a callback. For example, scheduling a recurring
+//! task with delay after a button is pushed. We will move the above example into a button "on_press"
+//! callback. Now, the label will not start counting until the user presses a button:
+//!
+//! ```
+//! use ez_term::*;
+//! use std::time::Duration;
+//! let (root_widget, mut state_tree, mut scheduler) = load_ui();
+//!
+//! let mut counter: usize = 1;
+//! let my_task = move |context: EzContext| {
+//!
+//!     let state = context.state_tree.get_by_id_mut("my_label").as_label_mut();
+//!     state.set_text(format!("Counting {}", counter));
+//!     state.update(context.scheduler);
+//!     counter += 1;
+//!     return if counter <= 10 {
+//!         true
+//!     } else {
+//!         false
+//!     };
+//! };
+//! let my_callback = |context: EzContext| {
+//!
+//!     scheduler.schedule_recurring("my_task", Box::new(my_task), Duration::from_secs(1));
+//!     true
+//! };
+//! let new_callback_config = CallbackConfig::from_on_press(Box::new(my_callback));
+//! scheduler.update_callback_config("my_button", new_callback_config);
+//! ```
+//!
+//! To cancel a recurring task use the 'cancel_recurring_task' method of the scheduler. Of course,
+//! this only works if called while the task is still running (i.e. it is still returning true). If
+//! the task no longer exists this method will not panic, so it is always safe to try. Example:
+//! ```
+//! scheduler.cancel_recurring_task("my_task");
+//! ```
+//!
+//! #### 1.3.4.3 Threaded execution
+//!
+//! To run custom code that will not return immediately (i.e. your app that you are building the UI
+//! for), you must used threaded execution to avoid blocking the UI in the main thread. Because of
+//! Rusts strict thread-safety, manipulating the UI from your threaded task will be different than
+//! what you're used to by now, because we cannot access the widget states directly. Instead,
 mod run;
 mod scheduler;
 mod widgets;
@@ -2046,6 +2204,7 @@ pub use crate::run::definitions::Coordinates;
 pub use crossterm::event::KeyCode;
 
 pub use crate::scheduler::definitions::{EzContext, EzPropertiesMap};
+pub use crate::run::definitions::StateTree;
 pub use crate::scheduler::scheduler::SchedulerFrontend;
 
 pub use crate::property::ez_properties::EzProperties;

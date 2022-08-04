@@ -114,20 +114,20 @@ fn main() {
             }
             neon = (neon.0, neon.1, neon.2 + 2);
         }
-        let state = context.state_tree.get_by_id_mut(&context.widget_path)
+        let state = context.state_tree.get_by_id_mut("canvas")
             .as_canvas_mut();
         state.get_color_config_mut().set_fg_color(color);
         state.update(context.scheduler);
         true
     };
-    scheduler.schedule_interval("canvas".to_string(),
-                                Box::new(neon_banner), Duration::from_millis(200));
+    scheduler.schedule_recurring("canvas_task",
+                                 Box::new(neon_banner), Duration::from_millis(200));
 
     // Programmatically create some labels
     for i in 0..10 {
         let state = scheduler.create_widget(
             "ScalingLabel", format!("label_{}", i).as_str(),
-            "/root/main_screen/tabbed_box/Generation");
+            "/root/main_screen/tabbed_box/generation_box");
         state.as_label_mut().set_text(format!("Generated label: {}", i));
     }
 
@@ -300,12 +300,10 @@ fn test_popup_button_on_press(context: EzContext) -> bool {
                 context.state_tree.get_by_path_mut("/root").as_layout_mut();
             state.dismiss_modal(context.scheduler);
             state.update(context.scheduler);
-            false
         };
-    let path_clone = popup_path.clone();
     let dismiss_delay =
         move |context: EzContext| {
-            context.scheduler.schedule_once(path_clone.clone(), Box::new(dismiss),
+            context.scheduler.schedule_once("dismiss_delay_task", Box::new(dismiss),
                                             Duration::from_millis(50));
             true
         };
@@ -331,17 +329,15 @@ fn progress_bar_button(context: EzContext) -> bool {
                 .as_generic_mut();
             state.set_disabled(false);
             state.update(context.scheduler);
-            true
         })));
     false
 }
 
 
-fn progress_example_app(mut properties: EzPropertiesMap) {
+fn progress_example_app(mut properties: EzPropertiesMap, mut state_tree: StateTree) {
 
-    let progress_property = properties.get_mut("progress_property").unwrap();
     for x in 1..6 {
-        progress_property.as_usize_mut().set(x*20);
-        std::thread::sleep(Duration::from_secs(1))
-    };
+        state_tree.get_by_id_mut("progress_bar").as_progress_bar_mut().set_value(x*20);
+        state_tree.get_by_id_mut("progress_label").as_label_mut().set_text(format!("{}%", x*20));
+        std::thread::sleep(Duration::from_secs(1)) };
 }

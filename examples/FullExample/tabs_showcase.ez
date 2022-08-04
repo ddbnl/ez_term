@@ -8,7 +8,7 @@
     tab_fg_color: yellow
     tab_bg_color: red
     - Layout:
-        id: Scrolling
+        tab_name: Scrolling
         mode: box
         orientation: horizontal
         scroll_y: true
@@ -18,7 +18,7 @@
             size_hint_y: none
             from_file: ./Examples/FullExample/dummy.txt
     - Layout:
-        id: Tables
+        tab_name: Tables
         mode: box
         orientation: vertical
         scroll_y: true
@@ -111,7 +111,7 @@
             - TableShowcase:
                 orientation: bt-rl
     - Layout:
-        id: Stacks
+        tab_name: Stacks
         mode: box
         orientation: vertical
         scroll_y: true
@@ -204,7 +204,8 @@
             - StackShowcase:
                 orientation: bt-rl
     - Layout:
-        id: Generation
+        id: generation_box
+        tab_name: Generation
         mode: box
         orientation: vertical
         - Label:

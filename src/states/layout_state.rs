@@ -1,14 +1,18 @@
 use std::collections::HashMap;
-use crate::states::definitions::{StateCoordinates, SizeHint, PosHint, StateSize, AutoScale, Padding, HorizontalAlignment, VerticalAlignment, BorderConfig, ColorConfig, LayoutMode, LayoutOrientation, ScrollingConfig, TableConfig, InfiniteSize};
-use crate::{EzProperty};
+
+use crate::EzProperty;
 use crate::parser::ez_definition::Templates;
+use crate::property::ez_values::EzValues;
 use crate::run::definitions::{IsizeCoordinates, Size, StateTree};
 use crate::run::tree::initialize_state_tree;
 use crate::scheduler::scheduler::SchedulerFrontend;
 use crate::scheduler::scheduler_funcs::clean_up_property;
+use crate::states::definitions::{AutoScale, BorderConfig, ColorConfig, HorizontalAlignment,
+                                 InfiniteSize, LayoutMode, LayoutOrientation, Padding, PosHint,
+                                 ScrollingConfig, SizeHint, StateCoordinates, StateSize,
+                                 TableConfig, VerticalAlignment};
 use crate::states::ez_state::GenericState;
 use crate::widgets::ez_object::EzObjects;
-
 
 /// [State] implementation.
 #[derive(Clone, Debug)]
@@ -39,10 +43,10 @@ pub struct LayoutState {
     pub auto_scale: AutoScale,
 
     /// layout mode enum, see [LayoutMode] for options
-    pub mode: LayoutMode,
+    pub mode: EzProperty<LayoutMode>,
 
     /// Orientation enum, see [LayoutOrientation] for options
-    pub orientation: LayoutOrientation,
+    pub orientation: EzProperty<LayoutOrientation>,
 
     /// Amount of space to leave between sides of the widget and other widgets
     pub padding: Padding,
@@ -115,8 +119,10 @@ impl LayoutState {
             size: StateSize::new(0, 0, path.clone(), scheduler),
             infinite_size: InfiniteSize::default(),
             auto_scale: AutoScale::new(false, false, path.clone(), scheduler),
-            orientation: LayoutOrientation::Horizontal,
-            mode: LayoutMode::Box,
+            mode: scheduler.new_layout_mode_property(
+                format!("{}/mode", path).as_str(), LayoutMode::Box),
+            orientation: scheduler.new_layout_orientation_property(
+                format!("{}/orientation", path).as_str(), LayoutOrientation::Horizontal),
             padding: Padding::new(0, 0, 0, 0, path.clone(), scheduler),
             halign: scheduler.new_horizontal_alignment_property(
                 format!("{}/halign", path).as_str(), HorizontalAlignment::Left),
@@ -126,7 +132,7 @@ impl LayoutState {
             active_screen: scheduler.new_string_property(
                 format!("{}/active_screen", path).as_str(), String::new()),
             tab_name: scheduler.new_string_property(
-                format!("{}/tab_name", path).as_str(), "Tab".to_string()),
+                format!("{}/tab_name", path).as_str(), String::new()),
             active_tab: scheduler.new_string_property(
                 format!("{}/active_tab", path).as_str(), String::new()),
             selected_tab_header: String::new(),
@@ -150,7 +156,71 @@ impl LayoutState {
 impl GenericState for LayoutState {
 
     fn get_path(&self) -> &String { &self.path }
+    fn update_property(&mut self, name: &str, value: EzValues) -> bool {
 
+        match name {
+            "x" => self.position.x.set_from_ez_value(value),
+            "y" => self.position.y.set_from_ez_value(value),
+            "height" => self.size.height.set_from_ez_value(value),
+            "width" => self.size.width.set_from_ez_value(value),
+            "size_hint_x" => self.size_hint.size_hint_x.set_from_ez_value(value),
+            "size_hint_y" => self.size_hint.size_hint_y.set_from_ez_value(value),
+            "pos_hint_x" => self.pos_hint.pos_hint_x.set_from_ez_value(value),
+            "pos_hint_y" => self.pos_hint.pos_hint_y.set_from_ez_value(value),
+            "auto_scale_width" => self.auto_scale.auto_scale_width.set_from_ez_value(value),
+            "auto_scale_height" => self.auto_scale.auto_scale_height.set_from_ez_value(value),
+            "padding_top" => self.padding.padding_top.set_from_ez_value(value),
+            "padding_bottom" => self.padding.padding_bottom.set_from_ez_value(value),
+            "padding_left" => self.padding.padding_left.set_from_ez_value(value),
+            "padding_right" => self.padding.padding_right.set_from_ez_value(value),
+            "halign" => self.halign.set_from_ez_value(value),
+            "valign" => self.valign.set_from_ez_value(value),
+            "disabled" => self.disabled.set_from_ez_value(value),
+            "selection_order" => self.selection_order.set_from_ez_value(value),
+            "border" => self.border_config.border.set_from_ez_value(value),
+            "horizontal_symbol" => self.border_config.horizontal_symbol.set_from_ez_value(value),
+            "vertical_symbol" => self.border_config.vertical_symbol.set_from_ez_value(value),
+            "top_left_symbol" => self.border_config.top_left_symbol.set_from_ez_value(value),
+            "top_right_symbol" => self.border_config.top_right_symbol.set_from_ez_value(value),
+            "bottom_left_symbol" => self.border_config.bottom_left_symbol.set_from_ez_value(value),
+            "bottom_right_symbol" => self.border_config.bottom_right_symbol.set_from_ez_value(value),
+            "fg_color" => self.colors.fg_color.set_from_ez_value(value),
+            "bg_color" => self.colors.bg_color.set_from_ez_value(value),
+            "selection_fg_color" => self.colors.selection_fg_color.set_from_ez_value(value),
+            "selection_bg_color" => self.colors.selection_bg_color.set_from_ez_value(value),
+            "disabled_fg_color" => self.colors.disabled_fg_color.set_from_ez_value(value),
+            "disabled_bg_color" => self.colors.disabled_bg_color.set_from_ez_value(value),
+            "active_fg_color" => self.colors.active_fg_color.set_from_ez_value(value),
+            "active_bg_color" => self.colors.active_bg_color.set_from_ez_value(value),
+            "flash_fg_color" => self.colors.flash_fg_color.set_from_ez_value(value),
+            "flash_bg_color" => self.colors.flash_bg_color.set_from_ez_value(value),
+            "filler_fg_color" => self.colors.filler_fg_color.set_from_ez_value(value),
+            "filler_bg_color" => self.colors.filler_bg_color.set_from_ez_value(value),
+            "tab_fg_color" => self.colors.tab_fg_color.set_from_ez_value(value),
+            "tab_bg_color" => self.colors.tab_bg_color.set_from_ez_value(value),
+            "border_fg_color" => self.colors.border_fg_color.set_from_ez_value(value),
+            "border_bg_color" => self.colors.border_bg_color.set_from_ez_value(value),
+            "cursor_color" => self.colors.cursor_color.set_from_ez_value(value),
+            "orientation" => self.orientation.set_from_ez_value(value),
+            "mode" => self.mode.set_from_ez_value(value),
+            "active_screen" => self.active_screen.set_from_ez_value(value),
+            "active_tab" => self.active_tab.set_from_ez_value(value),
+            "tab_name" => self.tab_name.set_from_ez_value(value),
+            "fill" => self.fill.set_from_ez_value(value),
+            "filler_symbol" => self.filler_symbol.set_from_ez_value(value),
+            "scroll_x" => self.scrolling_config.scroll_x.set_from_ez_value(value),
+            "scroll_y" => self.scrolling_config.scroll_y.set_from_ez_value(value),
+            "view_start_x" => self.scrolling_config.view_start_x.set_from_ez_value(value),
+            "view_start_y" => self.scrolling_config.view_start_y.set_from_ez_value(value),
+            "rows" => self.table_config.rows.set_from_ez_value(value),
+            "cols" => self.table_config.cols.set_from_ez_value(value),
+            "col_default_width" => self.table_config.col_default_width.set_from_ez_value(value),
+            "force_default_col_width" => self.table_config.force_default_col_width.set_from_ez_value(value),
+            "row_default_height" => self.table_config.row_default_height.set_from_ez_value(value),
+            "force_default_row_height" => self.table_config.force_default_row_height.set_from_ez_value(value),
+            _ => panic!("Invalid property name for button state: {}", name),
+        }
+    }
     fn get_size_hint(&self) -> &SizeHint { &self.size_hint }
 
     fn get_size_hint_mut(&mut self) -> &mut SizeHint { &mut self.size_hint }
@@ -175,12 +245,12 @@ impl GenericState for LayoutState {
 
         let width_result: isize = self.size.get_width() as isize
             -if self.get_border_config().get_border() {2} else {0}
-            -if self.scrolling_config.get_enable_y() {1} else {0}
+            -if self.scrolling_config.get_scroll_y() {1} else {0}
             -self.get_padding().get_padding_left() as isize - self.get_padding().get_padding_right() as isize;
         let width = if width_result < 0 {0} else { width_result};
         let height_result: isize = self.size.get_height() as isize
             -if self.get_border_config().get_border() {2} else {0}
-            -if self.scrolling_config.get_enable_x() {1} else {0}
+            -if self.scrolling_config.get_scroll_x() {1} else {0}
             -self.get_padding().get_padding_top() as isize - self.get_padding().get_padding_bottom() as isize;
         let height = if height_result < 0 {0} else { height_result};
         Size::new(width as usize, height as usize)
@@ -190,7 +260,7 @@ impl GenericState for LayoutState {
     /// e.g. border and padding will be added to this automatically.
     fn set_effective_width(&mut self, width: usize) {
         let offset = if self.get_border_config().get_border() {2} else {0}
-            + if self.scrolling_config.get_enable_y() {1} else {0}
+            + if self.scrolling_config.get_scroll_y() {1} else {0}
             + self.get_padding().get_padding_left() + self.get_padding().get_padding_right();
         self.get_size_mut().set_width(width + offset);
     }
@@ -200,7 +270,7 @@ impl GenericState for LayoutState {
     fn set_effective_height(&mut self, height: usize) {
 
         let offset = if self.get_border_config().get_border() {2} else {0}
-            + if self.scrolling_config.get_enable_x() {1} else {0}
+            + if self.scrolling_config.get_scroll_x() {1} else {0}
             + self.get_padding().get_padding_top() + self.get_padding().get_padding_bottom();
         self.get_size_mut().set_height(height + offset);
     }
@@ -242,11 +312,11 @@ impl GenericState for LayoutState {
     }
 
     fn is_selectable(&self) -> bool { self.get_scrolling_config().get_is_scrolling_x()
-        || self.get_scrolling_config().get_is_scrolling_y() || self.mode == LayoutMode::Tab
+        || self.get_scrolling_config().get_is_scrolling_y() || self.mode.value == LayoutMode::Tab
     }
 
     fn set_disabled(&mut self, disabled: bool) {
-        self.disabled.set(disabled)
+        self.disabled.set(disabled);
     }
 
     fn get_disabled(&self) -> bool { self.disabled.value }
@@ -283,18 +353,18 @@ impl GenericState for LayoutState {
 impl LayoutState {
 
     /// Set [LayoutMode]
-    pub fn set_mode(&mut self, mode: LayoutMode) { self.mode = mode }
+    pub fn set_mode(&mut self, mode: LayoutMode) { self.mode.set(mode); }
 
     /// Get [LayoutMode]
-    pub fn get_mode(&self) -> &LayoutMode { &self.mode }
+    pub fn get_mode(&self) -> &LayoutMode { &self.mode.value }
 
     /// Set [LayoutOrientation]
     pub fn set_orientation(&mut self, orientation: LayoutOrientation) {
-        self.orientation = orientation
+        self.orientation.set(orientation);
     }
 
     /// Get [LayoutOrientation]
-    pub fn get_orientation(&self) -> &LayoutOrientation { &self.orientation }
+    pub fn get_orientation(&self) -> &LayoutOrientation { &self.orientation.value }
 
     /// Set the ID of the child that is the currently active screen (i.e. content is showing)
     pub fn set_active_screen(&mut self, id: &str) { self.active_screen.set(id.to_string()); }
@@ -304,10 +374,20 @@ impl LayoutState {
 
     /// Set the id of the layout that is currently active as the current tab (i.e. content is
     /// showing)
-    pub fn set_active_tab(&mut self, id: &str) { self.active_tab.set(id.to_string()); }
+    pub fn set_active_tab(&mut self, tab: &str) { self.active_tab.set(tab.to_string()); }
 
     /// Get the id of the layout that is currently active as a tab (i.e. content is showing)
     pub fn get_active_tab(&self) -> String { self.active_tab.value.clone() }
+
+    pub fn set_tab_name(&mut self, name: &str) { self.tab_name.set(name.to_string()); }
+
+    pub fn get_tab_name(&self) -> String {
+        if self.tab_name.value.is_empty() {
+            self.get_id()
+        } else {
+            self.tab_name.value.clone()
+        }
+    }
 
     /// Set the tab header that is currently selected
     pub fn set_selected_tab_header(&mut self, id: String) { self.selected_tab_header = id; }

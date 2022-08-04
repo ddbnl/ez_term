@@ -5,7 +5,6 @@ use std::thread::{JoinHandle, spawn};
 use std::time::Instant;
 
 use crate::{CallbackConfig, EzContext};
-use crate::property::ez_values::EzValues;
 use crate::run::definitions::{CallbackTree, StateTree};
 use crate::run::select::{deselect_widget, select_widget};
 use crate::scheduler::scheduler::SchedulerFrontend;
@@ -17,21 +16,22 @@ use crate::widgets::layout::layout::Layout;
 /// joined.
 pub fn update_threads(scheduler: &mut SchedulerFrontend, state_tree: &mut StateTree) {
 
-    start_new_threads(scheduler);
+    start_new_threads(scheduler, state_tree);
     check_finished_threads(scheduler, state_tree)
 }
 
 
 /// Any threads that are scheduled to be started will be spawned. Threads can be scheduled by the
 /// user.
-pub fn start_new_threads(scheduler: &mut SchedulerFrontend) {
+pub fn start_new_threads(scheduler: &mut SchedulerFrontend, state_tree: &mut StateTree) {
 
     while !scheduler.backend.threads_to_start.is_empty() {
         let (thread_func, on_finish) =
             scheduler.backend.threads_to_start.pop().unwrap();
-
         let properties = scheduler.backend.properties.clone();
-        let handle: JoinHandle<()> = spawn(move || thread_func(properties));
+
+        let state_tree = state_tree.clone();
+        let handle: JoinHandle<()> = spawn(move || thread_func(properties, state_tree));
         scheduler.backend.thread_handles.push((handle, on_finish))
     }
 }
@@ -64,28 +64,47 @@ pub fn run_tasks(scheduler: &mut SchedulerFrontend, state_tree: &mut StateTree) 
     let mut remaining_tasks = Vec::new();
     while !scheduler.backend.tasks.is_empty() {
         let mut task = scheduler.backend.tasks.pop().unwrap();
-        let context = EzContext::new(task.widget.clone(), state_tree, scheduler);
+        if task.canceled { continue }
+        let context = EzContext::new(String::new(), state_tree, scheduler);
+
+        let elapsed = task.created.elapsed();
+        if elapsed >= task.delay {
+            (task.func)(context);
+        } else {
+            remaining_tasks.push(task);
+        }
+    }
+    scheduler.backend.tasks = remaining_tasks;
+
+    let mut remaining_tasks = Vec::new();
+    while !scheduler.backend.recurring_tasks.is_empty() {
+        let mut task = scheduler.backend.recurring_tasks.pop().unwrap();
+        let context = EzContext::new(String::new(), state_tree, scheduler);
+        if task.canceled { continue }
 
         if let Some(time) = task.last_execution {
             let elapsed = time.elapsed();
-            if elapsed >= task.interval && !task.canceled {
+            // Interval elapsed, execute task and reschedule if it returned true
+            if elapsed >= task.interval {
                 let result = (task.func)(context);
                 task.last_execution = Some(Instant::now());
-                if task.recurring && result {
+                if result {
                     remaining_tasks.push(task);
                 }
-            } else if !task.canceled {
-                remaining_tasks.push(task);
+            // Interval not elapsed, schedule again to check next frame
+            } else {
+                remaining_tasks.push(task)
             }
-        } else if !task.canceled {
+        // Task has not been executed before, do so immediately
+        } else {
             let result = (task.func)(context);
             task.last_execution = Some(Instant::now());
-            if task.recurring && result {
+            if result {
                 remaining_tasks.push(task);
             }
         }
     }
-    scheduler.backend.tasks = remaining_tasks;
+    scheduler.backend.recurring_tasks = remaining_tasks;
 }
 
 
@@ -132,34 +151,38 @@ pub fn update_callback_configs(scheduler: &mut SchedulerFrontend, callback_tree:
 
 /// Check all EzProperty that have at least one subscriber and check if they've send a new
 /// value. If so, call the update func of all subscribers and any registered user callbacks.
-pub fn update_properties(scheduler: &mut SchedulerFrontend, state_tree: &mut StateTree,
-                         callback_tree: &mut CallbackTree) {
+pub fn update_properties(scheduler: &mut SchedulerFrontend,
+                         state_tree: &mut StateTree, callback_tree: &mut CallbackTree) {
 
     let mut to_update = Vec::new();
     let mut to_callback: Vec<String> = Vec::new();
 
-    // Collect all property names that are either subscribed to or that have attached callbacks
-    let mut sb_names: Vec<String> = scheduler.backend.property_subscribers
-        .keys().map(|x| x.clone()).collect();
-    sb_names.extend(scheduler.backend.property_callbacks.clone());
-
-    for name in sb_names {
+    for name in scheduler.backend.properties.keys() {
         let mut new_val = None;
         let receiver =
-            scheduler.backend.property_receivers.get(&name).unwrap();
+            scheduler.backend.property_receivers.get(name).unwrap();
         // Drain all new values if any, we only care about the latest.
         while let Ok(new) = receiver.try_recv() {
             new_val = Some(new);
         }
         if let Some(val) = new_val {
-            if scheduler.backend.property_subscribers.contains_key(&name) {
+            if scheduler.backend.property_subscribers.contains_key(name) {
                 for update_func in scheduler.backend
-                        .property_subscribers.get_mut(&name).unwrap() {
+                        .property_subscribers.get_mut(name).unwrap() {
                     to_update.push(update_func(state_tree, val.clone()));
                 }
             }
-            if scheduler.backend.property_callbacks.contains(&name) {
+            if scheduler.backend.property_callbacks.contains(name) {
                 to_callback.push(name.clone());
+            }
+            if name.starts_with("/root") || name.starts_with("/modal") {
+                let (widget_path, property_name) =
+                    name.rsplit_once('/').unwrap();
+                let state =
+                    state_tree.get_by_path_mut(widget_path).as_generic_mut();
+                if state.update_property(property_name, val) {
+                    to_update.push(state.get_path().clone());
+                }
             }
         }
     }

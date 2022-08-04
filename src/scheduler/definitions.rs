@@ -38,13 +38,16 @@ pub type MouseDragCallbackFunction = Box<dyn FnMut(EzContext, Option<Coordinates
 
 /// Used for callbacks and scheduled tasks that don't require special parameter such as KeyCodes
 /// or mouse positions. Used e.g. for [on_value_change] and [on_keyboard_enter].
-pub type GenericEzFunction = Box<dyn FnMut(EzContext) -> bool>;
+pub type GenericFunction = Box<dyn FnMut(EzContext) -> bool>;
 
 
 /// Scheduled task implementation. Using FnMut allows users to capture variables in their scheduled
 /// funcs.
-pub type GenericEzTask = Box<dyn FnMut(EzContext) -> bool>;
+pub type GenericTask = Box<dyn FnMut(EzContext)>;
 
+/// Scheduled task implementation. Using FnMut allows users to capture variables in their scheduled
+/// funcs. Outputs a bool to indicate whether task should occur again.
+pub type GenericRecurringTask = Box<dyn FnMut(EzContext) -> bool>;
 
 /// Closure that updates an Ez property. An Ez property can subscribe to another of the same type,
 /// and it will automatically keep values in sync. When subscribed to a value, when that value
@@ -54,7 +57,7 @@ pub type EzPropertyUpdater = Box<dyn FnMut(&mut StateTree, EzValues) -> String>;
 
 /// Func that can be spawned as a background thread. Receives a dict of all [EzProperties].
 /// Ez properties can be bound to widgets, so updating an EzProperty in a thread can update the UI.
-pub type EzThread = Box<dyn FnOnce(HashMap<String, EzProperties>) + Send>;
+pub type EzThread = Box<dyn FnOnce(EzPropertiesMap, StateTree) + Send>;
 
 
 /// This object is provided to callbacks. You can use it to gain access to the [StateTree] and the

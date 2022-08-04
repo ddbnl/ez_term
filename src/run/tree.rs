@@ -13,7 +13,7 @@ use crate::widgets::layout::layout::Layout;
 
 /// Convenience wrapper for [StateTree], [WidgetTree] and [CallbackTree]. Allows getting objects
 /// by the ID of a widget as well as full path.
-#[derive(Default)]
+#[derive(Default, Clone)]
 pub struct Tree<T> {
 
     /// Name of the tree, used in panic messages to make errors more clear
