@@ -7,7 +7,7 @@ use std::str::FromStr;
 
 use crossterm::style::Color;
 
-use crate::states::definitions::{HorizontalAlignment, LayoutMode, LayoutOrientation, VerticalAlignment};
+use crate::states::definitions::{HorizontalAlignment, HorizontalPosHint, LayoutMode, LayoutOrientation, VerticalAlignment, VerticalPosHint};
 
 
 pub fn parse_color_property(value: &str) -> Result<Color, Error> {
@@ -111,7 +111,7 @@ pub fn parse_size_hint_property(value: &str) -> Result<Option<f64>, Error> {
 /// Convenience function use by widgets to load a pos_hint property defined in a .ez file.
 /// Looks like "pos_hint_x: right: 0.9"
 pub fn parse_horizontal_pos_hint_property(value: &str)
-    -> Result<Option<(HorizontalAlignment, f64)>, Error> {
+    -> Result<HorizontalPosHint, Error> {
 
     let to_parse = value.trim();
     // Pos hint can be None
@@ -144,7 +144,7 @@ pub fn parse_horizontal_pos_hint_property(value: &str)
 /// Convenience function use by widgets to load a pos_hint_y property defined in a .ez file
 /// Looks like "pos_hint_y: bottom: 0.9"
 pub fn parse_vertical_pos_hint_property(value: &str)
-    -> Result<Option<(VerticalAlignment, f64)>, Error> {
+    -> Result<VerticalPosHint, Error> {
 
     let to_parse = value.trim();
     // Pos hint can be None

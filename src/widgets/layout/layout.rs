@@ -99,7 +99,7 @@ impl Layout {
             Box::new(move |state_tree: &mut StateTree, val: EzValues| {
                 let state = state_tree.get_by_path_mut(&path)
                     .as_layout_mut();
-                state.set_active_tab(val.as_string());
+                state.set_active_tab(&val.as_string());
                 path.clone()
             }))?);
         Ok(())
@@ -114,7 +114,7 @@ impl Layout {
             Box::new(move |state_tree: &mut StateTree, val: EzValues| {
                 let state = state_tree.get_by_path_mut(&path)
                     .as_layout_mut();
-                state.set_tab_name(val.as_string());
+                state.set_tab_name(&val.as_string());
                 path.clone()
             }))?);
         Ok(())
@@ -129,7 +129,7 @@ impl Layout {
             Box::new(move |state_tree: &mut StateTree, val: EzValues| {
                 let state = state_tree.get_by_path_mut(&path)
                     .as_layout_mut();
-                state.set_active_screen(val.as_string());
+                state.set_active_screen(&val.as_string());
                 path.clone()
             }))?);
         Ok(())
@@ -717,7 +717,8 @@ impl Layout {
     /// Overwrite a PixelMap of current own content with the content of the active modal. Modals
     /// overlap all content.
     fn get_modal_contents(&self, state_tree: &mut StateTree, mut contents: PixelMap) -> PixelMap {
-        if state_tree.get_by_path(&self.get_full_path()).as_layout().get_modals().is_empty() {
+
+        if state_tree.get_by_path(&self.get_full_path()).as_layout().get_modal().is_none() {
             return contents
         }
 
@@ -725,7 +726,7 @@ impl Layout {
         let parent_size = state_tree.get_by_path(&self.get_full_path()).as_layout()
             .get_size().clone();
         let modal = state_tree.get_by_path(&self.get_full_path()).as_layout()
-            .get_modals().first().unwrap().clone();
+            .get_modal().clone().unwrap();
         let state = state_tree
             .get_by_path_mut(&modal.as_ez_object().get_full_path());
         resize_with_size_hint(state, parent_size.get_width(),
@@ -740,7 +741,7 @@ impl Layout {
 
         //Get contents
         let modal_content;
-        if let EzObjects::Layout(ref i) = modal {
+        if let EzObjects::Layout(ref i) = *modal {
             modal_content = i.get_contents(state_tree);
             i.propagate_absolute_positions(state_tree);
         } else {
@@ -749,9 +750,7 @@ impl Layout {
 
         // Overwrite own content with modal (modal is always on top)
         let state = state_tree
-            .get_by_path_mut(&state_tree.get_by_path(&self.get_full_path()).as_layout()
-                .get_modals().first().unwrap().as_ez_object()
-                .get_full_path()).as_generic();
+            .get_by_path_mut(&modal.as_ez_object().get_full_path()).as_generic();
         let start_pos = state.get_position();
         for x in 0..modal_content.len() {
             for y in 0..modal_content[x].len() {

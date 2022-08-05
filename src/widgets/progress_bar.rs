@@ -52,7 +52,7 @@ impl ProgressBar {
                 Box::new(move |state_tree: &mut StateTree, val: EzValues| {
                     let state = state_tree.get_by_path_mut(&path)
                         .as_progress_bar_mut();
-                    state.set_value(*val.as_usize());
+                    state.set_value(val.as_usize());
                     path.clone()
                 }))?);
         Ok(())

@@ -45,11 +45,11 @@ pub fn select_next(state_tree: &mut StateTree, _root_widget: &Layout,
                    _callback_tree: &mut CallbackTree, scheduler: &mut SchedulerFrontend,
                    current_selection: &mut String) {
 
-    let modals = state_tree.get_by_path("/root").as_layout().get_modals();
-    let path_prefix = if modals.is_empty() {
-        "/root".to_string()
+    let modal = state_tree.get_by_path("/root").as_layout().get_modal();
+    let path_prefix = if let Some(modal) = modal {
+        modal.as_ez_object().get_full_path()
     } else {
-        modals.first().unwrap().as_ez_object().get_full_path()
+        "/root".to_string()
     };
 
     let mut current_selection_order = if !current_selection.is_empty() {
@@ -105,11 +105,11 @@ pub fn select_previous(state_tree: &mut StateTree, _root_widget: &Layout,
                        _callback_tree: &mut CallbackTree, scheduler: &mut SchedulerFrontend,
                        current_selection: &mut String) {
 
-    let modals = state_tree.get_by_path("/root").as_layout().get_modals();
-    let path_prefix = if modals.is_empty() {
-        "/root".to_string()
+    let modal = state_tree.get_by_path("/root").as_layout().get_modal();
+    let path_prefix = if let Some(i) = modal {
+        i.as_ez_object().get_full_path()
     } else {
-        modals.first().unwrap().as_ez_object().get_full_path()
+        "/root".to_string()
     };
 
     let mut current_selection_order = if !current_selection.is_empty() {
@@ -162,11 +162,11 @@ pub fn find_previous_selection(current_selection: usize, state_tree: &StateTree,
 pub fn get_widget_by_position<'a>(pos: Coordinates, root_widget: &'a Layout,
                                   state_tree: &StateTree) -> Vec<&'a dyn EzObject> {
 
-    let modals = state_tree.get_by_path("/root").as_layout().get_modals();
-    let path_prefix = if modals.is_empty() {
-        "/root".to_string()
+    let modal = state_tree.get_by_path("/root").as_layout().get_modal();
+    let path_prefix = if let Some(i) = modal {
+        i.as_ez_object().get_full_path()
     } else {
-        modals.first().unwrap().as_ez_object().get_full_path()
+        "/root".to_string()
     };
     let mut results = Vec::new();
     for (widget_path, state) in state_tree.objects.iter() {
@@ -329,7 +329,7 @@ pub fn widget_is_hidden(widget_path: String, state_tree: &StateTree) -> bool {
         }
         if parent_state.get_mode() == &LayoutMode::Tab {
             if let EzState::Layout(_) = state_tree.get_by_path(&check_child) {
-                if parent_state.get_active_tab() != check_child.rsplit_once('/').unwrap().1 {
+                if parent_state.get_active_tab() != check_child {
                     return true
                 }
             }

@@ -7,6 +7,8 @@
     selection_order: 50
     tab_fg_color: yellow
     tab_bg_color: red
+    tab_border_fg_color: dark_cyan
+    active_fg_color: yellow
     - Layout:
         tab_name: Scrolling
         mode: box

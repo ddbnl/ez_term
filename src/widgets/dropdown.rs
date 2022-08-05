@@ -61,7 +61,7 @@ impl Dropdown {
             Box::new(move |state_tree: &mut StateTree, val: EzValues| {
                 let state = state_tree.get_by_path_mut(&path)
                     .as_dropdown_mut();
-                state.set_allow_none(*val.as_bool());
+                state.set_allow_none(val.as_bool());
                 path.clone()
             }))?);
         Ok(())

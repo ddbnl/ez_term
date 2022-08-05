@@ -114,13 +114,13 @@
         fg_color: yellow
     - Label:
         id: progress_label
-        text: 0%
+        text: properties.my_progress
         auto_scale: True, True
         halign: center
     - ProgressBar:
         id: progress_bar
         max: 100
-        value: properties.progress_property
+        value: properties.my_progress
         border: true
 
 

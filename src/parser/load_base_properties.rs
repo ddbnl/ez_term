@@ -11,7 +11,7 @@ use crossterm::style::Color;
 use crate::parser::parse_properties;
 use crate::scheduler::definitions::EzPropertyUpdater;
 use crate::scheduler::scheduler::{SchedulerFrontend};
-use crate::states::definitions::{HorizontalAlignment, LayoutMode, LayoutOrientation, VerticalAlignment};
+use crate::states::definitions::{HorizontalAlignment, HorizontalPosHint, LayoutMode, LayoutOrientation, VerticalAlignment, VerticalPosHint};
 
 /// Bind an [EzProperty] to another EzProperty if the user-passed property declares it. Returns true
 /// if the property was bound, else false. Referenced can contain ".parent" which resolved to the
@@ -192,7 +192,7 @@ pub fn load_halign_property(value: &str, scheduler: &mut SchedulerFrontend, path
 /// initialized with None or parsed from the user defined string from the .ez file.
 pub fn load_horizontal_pos_hint_property(value: &str, scheduler: &mut SchedulerFrontend, path: String,
                                          update_func: EzPropertyUpdater)
-                                         -> Result<Option<(HorizontalAlignment, f64)>, Error> {
+                                         -> Result<HorizontalPosHint, Error> {
 
     if bind_ez_property(value, scheduler, path, update_func) {
         Ok(None)
@@ -206,7 +206,7 @@ pub fn load_horizontal_pos_hint_property(value: &str, scheduler: &mut SchedulerF
 /// initialized with None or parsed from the user defined string from the .ez file.
 pub fn load_vertical_pos_hint_property(value: &str, scheduler: &mut SchedulerFrontend, path: String,
                                        update_func: EzPropertyUpdater)
-                                       -> Result<Option<(VerticalAlignment, f64)>, Error> {
+                                       -> Result<VerticalPosHint, Error> {
 
     if bind_ez_property(value, scheduler, path, update_func) {
         Ok(None)

@@ -181,6 +181,13 @@ impl Layout {
                 tab_header.state.set_size_hint_x(None);
                 tab_header.state.set_size_hint_y(None);
                 tab_header.state.set_text(tab_name.clone());
+                tab_header.state.colors = self.state.colors.clone();
+                tab_header.state.colors.fg_color.set(self.state.colors.tab_fg_color.value);
+                tab_header.state.colors.bg_color.set(self.state.colors.tab_bg_color.value);
+                tab_header.state.colors.disabled_fg_color.set(self.state.colors.active_fg_color.value);
+                tab_header.state.colors.disabled_bg_color.set(self.state.colors.active_bg_color.value);
+                tab_header.state.colors.border_fg_color.set(self.state.colors.tab_border_fg_color.value);
+                tab_header.state.colors.border_bg_color.set(self.state.colors.tab_border_bg_color.value);
 
                 let tab_on_click = move |context: EzContext| {
                     let state = context.state_tree
@@ -236,7 +243,7 @@ impl Layout {
 
         let first = paths.pop().unwrap();
         let mut root = if first == "modal" {
-            if let Some(i) = self.state.get_modals().first() { paths.pop();  i }
+            if let Some(i) = self.state.get_modal() { paths.pop();  i }
             else { return None }
         } else {
             if let Some(i) = self.get_child(first) { i }
@@ -268,7 +275,7 @@ impl Layout {
 
         let first = paths.pop().unwrap();
         let mut root = if first == "modal" {
-            if let Some(i) = self.state.get_modals_mut().first_mut() { i }
+            if let Some(i) = self.state.get_modal_mut() { i }
             else { return None }
         } else {
             if let Some(i) = self.get_child_mut(first) { i }

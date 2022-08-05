@@ -64,9 +64,14 @@
 //!             14. [Custom key binds][#scheduler_callbacks_keymap]
 //!             15. [Property binds][#scheduler_callbacks_property]
 //!         4. [Managing scheduled tasks](#scheduler_tasks)
-//!         5. [Opening popups](#scheduler_popups)
-//!         6. [Creating widgets programmatically](#scheduler_widgets_from_code)
-//!         7. [Creating custom properties](#)(#scheduler_properties)
+//!             1. [Single execution](#scheduler_tasks_single)
+//!             2. [Recurring execution](#scheduler_tasks_recurring)
+//!             3. [Threaded execution](#scheduler_tasks_threaded)
+//!                 1. [Using StateTree](#scheduler_tasks_threaded_state)
+//!                 2. [Using custom properties](#scheduler_tasks_threaded_property)
+//!         5. [Creating custom properties](#scheduler_properties)
+//!         6. [Managing popups](#scheduler_popups)
+//!         7. [Creating widgets programmatically](#scheduler_widgets_from_code)
 //!         8. [Updating widgets](#scheduler_updating)
 //!         9. [Managing widget selection](#scheduler_selection)
 //!     4. [Global (key)bindings](#)
@@ -695,6 +700,10 @@
 //!     id: my_tab_layout
 //!     mode: tab
 //!     active_tab: Tab one
+//!     tab_fg_color: yellow
+//!     tab_bg_color: red
+//!     tab_border_fg_color: yellow
+//!     tab_border_bg_color: red
 //!     - Layout:
 //!         id: tab_one
 //!         tab_name: Tab one
@@ -711,7 +720,9 @@
 //! Note that the active_tab property is optional, by default the first tab is active. Users can
 //! then switch tabs using the tab header buttons that are created automatically. Keep in mind that
 //! these buttons are three pixels high, so the effective height of your layout will be three
-//! pixels smaller.
+//! pixels smaller. We also used the tab_fg_color and tab_bg_color properties to change the colors
+//! of the tab headers, and the tab_border_fg_color and tab_border_bg_color to color the tab header
+//! borders.
 //!
 //! It is possible to change the active tab from code. Although callbacks will be discussed in a
 //! later chapter, we'll look at an example just for reference:
@@ -1305,8 +1316,10 @@
 //! #### 1.2.8 Binding properties:
 //!
 //! It is possible to bind one property to another in EzLang, as long as the properties are of the
-//! same type (you can find the type of each property in [Reference]. Here is an example of binding
-//! the width of one widget to another:
+//! same type (you can find the type of each property in [Reference]). The exception is the String
+//! type property (for example the 'text' property of a label); you can bind any type of property
+//! to a String property, as every property can be converted to a String. Here is an example of
+//! binding the width of one widget to another:
 //! ```
 //! - Layout:
 //!     mode: box
@@ -1368,6 +1381,22 @@
 //!         halign: parent.longer_label.halign
 //!         auto_scale_height: parent.longer_label.auto_scale_height
 //! ```
+//!
+//! Here is an overview of the property types used by EzTerm (the type of each property can be
+//! found in [reference]):
+//!
+//! - usize
+//! - f64
+//! - String
+//! - bool
+//! - Color
+//! - LayoutMode
+//! - LayoutOrientation
+//! - VerticalAlignment
+//! - HorizontalAlignment
+//! - VerticalPosHint
+//! - HorizontalPosHint
+//! - SizeHint
 //!
 //! <a name="scheduler"></a>
 //! ### 1.3 Scheduler:
@@ -2025,6 +2054,7 @@
 //! state.size.height.bind(Box::new(my_callback), &mut scheduler);
 //! ```
 //!
+//! <a name="scheduler_tasks"></a>
 //! ### 1.3.4 Managing scheduled tasks
 //!
 //! Scheduled tasks are closures or functions that are executed according to time parameters. There
@@ -2040,6 +2070,7 @@
 //! Therefore, in order to execute (parts of) your personal app code, always use 'schedule_threaded',
 //! which will be explained below in the chapter "Threaded execution".
 //!
+//! <a name="scheduler_tasks_single"></a>
 //! #### 1.3.4.1 Single execution
 //!
 //! A single execution task is a closure or function that is executed only once, after a specified
@@ -2111,6 +2142,7 @@
 //! scheduler.cancel_task("my_task");
 //! ```
 //!
+//! <a name="scheduler_tasks_recurring"></a>
 //! #### 1.3.4.2 Recurring execution
 //!
 //! A recurring execution task is executed according to its interval. If the interval is set to
@@ -2183,12 +2215,227 @@
 //! scheduler.cancel_recurring_task("my_task");
 //! ```
 //!
+//! <a name="scheduler_tasks_threaded"></a>
 //! #### 1.3.4.3 Threaded execution
 //!
+//!
 //! To run custom code that will not return immediately (i.e. your app that you are building the UI
-//! for), you must used threaded execution to avoid blocking the UI in the main thread. Because of
-//! Rusts strict thread-safety, manipulating the UI from your threaded task will be different than
-//! what you're used to by now, because we cannot access the widget states directly. Instead,
+//! for), you must used threaded execution to avoid blocking the UI in the main thread. In a
+//! threaded scheduled task you do not have the full EzContext available that you're used to by now
+//! because (due to Rusts strict thread-safety) you cannot access the scheduler from a thread. You
+//! will have the StateTree and your custom properties available, so you can still manipulate the UI
+//! from your thread.
+//! When scheduling a threaded task, the first parameter is the function you want to execute, and
+//! the second parameter will be an optional on_finish function or closure. The on_finish will be
+//! executed when the thread terminates.
+//!
+//! <a name="scheduler_tasks_state"></a>
+//! ##### 1.3.4.3.1 Using StateTree
+//!
+//! Let's look at an example using a mock app. The mock app will sleep regularly to simulate a long
+//! running function and will manipulate the UI using the state tree. We'll assume we have a UI that
+//! contains a progress bar and a label, and every time we finish sleeping we will update the
+//! progress bar and the label. We will also use an on_finish closure to make the label say
+//! "finished!" when the thread terminates (if you do not want an on_finish function, just pass
+//! "None"):
+//! ```
+//! use ez_term::*;
+//! use std::time::Duration;
+//! let (root_widget, mut state_tree, mut scheduler) = load_ui();
+//!
+//! fn mock_app(mut properties: EzPropertiesMap, mut state_tree: StateTree) {
+//!
+//!    for x in 1..=5 {
+//!        state_tree.get_by_id_mut("progress_bar").as_progress_bar_mut().set_value(x*20);
+//!        state_tree.get_by_id_mut("progress_label").as_label_mut().set_text(format!("{}%", x*20));
+//!        std::thread::sleep(Duration::from_secs(1)) };
+//! }
+//!
+//! let on_finish = |context: EzContext| {
+//!
+//!        let state = context.state_tree.get_by_id_mut("progress_label").as_label_mut();
+//!        state.set_text("Finished!".to_string());
+//!        state.update(context.scheduler);
+//! };
+//!
+//! scheduler.schedule_threaded(Box::new(mock_app), Box::new(on_finish));
+//! ```
+//!
+//! <a name="scheduler_tasks_property"></a>
+//! ##### 1.3.4.3.2 Using custom properties
+//!
+//! Another way to manipulate the UI from a background thread is through custom properties. These
+//! will be discussed in detail in their own chapter below, but we will show an example here. The
+//! upshot is that we will create a custom property, bind it to a widget property in the .ez file
+//! and then use that custom property in our threaded function. Every time we change it, the widget
+//! property it is bound to will update as well.
+//!
+//! Thinking about our example with the progress bar, we could create a custom property called
+//! "my_progress" and bind it to the "value" property of the progress bar. Now, every time we update
+//! our custom property in our function, the progress bar will also update. Using custom properties
+//! can be more ergonomic if you already have a variable in your custom code, and you always want
+//! that variable to be reflected in the UI. Instead of constantly manually updating the UI when
+//! your app variable changes, you can just change your app variable to be a custom EzTerm property
+//! and save yourself the effort of updating the UI. Let's change the above example to use a custom
+//! property; we will first show the .ez file:
+//! ```
+//! - Layout:
+//!     mode: box
+//!     orientation: vertical
+//!     - Label:
+//!         id: progress_label
+//!         text: properties.my_progress
+//!     - ProgressBar:
+//!         id: progress_bar
+//!         max: 100
+//!         value: properties.my_progress
+//!         border: true
+//! ```
+//! As you can see we bound the "my_progress" custom property to the progress bar and the label.
+//! We can bind a usize property to label.text because every type of property can be converted to a
+//! String. For any other property than String, the property types must match.
+//! We now need to make sure that the custom property actually exists at run time, and we need to
+//! change our  mock_app function to make use of it:
+//! ```
+//! use ez_term::*;
+//! use std::time::Duration;
+//! let (root_widget, mut state_tree, mut scheduler) = load_ui();
+//!
+//! // We must register our custom property!
+//! scheduler.new_usize_property("my_progress", 0);
+//!
+//! fn mock_app(mut properties: EzPropertiesMap, mut state_tree: StateTree) {
+//!
+//!    for x in 1..=5 {
+//!        let my_progress = properties.get_mut("my_progress").unwrap();
+//!        my_progress.as_usize_mut().set(x*20);
+//!        std::thread::sleep(Duration::from_secs(1)) };
+//! }
+//!
+//! scheduler.schedule_threaded(Box::new(mock_app), None);
+//! ```
+//! Because we bound our label text to our custom property, we cannot manually update it to say
+//! "Finished!" any more, so we removed the on_finish closure. Of course we could just not bind
+//! the label text to "my_progress", but it was useful to see an example of binding any type of
+//! property to a string property, and scheduling a threaded task without an on_finish function.
+//!
+//! ### 1.3.5 Creating custom properties
+//!
+//! It is possible to create custom EzTerm properties. You can then bind widget properties to these
+//! custom properties, so that when the custom property is updated the widget will automatically be
+//! updated as well. This is useful when executing your personal app code in a scheduled
+//! background task (see above chapter). If you have a variable in your app that you always want to
+//! see in the UI, you would have to write code that constantly changes the UI when your variable
+//! changes. Instead, you can change your app variable to be an EzProperty; this way, the UI will
+//! be automatically updated.
+//!
+//! In order for this to work, the type of the custom property must be the same
+//! as the type of the widget property. The exception is if the widget property is of the String
+//! type (like the Label Text property), because every property can be converted to a String.
+//! Here is the shortest possible example, binding a custom usize property to a progress bar; first
+//! the code, where we register a new custom property:
+//! ```
+//! use ez_term::*;
+//! let (root_widget, mut state_tree, mut scheduler) = load_ui();
+//!
+//! scheduler.new_usize_property("my_progress", 0);
+//!
+//! run(root_widget, state_tree, scheduler);
+//!
+//! ```
+//!
+//! Now the .ez file, where we bind the custom property to the progress bar:
+//! ```
+//! - Layout:
+//!     mode: box
+//!     - ProgressBar:
+//!         value: properties.my_progress
+//! ```
+//!
+//! Using the above code, we have created and bound a custom property. Let's look at how to actually
+//! use it. We will create an entire mock app, meaning both the UI and personal app code in the form
+//! of a long running function. When clicking a button, our personal app code will run, and slowly
+//! fill up a progress bar to show our user how far along our function is. Here is our .ez file:
+//! ```
+//! - Layout:
+//!     mode: box
+//!     orientation: vertical
+//!     - Button:
+//!         id: start_button
+//!         text: Start app
+//!     - Label:
+//!         id: progress_label
+//!         text: properties.my_progress
+//!     - ProgressBar:
+//!         id: progress_bar
+//!         max: 100
+//!         value: properties.my_progress
+//!         border: true
+//! ```
+//! Our progress bar and label both bind to a custom property called "my_progress". Even though
+//! "my_progress" will be a usize property, we can bind the text property to it because a String
+//! property can bind to everything. Now we write the code that creates the custom property, our
+//! mock app code, and a callback for the button to start our app:
+//! ```
+//! use ez_term::*;
+//! use std::time::Duration;
+//! let (root_widget, mut state_tree, mut scheduler) = load_ui();
+//!
+//! // We must register our custom property!
+//! scheduler.new_usize_property("my_progress", 0);
+//!
+//! fn mock_app(mut properties: EzPropertiesMap, mut state_tree: StateTree) {
+//!
+//!    for x in 1..=5 {
+//!        let my_progress = properties.get_mut("my_progress").unwrap();
+//!        my_progress.as_usize_mut().set(x*20);
+//!        std::thread::sleep(Duration::from_secs(1)) };
+//! }
+//!
+//! let start_button_callback = |context: EzContext| {
+//!     context.scheduler.schedule_threaded(Box::new(mock_app), None);
+//! };
+//! let callback_config = CallbackConfig::from_on_press(Box::new(start_button_callback));
+//! scheduler.update_callback_config("start_button", callback_config);
+//!
+//! ```
+//! As you can see, we update the "my_progress" custom property in our mock app. When we do this,
+//! the progress bar and the label will update automatically too, because we bound their properties
+//! to the custom property. If you imagine that our mock app needed a usize variable to function
+//! anyway, then we saved ourselves some effort by replacing the usise variable with an EzTerm usize
+//! property, and binding it to the UI for automatic updates.
+//!
+//! The following functions are available from the scheduler to create custom properties:
+//!
+//! - new_usize_property(name: &str, value: usize)
+//! - new_f64_property(name: &str, value: f64)
+//! - new_string_property(name: &str, value: String)
+//! - new_bool_property(name: &str, value: bool)
+//! - new_color_property(name: &str, value: Color)
+//! - new_layout_mode_property(name: &str, value: LayoutMode)
+//! - new_layout_orientation_property(name: &str, value: LayoutOrientation)
+//! - new_vertical_alignment_property(name: &str, value: VerticalAlignment)
+//! - new_horizontal_alignment_property(name: &str, value: HorizontalAlignment)
+//! - new_vertical_pos_hint_property(name: &str, value: VerticalPosHint)
+//! - new_horizontal_pos_hint_property(name: &str, value: HorizontalPosHint)
+//! - new_size_hint_property(name: &str, value: SizeHint)
+//!
+//!
+//! ### 1.3.6 Managing modals (popups)
+//!
+//! A modal is a layout that is shown in front of the main UI; one of its main use cases is creating
+//! popups. A modal is always created from a Layout template created in an .ez file. In other words,
+//! you first define what the modal looks like in the .ez file, and then you spawn it from code.
+//! You can spawn a popup anytime you have access to the scheduler (i.e. when initializing the UI,
+//! from a callback, or from a scheduled task). The modal is spawned in the root layout, so size
+//! hints and position hints will size/position the modal relative to the root layout. By default
+//! Modals can be dismissed from the scheduler as well. If you want a button in your modal that
+//! dismisses it, you need to bind a callback to the modal button that calls the dismiss_modal
+//! method of the scheduler.
+//!
+//! Let's look at an example. We want to create a popup that appears when we click a button. The
+//! popup should be half the size of the root layout and appear in the center. It should have some
+//! text and a dismiss button that allows the user to close the popup.
 mod run;
 mod scheduler;
 mod widgets;
@@ -2210,7 +2457,9 @@ pub use crate::scheduler::scheduler::SchedulerFrontend;
 pub use crate::property::ez_properties::EzProperties;
 pub use crate::property::ez_property::EzProperty;
 
-pub use crate::states::definitions::{CallbackConfig, KeyMap};
+pub use crate::states::definitions::{CallbackConfig, KeyMap, LayoutMode, LayoutOrientation,
+                                     VerticalAlignment, HorizontalAlignment, VerticalPosHint,
+                                     HorizontalPosHint, SizeHint};
 pub use crate::states::ez_state::GenericState;
 pub use crate::widgets::ez_object::EzObject;
 

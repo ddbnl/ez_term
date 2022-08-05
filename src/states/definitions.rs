@@ -76,6 +76,9 @@ pub enum VerticalAlignment {
     Middle
 }
 
+pub type VerticalPosHint = Option<(VerticalAlignment, f64)>;
+pub type HorizontalPosHint = Option<(HorizontalAlignment, f64)>;
+
 /// Composite object containing properties for table mode layout. If you want to bind a callback to
 /// any of the properties, access them directly first.
 #[derive(PartialEq, Clone, Debug)]
@@ -384,12 +387,12 @@ impl SizeHint {
 /// either, access the 'x' or 'y' property first.
 #[derive(PartialEq, Clone, Debug)]
 pub struct PosHint {
-    pub pos_hint_x: EzProperty<Option<(HorizontalAlignment, f64)>>,
-    pub pos_hint_y: EzProperty<Option<(VerticalAlignment, f64)>>,
+    pub pos_hint_x: EzProperty<HorizontalPosHint>,
+    pub pos_hint_y: EzProperty<VerticalPosHint>,
 }
 impl PosHint {
 
-    pub fn new(x: Option<(HorizontalAlignment, f64)>, y: Option<(VerticalAlignment, f64)>,
+    pub fn new(x: HorizontalPosHint, y: VerticalPosHint,
                name: String, scheduler: &mut SchedulerFrontend) -> Self {
         let x_property =
             scheduler.new_horizontal_pos_hint_property(
@@ -400,19 +403,19 @@ impl PosHint {
         PosHint{ pos_hint_x: x_property, pos_hint_y: y_property}
     }
 
-    pub fn set_pos_hint_x(&mut self, x: Option<(HorizontalAlignment, f64)>) {
+    pub fn set_pos_hint_x(&mut self, x: HorizontalPosHint) {
         self.pos_hint_x.set(x);
     }
 
-    pub fn get_pos_hint_x(&self) -> Option<(HorizontalAlignment, f64)> {
+    pub fn get_pos_hint_x(&self) -> HorizontalPosHint {
         self.pos_hint_x.value
     }
 
-    pub fn set_pos_hint_y(&mut self, y: Option<(VerticalAlignment, f64)>) {
+    pub fn set_pos_hint_y(&mut self, y: VerticalPosHint) {
         self.pos_hint_y.set(y);
     }
 
-    pub fn get_pos_hint_y(&self) -> Option<(VerticalAlignment, f64)> {
+    pub fn get_pos_hint_y(&self) -> VerticalPosHint {
         self.pos_hint_y.value
     }
 
@@ -1304,6 +1307,12 @@ pub struct ColorConfig {
     /// The [Pixel.background_color] to use for tab headers
     pub tab_bg_color: EzProperty<Color>,
 
+    /// The [Pixel.foreground_color] to use for tab header border pixels
+    pub tab_border_fg_color: EzProperty<Color>,
+
+    /// The [Pixel.background_color] to use for tab header border pixels
+    pub tab_border_bg_color: EzProperty<Color>,
+
     /// The [Pixel.foreground_color] to use for filler pixels if [fill] is true
     pub filler_fg_color: EzProperty<Color>,
 
@@ -1339,7 +1348,7 @@ impl ColorConfig {
             format!("{}disabled_bg_color", name).as_str(), Color::Black);
 
         let active_foreground = scheduler.new_color_property(
-            format!("{}/active_fg_color", name).as_str(), Color::Red);
+            format!("{}/active_fg_color", name).as_str(), Color::White);
         let active_background = scheduler.new_color_property(
             format!("{}/active_bg_color", name).as_str(), Color::Black);
 
@@ -1357,6 +1366,11 @@ impl ColorConfig {
             format!("{}/tab_fg_color", name).as_str(), Color::White);
         let tab_background = scheduler.new_color_property(
             format!("{}/tab_bg_color", name).as_str(), Color::Black);
+
+        let tab_border_foreground = scheduler.new_color_property(
+            format!("{}/tab_border_fg_color", name).as_str(), Color::White);
+        let tab_border_background = scheduler.new_color_property(
+            format!("{}/tab_border_bg_color", name).as_str(), Color::Black);
 
         let border_foreground = scheduler.new_color_property(
             format!("{}/border_fg_color", name).as_str(), Color::White);
@@ -1379,6 +1393,8 @@ impl ColorConfig {
             flash_bg_color: flash_background,
             tab_fg_color: tab_foreground,
             tab_bg_color: tab_background,
+            tab_border_fg_color: tab_border_foreground,
+            tab_border_bg_color: tab_border_background,
             filler_fg_color: filler_foreground,
             filler_bg_color: filler_background,
             border_fg_color: border_foreground,
@@ -1481,6 +1497,22 @@ impl ColorConfig {
 
     pub fn get_tab_bg_color(&self) -> Color {
         self.tab_bg_color.value
+    }
+
+    pub fn set_tab_border_fg_color(&mut self, color: Color) {
+        self.tab_border_fg_color.set(color);
+    }
+
+    pub fn get_tab_border_fg_color(&self) -> Color {
+        self.tab_border_fg_color.value
+    }
+
+    pub fn set_tab_border_bg_color(&mut self, color: Color) {
+        self.tab_border_bg_color.set(color);
+    }
+
+    pub fn get_tab_border_bg_color(&self) -> Color {
+        self.tab_border_bg_color.value
     }
 
     pub fn set_filler_fg_color(&mut self, color: Color) {

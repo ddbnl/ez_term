@@ -14,9 +14,9 @@ use crate::property::ez_properties::EzProperties;
 use crate::property::ez_property::EzProperty;
 use crate::property::ez_values::EzValues;
 use crate::run::definitions::{Coordinates, StateTree};
-use crate::run::run::{open_popup, stop};
+use crate::run::run::{open_and_register_modal, stop};
 use crate::scheduler::definitions::{EzPropertyUpdater, EzThread, GenericFunction, GenericRecurringTask, GenericTask};
-use crate::states::definitions::{HorizontalAlignment, LayoutMode, LayoutOrientation, VerticalAlignment};
+use crate::states::definitions::{HorizontalAlignment, HorizontalPosHint, LayoutMode, LayoutOrientation, VerticalAlignment, VerticalPosHint};
 use crate::states::ez_state::EzState;
 
 
@@ -232,18 +232,21 @@ impl SchedulerFrontend {
     /// // Now we will bind the dismiss button we defined to a dismiss callback
     /// let dismiss =
     /// move |context: EzContext| {
-    ///     let state =
-    ///         context.state_tree.get_by_path_mut("/root").as_layout_mut();
-    ///     state.dismiss_modal(context.scheduler);
-    ///     state.update(context.scheduler);
+    ///
+    ///     context.scheduler.dismiss_modal();
     ///     false
     /// };
     /// scheduler.update_callback_config(format!("{}/dismiss_button", popup_path).as_str(),
     ///                                  CallbackConfig::from_on_press(Box::new(dismiss_delay)));
     /// // The popup will open on the next frame!
     /// ```
-    pub fn open_popup(&mut self, template: String, state_tree: &mut StateTree) -> String {
-        open_popup(template, state_tree, self)
+    pub fn open_modal(&mut self, template: String, state_tree: &mut StateTree) -> String {
+        open_and_register_modal(template, state_tree, self)
+    }
+
+    /// Dismiss the current modal.
+    pub fn dismiss_modal(&mut self, state_tree: &mut StateTree) {
+        state_tree.get_by_path_mut("/root").as_layout_mut().dismiss_modal(self);
     }
 
     /// Replace the entire [CallbackConfig] of a widget with a new one. Unless you want to erase
@@ -460,8 +463,7 @@ impl SchedulerFrontend {
     /// and pass it to your app. Then use property.set() to update it. Any widget properties bound
     /// to this property will update automatically.
     pub fn new_horizontal_pos_hint_property(
-        &mut self, name: &str, value: Option<(HorizontalAlignment, f64)>)
-        -> EzProperty<Option<(HorizontalAlignment, f64)>> {
+        &mut self, name: &str, value: HorizontalPosHint) -> EzProperty<HorizontalPosHint> {
 
         let (property, receiver) =
             EzProperty::new(name.to_string(), value);
@@ -477,8 +479,7 @@ impl SchedulerFrontend {
     /// and pass it to your app. Then use property.set() to update it. Any widget properties bound
     /// to this property will update automatically.
     pub fn new_vertical_pos_hint_property(
-        &mut self, name: &str, value: Option<(VerticalAlignment, f64)>)
-        -> EzProperty<Option<(VerticalAlignment, f64)>> {
+        &mut self, name: &str, value: VerticalPosHint) -> EzProperty<VerticalPosHint> {
 
         let (property, receiver) =
             EzProperty::new(name.to_string(), value);

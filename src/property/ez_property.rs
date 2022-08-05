@@ -10,8 +10,7 @@ use crossterm::style::Color;
 use crate::property::ez_values::EzValues;
 use crate::scheduler::definitions::GenericFunction;
 use crate::scheduler::scheduler::SchedulerFrontend;
-use crate::states::definitions::{HorizontalAlignment, LayoutMode, LayoutOrientation,
-                                 VerticalAlignment};
+use crate::states::definitions::{HorizontalAlignment, HorizontalPosHint, LayoutMode, LayoutOrientation, VerticalAlignment, VerticalPosHint};
 
 
 /// A struct wrapping a property of a widget state.
@@ -126,17 +125,17 @@ impl EzProperty<VerticalAlignment> {
 }
 impl EzProperty<Option<f64>> {
     pub fn set_from_ez_value(&mut self, value: EzValues) -> bool {
-        self.set(*value.as_size_hint())
+        self.set(value.as_size_hint())
     }
 }
-impl EzProperty<Option<(VerticalAlignment, f64)>> {
+impl EzProperty<VerticalPosHint> {
     pub fn set_from_ez_value(&mut self, value: EzValues) -> bool {
-        self.set(*value.as_vertical_pos_hint())
+        self.set(value.as_vertical_pos_hint())
     }
 }
-impl EzProperty<Option<(HorizontalAlignment, f64)>> {
+impl EzProperty<HorizontalPosHint> {
     pub fn set_from_ez_value(&mut self, value: EzValues) -> bool {
-        self.set(*value.as_horizontal_pos_hint())
+        self.set(value.as_horizontal_pos_hint())
     }
 }
 impl<T> PartialEq for EzProperty<T> where T: PartialEq {
@@ -172,11 +171,11 @@ impl PartialEq<VerticalAlignment> for EzProperty<VerticalAlignment> {
 impl PartialEq<HorizontalAlignment> for EzProperty<HorizontalAlignment> {
     fn eq(&self, other: &HorizontalAlignment) -> bool { &self.value == other }
 }
-impl PartialEq<Option<(VerticalAlignment, f64)>> for EzProperty<Option<(VerticalAlignment, f64)>> {
-    fn eq(&self, other: &Option<(VerticalAlignment, f64)>) -> bool { &self.value == other }
+impl PartialEq<VerticalPosHint> for EzProperty<VerticalPosHint> {
+    fn eq(&self, other: &VerticalPosHint) -> bool { &self.value == other }
 }
-impl PartialEq<Option<(HorizontalAlignment, f64)>> for EzProperty<Option<(HorizontalAlignment, f64)>> {
-    fn eq(&self, other: &Option<(HorizontalAlignment, f64)>) -> bool { &self.value == other }
+impl PartialEq<HorizontalPosHint> for EzProperty<HorizontalPosHint> {
+    fn eq(&self, other: &HorizontalPosHint) -> bool { &self.value == other }
 }
 impl PartialEq<Option<f64>> for EzProperty<Option<f64>> {
     fn eq(&self, other: &Option<f64>) -> bool { &self.value == other }

@@ -88,11 +88,15 @@ impl Layout {
             if let EzObjects::Layout(i) = child {
                 if i.get_full_path() != active_tab { continue }
                 let child_state = state_tree
-                    .get_by_path_mut(&child.as_ez_object().get_full_path()).as_generic_mut();
+                    .get_by_path_mut(&child.as_ez_object().get_full_path()).as_layout_mut();
                 child_state.set_effective_height(
-                    if own_effective_size.height >= 3 { own_effective_size.height - 5} else {0});
+                    if own_effective_size.height >= 3 { own_effective_size.height - 3} else {0});
                 child_state.set_effective_width(
-                    if own_effective_size.width >= 1 { own_effective_size.width - 1} else {0});
+                    if own_effective_size.width >= 1 {
+                        own_effective_size.width -
+                            if child_state.get_scrolling_config().get_is_scrolling_y() {1} else {0}
+                    } else {0}
+                );
                 child_state.get_position_mut().set_x(0);
                 child_state.get_position_mut().set_y(3);
                 child_state.set_absolute_position(IsizeCoordinates::new(
@@ -108,19 +112,33 @@ impl Layout {
                     self.resolve_tab_name(&tab_text, state_tree);
                 let child_state=
                     state_tree.get_by_path_mut(&i.path).as_button_mut();
+                child_state.set_disabled(
+                    if active_tab == tab_path {
+                        true
+                    } else {
+                        false
+                    });
                 child_state.get_color_config_mut().set_fg_color(
-                    if selection == i.id { own_colors.get_selection_fg_color() }
-                    else if active_tab == tab_path {
+                    if active_tab == tab_path {
                         own_colors.get_active_fg_color()
-                    } else { own_colors.get_tab_fg_color() });
+                    } else if selection == i.id {
+                        own_colors.get_selection_fg_color()
+                    } else {
+                        own_colors.get_tab_fg_color()
+                });
                 child_state.get_color_config_mut().set_bg_color(
-                    if selection == i.id { own_colors.get_selection_bg_color() }
-                    else if active_tab == tab_path {
+                    if active_tab == tab_path {
                         own_colors.get_active_bg_color()
-                    } else { own_colors.get_tab_bg_color() });
+                    }
+                    else if selection == i.id {
+                        own_colors.get_selection_bg_color()
+                    } else {
+                        own_colors.get_tab_bg_color()
+                    });
 
                 child_state.set_auto_scale_width(true);
-                child_state.set_auto_scale_height(true);
+                child_state.set_auto_scale_height(false);
+                child_state.set_height(3);
                 child_state.set_x(pos_x);
                 child_state.set_y(0);
                 let content = i.get_contents(state_tree);

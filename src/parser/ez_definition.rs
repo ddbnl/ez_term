@@ -226,6 +226,9 @@ fn merge_configs(config_1: Vec<String>, config_2: Vec<String>) -> Vec<String>{
     let mut merged_config: Vec<String> = Vec::new();
     let mut existing_options: Vec<String> = Vec::new();
     for line in config_1 {
+        if !line.contains(":") {
+            panic!("Line should contain a \":\" to separate property and value: {}", line)
+        }
         merged_config.push(line.clone());
         existing_options.push(line.split_once(':').unwrap().0.to_string());
     }

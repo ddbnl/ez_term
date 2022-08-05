@@ -23,14 +23,10 @@ pub fn handle_modal_event (event: Event, state_tree: &mut StateTree,
                        root_widget: &Layout, callback_tree: &mut CallbackTree,
                        scheduler: &mut SchedulerFrontend) -> bool {
 
-    if state_tree.get_by_path(&root_widget.path).as_layout().get_modals().is_empty() {
-        return false
-    }
-    let modal = root_widget.state.get_modals().first().unwrap();
-    let mut consumed = modal.as_ez_object().handle_event(
-        event, state_tree, callback_tree, scheduler);
-    if !consumed {
-        if let EzObjects::Layout(modal) = modal {
+    if let Some(i) = root_widget.state.get_modal() {
+        let modal = i.as_layout();
+        let mut consumed = modal.handle_event(event, state_tree, callback_tree, scheduler);
+        if !consumed {
             for child in modal.get_widgets_recursive().values() {
                 consumed = child.as_ez_object().handle_event(
                     event, state_tree, callback_tree, scheduler);

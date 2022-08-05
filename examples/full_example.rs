@@ -148,6 +148,7 @@ fn main() {
     state.size.width.bind(Box::new(size_callback), &mut scheduler);
     state.size.height.bind(Box::new(size_callback), &mut scheduler);
 
+    scheduler.new_usize_property("my_progress", 0);
     // Step 3: Run app
     // Now everything must happen from bindings as root widget is passed over
     run(root_widget, state_tree, scheduler);
@@ -287,7 +288,7 @@ fn test_popup_button_on_press(context: EzContext) -> bool {
     // We will open a popup in this callback. We open a popup by defining a template in the
     // Ez file, and then using the template name with the [common::open_popup] function to
     // spawn the template.
-    let popup_path = context.scheduler.open_popup("TestPopup".to_string(),
+    let popup_path = context.scheduler.open_modal("TestPopup".to_string(),
                                                   context.state_tree);
 
     // We want to bind a callback to the dismiss button that dismisses the popup. In order to allow
@@ -336,8 +337,8 @@ fn progress_bar_button(context: EzContext) -> bool {
 
 fn progress_example_app(mut properties: EzPropertiesMap, mut state_tree: StateTree) {
 
-    for x in 1..6 {
-        state_tree.get_by_id_mut("progress_bar").as_progress_bar_mut().set_value(x*20);
-        state_tree.get_by_id_mut("progress_label").as_label_mut().set_text(format!("{}%", x*20));
+    for x in 1..=5 {
+        let my_progress = properties.get_mut("my_progress").unwrap();
+        my_progress.as_usize_mut().set(x*20);
         std::thread::sleep(Duration::from_secs(1)) };
 }

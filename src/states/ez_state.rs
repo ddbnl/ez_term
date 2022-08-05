@@ -8,7 +8,7 @@ use crate::scheduler::scheduler::SchedulerFrontend;
 use crate::states::button_state::ButtonState;
 use crate::states::canvas_state::CanvasState;
 use crate::states::checkbox_state::CheckboxState;
-use crate::states::definitions::{AutoScale, BorderConfig, ColorConfig, HorizontalAlignment, InfiniteSize, Padding, PosHint, SizeHint, StateCoordinates, StateSize, VerticalAlignment};
+use crate::states::definitions::{AutoScale, BorderConfig, ColorConfig, HorizontalAlignment, HorizontalPosHint, InfiniteSize, Padding, PosHint, SizeHint, StateCoordinates, StateSize, VerticalAlignment, VerticalPosHint};
 use crate::states::dropdown_state::{DropdownState, DroppedDownMenuState};
 use crate::states::label_state::LabelState;
 use crate::states::layout_state::LayoutState;
@@ -261,7 +261,7 @@ pub trait GenericState {
     /// ("center_x", 0.9)
     /// When positioning the widget, "center_x" will be replaced with the middle x coordinate of
     /// parent layout, and multiplied with the float.
-    fn set_pos_hint_x(&mut self, pos_hint: Option<(HorizontalAlignment, f64)>) {
+    fn set_pos_hint_x(&mut self, pos_hint: HorizontalPosHint) {
         self.get_pos_hint_mut().set_pos_hint_x(pos_hint);
     }
 
@@ -270,7 +270,7 @@ pub trait GenericState {
     /// ("top", 0.9)
     /// When positioning the widget, "top" will be replaced with the y coordinate of the top of the
     /// parent layout, and multiplied by the float.
-    fn set_pos_hint_y(&mut self, pos_hint: Option<(VerticalAlignment, f64)>) {
+    fn set_pos_hint_y(&mut self, pos_hint: VerticalPosHint) {
         self.get_pos_hint_mut().set_pos_hint_y(pos_hint);
     }
 

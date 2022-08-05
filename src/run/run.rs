@@ -68,19 +68,23 @@ fn initialize_widgets(root_widget: &mut Layout, state_tree: &mut StateTree) -> V
 /// Support function for opening a popup. After opening the actual popup in the root layout the
 /// state tree is extended with the new modal widget state, and the same is done for the callback
 /// tree.
-pub fn open_popup(template: String, state_tree: &mut StateTree, scheduler: &mut SchedulerFrontend)
-    -> String {
+pub fn open_and_register_modal(template: String, state_tree: &mut StateTree, scheduler: &mut SchedulerFrontend)
+                               -> String {
 
     let state = state_tree.get_by_path_mut("/root").as_layout_mut();
+    if state.get_modal().is_some() {
+        state.dismiss_modal(scheduler);
+    }
     state.update(scheduler);
-    let (path, sub_tree) = state.open_popup(template, scheduler);
+    let (path, sub_tree) =
+        state.open_modal_from_template(template, scheduler);
     state_tree.extend(sub_tree);
     let state = state_tree.get_by_path_mut("/root").as_layout_mut();
     scheduler.overwrite_callback_config(path.as_str(),
                                         CallbackConfig::default());
-    let modal = state.get_modals().first().unwrap();
-    if let EzObjects::Layout(ref i) = modal {
-        for sub_widget in i.get_widgets_recursive().values() {
+    if let Some(ref mut modal) = state.get_modal_mut() {
+        let modal = modal.as_layout_mut();
+        for sub_widget in modal.get_widgets_recursive().values() {
             scheduler.overwrite_callback_config(
                 sub_widget.as_ez_object().get_full_path().as_str(),
                 CallbackConfig::default());

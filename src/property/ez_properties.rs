@@ -2,7 +2,7 @@
 use crossterm::style::Color;
 
 use crate::property::ez_property::EzProperty;
-use crate::states::definitions::{HorizontalAlignment, LayoutMode, LayoutOrientation, VerticalAlignment};
+use crate::states::definitions::{HorizontalAlignment, HorizontalPosHint, LayoutMode, LayoutOrientation, VerticalAlignment, VerticalPosHint};
 
 
 /// An enum that contains all possible implementations of the generic [EzProperty].
@@ -49,10 +49,10 @@ pub enum EzProperties {
     HorizontalAlignment(EzProperty<HorizontalAlignment>),
 
     /// [VerticalPosHint] EzProperty
-    VerticalPosHint(EzProperty<Option<(VerticalAlignment, f64)>>),
+    VerticalPosHint(EzProperty<VerticalPosHint>),
 
     /// [HorizontalPosHint] EzProperty
-    HorizontalPosHint(EzProperty<Option<(HorizontalAlignment, f64)>>),
+    HorizontalPosHint(EzProperty<HorizontalPosHint>),
 
     /// [SizeHint] EzProperty
     SizeHint(EzProperty<Option<f64>>),
@@ -187,7 +187,7 @@ impl EzProperties {
 
     /// Get a mutable ref [EzProperty<HorizontalPosHint>] from this enum. You must be sure this
     /// is a HorizontalPosHint property or it will panic.
-    pub fn as_horizontal_pos_hint(&self) -> &EzProperty<Option<(HorizontalAlignment, f64)>> {
+    pub fn as_horizontal_pos_hint(&self) -> &EzProperty<HorizontalPosHint> {
         if let EzProperties::HorizontalPosHint(i) = self { i }
         else { panic!("Wrong property, expected HorizontalPosHintProperty") }
     }
@@ -195,14 +195,14 @@ impl EzProperties {
     /// Get a mutable ref [EzProperty<HorizontalPosHint>] from this enum. You must be sure this
     /// is a HorizontalPosHint property or it will panic.
     pub fn as_horizontal_pos_hint_mut(&mut self)
-        -> &mut EzProperty<Option<(HorizontalAlignment, f64)>> {
+        -> &mut EzProperty<HorizontalPosHint> {
         if let EzProperties::HorizontalPosHint(i) = self { i }
         else { panic!("Wrong property, expected HorizontalPosHintProperty") }
     }
 
     /// Get a mutable ref [EzProperty<VerticalPosHint>] from this enum. You must be sure this
     /// is a VerticalPosHint property or it will panic.
-    pub fn as_vertical_pos_hint(&self) -> &EzProperty<Option<(VerticalAlignment, f64)>> {
+    pub fn as_vertical_pos_hint(&self) -> &EzProperty<VerticalPosHint> {
         if let EzProperties::VerticalPosHint(i) = self { i }
         else { panic!("Wrong property, expected VerticalPosHintProperty") }
     }
@@ -210,7 +210,7 @@ impl EzProperties {
     /// Get a mutable ref [EzProperty<VerticalPosHint>] from this enum. You must be sure this
     /// is a VerticalPosHint property or it will panic.
     pub fn as_vertical_pos_hint_mut(&mut self)
-                                      -> &mut EzProperty<Option<(VerticalAlignment, f64)>> {
+                                      -> &mut EzProperty<VerticalPosHint> {
         if let EzProperties::VerticalPosHint(i) = self { i }
         else { panic!("Wrong property, expected VerticalPosHintProperty") }
     }

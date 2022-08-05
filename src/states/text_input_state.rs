@@ -165,6 +165,8 @@ impl GenericState for TextInputState {
             "filler_bg_color" => self.colors.filler_bg_color.set_from_ez_value(value),
             "tab_fg_color" => self.colors.tab_fg_color.set_from_ez_value(value),
             "tab_bg_color" => self.colors.tab_bg_color.set_from_ez_value(value),
+
+
             "border_fg_color" => self.colors.border_fg_color.set_from_ez_value(value),
             "border_bg_color" => self.colors.border_bg_color.set_from_ez_value(value),
             "cursor_color" => self.colors.cursor_color.set_from_ez_value(value),

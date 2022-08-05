@@ -91,7 +91,7 @@ pub struct LayoutState {
     /// A list of open modals. Modals are widgets that overlap other content; in other words, they
     /// open 'in front of' other content. Only one can be shown at a time (the first on in the
     /// list).
-    open_modals: Vec<EzObjects>,
+    open_modal: Option<Box<EzObjects>>,
 
     /// A hashmap of 'Template Name > [EzWidgetDefinition]'. Used to instantiate widget templates
     /// at runtime. E.g. when spawning popups.
@@ -143,7 +143,7 @@ impl LayoutState {
                                                    path.clone(), scheduler),
             border_config: BorderConfig::new(false, path.clone(), scheduler),
             colors: ColorConfig::new(path.clone(), scheduler),
-            open_modals: Vec::new(),
+            open_modal: None,
             templates: HashMap::new(),
             disabled: scheduler.new_bool_property(
                 format!("{}/disabled", path).as_str(),false),
@@ -198,6 +198,8 @@ impl GenericState for LayoutState {
             "filler_bg_color" => self.colors.filler_bg_color.set_from_ez_value(value),
             "tab_fg_color" => self.colors.tab_fg_color.set_from_ez_value(value),
             "tab_bg_color" => self.colors.tab_bg_color.set_from_ez_value(value),
+            "tab_border_fg_color" => self.colors.tab_border_fg_color.set_from_ez_value(value),
+            "tab_border_bg_color" => self.colors.tab_border_bg_color.set_from_ez_value(value),
             "border_fg_color" => self.colors.border_fg_color.set_from_ez_value(value),
             "border_bg_color" => self.colors.border_bg_color.set_from_ez_value(value),
             "cursor_color" => self.colors.cursor_color.set_from_ez_value(value),
@@ -245,12 +247,12 @@ impl GenericState for LayoutState {
 
         let width_result: isize = self.size.get_width() as isize
             -if self.get_border_config().get_border() {2} else {0}
-            -if self.scrolling_config.get_scroll_y() {1} else {0}
+            -if self.scrolling_config.get_is_scrolling_y() {1} else {0}
             -self.get_padding().get_padding_left() as isize - self.get_padding().get_padding_right() as isize;
         let width = if width_result < 0 {0} else { width_result};
         let height_result: isize = self.size.get_height() as isize
             -if self.get_border_config().get_border() {2} else {0}
-            -if self.scrolling_config.get_scroll_x() {1} else {0}
+            -if self.scrolling_config.get_is_scrolling_x() {1} else {0}
             -self.get_padding().get_padding_top() as isize - self.get_padding().get_padding_bottom() as isize;
         let height = if height_result < 0 {0} else { height_result};
         Size::new(width as usize, height as usize)
@@ -427,19 +429,19 @@ impl LayoutState {
     pub fn get_filler_symbol(&self) -> String { self.filler_symbol.value.clone() }
 
     /// Open a popup based on a template defined in the Ez file. Returns the state of the new popup
-    pub fn open_popup(&mut self, template: String, scheduler: &mut SchedulerFrontend)
+    pub fn open_modal_from_template(&mut self, template: String, scheduler: &mut SchedulerFrontend)
         -> (String, StateTree) {
         let mut popup = self.templates.get(&template).unwrap().clone();
         let init_popup = popup.parse(scheduler,"/modal".to_string(), 0,
                                      None);
         self.open_modal(init_popup)
     }
-    
+
     /// Open a new modal. Returns the state of the new modal.
     pub fn open_modal(&mut self, mut modal: EzObjects) -> (String, StateTree) {
 
         if modal.as_ez_object().get_id().is_empty() {
-            modal.as_ez_object_mut().set_id(self.open_modals.len().to_string());
+            modal.as_ez_object_mut().set_id("0".to_string());
         }
         let modal_path = format!("/modal/{}", modal.as_ez_object().get_id());
         modal.as_ez_object_mut().set_full_path(modal_path.clone());
@@ -453,34 +455,26 @@ impl LayoutState {
             extra_state_tree = StateTree::new("state_tree".to_string());
             extra_state_tree.insert(modal_path.clone(),modal.as_ez_object().get_state());
         }
-        self.open_modals.push(modal);
+        self.open_modal = Some(Box::new(modal));
         (modal_path, extra_state_tree)
     }
     
     /// Dismiss the current modal
     pub fn dismiss_modal(&mut self, scheduler: &mut SchedulerFrontend) {
 
-        self.open_modals.remove(0);
+        self.open_modal = None;
         self.update(scheduler);
         scheduler.deselect_widget();
         scheduler.force_redraw();
     }
 
-    /// Dismiss all modals, clearing the entire stack
-    pub fn dismiss_all_modals(&mut self, scheduler: &mut SchedulerFrontend) {
-
-        self.open_modals.clear();
-        self.update(scheduler);
-        scheduler.deselect_widget();
-        scheduler.force_redraw();
-    }
     
     /// Get reference to all open modals
-    pub fn get_modals(&self) -> &Vec<EzObjects> { &self.open_modals }
+    pub fn get_modal(&self) -> &Option<Box<EzObjects>> { &self.open_modal }
     
     /// Get mutable reference to all open modals
-    pub fn get_modals_mut(&mut self) -> &mut Vec<EzObjects> {
-        &mut self.open_modals
+    pub fn get_modal_mut(&mut self) -> &mut Option<Box<EzObjects>> {
+        &mut self.open_modal
     }
 
     /// Set templates. Used by [ez_parser] on the root layout to keep a hold of all templates
