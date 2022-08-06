@@ -11,7 +11,7 @@ use crate::run::terminal::{initialize_terminal, write_to_screen};
 use crate::run::tree::ViewTree;
 use crate::scheduler::scheduler::SchedulerFrontend;
 use crate::states::ez_state::EzState;
-use crate::widgets::ez_object::{EzObject, EzObjects};
+use crate::widgets::ez_object::{EzObject};
 use crate::widgets::layout::layout::Layout;
 
 use super::terminal::shutdown_terminal;

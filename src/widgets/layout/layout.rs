@@ -314,6 +314,21 @@ impl Layout {
             }))?);
         Ok(())
     }
+
+    fn load_can_drag_property(&mut self, parameter_value: &str, scheduler: &mut SchedulerFrontend)
+                              -> Result<(), Error> {
+
+        let path = self.path.clone();
+        self.state.set_can_drag(load_bool_property(
+            parameter_value.trim(), scheduler, path.clone(),
+            Box::new(move |state_tree: &mut StateTree, val: EzValues| {
+                let state = state_tree.get_by_path_mut(&path)
+                    .as_layout_mut();
+                state.set_can_drag(val.as_bool().to_owned());
+                path.clone()
+            }))?);
+        Ok(())
+    }
 }
 
 
@@ -367,6 +382,8 @@ impl EzObject for Layout {
                 parameter_value.trim(), scheduler)?,
             "scroll_start_y" => self.load_scrolling_view_start_y_property(
                 parameter_value.trim(), scheduler)?,
+            "can_drag" =>
+                self.load_can_drag_property(parameter_value.trim(), scheduler)?,
             "fill" => self.load_fill_property(parameter_value.trim(), scheduler)?,
             "filler_symbol" =>
                 self.load_filler_symbol_property(parameter_value.trim(), scheduler)?,
@@ -544,88 +561,66 @@ impl EzObject for Layout {
                scheduler: &mut SchedulerFrontend, previous_pos: Option<Coordinates>,
                mouse_pos: Coordinates) -> bool {
 
-        if self.on_drag_callback(state_tree, callback_tree, scheduler, previous_pos,
-                                 mouse_pos) { return true }
         let mut consumed =
             self.on_drag_callback(state_tree, callback_tree, scheduler, previous_pos, mouse_pos);
 
         let state = state_tree.get_by_path_mut(&self.path).as_layout_mut();
 
         let offset = if state.get_border_config().get_border() { 2 } else { 1 };
+
         if state.get_scrolling_config().get_is_scrolling_x() &&
-            mouse_pos.y + offset == state.get_size().get_height() {
-
-            let view_start_x = state.get_scrolling_config()
-                .get_absolute_view_start_x(state.get_effective_size().width);
-            let (scrollbar_size, scrollbar_pos) =
-                self.get_horizontal_scrollbar_parameters(
-                    state.get_scrolling_config().get_original_width(),
-                    state.get_effective_size().width, view_start_x);
-
-            if previous_pos.is_none() {
-                return if mouse_pos.x >= scrollbar_pos && mouse_pos.x <= scrollbar_pos + scrollbar_size {
-                    true
-                } else {
-                    false
-                }
-            }
-
-            let absolute_diff = (mouse_pos.x as isize)
-                .abs_diff(previous_pos.unwrap().x as isize);
-            let absolute_scroll = 1.0 / ((absolute_diff * state.get_effective_size().width) as f64);
-            if previous_pos.unwrap().x > mouse_pos.x && absolute_scroll >
-                    state.get_scrolling_config().get_view_start_x() {
-                state.get_scrolling_config_mut().set_view_start_x(0.0);
-            } else if previous_pos.unwrap().x < mouse_pos.x &&
-                    state.get_scrolling_config().get_view_start_x() + absolute_scroll > 1.0 {
-                state.get_scrolling_config_mut().set_view_start_x(1.0)
-            } else {
-                let new_view_start= if previous_pos.unwrap().x > mouse_pos.x {
-                    state.get_scrolling_config().get_view_start_x() - absolute_scroll
-                } else {
-                    state.get_scrolling_config().get_view_start_x() + absolute_scroll
-                };
-                state.get_scrolling_config_mut().set_view_start_x(new_view_start);
-            }
-            consumed = true;
+                mouse_pos.y + offset == state.get_size().get_height() {
+            consumed = self.handle_scroll_drag_x(state, previous_pos, mouse_pos);
 
         } else if state.get_scrolling_config().get_is_scrolling_y() &&
-            mouse_pos.x + offset == state.get_size().get_width() {
+                mouse_pos.x + offset == state.get_size().get_width() {
+            self.handle_scroll_drag_y(state, previous_pos, mouse_pos);
 
-            let view_start_y = state.get_scrolling_config()
-                .get_absolute_view_start_y(state.get_effective_size().height);
-            let (scrollbar_size, scrollbar_pos) =
-                self.get_vertical_scrollbar_parameters(
-                    state.get_scrolling_config().get_original_height(),
-                    state.get_effective_size().height,view_start_y);
-
+        } else if self.path.starts_with("/modal") && state.can_drag.value {
+            let abs_mouse_pos = Coordinates::new(
+                state.get_absolute_position().x as usize + mouse_pos.x,
+                state.get_absolute_position().y as usize + mouse_pos.y
+            );
             if previous_pos.is_none() {
-                return if mouse_pos.y >= scrollbar_pos && mouse_pos.y <= scrollbar_pos + scrollbar_size {
-                    true
-                } else {
-                    false
+                for child in self.children.iter() {
+                    if state_tree.get_by_path(&child.as_ez_object().get_full_path())
+                        .as_generic().collides(abs_mouse_pos) {
+                        return false;
+                    }
                 }
+                return true
             }
-
-            let absolute_diff = (mouse_pos.y as isize)
-                .abs_diff(previous_pos.unwrap().y as isize);
-            let absolute_scroll = 1.0 / ((absolute_diff * state.get_effective_size().height) as f64);
-            if previous_pos.unwrap().y > mouse_pos.y && absolute_scroll >
-                    state.get_scrolling_config().get_view_start_x() {
-                state.get_scrolling_config_mut().set_view_start_y(0.0);
-            } else if previous_pos.unwrap().y < mouse_pos.y &&
-                    state.get_scrolling_config().get_view_start_y() + absolute_scroll > 1.0 {
-                state.get_scrolling_config_mut().set_view_start_y(1.0)
-            } else {
-                let new_view_start = if previous_pos.unwrap().y > mouse_pos.y {
-                    state.get_scrolling_config().get_view_start_y() - absolute_scroll
+            state.set_pos_hint_x(None);
+            state.set_pos_hint_y(None);
+            let diff_x: isize = mouse_pos.x as isize - previous_pos.unwrap().x as isize;
+            let diff_y: isize = mouse_pos.y as isize - previous_pos.unwrap().y as isize;
+            let pos = state.get_position().clone();
+            let size = state.size.clone();
+            let root_size =
+                state_tree.get_by_path("/root").as_generic().get_size().clone();
+            let state = state_tree.get_by_path_mut(&self.path).as_layout_mut();
+            state.set_x(
+                if diff_x < 0 && diff_x.abs() > pos.x.value as isize {
+                    0
+                } else if diff_x > 0 && pos.x.value + diff_x as usize >
+                        (root_size.get_width() - size.get_width()) {
+                    root_size.get_width() - size.get_width()
                 } else {
-                    state.get_scrolling_config().get_view_start_y() + absolute_scroll
-                };
-                state.get_scrolling_config_mut().set_view_start_y(new_view_start);
-            }
-            consumed = true;
+                    (pos.x.value as isize + diff_x) as usize
+                }
+            );
+            state.set_y(
+                if diff_y < 0 && diff_y.abs() > pos.y.value as isize {
+                    0
+                } else if diff_y > 0 && pos.y.value + diff_y as usize >
+                        (root_size.get_height() - size.get_height()) {
+                    root_size.get_height() - size.get_height()
+                } else {
+                    (pos.y.value as isize + diff_y) as usize
+                }
+            )
         }
+        let state = state_tree.get_by_path_mut(&self.path).as_layout_mut();
         state.update(scheduler);
         self.propagate_absolute_positions(state_tree);
         consumed
@@ -691,6 +686,81 @@ impl Layout {
         let mut obj = Layout::new(id, path, scheduler);
         obj.load_ez_config(config, scheduler, file, line).unwrap();
         obj
+    }
+
+    fn handle_scroll_drag_x(&self, state: &mut LayoutState, previous_pos: Option<Coordinates>,
+                            mouse_pos: Coordinates) -> bool {
+
+        let view_start_x = state.get_scrolling_config()
+            .get_absolute_view_start_x(state.get_effective_size().width);
+        let (scrollbar_size, scrollbar_pos) =
+            self.get_horizontal_scrollbar_parameters(
+                state.get_scrolling_config().get_original_width(),
+                state.get_effective_size().width, view_start_x);
+
+        if previous_pos.is_none() {
+            return if mouse_pos.x >= scrollbar_pos && mouse_pos.x <= scrollbar_pos + scrollbar_size {
+                true
+            } else {
+                false
+            }
+        }
+
+        let absolute_diff = (mouse_pos.x as isize)
+            .abs_diff(previous_pos.unwrap().x as isize);
+        let absolute_scroll = 1.0 / ((absolute_diff * state.get_effective_size().width) as f64);
+        if previous_pos.unwrap().x > mouse_pos.x && absolute_scroll >
+            state.get_scrolling_config().get_view_start_x() {
+            state.get_scrolling_config_mut().set_view_start_x(0.0);
+        } else if previous_pos.unwrap().x < mouse_pos.x &&
+            state.get_scrolling_config().get_view_start_x() + absolute_scroll > 1.0 {
+            state.get_scrolling_config_mut().set_view_start_x(1.0)
+        } else {
+            let new_view_start= if previous_pos.unwrap().x > mouse_pos.x {
+                state.get_scrolling_config().get_view_start_x() - absolute_scroll
+            } else {
+                state.get_scrolling_config().get_view_start_x() + absolute_scroll
+            };
+            state.get_scrolling_config_mut().set_view_start_x(new_view_start);
+        }
+        true
+    }
+    fn handle_scroll_drag_y(&self, state: &mut LayoutState, previous_pos: Option<Coordinates>,
+                            mouse_pos: Coordinates) -> bool {
+
+        let view_start_y = state.get_scrolling_config()
+            .get_absolute_view_start_y(state.get_effective_size().height);
+        let (scrollbar_size, scrollbar_pos) =
+            self.get_vertical_scrollbar_parameters(
+                state.get_scrolling_config().get_original_height(),
+                state.get_effective_size().height,view_start_y);
+
+        if previous_pos.is_none() {
+            return if mouse_pos.y >= scrollbar_pos && mouse_pos.y <= scrollbar_pos + scrollbar_size {
+                true
+            } else {
+                false
+            }
+        }
+
+        let absolute_diff = (mouse_pos.y as isize)
+            .abs_diff(previous_pos.unwrap().y as isize);
+        let absolute_scroll = 1.0 / ((absolute_diff * state.get_effective_size().height) as f64);
+        if previous_pos.unwrap().y > mouse_pos.y && absolute_scroll >
+            state.get_scrolling_config().get_view_start_x() {
+            state.get_scrolling_config_mut().set_view_start_y(0.0);
+        } else if previous_pos.unwrap().y < mouse_pos.y &&
+            state.get_scrolling_config().get_view_start_y() + absolute_scroll > 1.0 {
+            state.get_scrolling_config_mut().set_view_start_y(1.0)
+        } else {
+            let new_view_start = if previous_pos.unwrap().y > mouse_pos.y {
+                state.get_scrolling_config().get_view_start_y() - absolute_scroll
+            } else {
+                state.get_scrolling_config().get_view_start_y() + absolute_scroll
+            };
+            state.get_scrolling_config_mut().set_view_start_y(new_view_start);
+        }
+        true
     }
 
     /// Scale size down to the size of the actual content of the layout.

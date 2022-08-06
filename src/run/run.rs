@@ -14,7 +14,7 @@ use crate::run::tree::{clean_trees, initialize_callback_tree, ViewTree};
 use crate::scheduler::scheduler::SchedulerFrontend;
 use crate::scheduler::scheduler_funcs::{add_property_callbacks, create_new_widgets, drain_property_channels, handle_next_selection, run_tasks, update_callback_configs, update_properties, update_threads};
 use crate::states::ez_state::GenericState;
-use crate::widgets::ez_object::{EzObject, EzObjects};
+use crate::widgets::ez_object::{EzObject};
 use crate::widgets::layout::layout::Layout;
 
 use super::input::{handle_global_event, handle_modal_event, handle_resize};

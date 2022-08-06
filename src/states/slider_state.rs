@@ -18,10 +18,10 @@ pub struct SliderState {
     pub value: EzProperty<usize>,
 
     /// Low boundary of the slider
-    pub minimum: EzProperty<usize>,
+    pub min: EzProperty<usize>,
 
     /// Upper boundary of the slider
-    pub maximum: EzProperty<usize>,
+    pub max: EzProperty<usize>,
 
     /// Amount to change value by when moved one step
     pub step: EzProperty<usize>,
@@ -78,8 +78,8 @@ impl SliderState {
        SliderState {
            path: path.clone(),
            value: scheduler.new_usize_property(format!("{}/value", path).as_str(), 0),
-           minimum: scheduler.new_usize_property(format!("{}/minimum", path).as_str(), 0),
-           maximum: scheduler.new_usize_property(format!("{}/maximum", path).as_str(), 100),
+           min: scheduler.new_usize_property(format!("{}/min", path).as_str(), 0),
+           max: scheduler.new_usize_property(format!("{}/max", path).as_str(), 100),
            step: scheduler.new_usize_property(format!("{}/step", path).as_str(), 1),
            position: StateCoordinates::new(0, 0, path.clone(), scheduler),
            absolute_position: IsizeCoordinates::default(),
@@ -154,8 +154,8 @@ impl GenericState for SliderState {
             "border_bg_color" => self.colors.border_bg_color.set_from_ez_value(value),
             "cursor_color" => self.colors.cursor_color.set_from_ez_value(value),
             "value" => self.value.set_from_ez_value(value),
-            "minimum" => self.minimum.set_from_ez_value(value),
-            "maximum" => self.maximum.set_from_ez_value(value),
+            "min" => self.min.set_from_ez_value(value),
+            "max" => self.max.set_from_ez_value(value),
             "step" => self.step.set_from_ez_value(value),
             _ => panic!("Invalid property name for button state: {}", name),
         }
@@ -237,8 +237,8 @@ impl GenericState for SliderState {
         clean_up_property(scheduler, &self.halign.name);
         clean_up_property(scheduler, &self.valign.name);
         clean_up_property(scheduler, &self.value.name);
-        clean_up_property(scheduler, &self.minimum.name);
-        clean_up_property(scheduler, &self.maximum.name);
+        clean_up_property(scheduler, &self.min.name);
+        clean_up_property(scheduler, &self.max.name);
         clean_up_property(scheduler, &self.step.name);
         clean_up_property(scheduler, &self.disabled.name);
         clean_up_property(scheduler, &self.selection_order.name);
@@ -254,16 +254,17 @@ impl SliderState {
 
     pub fn get_value(&self) -> usize { self.value.value }
 
-    pub fn set_minimum(&mut self, minimum: usize) {
-        self.minimum.set(minimum);
-    }
-    pub fn get_minimum(&self) -> usize { self.minimum.value }
-
-    pub fn set_maximum(&mut self, maximum: usize) {
-        self.maximum.set(maximum);
+    pub fn set_min(&mut self, min: usize) {
+        self.min.set(min);
     }
 
-    pub fn get_maximum(&self) -> usize { self.maximum.value }
+    pub fn get_min(&self) -> usize { self.min.value }
+
+    pub fn set_max(&mut self, max: usize) {
+        self.max.set(max);
+    }
+
+    pub fn get_max(&self) -> usize { self.max.value }
 
     pub fn set_step(&mut self, step: usize) {
         self.step.set(step);
@@ -272,9 +273,9 @@ impl SliderState {
     pub fn get_step(&self) -> usize { self.step.value }
 
     pub fn validate(&self) {
-        if self.minimum.value >= self.maximum.value {panic!("Slider minimum must be lower than maximum")}
-        if self.minimum.value % self.step.value != 0 {panic!("Slider minimum must be a multiple of step")}
-        if self.maximum.value % self.step.value != 0 {panic!("Slider maximum must be a multiple of step")}
+        if self.min.value >= self.max.value {panic!("Slider minimum must be lower than maximum")}
+        if self.min.value % self.step.value != 0 {panic!("Slider minimum must be a multiple of step")}
+        if self.max.value % self.step.value != 0 {panic!("Slider maximum must be a multiple of step")}
         if self.step.value < 1 {panic!("Step value must be larger than 0")}
         if self.value.value % self.step.value != 0 {panic!("Slider value must be a multiple of step")}
     }

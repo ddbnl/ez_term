@@ -931,7 +931,7 @@
 //! The slider allows a user to choose a numerical value by dragging the slider to the left or
 //! the right (using keyboard or mouse). A slider has a value, a minimum value, a maximum value,
 //! and a step value. The step value determines the minimum amount by which the value can be
-//! adjusted. A slider with minimum 0, maximum 20, and step 5, has 5 possible values (0, 5, 10
+//! adjusted. A slider with min 0, max 20, and step 5, has 5 possible values (0, 5, 10
 //! , 15, 20).
 //! ```
 //! - Slider:
@@ -2427,15 +2427,67 @@
 //! popups. A modal is always created from a Layout template created in an .ez file. In other words,
 //! you first define what the modal looks like in the .ez file, and then you spawn it from code.
 //! You can spawn a popup anytime you have access to the scheduler (i.e. when initializing the UI,
-//! from a callback, or from a scheduled task). The modal is spawned in the root layout, so size
-//! hints and position hints will size/position the modal relative to the root layout. By default
-//! Modals can be dismissed from the scheduler as well. If you want a button in your modal that
-//! dismisses it, you need to bind a callback to the modal button that calls the dismiss_modal
-//! method of the scheduler.
+//! from a callback, or from a scheduled task). Only one modal can exist at any time; if a modal is
+//! opened when another one already exists, the existing one is dismissed first. The modal is
+//! spawned in the root layout, so size hints and position hints will size and position the modal
+//! relative to the root layout. Modals can be dismissed from the scheduler. If you want a button
+//! in your modal that dismisses it, you need to bind a callback to the button in the modal that
+//! calls the dismiss_modal method of the scheduler. Modals can be dragged across the screen by
+//! the user (as long as they click on an empty part of the modal); if you want to disable this
+//! behavior set can_drag to false on the layout template used to spawn the modal.
 //!
 //! Let's look at an example. We want to create a popup that appears when we click a button. The
-//! popup should be half the size of the root layout and appear in the center. It should have some
+//! popup should be half the size of the terminal and appear in the center. It should have some
 //! text and a dismiss button that allows the user to close the popup.
+//!
+//! First, we define the layout template in an .ez file; we will use this to spawn the popup later.
+//! We'll also create a button in the main UI, which will spawn the popup:
+//! ```
+//! - Layout:
+//!     mode: box
+//!     - Button:
+//!         id: create_button
+//!         text: Create popup
+//!
+//! - <MyPopup@Layout>:
+//!     mode: box
+//!     orientation: vertical
+//!     - Label:
+//!         text: This is my popup!
+//!         size_hint_y: 0.8
+//!     - Button:
+//!         id: dismiss_button
+//!         text: Close popup
+//!         size_hint_y: 0.2
+//! ```
+//! We not have a template we can use to spawn the popup. Note that you can only use Layout
+//! templates to spawn modals, widget templates won't work. Now we'll write a callback to create the
+//! popup:
+//! ```
+//! use ez_term::*;
+//! let (root_widget, mut state_tree, mut scheduler) = load_ui();
+//!
+//! let dismiss_popup_callback = |context: EzContext| {
+//!     context.scheduler.dismiss_modal(context.state_tree);
+//! };
+//!
+//! let create_popup_callback = |context: EzContext| {
+//!     context.scheduler.open_modal("MyPopup", context.state_tree);
+//!     let callback_config = CallbackConfig::from_on_press(Box::new(create_popup_callback));
+//!     scheduler.update_callback_config("dismiss_button", callback_config);
+//! };
+//!
+//! let callback_config = CallbackConfig::from_on_press(Box::new(create_popup_callback));
+//! scheduler.update_callback_config("create_button", callback_config);
+//!
+//! ```
+//! Now when the create button is pressed, the popup will open. When the dismiss button is pressed
+//! from the modal, it will be closed again. Note that we referred to the template name when opening
+//! the popup; this is separate from any ID, it comes from the line: "- <MyPopup@Layout>:".
+//! Note also that we bind the dismiss callback to the modal button inside of the callback where we
+//! spawn the modal. We cannot bind the dismiss callback when initializing the UI, because the modal
+//! does not exist at that time. It only exists after the "open_modal" method of the scheduler is
+//! called.
 mod run;
 mod scheduler;
 mod widgets;

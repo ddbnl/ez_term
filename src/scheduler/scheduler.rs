@@ -240,8 +240,8 @@ impl SchedulerFrontend {
     ///                                  CallbackConfig::from_on_press(Box::new(dismiss_delay)));
     /// // The popup will open on the next frame!
     /// ```
-    pub fn open_modal(&mut self, template: String, state_tree: &mut StateTree) -> String {
-        open_and_register_modal(template, state_tree, self)
+    pub fn open_modal(&mut self, template: &str, state_tree: &mut StateTree) -> String {
+        open_and_register_modal(template.to_string(), state_tree, self)
     }
 
     /// Dismiss the current modal.

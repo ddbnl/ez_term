@@ -88,6 +88,9 @@ pub struct LayoutState {
     /// See [ScrollingConfig]
     pub scrolling_config: ScrollingConfig,
 
+    /// Whether this layout can be dragged around if it is a modal
+    pub can_drag: EzProperty<bool>,
+
     /// A list of open modals. Modals are widgets that overlap other content; in other words, they
     /// open 'in front of' other content. Only one can be shown at a time (the first on in the
     /// list).
@@ -143,6 +146,8 @@ impl LayoutState {
                                                    path.clone(), scheduler),
             border_config: BorderConfig::new(false, path.clone(), scheduler),
             colors: ColorConfig::new(path.clone(), scheduler),
+            can_drag: scheduler.new_bool_property(
+                format!("{}/can_drag", path).as_str(), true),
             open_modal: None,
             templates: HashMap::new(),
             disabled: scheduler.new_bool_property(
@@ -156,6 +161,7 @@ impl LayoutState {
 impl GenericState for LayoutState {
 
     fn get_path(&self) -> &String { &self.path }
+
     fn update_property(&mut self, name: &str, value: EzValues) -> bool {
 
         match name {
@@ -208,6 +214,7 @@ impl GenericState for LayoutState {
             "active_screen" => self.active_screen.set_from_ez_value(value),
             "active_tab" => self.active_tab.set_from_ez_value(value),
             "tab_name" => self.tab_name.set_from_ez_value(value),
+            "can_drag" => self.can_drag.set_from_ez_value(value),
             "fill" => self.fill.set_from_ez_value(value),
             "filler_symbol" => self.filler_symbol.set_from_ez_value(value),
             "scroll_x" => self.scrolling_config.scroll_x.set_from_ez_value(value),
@@ -468,6 +475,9 @@ impl LayoutState {
         scheduler.force_redraw();
     }
 
+    pub fn set_can_drag(&mut self, can_drag: bool) { self.can_drag.set(can_drag); }
+
+    pub fn get_can_drag(&self) -> bool { self.can_drag.value }
     
     /// Get reference to all open modals
     pub fn get_modal(&self) -> &Option<Box<EzObjects>> { &self.open_modal }

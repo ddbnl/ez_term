@@ -42,13 +42,24 @@ impl ProgressBar {
         }
     }
 
+    fn load_max_property(&mut self, parameter_value: &str, scheduler: &mut SchedulerFrontend)
+                           -> Result<(), Error> {
+        let path = self.path.clone();
+        self.state.set_max(load_usize_property(
+            parameter_value.trim(), scheduler,self.path.clone(),
+            Box::new(move |state_tree: &mut StateTree, val: EzValues| {
+                    let state = state_tree.get_by_path_mut(&path)
+                        .as_progress_bar_mut();
+                    state.set_max(val.as_usize());
+                    path.clone()
+                }))?);
+        Ok(())
+    }
     fn load_value_property(&mut self, parameter_value: &str, scheduler: &mut SchedulerFrontend)
                             -> Result<(), Error> {
         let path = self.path.clone();
-        self.state.set_value(
-            load_usize_property(
-                parameter_value.trim(), scheduler,
-                self.path.clone(),
+        self.state.set_value(load_usize_property(
+                parameter_value.trim(), scheduler,self.path.clone(),
                 Box::new(move |state_tree: &mut StateTree, val: EzValues| {
                     let state = state_tree.get_by_path_mut(&path)
                         .as_progress_bar_mut();
@@ -69,14 +80,7 @@ impl EzObject for ProgressBar {
         if consumed { return Ok(())}
         match parameter_name.as_str() {
             "value" => self.load_value_property(parameter_value.trim(), scheduler)?,
-            "maximum" => self.state.set_maximum_value(match parameter_value.trim().parse() {
-                Ok(i) => i,
-                Err(_) => return Err(
-                    Error::new(ErrorKind::InvalidData,
-                               format!("Could not parse maximum parameter: \"{}\". \
-                               Should be in format \"maximum: 100\"", parameter_value)))
-            }),
-            "max" => self.state.set_value(parameter_value.trim().parse().unwrap()),
+            "max" => self.load_max_property(parameter_value.trim(), scheduler)?,
             _ => return Err(
                 Error::new(ErrorKind::InvalidData,
                            format!("Invalid parameter name for progress bar: {}",

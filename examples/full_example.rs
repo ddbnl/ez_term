@@ -189,8 +189,8 @@ fn test_slider_on_value_change(context: EzContext) -> bool {
     // Now we will create a text and a color depending on whether the checkbox was turned on or off
     let text = value.to_string();
     let color =
-        if state.get_value() as f32 / state.get_maximum() as f32 <= 1.0/3.0 {Color::Red}
-        else if state.get_value() as f32 / state.get_maximum() as f32 <= 2.0/3.0 {Color::Yellow}
+        if state.get_value() as f32 / state.get_max() as f32 <= 1.0/3.0 {Color::Red}
+        else if state.get_value() as f32 / state.get_max() as f32 <= 2.0/3.0 {Color::Yellow}
         else {Color::Green};
     // Next we will retrieve a label widget state and change the text and color field. This will
     // cause the text to change on the next frame.
@@ -288,8 +288,7 @@ fn test_popup_button_on_press(context: EzContext) -> bool {
     // We will open a popup in this callback. We open a popup by defining a template in the
     // Ez file, and then using the template name with the [common::open_popup] function to
     // spawn the template.
-    let popup_path = context.scheduler.open_modal("TestPopup".to_string(),
-                                                  context.state_tree);
+    context.scheduler.open_modal("TestPopup", context.state_tree);
 
     // We want to bind a callback to the dismiss button that dismisses the popup. In order to allow
     // allow the button to finish its click animation we will create two closures. One closure
@@ -310,7 +309,7 @@ fn test_popup_button_on_press(context: EzContext) -> bool {
         };
 
     context.scheduler.update_callback_config(
-        format!("{}/dismiss_button", popup_path).as_str(),
+        format!("dismiss_button").as_str(),
         CallbackConfig::from_on_press(Box::new(dismiss_delay)));
     false
 }

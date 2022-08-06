@@ -95,8 +95,8 @@
             pos_hint: None, None
             x: 0
             y: 1
-            minimum: 0
-            maximum: 20
+            min: 0
+            max: 20
             auto_scale_width: true
 
 

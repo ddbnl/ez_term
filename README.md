@@ -118,7 +118,7 @@ let progress_property = scheduler.new_usize_property("progress_property", 0);
 - ProgressBar:
     id: progress_bar
     value: properties.progress_property
-    maximum: 100
+    max: 100
     
 // The following function represents our example app:
 fn progress_example_app(mut properties: EzPropertiesMap) {
