@@ -2434,7 +2434,9 @@
 //! in your modal that dismisses it, you need to bind a callback to the button in the modal that
 //! calls the dismiss_modal method of the scheduler. Modals can be dragged across the screen by
 //! the user (as long as they click on an empty part of the modal); if you want to disable this
-//! behavior set can_drag to false on the layout template used to spawn the modal.
+//! behavior set can_drag to false on the layout template used to spawn the modal. Lastly, when a
+//! modal is open only widgets in the modal can be selected or clicked; events do not reach the main
+//! UI when a modal is open.
 //!
 //! Let's look at an example. We want to create a popup that appears when we click a button. The
 //! popup should be half the size of the terminal and appear in the center. It should have some
@@ -2452,6 +2454,8 @@
 //! - <MyPopup@Layout>:
 //!     mode: box
 //!     orientation: vertical
+//!     size_hint: 0.5, 0.5
+//!     pos_hint: center, middle
 //!     - Label:
 //!         text: This is my popup!
 //!         size_hint_y: 0.8
@@ -2460,9 +2464,9 @@
 //!         text: Close popup
 //!         size_hint_y: 0.2
 //! ```
-//! We not have a template we can use to spawn the popup. Note that you can only use Layout
-//! templates to spawn modals, widget templates won't work. Now we'll write a callback to create the
-//! popup:
+//! We now have a template we can use to spawn the popup. Note that you can only use Layout
+//! templates to spawn modals, widget templates won't work. Now we'll callbacks to create and
+//! dismiss the popup:
 //! ```
 //! use ez_term::*;
 //! let (root_widget, mut state_tree, mut scheduler) = load_ui();
@@ -2482,12 +2486,73 @@
 //!
 //! ```
 //! Now when the create button is pressed, the popup will open. When the dismiss button is pressed
-//! from the modal, it will be closed again. Note that we referred to the template name when opening
+//! from the modal, it will close again. Note that we referred to the template name when opening
 //! the popup; this is separate from any ID, it comes from the line: "- <MyPopup@Layout>:".
 //! Note also that we bind the dismiss callback to the modal button inside of the callback where we
 //! spawn the modal. We cannot bind the dismiss callback when initializing the UI, because the modal
 //! does not exist at that time. It only exists after the "open_modal" method of the scheduler is
 //! called.
+//!
+//!
+//! ### 1.3.6 Creating widgets programmatically
+//!
+//! The static parts of your UI are created from the .ez files. In some cases however you need to
+//! create widgets dynamically. Maybe you are retrieving records from a database and need to display
+//! them. They will be retrieved at runtime and so cannot be known in advance (and even if you could,
+//! it would be too much work to put them all in the .ez files). In cases like this you could create
+//! widgets from code.
+//!
+//! You can spawn any kind of layout or widget from code, including templates. In fact, creating
+//! them from templates is usually the best way to do it. Let's use the SQL record example we used
+//! above: we will create a layout template that can display an entire SQL record. Then we'll
+//! iterate over the SQL records from code and create widgets for them. We'll also create a UI that
+//! can display the record widgets. First the .ez file:
+//! ```
+//! - Layout:
+//!     mode: box
+//!     orientation: vertical
+//!     - Label:
+//!         text: Retrieved SQL records:
+//!         auto_scale: true, true
+//!     - Layout:
+//!         id: sql_records_layout
+//!         mode: box
+//!         orientation: vertical
+//!
+//! - <SqlRecord@Layout>:
+//!     mode: box
+//!     orientation: horizontal
+//!     - Label:
+//!         id: record_id
+//!         auto_scale: true, true
+//!     - Label:
+//!         id: record_name
+//!         auto_scale: true, true
+//!     - Label:
+//!         id: record_date
+//!         auto_scale: true, true
+//! ```
+//! We now have a main UI that can hold our records. We also have a Layout template that can spawned
+//! as a record. Let's now go to the code:
+//! ```
+//! use ez_term::*;
+//! let (root_widget, mut state_tree, mut scheduler) = load_ui();
+//!
+//! let sql_records = get_sql_records();
+//! for (i, sql_record) in sql_records.iter().enumerate() {
+//!     // The parameters for the create_widget method are:
+//!     // - widget (or template) name (&str),
+//!     // - id of new widget (&str)
+//!     // - parent id or path where widget will be placed (&str)
+//!     // - StateTree
+//!     let state = scheduler.create_widget("SqlRecord", format!("record_{}", i).as_str(),
+//!                                         "sql_records_layout", &mut state_tree);
+//!
+//! }
+//!
+//! run(root_widget, state_tree, scheduler);
+//!
+//! ```
 mod run;
 mod scheduler;
 mod widgets;

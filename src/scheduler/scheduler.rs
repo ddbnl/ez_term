@@ -295,22 +295,26 @@ impl SchedulerFrontend {
 
     }
 
-    pub fn create_widget(&mut self, widget_type: &str, id: &str, path: &str) -> &mut EzState {
+    pub fn create_widget(&mut self, widget_type: &str, id: &str, mut parent: &str,
+                         state_tree: &mut StateTree) -> &mut EzState {
 
-        let new_path = format!("{}/{}", path, id);
+        if !parent.contains('/') { // parent is an ID, resolve it
+            parent = state_tree.get_by_id(parent).as_generic().get_path();
+        }
+        let new_path = format!("{}/{}", parent, id);
         let base_type;
         let new_state;
         if self.backend.templates.contains_key(widget_type) {
             base_type = self.backend.templates
                 .get(widget_type).unwrap().resolve_base_type(&self.backend.templates);
             new_state = self.backend.templates.get_mut(widget_type).unwrap()
-                .clone().parse(self, path.to_string(), 0,
+                .clone().parse(self, parent.to_string(), 0,
                                Some(vec!(format!("id: {}", id))))
                 .as_ez_object_mut().get_state();
         } else {
             base_type = widget_type.to_string();
             new_state = EzState::from_string(
-                &base_type, path.to_string(), self);
+                &base_type, parent.to_string(), self);
         };
 
         self.backend.widgets_to_create.push((new_path, base_type, new_state));

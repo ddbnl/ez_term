@@ -127,7 +127,7 @@ fn main() {
     for i in 0..10 {
         let state = scheduler.create_widget(
             "ScalingLabel", format!("label_{}", i).as_str(),
-            "/root/main_screen/tabbed_box/generation_box");
+            "/generation_box", &mut state_tree);
         state.as_label_mut().set_text(format!("Generated label: {}", i));
     }
 
