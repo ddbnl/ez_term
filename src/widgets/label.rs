@@ -51,7 +51,7 @@ impl Label {
         self.state.set_from_file(load_string_property(
             parameter_value.trim(), scheduler, path.clone(),
             Box::new(move |state_tree: &mut StateTree, val: EzValues| {
-                let state = state_tree.get_by_path_mut(&path)
+                let state = state_tree.get_mut(&path)
                     .as_label_mut();
                 state.set_from_file(val.as_string().to_string());
                 path.clone()
@@ -66,7 +66,7 @@ impl Label {
         self.state.set_text(load_string_property(
             parameter_value.trim(), scheduler, path.clone(),
             Box::new(move |state_tree: &mut StateTree, val: EzValues| {
-                let state = state_tree.get_by_path_mut(&path)
+                let state = state_tree.get_mut(&path)
                     .as_label_mut();
                 state.set_text(val.as_string().to_string());
                 path.clone()
@@ -93,13 +93,13 @@ impl EzObject for Label {
         Ok(())
     }
 
-    fn set_id(&mut self, id: String) { self.id = id }
+    fn set_id(&mut self, id: &str) { self.id = id.to_string() }
 
     fn get_id(&self) -> String { self.id.clone() }
 
-    fn set_full_path(&mut self, path: String) { self.path = path }
+    fn set_path(&mut self, id: &str) { self.id = id.to_string() }
 
-    fn get_full_path(&self) -> String { self.path.clone() }
+    fn get_path(&self) -> String { self.path.clone() }
 
     fn get_state(&self) -> EzState { EzState::Label(self.state.clone()) }
 
@@ -108,7 +108,7 @@ impl EzObject for Label {
     fn get_contents(&self, state_tree: &mut StateTree) -> PixelMap {
 
         let state = state_tree
-            .get_by_path_mut(&self.get_full_path()).as_label_mut();
+            .get_mut(&self.get_path()).as_label_mut();
         let mut text;
         // Load text from file
         if !state.get_from_file().is_empty() {
@@ -181,8 +181,8 @@ impl EzObject for Label {
             contents = add_border(contents, state.get_border_config(),
                                  state.get_color_config());
         }
-        let state = state_tree.get_by_path(&self.get_full_path()).as_label();
-        let parent_colors = state_tree.get_by_path(self.get_full_path()
+        let state = state_tree.get(&self.get_path()).as_label();
+        let parent_colors = state_tree.get(self.get_path()
             .rsplit_once('/').unwrap().0).as_generic().get_color_config();
         contents = add_padding(
             contents, state.get_padding(), parent_colors.get_bg_color(),

@@ -11,7 +11,7 @@ use crate::run::terminal::{initialize_terminal, write_to_screen};
 use crate::run::tree::ViewTree;
 use crate::scheduler::scheduler::SchedulerFrontend;
 use crate::states::ez_state::EzState;
-use crate::widgets::ez_object::{EzObject};
+use crate::widgets::ez_object::{EzObject, EzObjects};
 use crate::widgets::layout::layout::Layout;
 
 use super::terminal::shutdown_terminal;
@@ -23,11 +23,13 @@ pub fn handle_modal_event (event: Event, state_tree: &mut StateTree,
                        root_widget: &Layout, callback_tree: &mut CallbackTree,
                        scheduler: &mut SchedulerFrontend) -> bool {
 
-    if let Some(i) = root_widget.state.get_modal() {
-        let modal = i.as_layout();
-        let mut consumed = modal.handle_event(event, state_tree, callback_tree, scheduler);
-        if !consumed {
-            for child in modal.get_widgets_recursive().values() {
+    if !state_tree.as_layout().has_modal() { return false }
+    let modal = root_widget.state.get_modal();
+    let mut consumed = modal.as_ez_object()
+        .handle_event(event, state_tree, callback_tree, scheduler);
+    if !consumed {
+        if let EzObjects::Layout(layout) = modal {
+            for child in layout.get_widgets_recursive() {
                 consumed = child.as_ez_object().handle_event(
                     event, state_tree, callback_tree, scheduler);
                 if consumed {
@@ -79,7 +81,7 @@ fn handle_key_event(key: KeyEvent, state_tree: &mut StateTree,
         },
         KeyCode::Enter => {
             if !selected_widget.is_empty() && !state_tree
-                    .get_by_path(&selected_widget).as_generic().get_disabled() {
+                    .get(&selected_widget).as_generic().get_disabled() {
                 root_widget.get_child_by_path(selected_widget).unwrap().as_ez_object()
                     .on_keyboard_enter(state_tree, callback_tree, scheduler);
             }
@@ -130,7 +132,7 @@ fn handle_mouse_press_event(event: MouseEvent, button: MouseButton, state_tree: 
     for widget in get_widget_by_position(
         mouse_position, root_widget, state_tree) {
 
-        let abs = state_tree.get_by_path(&widget.get_full_path()).as_generic()
+        let abs = state_tree.get(&widget.get_path()).as_generic()
             .get_absolute_position();
         let relative_position = Coordinates::new(
             mouse_position.x - abs.usize_x(), mouse_position.y - abs.usize_y());
@@ -158,7 +160,7 @@ fn handle_mouse_hover_event(event: MouseEvent, state_tree: &mut StateTree,
     let mouse_position = Coordinates::new(event.column as usize,event.row as usize);
 
     for widget in get_widget_by_position(mouse_position, root_widget, state_tree) {
-        let abs = state_tree.get_by_path(&widget.get_full_path())
+        let abs = state_tree.get(&widget.get_path())
             .as_generic().get_absolute_position();
         let relative_position = Coordinates::new(
             mouse_position.x - abs.usize_x(), mouse_position.y - abs.usize_y());
@@ -180,9 +182,9 @@ fn handle_mouse_drag_event(event: MouseEvent, state_tree: &mut StateTree,
 
     for widget in get_widget_by_position(mouse_position, root_widget, state_tree) {
         if let Some(ref path) = dragging {
-            if path != &widget.get_full_path() { continue }
+            if path != &widget.get_path() { continue }
         }
-        let abs = state_tree.get_by_path(&widget.get_full_path())
+        let abs = state_tree.get(&widget.get_path())
             .as_generic().get_absolute_position();
         let relative_position = Coordinates::new(
             mouse_position.x - abs.usize_x(), mouse_position.y - abs.usize_y());
@@ -194,7 +196,7 @@ fn handle_mouse_drag_event(event: MouseEvent, state_tree: &mut StateTree,
                            None, relative_position)
         };
         if consumed {
-            dragging.replace(widget.get_full_path());
+            dragging.replace(widget.get_path());
             last_dragging_pos.x = relative_position.x;
             last_dragging_pos.y = relative_position.y;
             return true
@@ -241,13 +243,13 @@ fn handle_mouse_scroll_down_event(event: MouseEvent, state_tree: &mut StateTree,
 pub fn handle_resize(view_tree: &mut ViewTree, state_tree: &mut StateTree, root_widget: &mut Layout,
                  new_width: usize, new_height: usize){
 
-    for state in state_tree.objects.values_mut() {
+    for state in state_tree.get_all_mut() {
         if let EzState::Layout(_) = state {
             state.as_layout_mut().get_scrolling_config_mut().set_view_start_x(0.0);
             state.as_layout_mut().get_scrolling_config_mut().set_view_start_y(0.0);
         }
     }
-    let state = state_tree.get_by_path_mut(&root_widget.path).as_generic_mut();
+    let state = state_tree.get_mut(&root_widget.path).as_generic_mut();
     state.get_size_mut().set_width(new_width as usize);
     state.get_size_mut().set_height(new_height as usize);
     let contents = root_widget.get_contents(state_tree);

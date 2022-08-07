@@ -57,8 +57,7 @@ pub fn redraw_changed_widgets(view_tree: &mut ViewTree, state_tree: &mut StateTr
                               root_widget: &mut Layout, changed_states: &mut Vec<String>,
                               mut force_redraw: bool) -> bool {
 
-    if !state_tree.get_by_path("/root").as_layout().get_modal().is_none() &&
-        !changed_states.is_empty(){
+    if state_tree.as_layout().has_modal() && !changed_states.is_empty(){
         force_redraw = true;
     }
     if !force_redraw {
@@ -85,7 +84,7 @@ pub fn redraw_widgets(paths: &mut Vec<String>, view_tree: &mut ViewTree,
             // scrolled; we will find the origin of the scroll and redraw that widget instead
             // to keep the view intact.
             loop {
-                let state = state_tree.get_by_path(&widget_path);
+                let state = state_tree.get(&widget_path);
                 if (!state.as_generic().get_infinite_size().width &&
                     !state.as_generic().get_infinite_size().height) || widget_path == "/root" {
                     break

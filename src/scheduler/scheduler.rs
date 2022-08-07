@@ -18,6 +18,7 @@ use crate::run::run::{open_and_register_modal, stop};
 use crate::scheduler::definitions::{EzPropertyUpdater, EzThread, GenericFunction, GenericRecurringTask, GenericTask};
 use crate::states::definitions::{HorizontalAlignment, HorizontalPosHint, LayoutMode, LayoutOrientation, VerticalAlignment, VerticalPosHint};
 use crate::states::ez_state::EzState;
+use crate::widgets::ez_object::EzObjects;
 
 
 /// The Scheduler is a key component of the framework. It, along with the [StateTree], gives
@@ -64,7 +65,7 @@ impl SchedulerFrontend {
     /// use ez_term::*;
     /// use std::time::Duration;
     /// let my_closure = |context: EzContext| {
-    ///     let state = context.state_tree.get_by_id_mut("my_label").as_label_mut();
+    ///     let state = context.state_tree.get_mut("my_label").as_label_mut();
     ///     state.set_text("New text!".to_string());
     ///     state.update(context.scheduler);
     /// };
@@ -122,7 +123,7 @@ impl SchedulerFrontend {
     ///
     /// let mut counter: usize = 1;
     /// let my_counter_func = move |context: EzContext| {
-    ///     let state = context.state_tree.get_by_id_mut("my_label").as_label_mut();
+    ///     let state = context.state_tree.get_mut("my_label").as_label_mut();
     ///     state.set_text(format!("Counting {}", counter));
     ///     state.update(context.scheduler);
     ///     counter += 1;
@@ -228,25 +229,34 @@ impl SchedulerFrontend {
     /// ```
     /// use ez_term::*;
     /// // We will open the popup, which gives us the path of the spawned popup
-    /// let popup_path = scheduler.open_popup("TestPopup".to_string(), context.state_tree);
+    /// scheduler.open_popup("TestPopup".to_string(), context.state_tree);
     /// // Now we will bind the dismiss button we defined to a dismiss callback
     /// let dismiss =
     /// move |context: EzContext| {
     ///
-    ///     context.scheduler.dismiss_modal();
+    ///     context.scheduler.dismiss_modal(context.state_tree);
     ///     false
     /// };
-    /// scheduler.update_callback_config(format!("{}/dismiss_button", popup_path).as_str(),
+    /// scheduler.update_callback_config("dismiss_button",
     ///                                  CallbackConfig::from_on_press(Box::new(dismiss_delay)));
     /// // The popup will open on the next frame!
     /// ```
-    pub fn open_modal(&mut self, template: &str, state_tree: &mut StateTree) -> String {
-        open_and_register_modal(template.to_string(), state_tree, self)
+    pub fn open_modal(&mut self, template: &str, state_tree: &mut StateTree) {
+        open_and_register_modal(template.to_string(), state_tree, self);
     }
 
     /// Dismiss the current modal.
     pub fn dismiss_modal(&mut self, state_tree: &mut StateTree) {
-        state_tree.get_by_path_mut("/root").as_layout_mut().dismiss_modal(self);
+        state_tree.as_layout_mut().dismiss_modal(self);
+        let removed = state_tree.remove_node("/modal".to_string());
+        if let Some(i) = removed {
+            i.as_generic().clean_up_properties(self);
+            for state in i.get_all() {
+                state.as_generic().clean_up_properties(self);
+            }
+        }
+        self.deselect_widget();
+        self.force_redraw();
     }
 
     /// Replace the entire [CallbackConfig] of a widget with a new one. Unless you want to erase
@@ -259,7 +269,7 @@ impl SchedulerFrontend {
     /// ```
     /// use ez_term::*;
     /// let my_callback = |context: EzContext| {
-    ///     let state = context.state_tree.get_by_id_mut("my_button").as_button_mut();
+    ///     let state = context.state_tree.get_mut("my_button").as_button_mut();
     ///     state.set_disabled(true);
     ///     state.update(context.scheduler);
     ///     true
@@ -282,7 +292,7 @@ impl SchedulerFrontend {
     /// ```
     /// use ez_term::*;
     /// let my_callback = |context: EzContext| {
-    ///     let state = context.state_tree.get_by_id_mut("my_button").as_button_mut();
+    ///     let state = context.state_tree.get_mut("my_button").as_button_mut();
     ///     state.set_disabled(true);
     ///     state.update(context.scheduler);
     ///     true
@@ -295,30 +305,37 @@ impl SchedulerFrontend {
 
     }
 
-    pub fn create_widget(&mut self, widget_type: &str, id: &str, mut parent: &str,
-                         state_tree: &mut StateTree) -> &mut EzState {
+    pub fn create_widget(&mut self, widget_type: &str, id: &str, parent: &str,
+                         state_tree: &mut StateTree)  {
 
-        if !parent.contains('/') { // parent is an ID, resolve it
-            parent = state_tree.get_by_id(parent).as_generic().get_path();
-        }
-        let new_path = format!("{}/{}", parent, id);
+        let path = if !parent.contains('/') { // parent is an ID, resolve it
+            state_tree.get(parent).as_generic().get_path().clone()
+        } else {
+            parent.to_string()
+        };
+        let new_path = format!("{}/{}", path, id);
         let base_type;
-        let new_state;
+        let new_widget;
         if self.backend.templates.contains_key(widget_type) {
-            base_type = self.backend.templates
-                .get(widget_type).unwrap().resolve_base_type(&self.backend.templates);
-            new_state = self.backend.templates.get_mut(widget_type).unwrap()
-                .clone().parse(self, parent.to_string(), 0,
-                               Some(vec!(format!("id: {}", id))))
-                .as_ez_object_mut().get_state();
+            new_widget = self.backend.templates.get_mut(widget_type).unwrap()
+                .clone().parse(self, path.to_string(), 0,
+                               Some(vec!(format!("id: {}", id))));
+            state_tree.add_node(new_path, new_widget.as_ez_object().get_state());
+            if let EzObjects::Layout(ref i) = new_widget {
+                for child in i.get_widgets_recursive() {
+                    state_tree.add_node(child.as_ez_object().get_path(),
+                                        child.as_ez_object().get_state());
+                }
+            }
         } else {
             base_type = widget_type.to_string();
-            new_state = EzState::from_string(
-                &base_type, parent.to_string(), self);
-        };
+            let new_state = EzState::from_string(&base_type, new_path.to_string(),
+                                                 self);
+            new_widget = EzObjects::from_string(
+                &base_type, new_path.to_string(), id.to_string(), self, new_state);
 
-        self.backend.widgets_to_create.push((new_path, base_type, new_state));
-        &mut self.backend.widgets_to_create.last_mut().unwrap().2
+        };
+        self.backend.widgets_to_create.push(new_widget);
 
     }
 
@@ -524,7 +541,7 @@ impl SchedulerFrontend {
     /// Schedule a widget to be updated on the next frame. Can also be called from the widget itself
     /// as ```[widget.update(scheduler)]``` (for convenience).
     pub fn update_widget(&mut self, path: String) {
-        if path.starts_with("/modal") {
+        if path.starts_with("/root/modal") {
             self.backend.force_redraw = true;
             return
         }
@@ -544,22 +561,24 @@ impl SchedulerFrontend {
     /// let my_property = scheduler.new_usize_property("my_property".to_string(), 0);
     ///
     /// let my_callback = |context: EzContext| {
-    ///     let state  = context.state_tree.get_by_id("my_label");
-    ///     state.set_text("Value changed");
+    ///     let state  = context.state_tree.get("my_label").as_label_mut();
+    ///     state.set_text("Value changed".to_string());
     ///     state.update(context.scheduler);
     /// };
     ///
     /// scheduler.bind_ez_property_callback("my_property", Box::new(my_callback));
     /// ```
-    pub fn bind_property_callback(&mut self, name: &str, callback: GenericFunction) {
+    pub fn bind_property_callback(&mut self, mut name: &str, callback: GenericFunction) {
 
         if self.backend.property_callbacks.contains(&name.to_string()) {
             self.backend.new_property_callbacks.push((name.to_string(), callback));
         } else {
             let mut config = CallbackConfig::default();
             config.property_callbacks.push(callback);
-            self.overwrite_callback_config(name, config);
-            self.backend.property_callbacks.push(name.to_string());
+            let name = if !name.contains('/') { format!("/root/{}", name)
+            } else { name.to_string() };
+            self.overwrite_callback_config(&name, config);
+            self.backend.property_callbacks.push(name);
         }
     }
     
@@ -616,7 +635,7 @@ pub struct Scheduler {
     pub templates: Templates,
 
     /// List of new widgets that will be created on the next frame. Use [create_widget] for this.
-    pub widgets_to_create: Vec<(String, String, EzState)>,
+    pub widgets_to_create: Vec<EzObjects>,
 
     /// List of <Widget path, [CallbackConfig]. Every frame this list is checked, and the widget
     /// belonging to the widget path will have its' [CallbackConfig] replaced with the new one.

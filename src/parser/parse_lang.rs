@@ -17,7 +17,7 @@ include!(concat!(env!("OUT_DIR"), "/ez_file_gen.rs"));
 
 /// Load a file path into a root layout. Return the root widget and a new scheduler. Both will
 /// be needed to run an [App].
-pub fn load_ui() -> (Layout, StateTree, SchedulerFrontend) {
+pub fn load_ui<'a>() -> (Layout, StateTree, SchedulerFrontend) {
 
     let contents = ez_config(); // ez_config is generated from build.rs
     let (root_widget, scheduler) = load_ez_text(contents).unwrap();

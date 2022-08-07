@@ -10,7 +10,7 @@ impl Layout {
     /// childs' [width] and [height].
     pub fn get_float_mode_contents(&self, mut content: PixelMap, state_tree: &mut StateTree)
                                -> PixelMap {
-        let own_state = state_tree.get_by_path(&self.get_full_path()).as_layout();
+        let own_state = state_tree.get(&self.get_path()).as_layout();
         let own_height = own_state.get_effective_size().height;
         let own_width = own_state.get_effective_size().width;
 
@@ -37,8 +37,8 @@ impl Layout {
             if content.is_empty() { return content }  // No space left in widget
 
             let generic_child = child.as_ez_object();
-            let state = state_tree.get_by_path_mut(
-                &generic_child.get_full_path()).as_generic_mut();
+            let state = state_tree.get_mut(
+                &generic_child.get_path()).as_generic_mut();
 
             // If autoscaling is enabled set child size to max width. It is then expected to scale
             // itself according to its' content
@@ -58,8 +58,8 @@ impl Layout {
             }
 
             let child_content = generic_child.get_contents(state_tree);
-            let state = state_tree.get_by_path_mut(
-                &generic_child.get_full_path()).as_generic_mut(); // re-borrow
+            let state = state_tree.get_mut(
+                &generic_child.get_path()).as_generic_mut(); // re-borrow
             reposition_with_pos_hint(own_width, own_height, state);
             let child_pos = state.get_position();
             for width in 0..child_content.len() {

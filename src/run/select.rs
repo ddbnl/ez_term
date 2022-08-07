@@ -16,7 +16,7 @@ pub fn select_widget(path: &str, state_tree: &mut StateTree,
                      root_widget: &Layout, callback_tree: &mut CallbackTree,
                      scheduler: &mut SchedulerFrontend, mouse_pos: Option<Coordinates>) {
 
-    let state = state_tree.get_by_path_mut(path).as_generic_mut();
+    let state = state_tree.get_mut(path).as_generic_mut();
     state.set_selected(true);
     state.update(scheduler);
     root_widget.get_child_by_path(path).unwrap().as_ez_object().on_select(
@@ -28,7 +28,8 @@ pub fn deselect_widget(path: &str, state_tree: &mut StateTree,
                        root_widget: &Layout, callback_tree: &mut CallbackTree,
                        scheduler: &mut SchedulerFrontend) {
 
-    let state = state_tree.get_by_path_mut(&path).as_generic_mut();
+    if !state_tree.contains(&path) { return }
+    let state = state_tree.get_mut(&path).as_generic_mut();
     state.set_selected(false);
     state.update(scheduler);
     if let Some(widget) = root_widget.get_child_by_path(path) {
@@ -45,15 +46,14 @@ pub fn select_next(state_tree: &mut StateTree, _root_widget: &Layout,
                    _callback_tree: &mut CallbackTree, scheduler: &mut SchedulerFrontend,
                    current_selection: &mut String) {
 
-    let modal = state_tree.get_by_path("/root").as_layout().get_modal();
-    let path_prefix = if let Some(modal) = modal {
-        modal.as_ez_object().get_full_path()
+    let path_prefix = if state_tree.as_layout().has_modal(){
+        "/root/modal".to_string()
     } else {
         "/root".to_string()
     };
 
     let mut current_selection_order = if !current_selection.is_empty() {
-        state_tree.get_by_path_mut(&current_selection)
+        state_tree.get_mut(&current_selection)
             .as_generic().get_selection_order()
     } else { 0 };
 
@@ -81,17 +81,17 @@ pub fn find_next_selection(current_selection: usize, state_tree: &StateTree, pat
 
     let mut next_order= 0;
     let mut next_widget: Option<String> = None;
-    for (path, state) in state_tree.objects.iter()  {
-        if !path.starts_with(path_prefix) { continue };
-        let generic_state = state.as_generic();
-        let widget_order = generic_state.get_selection_order();
-        if generic_state.is_selectable() && !generic_state.get_disabled() &&
+    for state in state_tree.get_all().iter()  {
+        let state = state.as_generic();
+        if !state.get_path().starts_with(path_prefix) { continue };
+        let widget_order = state.get_selection_order();
+        if state.is_selectable() && !state.get_disabled() &&
             widget_order > 0 && widget_order > current_selection &&
             (next_order == 0 || widget_order < next_order) &&
-            !widget_is_hidden(path.to_string(), state_tree) &&
-            is_in_view(path.to_string(), state_tree) {
+            !widget_is_hidden(state.get_path().to_string(), state_tree) &&
+            is_in_view(state.get_path().to_string(), state_tree) {
             next_order = widget_order;
-            next_widget = Some(path.to_string());
+            next_widget = Some(state.get_path().to_string());
         }
     }
     next_widget
@@ -105,15 +105,14 @@ pub fn select_previous(state_tree: &mut StateTree, _root_widget: &Layout,
                        _callback_tree: &mut CallbackTree, scheduler: &mut SchedulerFrontend,
                        current_selection: &mut String) {
 
-    let modal = state_tree.get_by_path("/root").as_layout().get_modal();
-    let path_prefix = if let Some(i) = modal {
-        i.as_ez_object().get_full_path()
+    let path_prefix = if state_tree.as_layout().has_modal() {
+        "/root/modal".to_string()
     } else {
         "/root".to_string()
     };
 
     let mut current_selection_order = if !current_selection.is_empty() {
-        state_tree.get_by_path_mut(&current_selection)
+        state_tree.get_mut(&current_selection)
             .as_generic().get_selection_order()
     } else { 0 };
 
@@ -140,17 +139,17 @@ pub fn find_previous_selection(current_selection: usize, state_tree: &StateTree,
 
     let mut previous_order = 0;
     let mut previous_widget: Option<String> = None;
-    for (path, state) in state_tree.objects.iter() {
-        if !path.starts_with(path_prefix) { continue }
-        let generic_state = state.as_generic();
-        let widget_order = generic_state.get_selection_order();
-        if generic_state.is_selectable() && !generic_state.get_disabled() &&
+    for state in state_tree.get_all().iter() {
+        let state = state.as_generic();
+        if !state.get_path().starts_with(path_prefix) { continue }
+        let widget_order = state.get_selection_order();
+        if state.is_selectable() && !state.get_disabled() &&
             widget_order > 0 && (current_selection == 0 || widget_order < current_selection) &&
             (previous_order == 0 || widget_order > previous_order) &&
-            !widget_is_hidden(path.to_string(), state_tree) &&
-            is_in_view(path.to_string(), state_tree) {
-                previous_order = generic_state.get_selection_order();
-                previous_widget = Some(path.to_string());
+            !widget_is_hidden(state.get_path().to_string(), state_tree) &&
+            is_in_view(state.get_path().to_string(), state_tree) {
+                previous_order = state.get_selection_order();
+                previous_widget = Some(state.get_path().to_string());
         }
     }
     previous_widget
@@ -162,27 +161,27 @@ pub fn find_previous_selection(current_selection: usize, state_tree: &StateTree,
 pub fn get_widget_by_position<'a>(pos: Coordinates, root_widget: &'a Layout,
                                   state_tree: &StateTree) -> Vec<&'a dyn EzObject> {
 
-    let modal = state_tree.get_by_path("/root").as_layout().get_modal();
-    let path_prefix = if let Some(i) = modal {
-        i.as_ez_object().get_full_path()
+    let path_prefix = if state_tree.as_layout().has_modal() {
+        "/root/modal".to_string()
     } else {
         "/root".to_string()
     };
     let mut results = Vec::new();
-    for (widget_path, state) in state_tree.objects.iter() {
-        if !widget_path.starts_with(&path_prefix) || widget_path == "/root" ||
-            state.as_generic().get_disabled() ||
-            widget_is_hidden(widget_path.clone(),  state_tree) {
+    for state in state_tree.get_all() {
+        let generic_state = state.as_generic();
+        if !generic_state.get_path().starts_with(&path_prefix) || generic_state.get_path() == "/root" ||
+            generic_state.get_disabled() ||
+            widget_is_hidden(generic_state.get_path().clone(),  state_tree) {
             continue
         }
-        if let EzState::Layout(i) = state {
+        if let EzState::Layout(ref i) = state {
             if i.collides(pos) {
                 results.push(
-                    root_widget.get_child_by_path(widget_path).unwrap().as_ez_object());
+                    root_widget.get_child_by_path(generic_state.get_path()).unwrap().as_ez_object());
             }
         } else if state.as_generic().collides_effective(pos) {
             results.push(
-                root_widget.get_child_by_path(widget_path).unwrap().as_ez_object());
+                root_widget.get_child_by_path(generic_state.get_path()).unwrap().as_ez_object());
         }
     }
     results
@@ -197,7 +196,7 @@ pub fn get_widget_by_position<'a>(pos: Coordinates, root_widget: &'a Layout,
 pub fn is_in_view(path: String, state_tree: &StateTree) -> bool {
 
     // If the widget belongs to a tab or screen that is not active, it is not in view
-    let window_size = state_tree.get_by_path("/root").as_generic().get_size().clone();
+    let window_size = state_tree.as_generic().get_size().clone();
 
     // Prepare to iterate from root widget to subwidget to sub-sub-widget etc.
     let mut paths: Vec<&str> = path.split('/').collect();
@@ -212,11 +211,11 @@ pub fn is_in_view(path: String, state_tree: &StateTree) -> bool {
 
     loop { // Loop from root widget to subwidget until we complete the full path or something is not in view
 
-        if working_path == "/modal" {
+        if working_path == "/root/modal" {
             working_path = format!("{}/{}", working_path, paths.pop().unwrap());
             continue
         }
-        let state = state_tree.get_by_path(&working_path);
+        let state = state_tree.get(&working_path);
         // Determine if this part of the tree is in view. It's not in view if a visible area
         // was determined and this is not in it (visible area means we're scrolling somewhere),
         // or if absolute positions falls outside of window size.
@@ -317,18 +316,18 @@ pub fn is_in_view(path: String, state_tree: &StateTree) -> bool {
 /// Check if a widget is hidden, for example if it belongs to a tab or screan that is not active.
 pub fn widget_is_hidden(widget_path: String, state_tree: &StateTree) -> bool {
 
-    if widget_path.starts_with("/modal") { return false }
+    if widget_path.starts_with("/root/modal") { return false }
     let mut check_parent =
         widget_path.rsplit_once('/').unwrap().0.to_string();
     let mut check_child = widget_path.clone();
     loop {
-        let parent_state = state_tree.get_by_path(&check_parent).as_layout();
+        let parent_state = state_tree.get(&check_parent).as_layout();
         if parent_state.get_mode() == &LayoutMode::Screen &&
             parent_state.get_active_screen() != check_child.rsplit_once('/').unwrap().1 {
             return true
         }
         if parent_state.get_mode() == &LayoutMode::Tab {
-            if let EzState::Layout(_) = state_tree.get_by_path(&check_child) {
+            if let EzState::Layout(_) = state_tree.get(&check_child).obj {
                 if parent_state.get_active_tab() != check_child {
                     return true
                 }

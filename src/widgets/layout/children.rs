@@ -1,4 +1,3 @@
-use std::collections::HashMap;
 use crate::{CallbackConfig, EzContext, EzObject};
 use crate::run::definitions::{IsizeCoordinates, PixelMap, StateTree};
 use crate::scheduler::scheduler::SchedulerFrontend;
@@ -15,7 +14,7 @@ impl Layout {
     /// Set the sizes of children that use size_hint(s) using own proportions.
     pub fn set_child_sizes(&self, state_tree: &mut StateTree) {
 
-        let own_state = state_tree.get_by_path_mut(&self.get_full_path())
+        let own_state = state_tree.get_mut(&self.get_path())
             .as_layout();
         let own_width = own_state.get_effective_size().width;
         let own_height = own_state.get_effective_size().height;
@@ -32,7 +31,7 @@ impl Layout {
             if all_default_size_hint_x {
                 for child in self.get_children() {
                     let generic_child = child.as_ez_object();
-                    let state = state_tree.get_by_path_mut(&generic_child.get_full_path())
+                    let state = state_tree.get_mut(&generic_child.get_path())
                         .as_generic_mut();
                     state.set_size_hint_x(Some(1.0 / (self.children.len() as f64)));
                 }
@@ -40,7 +39,7 @@ impl Layout {
             if all_default_size_hint_y {
                 for child in self.get_children() {
                     let generic_child = child.as_ez_object();
-                    let state = state_tree.get_by_path_mut(&generic_child.get_full_path())
+                    let state = state_tree.get_mut(&generic_child.get_path())
                         .as_generic_mut();
                     state.set_size_hint_y(Some(1.0 / (self.children.len() as f64)));
                 }
@@ -49,7 +48,7 @@ impl Layout {
         // Now calculate actual sizes.
         for child in self.get_children() {
             let generic_child = child.as_ez_object();
-            let state = state_tree.get_by_path_mut(&generic_child.get_full_path());
+            let state = &mut state_tree.get_mut(&generic_child.get_path()).obj;
             resize_with_size_hint(state, own_width, own_height);
         }
         for child in self.get_children() {
@@ -65,7 +64,7 @@ impl Layout {
 
         let mut all_default_size_hint_x = true;
         let mut all_default_size_hint_y = true;
-        let own_orientation = state_tree.get_by_path(&self.path)
+        let own_orientation = state_tree.get(&self.path)
             .as_layout().get_orientation().clone();
         for child in self.get_children() {
             if !all_default_size_hint_x && !all_default_size_hint_y {
@@ -73,7 +72,7 @@ impl Layout {
             }
             let generic_child = child.as_ez_object();
             let state = state_tree
-                .get_by_path(&generic_child.get_full_path()).as_generic();
+                .get(&generic_child.get_path()).as_generic();
             if let LayoutOrientation::Horizontal = own_orientation {
                 if let Some(size_hint_x) = state.get_size_hint().get_size_hint_x()
                 {
@@ -107,16 +106,16 @@ impl Layout {
     /// set their [absolute_position]. Then calls this method on children, thus recursively setting
     /// [absolute_position] for all children. Use on root layout to propagate all absolute positions.
     pub fn propagate_absolute_positions(&self, state_tree: &mut StateTree) {
-        let absolute_position = state_tree.get_by_path(&self.path).as_generic()
+        let absolute_position = state_tree.get(&self.path).as_generic()
             .get_effective_absolute_position();
-        let effective_size = state_tree.get_by_path(&self.path).as_layout()
+        let effective_size = state_tree.get(&self.path).as_layout()
             .get_effective_size().clone();
-        let scrolling = state_tree.get_by_path(&self.path).as_layout()
+        let scrolling = state_tree.get(&self.path).as_layout()
             .get_scrolling_config().clone();
         for child in self.get_children() {
             if let EzObjects::Layout(i) = child {
                 let child_state =
-                    state_tree.get_by_path_mut(&i.get_full_path()).as_generic_mut();
+                    state_tree.get_mut(&i.get_path()).as_generic_mut();
                 let pos = child_state.get_position();
                 let mut new_absolute_position = IsizeCoordinates::new(
                     absolute_position.x + pos.get_x() as isize,
@@ -126,8 +125,8 @@ impl Layout {
                 child_state.set_absolute_position(new_absolute_position);
                 i.propagate_absolute_positions(state_tree);
             } else {
-                let child_state = state_tree.get_by_path_mut(
-                    &child.as_ez_object().get_full_path()).as_generic_mut();
+                let child_state = state_tree.get_mut(
+                    &child.as_ez_object().get_path()).as_generic_mut();
                 let pos = child_state.get_position();
                 let mut new_absolute_position = IsizeCoordinates::new(
                     absolute_position.x + pos.get_x() as isize,
@@ -144,15 +143,14 @@ impl Layout {
     /// [path] for all children. Use on root layout to propagate all absolute positions.
     pub fn propagate_paths(&mut self) {
 
-        let path = self.get_full_path();
+        let path = self.get_path();
         for child in self.get_children_mut() {
             if let EzObjects::Layout(i) = child {
-                i.set_full_path(path.clone() + format!("/{}", i.get_id()).as_str());
+                i.set_path(format!("{}/{}", path, i.get_id()).as_str());
                 i.propagate_paths();
             } else {
                 let generic_child = child.as_ez_object_mut();
-                generic_child.set_full_path(path.clone() +
-                    format!("/{}", generic_child.get_id()).as_str());
+                generic_child.set_path(format!("{}/{}", path, generic_child.get_id()).as_str());
             }
         }
     }
@@ -174,7 +172,7 @@ impl Layout {
         if self.state.get_mode() == &LayoutMode::Tab {
             if let EzObjects::Layout(_) = child.clone() {
                 let tab_name = child.as_layout().state.get_tab_name();
-                let tab_path = child.as_layout().get_full_path();
+                let tab_path = child.as_layout().get_path();
                 let new_id = format!("{}_tab_header", tab_name);
                 let new_path = format!("{}/{}", parent_path, new_id);
                 let mut tab_header = Button::new(new_id, new_path.clone(), scheduler);
@@ -191,7 +189,7 @@ impl Layout {
 
                 let tab_on_click = move |context: EzContext| {
                     let state = context.state_tree
-                        .get_by_path_mut(&parent_path).as_layout_mut();
+                        .get_mut(&parent_path).as_layout_mut();
                     state.set_active_tab(&tab_path.clone());
                     state.update(context.scheduler);
                     true
@@ -234,6 +232,14 @@ impl Layout {
     /// exists
     pub fn get_child_by_path(&self, path: &str) -> Option<&EzObjects> {
 
+        if path == "/root/modal" && self.path == "/root" {
+            return if self.state.has_modal() {
+                Some(self.state.get_modal())
+            } else {
+                None
+            }
+        }
+
         let mut paths: Vec<&str> = path.split('/').filter(|x| !x.is_empty()).collect();
         // If user passed a path starting with this layout, take it off first.
         if paths.first().unwrap() == &self.get_id() {
@@ -243,7 +249,7 @@ impl Layout {
 
         let first = paths.pop().unwrap();
         let mut root = if first == "modal" {
-            if let Some(i) = self.state.get_modal() { paths.pop();  i }
+            if self.state.has_modal() { self.state.get_modal() }
             else { return None }
         } else {
             if let Some(i) = self.get_child(first) { i }
@@ -267,6 +273,14 @@ impl Layout {
     /// [EzObject] that exists
     pub fn get_child_by_path_mut(&mut self, path: &str) -> Option<&mut EzObjects> {
 
+        if path == "/root/modal" && self.path == "/root" {
+            return if self.state.has_modal() {
+                Some(self.state.get_modal_mut())
+            } else {
+                None
+            }
+        }
+
         let mut paths: Vec<&str> = path.split('/').filter(|x| !x.is_empty()).collect();
         if paths.first().unwrap() == &self.get_id() {
             paths.remove(0);
@@ -275,7 +289,7 @@ impl Layout {
 
         let first = paths.pop().unwrap();
         let mut root = if first == "modal" {
-            if let Some(i) = self.state.get_modal_mut() { i }
+            if self.state.has_modal() { self.state.get_modal_mut() }
             else { return None }
         } else {
             if let Some(i) = self.get_child_mut(first) { i }
@@ -292,24 +306,23 @@ impl Layout {
 
     /// Get a list of all children refs recursively. Call on root [layout] for all [EzWidgets] that
     /// exist.
-    pub fn get_widgets_recursive(&self) -> HashMap<String, &EzObjects> {
-        let mut results = HashMap::new();
+    pub fn get_widgets_recursive(&self) -> Vec<&EzObjects> {
+        let mut results = Vec::new();
+        self._get_widgets_recursive(&mut results);
+        results
+    }
+    fn _get_widgets_recursive<'a>(&'a self, results: &mut Vec<&'a EzObjects>) {
         for child in self.get_children() {
+            results.push(child);
             if let EzObjects::Layout(i) = child {
-                for (sub_child_path, sub_child) in i.get_widgets_recursive() {
-                    results.insert(sub_child_path, sub_child);
-                }
-                results.insert(child.as_ez_object().get_full_path(), child);
-            } else {
-                results.insert(child.as_ez_object().get_full_path(), child);
+                i._get_widgets_recursive(results);
             }
         }
-        results
     }
 
     pub fn scale_to_largest_child(&self, content_list: &[PixelMap], state_tree: &mut StateTree){
 
-        let state = state_tree.get_by_path_mut(&self.path).as_layout_mut();
+        let state = state_tree.get_mut(&self.path).as_layout_mut();
         if state.get_auto_scale().get_auto_scale_width() {
             state.set_effective_width(
                 if state.get_orientation() == &LayoutOrientation::Vertical {

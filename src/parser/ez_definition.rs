@@ -107,7 +107,7 @@ impl EzWidgetDefinition {
             config = merge_configs(config, config_to_merge);
         }
         let initialized = self.initialize(config, scheduler, parent_path, order).unwrap();
-        let parent_path = initialized.as_ez_object().get_full_path();
+        let parent_path = initialized.as_ez_object().get_path();
 
         if let EzObjects::Layout(mut obj) = initialized {
             for (i, sub_widget) in sub_widgets.iter_mut().enumerate() {

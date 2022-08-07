@@ -17,8 +17,7 @@ fn main() {
     scheduler.update_callback_config("start_button",
         CallbackConfig::from_on_press(Box::new(
             |context: EzContext| {
-                let root_state = context.state_tree.get_by_path_mut("/root")
-                    .as_layout_mut();
+                let root_state = context.state_tree.as_layout_mut();
                 root_state.set_active_screen("main_screen");
                 root_state.update(context.scheduler);
                 false
@@ -47,9 +46,9 @@ fn main() {
     let progress_property =
         scheduler.new_usize_property("progress_property", 0);
     let value_property_callback = |context: EzContext| {
-        let val = context.state_tree.get_by_id("progress_bar")
+        let val = context.state_tree.get("progress_bar")
             .as_progress_bar().get_value();
-        let state = context.state_tree.get_by_id_mut("progress_label")
+        let state = context.state_tree.get_mut("progress_label")
             .as_label_mut();
         state.set_text(format!("{}%", val));
         state.update(context.scheduler);
@@ -114,7 +113,7 @@ fn main() {
             }
             neon = (neon.0, neon.1, neon.2 + 2);
         }
-        let state = context.state_tree.get_by_id_mut("canvas")
+        let state = context.state_tree.get_mut("canvas")
             .as_canvas_mut();
         state.get_color_config_mut().set_fg_color(color);
         state.update(context.scheduler);
@@ -125,25 +124,27 @@ fn main() {
 
     // Programmatically create some labels
     for i in 0..10 {
-        let state = scheduler.create_widget(
-            "ScalingLabel", format!("label_{}", i).as_str(),
-            "/generation_box", &mut state_tree);
-        state.as_label_mut().set_text(format!("Generated label: {}", i));
+        let new_id = format!("label_{}", i);
+        scheduler.create_widget(
+            "ScalingLabel", new_id.as_str(),
+            "generation_box", &mut state_tree);
+        state_tree.get_mut(new_id.as_str()).as_label_mut()
+            .set_text(format!("Generated label {}", i));
     }
 
     // We will bind a callback to a property
     let size_callback = |context: EzContext | {
-        let width = context.state_tree.get_by_id_mut("property_bind_source_label")
+        let width = context.state_tree.get_mut("property_bind_source_label")
             .as_label_mut().get_width();
-        let height = context.state_tree.get_by_id_mut("property_bind_source_label")
+        let height = context.state_tree.get_mut("property_bind_source_label")
             .as_label_mut().get_height();
-        let state = context.state_tree.get_by_id_mut("property_bind_show_label")
+        let state = context.state_tree.get_mut("property_bind_show_label")
             .as_label_mut();
         state.set_text(format!("Width: {}, Height: {}", width, height));
         state.update(context.scheduler);
         true
     };
-    let state = state_tree.get_by_id_mut("property_bind_source_label")
+    let state = state_tree.get_mut("property_bind_source_label")
         .as_label_mut();
     state.size.width.bind(Box::new(size_callback), &mut scheduler);
     state.size.height.bind(Box::new(size_callback), &mut scheduler);
@@ -163,14 +164,14 @@ fn test_checkbox_on_value_change(context: EzContext) -> bool {
     // parameter as a key. The state contains the current value. Then we cast the generic widget
     // state as a CheckboxState, so we can access all its fields. Then we check the 'active' field.
     let enabled = context.state_tree
-        .get_by_path(&context.widget_path).as_checkbox().get_active();
+        .get(&context.widget_path).as_checkbox().get_active();
     // Now we will create a text and a color depending on whether the checkbox was turned on or off
     let text = if enabled {"Enabled"} else {"Disabled"};
     let color = if enabled {Color::Green} else {Color::Red};
     // Next we will retrieve a label widget state and change the text and color field. This will
     // cause the text to change on the next frame.
     let label_state = context.state_tree
-        .get_by_id_mut("checkbox_label").as_label_mut();
+        .get_mut("checkbox_label").as_label_mut();
     label_state.get_text_mut().set(text.to_string());
     label_state.get_color_config_mut().set_fg_color(color);
     false
@@ -184,7 +185,7 @@ fn test_slider_on_value_change(context: EzContext) -> bool {
     // First we get the widget state object of the widget that changed value, using the 'widget_path'
     // parameter as a key. The state contains the current value.
     let state = context.state_tree
-        .get_by_path(&context.widget_path).as_slider();
+        .get(&context.widget_path).as_slider();
     let value = state.get_value();
     // Now we will create a text and a color depending on whether the checkbox was turned on or off
     let text = value.to_string();
@@ -195,7 +196,7 @@ fn test_slider_on_value_change(context: EzContext) -> bool {
     // Next we will retrieve a label widget state and change the text and color field. This will
     // cause the text to change on the next frame.
     let label_state = context.state_tree
-        .get_by_id_mut("slider_label").as_label_mut();
+        .get_mut("slider_label").as_label_mut();
     label_state.get_text_mut().set(text);
     label_state.get_color_config_mut().set_fg_color(color);
     label_state.update(context.scheduler);
@@ -214,14 +215,14 @@ fn test_radio_button_on_value_change(context: EzContext) -> bool {
     // We don't use the state of the widget in this callback to check whether it is active,
     // because a radio button only calls on_value_change if it became active.
     let name = context.state_tree
-        .get_by_path(&context.widget_path).as_radio_button().get_id();
+        .get(&context.widget_path).as_radio_button().get_id();
     // Now we will get the radio button state because we need to know its' color.
     let color = context.state_tree
-        .get_by_path(&context.widget_path).as_radio_button().get_color_config().get_fg_color();
+        .get(&context.widget_path).as_radio_button().get_color_config().get_fg_color();
     // Next we will retrieve a label widget and change the 'text' field of its' state to the ID of
     // the radio button that became active. This will cause the text to change on the next frame.
     let label_state = context.state_tree
-        .get_by_id_mut("radio_label").as_label_mut();
+        .get_mut("radio_label").as_label_mut();
     label_state.get_text_mut().set(name);
     label_state.get_color_config_mut().set_fg_color(color);
     false
@@ -234,11 +235,11 @@ fn test_dropdown_on_value_change(context: EzContext) -> bool {
     // parameter as a key. The state contains the current value. Then we cast the generic widget
     // state as a DropdownState, so we can access all its fields.
     let value = context.state_tree
-        .get_by_path(&context.widget_path).as_dropdown().get_choice();
+        .get(&context.widget_path).as_dropdown().get_choice();
     // Next we will retrieve a label widget and change the 'text' field of its' state. This will
     // cause the text to change on the next frame.
     context.state_tree
-        .get_by_id_mut("dropdown_label").as_label_mut().get_text_mut().set(value);
+        .get_mut("dropdown_label").as_label_mut().get_text_mut().set(value);
     false
 }
 
@@ -251,7 +252,7 @@ fn test_text_input_on_keyboard_enter(context: EzContext) -> bool {
     // parameter as a key. The state contains the current value. Then we cast the generic widget
     // state as a TextInputState, so we can access all its fields.
     let text_input_state = context.state_tree
-        .get_by_path_mut(&context.widget_path).as_text_input_mut();
+        .get_mut(&context.widget_path).as_text_input_mut();
     let value = text_input_state.get_text();
     // Now we will set the selected field of the text input state to false. This will deselect the
     // widget on the next frame.
@@ -259,7 +260,7 @@ fn test_text_input_on_keyboard_enter(context: EzContext) -> bool {
     // Next we will retrieve a label widget and change the 'text' field of its' state. This will
     // cause the text to change on the next frame.
     context.state_tree
-        .get_by_id_mut("input_3_label")
+        .get_mut("input_3_label")
         .as_label_mut().get_text_mut().set(format!("{} CONFIRMED", value));
     false
 }
@@ -271,7 +272,7 @@ fn test_on_button_press(context: EzContext) -> bool {
     // We will retrieve a label widget and change the 'text' field of its' state. This will
     // cause the text to change on the next frame.
     let label_state = context.state_tree
-        .get_by_id_mut("button_label")
+        .get_mut("button_label")
         .as_label_mut();
     let number: usize =
         label_state.get_text().split_once(':')
@@ -296,10 +297,7 @@ fn test_popup_button_on_press(context: EzContext) -> bool {
     // a delay. We will bind the delaying function to the dismiss button.
     let dismiss =
         move |context: EzContext| {
-            let state =
-                context.state_tree.get_by_path_mut("/root").as_layout_mut();
-            state.dismiss_modal(context.scheduler);
-            state.update(context.scheduler);
+            context.scheduler.dismiss_modal(context.state_tree);
         };
     let dismiss_delay =
         move |context: EzContext| {
@@ -309,7 +307,7 @@ fn test_popup_button_on_press(context: EzContext) -> bool {
         };
 
     context.scheduler.update_callback_config(
-        format!("dismiss_button").as_str(),
+        "dismiss_button",
         CallbackConfig::from_on_press(Box::new(dismiss_delay)));
     false
 }
@@ -319,13 +317,13 @@ fn test_popup_button_on_press(context: EzContext) -> bool {
 fn progress_bar_button(context: EzContext) -> bool {
 
     // We disable the progress bar button first so it cannot be pressed twice.
-    let state = context.state_tree.get_by_path_mut(&context.widget_path)
+    let state = context.state_tree.get_mut(&context.widget_path)
         .as_generic_mut();
     state.set_disabled(true);
     state.update(context.scheduler);
     context.scheduler.schedule_threaded(Box::new(progress_example_app),
         Some(Box::new(move |context: EzContext| {
-            let state = context.state_tree.get_by_id_mut("progress_button")
+            let state = context.state_tree.get_mut("progress_button")
                 .as_generic_mut();
             state.set_disabled(false);
             state.update(context.scheduler);

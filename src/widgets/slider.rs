@@ -52,7 +52,7 @@ impl Slider {
         self.state.set_step(load_usize_property(
             parameter_value.trim(), scheduler, self.path.clone(),
                 Box::new(move |state_tree: &mut StateTree, val: EzValues| {
-                    let state = state_tree.get_by_path_mut(&path)
+                    let state = state_tree.get_mut(&path)
                         .as_slider_mut();
                     state.set_step(val.as_usize());
                     path.clone()
@@ -66,7 +66,7 @@ impl Slider {
         self.state.set_min(load_usize_property(
             parameter_value.trim(), scheduler, self.path.clone(),
             Box::new(move |state_tree: &mut StateTree, val: EzValues| {
-                let state = state_tree.get_by_path_mut(&path)
+                let state = state_tree.get_mut(&path)
                     .as_slider_mut();
                 state.set_min(val.as_usize());
                 path.clone()
@@ -80,7 +80,7 @@ impl Slider {
         self.state.set_max(load_usize_property(
             parameter_value.trim(), scheduler, self.path.clone(),
             Box::new(move |state_tree: &mut StateTree, val: EzValues| {
-                let state = state_tree.get_by_path_mut(&path)
+                let state = state_tree.get_mut(&path)
                     .as_slider_mut();
                 state.set_max(val.as_usize());
                 path.clone()
@@ -94,7 +94,7 @@ impl Slider {
         self.state.set_value(load_usize_property(
             parameter_value.trim(), scheduler, self.path.clone(),
             Box::new(move |state_tree: &mut StateTree, val: EzValues| {
-                let state = state_tree.get_by_path_mut(&path)
+                let state = state_tree.get_mut(&path)
                     .as_slider_mut();
                 state.set_value(val.as_usize());
                 path.clone()
@@ -123,13 +123,13 @@ impl EzObject for Slider {
         Ok(())
     }
 
-    fn set_id(&mut self, id: String) { self.id = id }
+    fn set_id(&mut self, id: &str) { self.id = id.to_string() }
 
     fn get_id(&self) -> String { self.id.clone() }
 
-    fn set_full_path(&mut self, path: String) { self.path = path }
+    fn set_path(&mut self, id: &str) { self.id = id.to_string() }
 
-    fn get_full_path(&self) -> String { self.path.clone() }
+    fn get_path(&self) -> String { self.path.clone() }
 
     fn get_state(&self) -> EzState { EzState::Slider(self.state.clone()) }
 
@@ -137,7 +137,7 @@ impl EzObject for Slider {
 
     fn get_contents(&self, state_tree: &mut StateTree) -> PixelMap {
 
-        let state = state_tree.get_by_path_mut(&self.get_full_path())
+        let state = state_tree.get_mut(&self.get_path())
             .as_slider_mut();
 
         if state.get_effective_size().width == 0 { return PixelMap::new() }
@@ -174,8 +174,8 @@ impl EzObject for Slider {
                 fg_color, bg_color)));
         }
 
-        let state = state_tree.get_by_path(&self.get_full_path()).as_slider();
-        let parent_colors = state_tree.get_by_path(self.get_full_path()
+        let state = state_tree.get(&self.get_path()).as_slider();
+        let parent_colors = state_tree.get(self.get_path()
             .rsplit_once('/').unwrap().0).as_generic().get_color_config();
         contents = add_padding(
             contents, state.get_padding(), parent_colors.get_bg_color(),
@@ -194,13 +194,13 @@ impl EzObject for Slider {
                 self.handle_right(state_tree, callback_tree, scheduler);
                 return true
             }
-            else if callback_tree.get_by_path(&self.get_full_path())
-                .keymap.contains_key(&key.code) {
+            else if callback_tree.get(&self.get_path())
+                .obj.keymap.contains_key(&key.code) {
                 let func =
-                    callback_tree.get_by_path_mut(&self.get_full_path())
-                        .keymap.get_mut(&key.code).unwrap();
+                    callback_tree.get_mut(&self.get_path())
+                        .obj.keymap.get_mut(&key.code).unwrap();
                 let context = EzContext::new(
-                    self.get_full_path(), state_tree, scheduler);
+                    self.get_path(), state_tree, scheduler);
                 func(context, key.code);
                 return true
             }
@@ -213,7 +213,7 @@ impl EzObject for Slider {
 
         let consumed = self.on_press_callback(state_tree, callback_tree, scheduler);
         if consumed { return consumed}
-        let state = state_tree.get_by_path_mut(&self.path).as_slider_mut();
+        let state = state_tree.get_mut(&self.path).as_slider_mut();
         let value = self.value_from_mouse_pos(state, mouse_pos);
         state.set_value(value);
         state.update(scheduler);
@@ -237,7 +237,7 @@ impl EzObject for Slider {
         let consumed = self.on_drag_callback(state_tree, callback_tree, scheduler,
                                              previous_pos, mouse_pos);
         if consumed { return consumed}
-        let state = state_tree.get_by_path_mut(&self.path).as_slider_mut();
+        let state = state_tree.get_mut(&self.path).as_slider_mut();
         let value = self.value_from_mouse_pos(state, mouse_pos);
         state.set_value(value);
         state.update(scheduler);
@@ -278,7 +278,7 @@ impl Slider {
     fn handle_left(&self, state_tree: &mut StateTree, callback_tree: &mut CallbackTree,
                    scheduler: &mut SchedulerFrontend) {
 
-        let state = state_tree.get_by_path_mut(&self.path).as_slider_mut();
+        let state = state_tree.get_mut(&self.path).as_slider_mut();
         if state.get_value() == state.get_min() { return }
         state.set_value(state.get_value() - state.get_step());
         state.update(scheduler);
@@ -287,7 +287,7 @@ impl Slider {
     fn handle_right(&self, state_tree: &mut StateTree, callback_tree: &mut CallbackTree,
                     scheduler: &mut SchedulerFrontend) {
 
-        let state = state_tree.get_by_path_mut(&self.path).as_slider_mut();
+        let state = state_tree.get_mut(&self.path).as_slider_mut();
         if state.get_value() == state.get_max() { return }
         state.set_value(state.get_value() + state.get_step());
         state.update(scheduler);

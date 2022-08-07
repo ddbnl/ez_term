@@ -77,7 +77,7 @@ impl EzObject for TextInput {
                 self.state.set_text(load_string_property(
                     parameter_value.trim(), scheduler, path.clone(),
                     Box::new(move |state_tree: &mut StateTree, val: EzValues| {
-                        let state = state_tree.get_by_path_mut(&path)
+                        let state = state_tree.get_mut(&path)
                             .as_text_input_mut();
                         state.set_text(val.as_string().clone());
                         path.clone()
@@ -90,13 +90,13 @@ impl EzObject for TextInput {
         }
         Ok(())
     }
-    fn set_id(&mut self, id: String) { self.id = id }
+    fn set_id(&mut self, id: &str) { self.id = id.to_string() }
 
     fn get_id(&self) -> String { self.id.clone() }
 
-    fn set_full_path(&mut self, path: String) { self.path = path }
+    fn set_path(&mut self, id: &str) { self.id = id.to_string() }
 
-    fn get_full_path(&self) -> String { self.path.clone() }
+    fn get_path(&self) -> String { self.path.clone() }
 
     fn get_state(&self) -> EzState { EzState::TextInput(self.state.clone()) }
     
@@ -105,7 +105,7 @@ impl EzObject for TextInput {
     fn get_contents(&self, state_tree: &mut StateTree) -> PixelMap {
 
         let state = state_tree
-            .get_by_path_mut(&self.get_full_path()).as_text_input_mut();
+            .get_mut(&self.get_path()).as_text_input_mut();
         let (fg_color, bg_color) = state.get_context_colors();
         let mut text = state.get_text();
         if text.len() > state.get_effective_size().width - 1 {
@@ -159,8 +159,8 @@ impl EzObject for TextInput {
             contents = add_border(
                 contents, state.get_border_config(), state.get_color_config());
         }
-        let state = state_tree.get_by_path(&self.get_full_path()).as_text_input();
-        let parent_colors = state_tree.get_by_path(self.get_full_path()
+        let state = state_tree.get(&self.get_path()).as_text_input();
+        let parent_colors = state_tree.get(self.get_path()
             .rsplit_once('/').unwrap().0).as_generic().get_color_config();
         contents = add_padding(
             contents, state.get_padding(), parent_colors.get_bg_color(),
@@ -171,7 +171,7 @@ impl EzObject for TextInput {
     fn handle_event(&self, event: Event, state_tree: &mut StateTree,
                     callback_tree: &mut CallbackTree, scheduler: &mut SchedulerFrontend) -> bool {
 
-        let state = state_tree.get_by_path_mut(&self.get_full_path())
+        let state = state_tree.get_mut(&self.get_path())
             .as_text_input_mut();
         let current_text = state.get_text().clone();
         if let Event::Key(key) = event {
@@ -227,8 +227,8 @@ impl EzObject for TextInput {
         let consumed = self.on_select_callback(state_tree, callback_tree, scheduler, mouse_pos);
         if consumed { return consumed}
 
-        let state = state_tree.get_by_path_mut(
-            &self.get_full_path()).as_text_input_mut();
+        let state = state_tree.get_mut(
+            &self.get_path()).as_text_input_mut();
         state.set_selected(true);
         state.update(scheduler);
         // Handle blinking of cursor
@@ -238,7 +238,7 @@ impl EzObject for TextInput {
             target_pos = Coordinates::new(pos.x, pos.y);
             if pos.x > state.get_text().len() { target_pos.x = state.get_text().len() };
             if !state.get_active_blink_task() {
-                start_cursor_blink(target_pos, state, scheduler,self.get_full_path());
+                start_cursor_blink(target_pos, state, scheduler,self.get_path());
             } else {
                 state.set_cursor_pos(target_pos);
                 state.set_blink_switch(true);
@@ -250,7 +250,7 @@ impl EzObject for TextInput {
             { state.get_effective_size().width - 1 } else { state.get_text().len() };
             target_pos = Coordinates::new(target_x, state.get_position().get_y());
             start_cursor_blink(target_pos, state, scheduler,
-                               self.get_full_path());
+                               self.get_path());
         }
         true
     }
@@ -320,7 +320,7 @@ impl TextInput {
     fn check_changed_text(&self, state_tree: &mut StateTree, callback_tree: &mut CallbackTree,
                           scheduler: &mut SchedulerFrontend, old_text: String) {
 
-        let state = state_tree.get_by_path(&self.path).as_text_input();
+        let state = state_tree.get(&self.path).as_text_input();
         if state.get_text() != old_text {
             self.on_value_change_callback(state_tree,callback_tree, scheduler);
         }
@@ -340,7 +340,7 @@ fn start_cursor_blink(target_pos: Coordinates, state: &mut TextInputState,
     let path = state.path.clone();
     let mut counter = 3;
     let blink_func = move | context: EzContext | {
-        let state = context.state_tree.get_by_path_mut(&path.clone())
+        let state = context.state_tree.get_mut(&path.clone())
             .as_text_input_mut();
         if !state.get_selected() {
             state.set_blink_switch(false);

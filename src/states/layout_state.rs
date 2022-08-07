@@ -1,17 +1,16 @@
 use std::collections::HashMap;
 
-use crate::EzProperty;
+use crate::{EzObject, EzProperty};
 use crate::parser::ez_definition::Templates;
 use crate::property::ez_values::EzValues;
-use crate::run::definitions::{IsizeCoordinates, Size, StateTree};
-use crate::run::tree::initialize_state_tree;
+use crate::run::definitions::{IsizeCoordinates, Size};
 use crate::scheduler::scheduler::SchedulerFrontend;
 use crate::scheduler::scheduler_funcs::clean_up_property;
 use crate::states::definitions::{AutoScale, BorderConfig, ColorConfig, HorizontalAlignment,
                                  InfiniteSize, LayoutMode, LayoutOrientation, Padding, PosHint,
                                  ScrollingConfig, SizeHint, StateCoordinates, StateSize,
                                  TableConfig, VerticalAlignment};
-use crate::states::ez_state::GenericState;
+use crate::states::ez_state::{EzState, GenericState};
 use crate::widgets::ez_object::EzObjects;
 
 /// [State] implementation.
@@ -436,34 +435,34 @@ impl LayoutState {
     pub fn get_filler_symbol(&self) -> String { self.filler_symbol.value.clone() }
 
     /// Open a popup based on a template defined in the Ez file. Returns the state of the new popup
-    pub fn open_modal_from_template(&mut self, template: String, scheduler: &mut SchedulerFrontend)
-        -> (String, StateTree) {
+    pub fn open_modal_from_template(&mut self, template: String,
+                                    scheduler: &mut SchedulerFrontend) -> Vec<(String, EzState)> {
         let mut popup = self.templates.get(&template).unwrap().clone();
-        let init_popup = popup.parse(scheduler,"/modal".to_string(), 0,
-                                     None);
+        let config = vec!("id: modal".to_string());
+        let mut init_popup = popup.parse(scheduler,"/root".to_string(), 0,
+                                     Some(config));
         self.open_modal(init_popup)
     }
 
     /// Open a new modal. Returns the state of the new modal.
-    pub fn open_modal(&mut self, mut modal: EzObjects) -> (String, StateTree) {
-
-        if modal.as_ez_object().get_id().is_empty() {
-            modal.as_ez_object_mut().set_id("0".to_string());
-        }
-        let modal_path = format!("/modal/{}", modal.as_ez_object().get_id());
-        modal.as_ez_object_mut().set_full_path(modal_path.clone());
+    pub fn open_modal(&mut self, mut modal: EzObjects ) -> Vec<(String, EzState)> {
 
         // State tree must be appended with the new states
-        let mut extra_state_tree;
+        let mut extra_state_tree = Vec::new();
         if let EzObjects::Layout(ref mut i) = modal {
-            i.propagate_paths();
-            extra_state_tree = initialize_state_tree(i);
+            extra_state_tree.push((i.get_path(), i.get_state()));
+            for widget in i.get_widgets_recursive() {
+                let widget = widget.as_ez_object();
+                extra_state_tree.push((widget.get_path(), widget.get_state()));
+            }
+        } else if let EzObjects::DroppedDownMenu(ref mut i) = modal {
+            extra_state_tree.push((i.get_path(), i.get_state()));
         } else {
-            extra_state_tree = StateTree::new("state_tree".to_string());
-            extra_state_tree.insert(modal_path.clone(),modal.as_ez_object().get_state());
+            panic!("Modal must be spawned from a Layout (template)")
         }
         self.open_modal = Some(Box::new(modal));
-        (modal_path, extra_state_tree)
+        extra_state_tree.reverse();
+        extra_state_tree
     }
     
     /// Dismiss the current modal
@@ -478,14 +477,14 @@ impl LayoutState {
     pub fn set_can_drag(&mut self, can_drag: bool) { self.can_drag.set(can_drag); }
 
     pub fn get_can_drag(&self) -> bool { self.can_drag.value }
+
+    pub fn has_modal(&self) -> bool { self.open_modal.is_some() }
     
     /// Get reference to all open modals
-    pub fn get_modal(&self) -> &Option<Box<EzObjects>> { &self.open_modal }
-    
-    /// Get mutable reference to all open modals
-    pub fn get_modal_mut(&mut self) -> &mut Option<Box<EzObjects>> {
-        &mut self.open_modal
-    }
+    pub fn get_modal(&self) -> &EzObjects { self.open_modal.as_ref().unwrap() }
+
+    /// Get reference to all open modals
+    pub fn get_modal_mut(&mut self) -> &mut EzObjects { self.open_modal.as_mut().unwrap() }
 
     /// Set templates. Used by [ez_parser] on the root layout to keep a hold of all templates
     /// defined by the user. They can be used to instantiate e.g. popups at runtime.

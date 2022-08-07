@@ -53,7 +53,7 @@ impl Checkbox {
         self.state.set_active(load_bool_property(
             parameter_value.trim(), scheduler, path.clone(),
             Box::new(move |state_tree: &mut StateTree, val: EzValues| {
-                let state = state_tree.get_by_path_mut(&path).as_checkbox_mut();
+                let state = state_tree.get_mut(&path).as_checkbox_mut();
                 state.set_active(val.as_bool().to_owned());
                 path.clone()
             }))?);
@@ -67,7 +67,7 @@ impl Checkbox {
         self.state.set_active_symbol(load_string_property(
             parameter_value.trim(), scheduler, path.clone(),
             Box::new(move |state_tree: &mut StateTree, val: EzValues| {
-                let state = state_tree.get_by_path_mut(&path).as_checkbox_mut();
+                let state = state_tree.get_mut(&path).as_checkbox_mut();
                 state.set_active_symbol(val.as_string().to_owned());
                 path.clone()
             }))?);
@@ -81,7 +81,7 @@ impl Checkbox {
         self.state.set_inactive_symbol(load_string_property(
             parameter_value.trim(), scheduler, path.clone(),
             Box::new(move |state_tree: &mut StateTree, val: EzValues| {
-                let state = state_tree.get_by_path_mut(&path).as_checkbox_mut();
+                let state = state_tree.get_mut(&path).as_checkbox_mut();
                 state.set_inactive_symbol(val.as_string().to_owned());
                 path.clone()
             }))?);
@@ -111,13 +111,13 @@ impl EzObject for Checkbox {
         Ok(())
     }
 
-    fn set_id(&mut self, id: String) { self.id = id }
+    fn set_id(&mut self, id: &str) { self.id = id.to_string() }
 
     fn get_id(&self) -> String { self.id.clone() }
 
-    fn set_full_path(&mut self, path: String) { self.path = path }
+    fn set_path(&mut self, id: &str) { self.id = id.to_string() }
 
-    fn get_full_path(&self) -> String { self.path.clone() }
+    fn get_path(&self) -> String { self.path.clone() }
 
     fn get_state(&self) -> EzState { EzState::Checkbox(self.state.clone()) }
 
@@ -125,7 +125,7 @@ impl EzObject for Checkbox {
 
     fn get_contents(&self, state_tree: &mut StateTree) -> PixelMap {
 
-        let state = state_tree.get_by_path_mut(&self.get_full_path())
+        let state = state_tree.get_mut(&self.get_path())
             .as_checkbox_mut();
         state.set_width(5);
         state.set_height(1);
@@ -189,7 +189,7 @@ impl Checkbox {
     fn handle_toggle(&self, state_tree: &mut StateTree, callback_tree: &mut CallbackTree,
                      scheduler: &mut SchedulerFrontend) {
 
-        let state = state_tree.get_by_path_mut(&self.get_full_path())
+        let state = state_tree.get_mut(&self.get_path())
             .as_checkbox_mut();
         state.set_active(!state.get_active());
         state.update(scheduler);

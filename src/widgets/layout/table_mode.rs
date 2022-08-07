@@ -14,7 +14,7 @@ impl Layout{
     /// own [height] for each.
     pub fn get_table_mode_contents(&self, state_tree: &mut StateTree) -> PixelMap {
 
-        let state = state_tree.get_by_path_mut(&self.get_full_path()).as_layout();
+        let state = state_tree.get_mut(&self.get_path()).as_layout();
 
         let own_table_config = state.get_table_config().clone();
         let own_orientation = state.get_orientation().clone();
@@ -255,7 +255,7 @@ impl Layout{
 
             let generic_child = child.as_ez_object();
             let state = state_tree
-                .get_by_path_mut(&generic_child.get_full_path().clone()).as_generic_mut();
+                .get_mut(&generic_child.get_path().clone()).as_generic_mut();
 
             if infinite_size.get_width() || scrolling_config.get_scroll_x() {
                 state.get_infinite_size_mut().set_width(true);
@@ -274,7 +274,7 @@ impl Layout{
             }
 
             let child_content = generic_child.get_contents(state_tree);
-            let state = state_tree.get_by_path_mut(&generic_child.get_full_path())
+            let state = state_tree.get_mut(&generic_child.get_path())
                 .as_generic_mut(); // re-borrow
             if state.get_infinite_size().width {
                 state.get_size_mut().set_width(child_content.len())
@@ -310,9 +310,9 @@ impl Layout{
             write_pos.y = 0;
             for y in 0..rows {
                 if x >= child_table.len() || y >= child_table[x].len() { continue }
-                let state = state_tree.get_by_path_mut(
+                let state = state_tree.get_mut(
                     &self.children.get(child_table[x][y]).unwrap().as_ez_object()
-                        .get_full_path()).as_generic_mut();
+                        .get_path()).as_generic_mut();
                 let child_content =
                     std::mem::take(&mut content_list[child_table[x][y]]);
 

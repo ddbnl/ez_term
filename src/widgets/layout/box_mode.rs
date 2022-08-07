@@ -12,7 +12,7 @@ impl Layout{
     /// [get_box_mode_vertical_orientation_contents] depending on orientation
     pub fn get_box_mode_contents(&self, state_tree: &mut StateTree) -> PixelMap {
 
-        match state_tree.get_by_path(&self.path).as_layout().get_orientation() {
+        match state_tree.get(&self.path).as_layout().get_orientation() {
             LayoutOrientation::Horizontal => {
                 self.get_box_mode_horizontal_orientation_contents(state_tree)
             },
@@ -30,7 +30,7 @@ impl Layout{
     pub fn get_box_mode_horizontal_orientation_contents(&self, state_tree: &mut StateTree)
         -> PixelMap {
 
-        let state = state_tree.get_by_path_mut(&self.get_full_path()).as_layout();
+        let state = state_tree.get_mut(&self.get_path()).as_layout();
         let own_effective_size = state.get_effective_size();
         let own_infinite_size = state.get_infinite_size().clone();
         let own_colors = state.get_color_config().clone();
@@ -42,7 +42,7 @@ impl Layout{
 
             let generic_child = child.as_ez_object();
             let state = state_tree
-                .get_by_path_mut(&generic_child.get_full_path().clone()).as_generic_mut();
+                .get_mut(&generic_child.get_path().clone()).as_generic_mut();
 
             if own_infinite_size.width || own_scrolling.get_scroll_x() {
                 state.get_infinite_size_mut().set_width(true);
@@ -78,7 +78,7 @@ impl Layout{
             state.set_y(position.y);
             let child_content = generic_child.get_contents(state_tree);
             if child_content.is_empty() { continue }  // handle empty widget
-            let state = state_tree.get_by_path_mut(&generic_child.get_full_path())
+            let state = state_tree.get_mut(&generic_child.get_path())
                 .as_generic_mut(); // re-borrow
             if state.get_infinite_size().width {
                 state.get_size_mut().set_width(child_content.len())
@@ -92,7 +92,7 @@ impl Layout{
         }
 
         self.scale_to_largest_child(&content_list, state_tree);
-        let own_effective_size = state_tree.get_by_path_mut(&self.get_full_path())
+        let own_effective_size = state_tree.get_mut(&self.get_path())
             .as_layout().get_effective_size();
         let mut merged_content = PixelMap::new();
         for (i, content) in content_list.into_iter().enumerate() {
@@ -100,9 +100,9 @@ impl Layout{
                 merged_content, content,
                 own_effective_size.height,
                 own_infinite_size.height,own_colors.clone(),
-                state_tree.get_by_path_mut(
+                state_tree.get_mut(
                     &self.children.get(i).unwrap().as_ez_object()
-                    .get_full_path()).as_generic_mut());
+                    .get_path()).as_generic_mut());
         }
         merged_content
     }
@@ -113,7 +113,7 @@ impl Layout{
 
         // Some clones as we will need to borrow from state tree again later
 
-        let state = state_tree.get_by_path_mut(&self.get_full_path()).as_layout();
+        let state = state_tree.get_mut(&self.get_path()).as_layout();
         let own_effective_size = state.get_effective_size();
         let own_infinite_size = state.get_infinite_size().clone();
         let own_colors = state.get_color_config().clone();
@@ -125,7 +125,7 @@ impl Layout{
 
             let generic_child = child.as_ez_object();
             let child_state =
-                state_tree.get_by_path_mut(&generic_child.get_full_path()).as_generic_mut();
+                state_tree.get_mut(&generic_child.get_path()).as_generic_mut();
 
             // If we're scrolling on an axis then the child can be infinite size on that axis
             if own_infinite_size.width || own_scrolling.get_scroll_x() {
@@ -166,7 +166,7 @@ impl Layout{
             child_state.set_x(position.x);
             child_state.set_y(position.y);
             let child_content = generic_child.get_contents(state_tree);
-            let state = state_tree.get_by_path_mut(&generic_child.get_full_path())
+            let state = state_tree.get_mut(&generic_child.get_path())
                 .as_generic_mut(); // re-borrow
             if state.get_infinite_size().width {
                 state.get_size_mut().set_width(child_content.len())
@@ -179,7 +179,7 @@ impl Layout{
             content_list.push(child_content);
         }
         self.scale_to_largest_child(&content_list, state_tree);
-        let own_effective_size = state_tree.get_by_path_mut(&self.get_full_path())
+        let own_effective_size = state_tree.get_mut(&self.get_path())
             .as_layout().get_effective_size();
         let mut merged_content = PixelMap::new();
         for (i, content) in content_list.into_iter().enumerate() {
@@ -187,9 +187,9 @@ impl Layout{
                 merged_content, content,
                 own_effective_size.width, own_infinite_size.width,
                 own_colors.clone(),
-                state_tree.get_by_path_mut(
+                state_tree.get_mut(
                     &self.children.get(i).unwrap().as_ez_object()
-                    .get_full_path()).as_generic_mut());
+                    .get_path()).as_generic_mut());
         }
         merged_content
     }

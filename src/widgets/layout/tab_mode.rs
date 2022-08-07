@@ -14,12 +14,12 @@ impl Layout {
         for child in self.children.iter().rev() {
             if let EzObjects::Button(ref widget) = child {
                 if next_button {
-                    let state = state_tree.get_by_path_mut(&self.path)
+                    let state = state_tree.get_mut(&self.path)
                         .as_layout_mut();
                     state.set_selected_tab_header(widget.id.clone());
                     state.update(scheduler);
                     return
-                } else if state_tree.get_by_path(&self.path).as_layout()
+                } else if state_tree.get(&self.path).as_layout()
                     .get_selected_tab_header() == widget.id {
                     next_button = true;
                 }
@@ -33,13 +33,13 @@ impl Layout {
         for child in self.children.iter() {
             if let EzObjects::Button(ref widget) = child {
                 if next_button {
-                    let state = state_tree.get_by_path_mut(&self.path)
+                    let state = state_tree.get_mut(&self.path)
                         .as_layout_mut();
                     state.set_selected_tab_header(widget.id.clone());
                     state.update(scheduler);
                     return
                 } else if state_tree
-                    .get_by_path(&self.path).as_layout().get_selected_tab_header() == widget.id {
+                    .get(&self.path).as_layout().get_selected_tab_header() == widget.id {
                     next_button = true;
                 }
             }
@@ -50,10 +50,10 @@ impl Layout {
 
         for child in self.children.iter() {
             if let EzObjects::Layout(i) = child {
-                let tab_name = state_tree.get_by_path(&child.as_ez_object()
-                    .get_full_path()).as_layout().get_tab_name();
+                let tab_name = state_tree.get(&child.as_ez_object()
+                    .get_path()).as_layout().get_tab_name();
                 if name == tab_name {
-                    return i.get_full_path()
+                    return i.get_path()
                 }
             }
         }
@@ -63,7 +63,7 @@ impl Layout {
     pub fn get_tab_mode_contents(&self, state_tree: &mut StateTree) -> PixelMap {
 
         if self.children.is_empty() { return PixelMap::new() }
-        let state = state_tree.get_by_path_mut(&self.path).as_layout_mut();
+        let state = state_tree.get_mut(&self.path).as_layout_mut();
         let own_infinite_size = state.get_infinite_size().clone();
         let own_effective_size = state.get_effective_size();
         let own_pos = state.get_effective_absolute_position();
@@ -71,7 +71,7 @@ impl Layout {
         let selection = state.get_selected_tab_header().clone();
         if state.get_active_tab().is_empty() {
             if !self.children.is_empty() {
-                let new_active_tab = &self.children[0].as_ez_object().get_full_path();
+                let new_active_tab = &self.children[0].as_ez_object().get_path();
                 state.set_active_tab(&new_active_tab);
             } else {
                 return PixelMap::new()
@@ -86,9 +86,9 @@ impl Layout {
         let mut selected_width: usize = 0;
         for child in self.get_children() {
             if let EzObjects::Layout(i) = child {
-                if i.get_full_path() != active_tab { continue }
+                if i.get_path() != active_tab { continue }
                 let child_state = state_tree
-                    .get_by_path_mut(&child.as_ez_object().get_full_path()).as_layout_mut();
+                    .get_mut(&child.as_ez_object().get_path()).as_layout_mut();
                 child_state.set_effective_height(
                     if own_effective_size.height >= 3 { own_effective_size.height - 3} else {0});
                 child_state.set_effective_width(
@@ -105,13 +105,13 @@ impl Layout {
             } else if let EzObjects::Button(i) = child {
 
                 let child_state=
-                    state_tree.get_by_path_mut(&i.path).as_button_mut();
+                    state_tree.get_mut(&i.path).as_button_mut();
 
                 let tab_text = child_state.get_text();
                 let tab_path =
                     self.resolve_tab_name(&tab_text, state_tree);
                 let child_state=
-                    state_tree.get_by_path_mut(&i.path).as_button_mut();
+                    state_tree.get_mut(&i.path).as_button_mut();
                 child_state.set_disabled(
                     if active_tab == tab_path {
                         true
@@ -143,7 +143,7 @@ impl Layout {
                 child_state.set_y(0);
                 let content = i.get_contents(state_tree);
                 let child_state = state_tree
-                    .get_by_path_mut(&i.path).as_button_mut();
+                    .get_mut(&i.path).as_button_mut();
                 let mut custom_size = own_effective_size;
                 custom_size.width -= 1;
                 custom_size.height = 3;
@@ -184,7 +184,7 @@ impl Layout {
             for child in self.children.iter() {
                 if let EzObjects::Button(button) = child {
                     let state = state_tree
-                        .get_by_path_mut(&button.path).as_button_mut();
+                        .get_mut(&button.path).as_button_mut();
                     state.set_x(if state.get_position().get_x() >= difference
                     { state.get_position().get_x() - difference } else { 0 });
                     state.set_absolute_position(IsizeCoordinates::new(
@@ -202,7 +202,7 @@ impl Layout {
             button_content.push(row);
         }
 
-        let state = state_tree.get_by_path_mut(&self.path).as_layout_mut();
+        let state = state_tree.get_mut(&self.path).as_layout_mut();
         self.merge_vertical_contents(
             button_content,
             tab_content,

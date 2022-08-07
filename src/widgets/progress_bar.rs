@@ -48,7 +48,7 @@ impl ProgressBar {
         self.state.set_max(load_usize_property(
             parameter_value.trim(), scheduler,self.path.clone(),
             Box::new(move |state_tree: &mut StateTree, val: EzValues| {
-                    let state = state_tree.get_by_path_mut(&path)
+                    let state = state_tree.get_mut(&path)
                         .as_progress_bar_mut();
                     state.set_max(val.as_usize());
                     path.clone()
@@ -61,7 +61,7 @@ impl ProgressBar {
         self.state.set_value(load_usize_property(
                 parameter_value.trim(), scheduler,self.path.clone(),
                 Box::new(move |state_tree: &mut StateTree, val: EzValues| {
-                    let state = state_tree.get_by_path_mut(&path)
+                    let state = state_tree.get_mut(&path)
                         .as_progress_bar_mut();
                     state.set_value(val.as_usize());
                     path.clone()
@@ -89,13 +89,13 @@ impl EzObject for ProgressBar {
         Ok(())
     }
 
-    fn set_id(&mut self, id: String) { self.id = id }
+    fn set_id(&mut self, id: &str) { self.id = id.to_string() }
 
     fn get_id(&self) -> String { self.id.clone() }
 
-    fn set_full_path(&mut self, path: String) { self.path = path }
+    fn set_path(&mut self, id: &str) { self.id = id.to_string() }
 
-    fn get_full_path(&self) -> String { self.path.clone() }
+    fn get_path(&self) -> String { self.path.clone() }
 
     fn get_state(&self) -> EzState { EzState::ProgressBar(self.state.clone()) }
 
@@ -103,7 +103,7 @@ impl EzObject for ProgressBar {
 
     fn get_contents(&self, state_tree: &mut StateTree) -> PixelMap {
 
-        let state = state_tree.get_by_path_mut(&self.get_full_path())
+        let state = state_tree.get_mut(&self.get_path())
             .as_progress_bar_mut();
         state.set_height(1);
 
@@ -123,8 +123,8 @@ impl EzObject for ProgressBar {
                                 state.get_color_config());
         }
         let state = state_tree
-            .get_by_path(&self.get_full_path()).as_progress_bar();
-        let parent_colors = state_tree.get_by_path(self.get_full_path()
+            .get(&self.get_path()).as_progress_bar();
+        let parent_colors = state_tree.get(self.get_path()
             .rsplit_once('/').unwrap().0).as_generic().get_color_config();
         contents = add_padding(
             contents, state.get_padding(), parent_colors.get_bg_color(),

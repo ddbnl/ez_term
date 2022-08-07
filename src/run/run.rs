@@ -68,29 +68,21 @@ fn initialize_widgets(root_widget: &mut Layout, state_tree: &mut StateTree) -> V
 /// Support function for opening a popup. After opening the actual popup in the root layout the
 /// state tree is extended with the new modal widget state, and the same is done for the callback
 /// tree.
-pub fn open_and_register_modal(template: String, state_tree: &mut StateTree, scheduler: &mut SchedulerFrontend)
-                               -> String {
+pub fn open_and_register_modal(template: String, state_tree: &mut StateTree,
+                               scheduler: &mut SchedulerFrontend) {
 
-    let state = state_tree.get_by_path_mut("/root").as_layout_mut();
-    if state.get_modal().is_some() {
+    let state = state_tree.as_layout_mut();
+    if state.has_modal() {
         state.dismiss_modal(scheduler);
     }
     state.update(scheduler);
-    let (path, sub_tree) =
-        state.open_modal_from_template(template, scheduler);
-    state_tree.extend(sub_tree);
-    let state = state_tree.get_by_path_mut("/root").as_layout_mut();
-    scheduler.overwrite_callback_config(path.as_str(),
-                                        CallbackConfig::default());
-    if let Some(ref mut modal) = state.get_modal_mut() {
-        let modal = modal.as_layout_mut();
-        for sub_widget in modal.get_widgets_recursive().values() {
-            scheduler.overwrite_callback_config(
-                sub_widget.as_ez_object().get_full_path().as_str(),
-                CallbackConfig::default());
-        }
+    let mut new_states = state.open_modal_from_template(template, scheduler);
+    new_states.reverse();
+    for (path, new_state) in new_states {
+        state_tree.add_node(path.clone(), new_state);
+        scheduler.overwrite_callback_config(&path,
+                                            CallbackConfig::default());
     }
-    path
 }
 
 
@@ -196,7 +188,7 @@ fn run_loop(mut root_widget: Layout, mut state_tree: StateTree, mut callback_tre
             }
             // Try to let currently selected widget handle and consume the event
             if !consumed && !selected_widget.is_empty() &&
-                !state_tree.get_by_path(&selected_widget).as_generic().get_disabled() {
+                !state_tree.get(&selected_widget).as_generic().get_disabled() {
                 if let Some(widget) =
                 root_widget.get_child_by_path(&selected_widget) {
                     consumed = widget.as_ez_object().handle_event(
@@ -205,7 +197,7 @@ fn run_loop(mut root_widget: Layout, mut state_tree: StateTree, mut callback_tre
             }
             if !consumed {
                 if let Event::Resize(width, height) = event {
-                    let current_size = state_tree.get_by_path(&root_widget.path)
+                    let current_size = state_tree.get(&root_widget.path)
                         .as_generic().get_size();
                     if current_size.get_height() != height as usize ||
                         current_size.get_width() != width as usize {
@@ -231,7 +223,7 @@ fn run_loop(mut root_widget: Layout, mut state_tree: StateTree, mut callback_tre
         update_threads(&mut scheduler, &mut state_tree);
         update_properties(&mut scheduler, &mut state_tree, &mut callback_tree);
         // Update root widget state as it might contain new modals it need to access internally
-        root_widget.state = state_tree.get_by_path("/root").as_layout().clone();
+        root_widget.state = state_tree.as_layout().clone();
 
         // Redraw individual widgets or the entire screen in case of forced_redraw. If the entire
         // Screen is redrawn individual widgets are not redrawn.

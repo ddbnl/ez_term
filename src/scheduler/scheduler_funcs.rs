@@ -114,17 +114,21 @@ pub fn create_new_widgets(scheduler: &mut SchedulerFrontend, root_widget: &mut L
 
     let widgets_to_create = scheduler.backend.widgets_to_create.clone();
     scheduler.backend.widgets_to_create.clear();
-    for (path, base_type, state) in widgets_to_create {
-        let (parent_path, id) = path.rsplit_once('/').unwrap();
+    for new_widget in widgets_to_create {
+        let widget_path = new_widget.as_ez_object().get_path();
+        let (parent_path, id) = widget_path.rsplit_once('/').unwrap();
+
         let parent = root_widget.get_child_by_path_mut(parent_path).unwrap_or_else(
             || panic!("Could not create new widget, parent path does not exist: {}", parent_path)
         ).as_layout_mut();
-        let widget =
-            EzObjects::from_string(&base_type, path.to_string(),
-                                   id.to_string(), scheduler, state.clone());
-        parent.add_child(widget, scheduler);
-        state_tree.insert(path.clone(), state);
-        callback_tree.insert(path, CallbackConfig::default());
+        callback_tree.add_node(widget_path, CallbackConfig::default());
+        if let EzObjects::Layout(ref i) = new_widget {
+            for child in i.get_widgets_recursive() {
+                callback_tree.add_node(child.as_ez_object().get_path(),
+                                       CallbackConfig::default());
+            }
+        }
+        parent.add_child(new_widget, scheduler);
         scheduler.force_redraw();
     }
 }
@@ -135,17 +139,13 @@ pub fn update_callback_configs(scheduler: &mut SchedulerFrontend, callback_tree:
 
     while !scheduler.backend.new_callback_configs.is_empty() {
         let (path, callback_config) =
-            scheduler.backend.new_callback_configs.pop().unwrap();
-        callback_tree.insert(path, callback_config);
+            scheduler.backend.new_callback_configs.remove(0);
+        callback_tree.add_node(path, callback_config);
     }
     while !scheduler.backend.updated_callback_configs.is_empty() {
         let (path_or_id, callback_config) =
-            scheduler.backend.updated_callback_configs.pop().unwrap();
-        if path_or_id.contains('/') {
-            callback_tree.get_by_path_mut(&path_or_id).update_from(callback_config);
-        } else {
-            callback_tree.get_by_id_mut(&path_or_id).update_from(callback_config);
-        }
+            scheduler.backend.updated_callback_configs.remove(0);
+        callback_tree.get_mut(&path_or_id).obj.update_from(callback_config);
     }
 }
 
@@ -175,11 +175,11 @@ pub fn update_properties(scheduler: &mut SchedulerFrontend,
             if scheduler.backend.property_callbacks.contains(name) {
                 to_callback.push(name.clone());
             }
-            if name.starts_with("/root") || name.starts_with("/modal") {
+            if name.starts_with("/root") { // custom properties do not start with /root
                 let (widget_path, property_name) =
                     name.rsplit_once('/').unwrap();
                 let state =
-                    state_tree.get_by_path_mut(widget_path).as_generic_mut();
+                    state_tree.get_mut(widget_path).as_generic_mut();
                 if state.update_property(property_name, val) {
                     to_update.push(state.get_path().clone());
                 }
@@ -187,7 +187,7 @@ pub fn update_properties(scheduler: &mut SchedulerFrontend,
         }
     }
     for name in to_callback {
-        for callback in callback_tree.get_by_path_mut(&name)
+        for callback in callback_tree.get_mut(&name).obj
                 .property_callbacks.iter_mut() {
             let context = EzContext::new(name.to_string(), state_tree, scheduler);
             callback(context);
@@ -201,7 +201,7 @@ pub fn update_properties(scheduler: &mut SchedulerFrontend,
 /// Take new property callbacks and add them to the existing callback config in the callback tree
 pub fn add_property_callbacks(scheduler: &mut SchedulerFrontend, callback_tree: &mut CallbackTree) {
     for (name, callback) in scheduler.backend.new_property_callbacks.pop() {
-        callback_tree.get_by_path_mut(&name).property_callbacks.push(callback);
+        callback_tree.get_mut(&name).obj.property_callbacks.push(callback);
     }
 
 }

@@ -53,7 +53,7 @@ impl Button {
         self.state.set_text(load_string_property(
             parameter_value.trim(), scheduler, self.path.clone(),
             Box::new(move |state_tree: &mut StateTree, val: EzValues| {
-                let state = state_tree.get_by_path_mut(&path)
+                let state = state_tree.get_mut(&path)
                     .as_button_mut();
                 state.set_text(val.as_string().clone());
                 path.clone()
@@ -82,13 +82,13 @@ impl EzObject for Button {
     }
 
 
-    fn set_id(&mut self, id: String) { self.id = id }
+    fn set_id(&mut self, id: &str) { self.id = id.to_string() }
 
     fn get_id(&self) -> String { self.id.clone() }
 
-    fn set_full_path(&mut self, path: String) { self.path = path }
+    fn set_path(&mut self, id: &str) { self.id = id.to_string() }
 
-    fn get_full_path(&self) -> String { self.path.clone() }
+    fn get_path(&self) -> String { self.path.clone() }
 
     fn get_state(&self) -> EzState { EzState::Button(self.state.clone()) }
 
@@ -96,7 +96,7 @@ impl EzObject for Button {
 
     fn get_contents(&self, state_tree: &mut StateTree) -> PixelMap {
 
-        let state = state_tree.get_by_path_mut(&self.get_full_path())
+        let state = state_tree.get_mut(&self.get_path())
             .as_button_mut();
 
         let (fg_color, bg_color) =
@@ -143,8 +143,8 @@ impl EzObject for Button {
             state.get_effective_size().height, fg_color, bg_color);
         contents = add_border(
             contents, state.get_border_config(), state.get_color_config());
-        let state = state_tree.get_by_path(&self.get_full_path()).as_button();
-        let parent_colors = state_tree.get_by_path(self.get_full_path()
+        let state = state_tree.get(&self.get_path()).as_button();
+        let parent_colors = state_tree.get(self.get_path()
             .rsplit_once('/').unwrap().0).as_generic().get_color_config();
         contents = add_padding(
             contents, state.get_padding(), parent_colors.get_bg_color(),
@@ -184,19 +184,19 @@ impl Button {
 
     pub fn handle_on_press(&self, state_tree: &mut StateTree, scheduler: &mut SchedulerFrontend) {
 
-        let state = state_tree.get_by_path_mut(&self.get_full_path()).as_button_mut();
+        let state = state_tree.get_mut(&self.get_path()).as_button_mut();
         state.set_flashing(true);
         state.update(scheduler);
         let path = self.path.clone();
         let scheduled_func =
             move | context: EzContext | {
-                if !context.state_tree.objects.contains_key(path.as_str()) { return }
-                let state = context.state_tree.get_by_path_mut(path.as_str())
+                if !context.state_tree.contains(path.as_str()) { return }
+                let state = context.state_tree.get_mut(path.as_str())
                     .as_button_mut();
                 state.set_flashing(false);
                 state.update(context.scheduler);
             };
-        scheduler.schedule_once(self.get_full_path().as_str(),Box::new(scheduled_func),
-                                        Duration::from_millis(50));
+        scheduler.schedule_once(self.get_path().as_str(), Box::new(scheduled_func),
+                                Duration::from_millis(50));
     }
 }

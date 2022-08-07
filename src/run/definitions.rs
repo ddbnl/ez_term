@@ -119,7 +119,7 @@ pub type PixelMap = Vec<Vec<Pixel>>;
 /// widget, such as the text of a label, or whether a checkbox is currently checked. Callbacks
 /// receive a mutable reference to the widget state and can change what they need. If update is
 /// called on the widget, the new state will be drawn on screen on the next frame.
-pub type StateTree = Tree<EzState>;
+pub type StateTree= Tree<EzState>;
 
 
 /// A wrapper around a <WidgetPath, [CallbackConfig]> HashMap. Can be used to access callbacks

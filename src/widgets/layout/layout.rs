@@ -50,7 +50,8 @@ impl Layout {
         }
     }
 
-    pub fn from_state(id: String, path: String, _scheduler: &mut SchedulerFrontend, state: EzState) -> Self {
+    pub fn from_state(id: String, path: String, _scheduler: &mut SchedulerFrontend,
+                      state: EzState) -> Self {
         Layout {
             id,
             path: path.clone(),
@@ -67,7 +68,7 @@ impl Layout {
         self.state.set_mode(load_layout_mode_property(
             parameter_value.trim(), scheduler, path.clone(),
             Box::new(move |state_tree: &mut StateTree, val: EzValues| {
-                let state = state_tree.get_by_path_mut(&path)
+                let state = state_tree.get_mut(&path)
                     .as_layout_mut();
                 state.set_mode(val.as_layout_mode().to_owned());
                 path.clone()
@@ -82,7 +83,7 @@ impl Layout {
         self.state.set_orientation(load_layout_orientation_property(
             parameter_value.trim(), scheduler, path.clone(),
             Box::new(move |state_tree: &mut StateTree, val: EzValues| {
-                let state = state_tree.get_by_path_mut(&path)
+                let state = state_tree.get_mut(&path)
                     .as_layout_mut();
                 state.set_orientation(val.as_layout_orientation().to_owned());
                 path.clone()
@@ -97,7 +98,7 @@ impl Layout {
         self.state.set_active_tab(&load_string_property(
             parameter_value.trim(), scheduler, path.clone(),
             Box::new(move |state_tree: &mut StateTree, val: EzValues| {
-                let state = state_tree.get_by_path_mut(&path)
+                let state = state_tree.get_mut(&path)
                     .as_layout_mut();
                 state.set_active_tab(&val.as_string());
                 path.clone()
@@ -112,7 +113,7 @@ impl Layout {
         self.state.set_tab_name(&load_string_property(
             parameter_value.trim(), scheduler, path.clone(),
             Box::new(move |state_tree: &mut StateTree, val: EzValues| {
-                let state = state_tree.get_by_path_mut(&path)
+                let state = state_tree.get_mut(&path)
                     .as_layout_mut();
                 state.set_tab_name(&val.as_string());
                 path.clone()
@@ -127,7 +128,7 @@ impl Layout {
         self.state.set_active_screen(&load_string_property(
             parameter_value.trim(), scheduler, path.clone(),
             Box::new(move |state_tree: &mut StateTree, val: EzValues| {
-                let state = state_tree.get_by_path_mut(&path)
+                let state = state_tree.get_mut(&path)
                     .as_layout_mut();
                 state.set_active_screen(&val.as_string());
                 path.clone()
@@ -142,7 +143,7 @@ impl Layout {
         self.state.set_fill(load_bool_property(
             parameter_value.trim(), scheduler, path.clone(),
             Box::new(move |state_tree: &mut StateTree, val: EzValues| {
-                let state = state_tree.get_by_path_mut(&path)
+                let state = state_tree.get_mut(&path)
                     .as_layout_mut();
                 state.set_fill(val.as_bool().to_owned());
                 path.clone()
@@ -157,7 +158,7 @@ impl Layout {
         self.state.set_filler_symbol(load_string_property(
             parameter_value.trim(), scheduler, path.clone(),
             Box::new(move |state_tree: &mut StateTree, val: EzValues| {
-                let state = state_tree.get_by_path_mut(&path)
+                let state = state_tree.get_mut(&path)
                     .as_layout_mut();
                 state.set_filler_symbol(val.as_string().to_owned());
                 path.clone()
@@ -172,7 +173,7 @@ impl Layout {
         self.state.get_scrolling_config_mut().set_scroll_x(load_bool_property(
             parameter_value.trim(), scheduler, path.clone(),
             Box::new(move |state_tree: &mut StateTree, val: EzValues| {
-                let state = state_tree.get_by_path_mut(&path)
+                let state = state_tree.get_mut(&path)
                     .as_layout_mut();
                 state.get_scrolling_config_mut().set_scroll_x(val.as_bool().to_owned());
                 path.clone()
@@ -187,7 +188,7 @@ impl Layout {
         self.state.get_scrolling_config_mut().set_scroll_y(load_bool_property(
             parameter_value.trim(), scheduler, path.clone(),
             Box::new(move |state_tree: &mut StateTree, val: EzValues| {
-                let state = state_tree.get_by_path_mut(&path)
+                let state = state_tree.get_mut(&path)
                     .as_layout_mut();
                 state.get_scrolling_config_mut().set_scroll_y(val.as_bool().to_owned());
                 path.clone()
@@ -202,7 +203,7 @@ impl Layout {
         self.state.get_scrolling_config_mut().set_view_start_x(load_f64_property(
             parameter_value.trim(), scheduler, path.clone(),
             Box::new(move |state_tree: &mut StateTree, val: EzValues| {
-                let state = state_tree.get_by_path_mut(&path)
+                let state = state_tree.get_mut(&path)
                     .as_layout_mut();
                 state.get_scrolling_config_mut().set_view_start_x(val.as_f64().to_owned());
                 path.clone()
@@ -217,7 +218,7 @@ impl Layout {
         self.state.get_scrolling_config_mut().set_view_start_y(load_f64_property(
             parameter_value.trim(), scheduler, path.clone(),
             Box::new(move |state_tree: &mut StateTree, val: EzValues| {
-                let state = state_tree.get_by_path_mut(&path)
+                let state = state_tree.get_mut(&path)
                     .as_layout_mut();
                 state.get_scrolling_config_mut().set_view_start_y(val.as_f64().to_owned());
                 path.clone()
@@ -232,7 +233,7 @@ impl Layout {
         self.state.get_table_config_mut().set_rows(load_usize_property(
             parameter_value.trim(), scheduler, path.clone(),
             Box::new(move |state_tree: &mut StateTree, val: EzValues| {
-                let state = state_tree.get_by_path_mut(&path)
+                let state = state_tree.get_mut(&path)
                     .as_layout_mut();
                 state.get_table_config_mut().set_rows(val.as_usize().to_owned());
                 path.clone()
@@ -247,7 +248,7 @@ impl Layout {
         self.state.get_table_config_mut().set_cols(load_usize_property(
             parameter_value.trim(), scheduler, path.clone(),
             Box::new(move |state_tree: &mut StateTree, val: EzValues| {
-                let state = state_tree.get_by_path_mut(&path)
+                let state = state_tree.get_mut(&path)
                     .as_layout_mut();
                 state.get_table_config_mut().set_cols(val.as_usize().to_owned());
                 path.clone()
@@ -262,7 +263,7 @@ impl Layout {
         self.state.get_table_config_mut().set_row_default_height(load_usize_property(
             parameter_value.trim(), scheduler, path.clone(),
             Box::new(move |state_tree: &mut StateTree, val: EzValues| {
-                let state = state_tree.get_by_path_mut(&path)
+                let state = state_tree.get_mut(&path)
                     .as_layout_mut();
                 state.get_table_config_mut().set_row_default_height(val.as_usize().to_owned());
                 path.clone()
@@ -277,7 +278,7 @@ impl Layout {
         self.state.get_table_config_mut().set_col_default_width(load_usize_property(
             parameter_value.trim(), scheduler, path.clone(),
             Box::new(move |state_tree: &mut StateTree, val: EzValues| {
-                let state = state_tree.get_by_path_mut(&path)
+                let state = state_tree.get_mut(&path)
                     .as_layout_mut();
                 state.get_table_config_mut().set_col_default_width(val.as_usize().to_owned());
                 path.clone()
@@ -292,7 +293,7 @@ impl Layout {
         self.state.get_table_config_mut().set_force_default_row_height(load_bool_property(
             parameter_value.trim(), scheduler, path.clone(),
             Box::new(move |state_tree: &mut StateTree, val: EzValues| {
-                let state = state_tree.get_by_path_mut(&path)
+                let state = state_tree.get_mut(&path)
                     .as_layout_mut();
                 state.get_table_config_mut().set_force_default_row_height(val.as_bool().to_owned());
                 path.clone()
@@ -307,7 +308,7 @@ impl Layout {
         self.state.get_table_config_mut().set_force_default_col_width(load_bool_property(
             parameter_value.trim(), scheduler, path.clone(),
             Box::new(move |state_tree: &mut StateTree, val: EzValues| {
-                let state = state_tree.get_by_path_mut(&path)
+                let state = state_tree.get_mut(&path)
                     .as_layout_mut();
                 state.get_table_config_mut().set_force_default_col_width(val.as_bool().to_owned());
                 path.clone()
@@ -322,7 +323,7 @@ impl Layout {
         self.state.set_can_drag(load_bool_property(
             parameter_value.trim(), scheduler, path.clone(),
             Box::new(move |state_tree: &mut StateTree, val: EzValues| {
-                let state = state_tree.get_by_path_mut(&path)
+                let state = state_tree.get_mut(&path)
                     .as_layout_mut();
                 state.set_can_drag(val.as_bool().to_owned());
                 path.clone()
@@ -394,13 +395,13 @@ impl EzObject for Layout {
         }
         Ok(())
     }
-    fn set_id(&mut self, id: String) { self.id = id; }
+    fn set_id(&mut self, id: &str) { self.id = id.to_string(); }
 
     fn get_id(&self) -> String { self.id.clone() }
 
-    fn set_full_path(&mut self, path: String) { self.path = path }
+    fn set_path(&mut self, id: &str) { self.id = id.to_string() }
 
-    fn get_full_path(&self) -> String { self.path.clone() }
+    fn get_path(&self) -> String { self.path.clone() }
 
     fn get_state(&self) -> EzState { EzState::Layout(self.state.clone()) }
 
@@ -409,7 +410,7 @@ impl EzObject for Layout {
     fn get_contents(&self, state_tree: &mut StateTree) -> PixelMap {
 
         let mut merged_content = PixelMap::new();
-        let mode = state_tree.get_by_path(&self.path).as_layout().get_mode().clone();
+        let mode = state_tree.get(&self.path).as_layout().get_mode().clone();
 
         self.set_child_sizes(state_tree);
         merged_content = match mode {
@@ -426,7 +427,7 @@ impl EzObject for Layout {
         merged_content = self.add_empty_filler(state_tree, merged_content);
         merged_content = self.create_horizontal_scroll_box(state_tree, merged_content);
         merged_content = self.create_vertical_scroll_box(state_tree, merged_content);
-        let state = state_tree.get_by_path(&self.get_full_path()).as_layout();
+        let state = state_tree.get(&self.get_path()).as_layout();
 
         if merged_content.is_empty() { return merged_content } // Empty widget
         // Put border around content if border if set
@@ -449,11 +450,11 @@ impl EzObject for Layout {
                     callback_tree: &mut CallbackTree, scheduler: &mut SchedulerFrontend) -> bool {
 
         if let Event::Key(key) = event {
-            if callback_tree.get_by_path(&self.path).keymap.contains_key(&key.code) {
+            if callback_tree.get(&self.path).obj.keymap.contains_key(&key.code) {
                 let func =
-                    callback_tree.get_by_path_mut(&self.path).keymap.get_mut(&key.code).unwrap();
+                    callback_tree.get_mut(&self.path).obj.keymap.get_mut(&key.code).unwrap();
                 let context = EzContext::new(
-                    self.get_full_path(), state_tree, scheduler);
+                    self.get_path(), state_tree, scheduler);
                 let consumed = func(context, key.code);
                 if consumed { return true }
             }
@@ -464,7 +465,7 @@ impl EzObject for Layout {
                 self.handle_scroll_down(state_tree, scheduler);
                 return true
             } else if key.code == KeyCode::Left {
-                let state = state_tree.get_by_path_mut(&self.get_full_path())
+                let state = state_tree.get_mut(&self.get_path())
                     .as_layout_mut();
                 if state.get_mode() == &LayoutMode::Tab {
                     self.handle_tab_left(state_tree, scheduler);
@@ -473,7 +474,7 @@ impl EzObject for Layout {
                 }
                 return true
             } else if key.code == KeyCode::Right {
-                let state = state_tree.get_by_path_mut(&self.get_full_path())
+                let state = state_tree.get_mut(&self.get_path())
                     .as_layout_mut();
                 if state.get_mode() == &LayoutMode::Tab {
                     self.handle_tab_right(state_tree, scheduler);
@@ -491,12 +492,12 @@ impl EzObject for Layout {
                          scheduler: &mut SchedulerFrontend) -> bool {
 
         if self.on_keyboard_enter_callback(state_tree, callback_tree, scheduler) { return true }
-        let state = state_tree.get_by_path_mut(&self.path).as_layout_mut();
+        let state = state_tree.get_mut(&self.path).as_layout_mut();
         if !state.get_selected_tab_header().is_empty() {
             let tab_name = state.get_selected_tab_header()
                 .strip_suffix("_tab_header").unwrap().to_string();
             let tab_path = self.resolve_tab_name(&tab_name, state_tree);
-            let state = state_tree.get_by_path_mut(&self.path).as_layout_mut();
+            let state = state_tree.get_mut(&self.path).as_layout_mut();
             state.set_active_tab(&tab_path);
             state.update(scheduler);
             return true
@@ -511,7 +512,7 @@ impl EzObject for Layout {
         if self.on_left_mouse_click_callback(state_tree, callback_tree, scheduler, mouse_pos) {
             return true
         }
-        let state = state_tree.get_by_path_mut(&self.path).as_layout_mut();
+        let state = state_tree.get_mut(&self.path).as_layout_mut();
 
         let v_edge = if state.get_border_config().get_border()
         { state.get_effective_size().height + 1 }
@@ -564,7 +565,7 @@ impl EzObject for Layout {
         let mut consumed =
             self.on_drag_callback(state_tree, callback_tree, scheduler, previous_pos, mouse_pos);
 
-        let state = state_tree.get_by_path_mut(&self.path).as_layout_mut();
+        let state = state_tree.get_mut(&self.path).as_layout_mut();
 
         let offset = if state.get_border_config().get_border() { 2 } else { 1 };
 
@@ -576,14 +577,14 @@ impl EzObject for Layout {
                 mouse_pos.x + offset == state.get_size().get_width() {
             self.handle_scroll_drag_y(state, previous_pos, mouse_pos);
 
-        } else if self.path.starts_with("/modal") && state.can_drag.value {
+        } else if self.path.starts_with("/root/modal") && state.can_drag.value {
             let abs_mouse_pos = Coordinates::new(
                 state.get_absolute_position().x as usize + mouse_pos.x,
                 state.get_absolute_position().y as usize + mouse_pos.y
             );
             if previous_pos.is_none() {
                 for child in self.children.iter() {
-                    if state_tree.get_by_path(&child.as_ez_object().get_full_path())
+                    if state_tree.get(&child.as_ez_object().get_path())
                         .as_generic().collides(abs_mouse_pos) {
                         return false;
                     }
@@ -597,8 +598,8 @@ impl EzObject for Layout {
             let pos = state.get_position().clone();
             let size = state.size.clone();
             let root_size =
-                state_tree.get_by_path("/root").as_generic().get_size().clone();
-            let state = state_tree.get_by_path_mut(&self.path).as_layout_mut();
+                state_tree.as_generic().get_size().clone();
+            let state = state_tree.get_mut(&self.path).as_layout_mut();
             state.set_x(
                 if diff_x < 0 && diff_x.abs() > pos.x.value as isize {
                     0
@@ -620,7 +621,7 @@ impl EzObject for Layout {
                 }
             )
         }
-        let state = state_tree.get_by_path_mut(&self.path).as_layout_mut();
+        let state = state_tree.get_mut(&self.path).as_layout_mut();
         state.update(scheduler);
         self.propagate_absolute_positions(state_tree);
         consumed
@@ -630,7 +631,7 @@ impl EzObject for Layout {
                     scheduler: &mut SchedulerFrontend) -> bool {
 
         if self.on_scroll_up_callback(state_tree, callback_tree, scheduler) { return true }
-        let state = state_tree.get_by_path_mut(&self.path).as_layout_mut();
+        let state = state_tree.get_mut(&self.path).as_layout_mut();
         if state.get_scrolling_config().get_is_scrolling_y() ||
             state.get_scrolling_config().get_is_scrolling_x() {
             self.handle_scroll_up(state_tree, scheduler);
@@ -643,7 +644,7 @@ impl EzObject for Layout {
                       scheduler: &mut SchedulerFrontend) -> bool {
 
         if self.on_scroll_down_callback(state_tree, callback_tree, scheduler) { return true }
-        let state = state_tree.get_by_path_mut(&self.path).as_layout_mut();
+        let state = state_tree.get_mut(&self.path).as_layout_mut();
         if state.get_scrolling_config().get_is_scrolling_y() ||
                 state.get_scrolling_config().get_is_scrolling_x() {
             self.handle_scroll_down(state_tree, scheduler);
@@ -656,14 +657,17 @@ impl EzObject for Layout {
                  scheduler: &mut SchedulerFrontend, mouse_pos: Option<Coordinates>) -> bool {
 
         if self.on_select_callback(state_tree, callback_tree, scheduler, mouse_pos) { return true }
-        for child in self.children.iter() {
-            if let EzObjects::Button(i) = child {
-                let state = state_tree.get_by_path_mut(&self.path).as_layout_mut();
-                state.set_selected_tab_header(i.id.clone());
-                state.update(scheduler);
-                return true
+        let state = state_tree.get_mut(&self.path).as_layout_mut();
+        if state.mode.value == LayoutMode::Tab {
+            for child in self.children.iter() {
+                if let EzObjects::Button(i) = child {
+                    state.set_selected_tab_header(i.id.clone());
+                    state.update(scheduler);
+                    return true
+                }
             }
         }
+
         true
     }
 
@@ -671,8 +675,8 @@ impl EzObject for Layout {
                    scheduler: &mut SchedulerFrontend) -> bool {
 
         if self.on_deselect_callback(state_tree, callback_tree, scheduler) { return true }
-        let state = state_tree.get_by_path_mut(&self.path).as_layout_mut();
-        state.get_selected_tab_header().clear();
+        let state = state_tree.get_mut(&self.path).as_layout_mut();
+        state.set_selected_tab_header("".to_string());
         state.update(scheduler);
         true
     }
@@ -766,7 +770,7 @@ impl Layout {
     /// Scale size down to the size of the actual content of the layout.
     fn auto_scale_to_content(&self, state_tree: &mut StateTree, contents: PixelMap) -> PixelMap {
 
-        let state = state_tree.get_by_path_mut(&self.get_full_path())
+        let state = state_tree.get_mut(&self.get_path())
             .as_layout_mut();
         if state.get_auto_scale().get_auto_scale_width() {
             let auto_scale_width = contents.len();
@@ -788,17 +792,17 @@ impl Layout {
     /// overlap all content.
     fn get_modal_contents(&self, state_tree: &mut StateTree, mut contents: PixelMap) -> PixelMap {
 
-        if state_tree.get_by_path(&self.get_full_path()).as_layout().get_modal().is_none() {
+        if !state_tree.get(&self.get_path()).as_layout().has_modal() {
             return contents
         }
 
         // Size modal
-        let parent_size = state_tree.get_by_path(&self.get_full_path()).as_layout()
+        let parent_size = state_tree.get(&self.get_path()).as_layout()
             .get_size().clone();
-        let modal = state_tree.get_by_path(&self.get_full_path()).as_layout()
-            .get_modal().clone().unwrap();
-        let state = state_tree
-            .get_by_path_mut(&modal.as_ez_object().get_full_path());
+        let modal = state_tree.get(&self.get_path()).as_layout()
+            .get_modal().clone();
+        let state = &mut state_tree
+            .get_mut(&modal.as_ez_object().get_path()).obj;
         resize_with_size_hint(state, parent_size.get_width(),
                               parent_size.get_height());
         reposition_with_pos_hint(
@@ -811,7 +815,7 @@ impl Layout {
 
         //Get contents
         let modal_content;
-        if let EzObjects::Layout(ref i) = *modal {
+        if let EzObjects::Layout(ref i) = modal {
             modal_content = i.get_contents(state_tree);
             i.propagate_absolute_positions(state_tree);
         } else {
@@ -820,7 +824,7 @@ impl Layout {
 
         // Overwrite own content with modal (modal is always on top)
         let state = state_tree
-            .get_by_path_mut(&modal.as_ez_object().get_full_path()).as_generic();
+            .get_mut(&modal.as_ez_object().get_path()).as_generic();
         let start_pos = state.get_position();
         for x in 0..modal_content.len() {
             for y in 0..modal_content[x].len() {
@@ -837,7 +841,7 @@ impl Layout {
     /// Fill any empty positions with [Pixel] from [get_filler]
     pub fn add_user_filler(&self, state_tree: &mut StateTree, mut contents: PixelMap) -> PixelMap {
 
-        let state = state_tree.get_by_path_mut(&self.get_full_path())
+        let state = state_tree.get_mut(&self.get_path())
             .as_layout_mut();
         if !state.get_fill() { return contents }
 
@@ -869,7 +873,7 @@ impl Layout {
     /// the user did not define a custom filler.
     pub fn add_empty_filler(&self, state_tree: &mut StateTree, mut contents: PixelMap) -> PixelMap {
 
-        let state = state_tree.get_by_path_mut(&self.get_full_path())
+        let state = state_tree.get_mut(&self.get_path())
             .as_layout_mut();
         while contents.len() < state.get_effective_size().width {
             contents.push(Vec::new());

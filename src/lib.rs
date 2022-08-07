@@ -71,7 +71,7 @@
 //!                 2. [Using custom properties](#scheduler_tasks_threaded_property)
 //!         5. [Creating custom properties](#scheduler_properties)
 //!         6. [Managing popups](#scheduler_popups)
-//!         7. [Creating widgets programmatically](#scheduler_widgets_from_code)
+//!         7. [Managing widgets programmatically](#scheduler_widgets_from_code)
 //!         8. [Updating widgets](#scheduler_updating)
 //!         9. [Managing widget selection](#scheduler_selection)
 //!     4. [Global (key)bindings](#)
@@ -729,7 +729,7 @@
 //! ```
 //! use ez_term::*;
 //! fn change_tab_callback(context: EzContext) {
-//!     let state = context.state_tree.get_by_id("my_tab_layout").as_layout_mut();
+//!     let state = context.state_tree.get_mut("my_tab_layout").as_layout_mut();
 //!     state.set_active_tab("tab_two");
 //!     state.update(context.scheduler);
 //! }
@@ -807,13 +807,13 @@
 //!
 //! // We define the callback functions. We could also use closures if we wanted to.
 //! fn to_screen_one_callback(context: EzContext) {
-//!     let state = context.state_tree.get_by_id("my_screen_layout").as_layout_mut();
+//!     let state = context.state_tree.get_mut("my_screen_layout").as_layout_mut();
 //!     state.set_active_screen("screen_1");
 //!     state.update(context.scheduler);
 //! }
 //!
 //! fn to_screen_two_callback(context: EzContext) {
-//!     let state = context.state_tree.get_by_id("my_screen_layout").as_layout_mut();
+//!     let state = context.state_tree.get_mut("my_screen_layout").as_layout_mut();
 //!     state.set_active_screen("screen_2");
 //!     state.update(context.scheduler);
 //! }
@@ -1419,27 +1419,90 @@
 //! ```
 //! The state of every widget active in our UI is contained in the "State tree". The state tree is
 //! available to us when we initialize the UI, and is given to us in every callback. We can use the
-//! state tree to get a widget state using the "get_by_id" or "get_by_path" methods. So if we wanted
+//! state tree to get a widget state using the "get" or "get_mut" methods. So if we wanted
 //! to change the text of a label with the id "my_label" when initializing the UI, we would do this:
 //! ```
 //! use ez_term::*;
 //! let (root_widget, mut state_tree, mut scheduler) = load_ui();
-//! let label_state = state_tree.get_by_id_mut("my_label").as_label_mut();
+//! let label_state = state_tree.get_mut("my_label").as_label_mut();
 //! label_state.set_text("new text".to_string());
 //! ```
-//! Note that after getting the label state, we have to call the "to_label_mut" method to change
-//! the generic state into a label state. This is because the state tree contains generic states (due
+//! Note that after getting the state of the label, we have to call the "to_label_mut" method to
+//! change the state into a label state. This is because the state tree contains generic states (due
 //! to Rusts strict type requirements), and so we have to cast the state into the right type before
-//! we use it. This will become second nature quickly when working with EzTerm.
+//! we can actually use it. This will become second nature quickly when working with EzTerm. Just
+//! keep in mind: if you want to actually alter the property of a state, call "to_x" or "to_x_mut"
+//! on it first. Here are all available casts:
 //!
-//! We will describe callbacks in details below, but we will note for now that the state tree is
+//! - as_layout(_mut)
+//! - as_label(_mut)
+//! - as_text_input(_mut)
+//! - as_button(_mut)
+//! - as_checkbox(_mut)
+//! - as_radio_button(_mut)
+//! - as_slider(_mut)
+//! - as_dropdown(_mut)
+//! - as_progress_bar(_mut)
+//! - as_canvas(_mut)
+//!
+//! The 'state_tree' object available to us when initializing the UI, in callbacks and in scheduled
+//! tasks, is actually the root layout state. So if you ever need the root layout state, you would get it
+//! like this:
+//! ```
+//! let root_layout_state = state_tree.as_layout();
+//! ```
+//! If we want any other states, we have to use the "get" or "get_mut" methods to find them. In the
+//! earlier example we used a widget ID for this. There are in fact three ways to find states in the
+//! state tree: by ID, by path or by chaining 'get' calls. Let's look at examples of all three methods:
+//!
+//! **By id**:
+//! ```
+//! let label_state = state_tree.get("my_label").as_label();
+//! ```
+//! Important note: to find widgets by ID, the ID must be unique from that point in the tree. That
+//! means that if you search an ID from the root of the state tree, that the ID must be globally
+//! unique! As a general rule, make all IDs in your .ez files globally unique if at all possible,
+//! because finding states by ID is the most comfortable way to do it, and incurs no performance
+//! penalty due to caching.
+//!
+//! **By path**:
+//! ```
+//! let label_state = state_tree.get("/root/layout/sub_layout/my_label").as_label();
+//! ```
+//! Here we used the full path to find a widget. A true full path always starts with "/root" (the
+//! static name of the root layout), but since "state_tree" is in fact the root itself, we do not
+//! necessarily have to start our paths with "/root", so we could use the shorter version:
+//! ```
+//! let label_state = state_tree.get("/layout/sub_layout/my_label").as_label();
+//! ```
+//! This is still a bit verbose, so it's usually more convenient to make IDs globally unique and
+//! search by ID.
+//!
+//! **By chaining get calls**:
+//! The last method is to chain get calls. The 'get' method returns another part of the state tree, so
+//! we could just call 'get' again:
+//! ```
+//! let label_state = state_tree.get("layout").get("sub_layout").get("my_label").as_label();
+//! ```
+//! This is very verbose; so when is this useful? Mostly you want to avoid it, but it comes in handy
+//! when you want to manipulate multiple child states. Let's say you have a layout with three
+//! labels, and you want to update the text of each label. You could retrieve the layout state first,
+//! and then access each child state from there:
+//! ```
+//! let layout = state_tree.get("sub_layout");
+//! layout.get("my_label_1").as_label_mut().set_text("Some".to_string());
+//! layout.get("my_label_2").as_label_mut().set_text("new".to_string());
+//! layout.get("my_label_3").as_label_mut().set_text("Text".to_string());
+//! ```
+//!
+//! We will describe callbacks in detail below, but we will note for now that the state tree is
 //! available in callbacks through the "context" parameter. So if we wanted to change the text of
 //! our label from a callback it would look like this:
 //! ```
 //! use ez_term::*;
 //! fn my_callback(context: EzContext) -> bool {
 //!
-//!     let label_state = context.state_tree.get_by_id_mut("my_label").as_label_mut();
+//!     let label_state = context.state_tree.get_mut("my_label").as_label_mut();
 //!     label_state.set_text("new text".to_string());
 //!     label_state.update(context.scheduler);
 //!     true
@@ -1451,14 +1514,15 @@
 //! widget will be redrawn on the next frame. You will want to call this when changing a state from
 //! a callback most of the time.
 //!
-//! Now we will start putting our new knowledge about states to use when discussing the features of
-//! the scheduler.
+//! Now we'll look at the scheduler object. After that, we will start putting our new knowledge
+//! about states to use when discussing the actual features of the scheduler.
 //!
 //! <a name="scheduler_object"></a>
 //! #### 1.3.2 Using the scheduler object:
 //!
-//! The scheduler is an object which you can use in two places: when initializing the UI, and when
-//! inside of a callback. Here is an example of using the scheduler when initializing the UI:
+//! The scheduler is an object which you can use in three places: when initializing the UI, when
+//! inside of a callback, and when inside a scheduled function.
+//! Here is an example of using the scheduler when initializing the UI:
 //! ```
 //! use ez_term::*;
 //! let (root_widget, mut state_tree, mut scheduler) = load_ui();
@@ -1476,10 +1540,18 @@
 //!     true
 //! }
 //! ```
+//! The same is true from inside a scheduled task:
+//! ```
+//! use ez_term::*;
+//! fn my_task(context: EzContext) {
 //!
-//! Now that we know how to use the scheduler object when initializing the UI and from callbacks,
-//! we will look at the manu things we can do with the scheduler. Here is a short overview of the
-//! features we will look at:
+//!     context.scheduler.set_selected_widget("my_widget", None);
+//! }
+//! ```
+//!
+//! Now that we know how to use the scheduler object when initializing the UI, from callbacks, and
+//! from scheduled tasks, we will look at the manu things we can do with the scheduler. Here is a
+//! short overview of the features we will look at:
 //! - Managing callbacks
 //! - Scheduling tasks
 //! - Managing popups
@@ -1506,23 +1578,31 @@
 //!
 //! Callbacks can be created from a closure or from a function. We will see examples of both below.
 //!
-//! All callbacks take an "context: EzContext" parameter. The EzContext object contains the
+//! All callbacks take a "context: EzContext" parameter. The EzContext object contains the
 //! StateTree object (context.state_tree) and the Scheduler object (context.scheduler). We can use
 //! these to manage the UI, as is being explained in this chapter. The EzContext also contains the
 //! path of the widget for which the callback was called (context.widget_path). Some callbacks have
 //! more parameters (for example, mouse callbacks have a mouse_pos parameter), but we will discuss
 //! these separately for each callback when relevant.
 //!
-//! Finally, each callback returns a bool. The bool indicates whether the event should be consumed.
+//! Finally: each callback returns a bool. The bool indicates whether the event should be consumed.
 //! If the event is not consumed, the widget is allowed to execute its default behavior if it has
-//! any. For example, the checkbox has default "on_press" behavior: when pressed, it will toggle
+//! any. For example, the checkbox widget has default "on_press" behavior: when pressed, it will toggle
 //! on/off. If you bind a custom "on_press" callback for a checkbox, you control whether the default
 //! behavior will be executed by returning 'true' (allowed to run) or 'false' (not allowed to run).
 //! This gives you the option to overwrite default widget behavior, or supplement it. If you want to
 //! know if returning true for a widget callback would overwrite default behavior, see the
-//! [reference] entry for that widget and check the callback chapter.
+//! [reference] entry for that widget and check the callback chapter. For mouse callbacks (such as
+//! on_left_click, on_hover, etc.), it is also important to think about whether you want to consume
+//! the event. A mouse click will always hit multiple widgets; if you click a button, you also click
+//! the layout that contains the button, the layout that contains the layout, etc. If a widget
+//! callback returns true, all the other widgets will not receive the event. The root layout is the
+//! first to receive an event, and the widget the last (i.e. events move along the widget path). For
+//! performance reasons you should return true for mouse callbacks with no default behavior, unless
+//! you have a reason not to do so.
 //!
-//! To summarize, here are the two examples of default callback structure:
+//! To summarize, here are two examples of the default callback structure (one closure and one
+//! function):
 //!
 //! **Callback from closure**
 //! ```
@@ -1539,7 +1619,7 @@
 //! };
 //! ```
 //!
-//! Now that we know what a callback should look like, let's see how to set new callbacks.
+//! Now that we know what a callback should look like, let's see how to bind callbacks.
 //!
 //! <a name="scheduler_callbacks_config"></a>
 //! ##### 1.3.3.2 Callback config
@@ -1547,10 +1627,11 @@
 //! Each widget active in your UI has an associated callback config. This config contains all
 //! callbacks that are active for that widget. Initially, the callback config for each widget is
 //! empty. To manage the callbacks for a widget, we create a new CallbackConfig object and load
-//! our callbacks into it. When we have a new CallbackConfig object, we can either overwrite the
-//! current callback config of a widget, or update it. Overwriting it will delete the current config.
-//! When updating, any callbacks configured in the new config will be set on the current config
-//! (while leaving the the others intact).
+//! our callbacks into it. We then either overwrite the current callback config of a widget, or
+//! update it. Overwriting it will delete the current config. If we update it, any callbacks
+//! configured in the new config will be set on the current config (while leaving the the others
+//! intact).
+//!
 //! Let's say we want to set an "on_press" callback on a button with the ID: "my_button".
 //! We want the callback to change the text on a label. This is how we would do it:
 //! ```
@@ -1559,7 +1640,7 @@
 //!
 //! let my_callback = |context: EzContext| {
 //!
-//!     let label_state = context.state_tree.get_by_id_mut("my_label").as_label_mut();
+//!     let label_state = context.state_tree.get_mut("my_label").as_label_mut();
 //!     label_state.set_text("Button was clicked!".to_string());
 //!     label_state.update(context.scheduler);
 //!     true
@@ -1581,7 +1662,7 @@
 //! use ez_term::*;
 //! fn my_callback(context: EzContext) -> bool {
 //!
-//!     let label_state = context.state_tree.get_by_id_mut("my_label").as_label_mut();
+//!     let label_state = context.state_tree.get_mut("my_label").as_label_mut();
 //!     label_state.set_text("Button was clicked!".to_string());
 //!     label_state.update(context.scheduler);
 //!     true
@@ -1601,10 +1682,11 @@
 //! use ez_term::*;
 //! let (root_widget, mut state_tree, mut scheduler) = load_ui();
 //!
-//! let counter: usize = 0;
+//! let mut counter: usize = 0;
 //! let my_callback = move |context: EzContext| {
 //!
-//!     let label_state = context.state_tree.get_by_id_mut("my_label").as_label_mut();
+//!     counter += 1;
+//!     let label_state = context.state_tree.get_mut("my_label").as_label_mut();
 //!     label_state.set_text(format!("Button was clicked {} times!", counter));
 //!     label_state.update(context.scheduler);
 //!     true
@@ -1662,6 +1744,7 @@
 //! let new_callback_config = CallbackConfig::from_on_press(Box::new(my_callback));
 //! scheduler.update_callback_config("my_button", new_callback_config);
 //! ```
+//!
 //! <a name="scheduler_callbacks_left"></a>
 //! ##### 1.3.3.4 On_left_mouse_click
 //!
@@ -1669,7 +1752,12 @@
 //! when a widget is clicked, any layouts underneath it are also clicked. The root layout is the
 //! first to receive the mouse click event, followed by sub layouts, and finally the widget. If any
 //! layout has a callback that returns true, the event is consumed and does not reach further
-//! layouts or widgets. To set this callback with a closure:
+//! layouts or widgets.
+//! Note that the mouse_pos parameter is available to you; it contains the
+//! coordinates of the mouse click relative to the widget. So if the coordinates are (3, 2), it
+//! means the click was located in the widget on the third pixel from the left and the second pixel
+//! from the top. You can access the coordinates through 'mouse_pos.x' and 'mouse_pos.y'.
+//! To set this callback with a closure:
 //! ```
 //! use ez_term::*;
 //! let (root_widget, mut state_tree, mut scheduler) = load_ui();
@@ -1733,8 +1821,12 @@
 //! hovered. Selectable widgets are: buttons, checkboxes, dropdowns, radio buttons and sliders.
 //! Text inputs are selectable by keyboard, but not by mouse hovering; instead they have to be
 //! clicked to be selected. The second argument in a on_select callback is an Option<Coordinates>.
-//! Is a widget was selected by keyboard, this argument will be None. If it was selected by mouse,
-//! it will contains coordinates.To set this callback with a closure:
+//! If a widget was selected by keyboard, this argument will be None. If it was selected by mouse,
+//! it will contains the coordinates the mouse click relative to the widget. So if the coordinates
+//! are (3, 2), it means the click was located in the widget on the third pixel from the left and
+//! the second pixel from the top. You can access the coordinates through 'mouse_pos.x' and
+//! 'mouse_pos.y'.
+//! To set this callback with a closure:
 //! ```
 //! use ez_term::*;
 //! let (root_widget, mut state_tree, mut scheduler) = load_ui();
@@ -1795,7 +1887,12 @@
 //! when a widget is clicked, any layouts underneath it are also clicked. The root layout is the
 //! first to receive the mouse click event, followed by sub layouts, and finally the widget. If any
 //! layout has a callback that returns true, the event is consumed and does not reach further
-//! layouts or widgets. To set this callback with a closure:
+//! layouts or widgets.
+//! Note that the mouse_pos parameter is available to you; it contains the
+//! coordinates of the mouse click relative to the widget. So if the coordinates are (3, 2), it
+//! means the click was located in the widget on the third pixel from the left and the second pixel
+//! from the top. You can access the coordinates through 'mouse_pos.x' and 'mouse_pos.y'.
+//! To set this callback with a closure:
 //! ```
 //! use ez_term::*;
 //! let (root_widget, mut state_tree, mut scheduler) = load_ui();
@@ -1826,7 +1923,12 @@
 //! when a widget is hovered, any layouts underneath it are also hovered. The root layout is the
 //! first to receive the hover event, followed by sub layouts, and finally the widget. If any
 //! layout has a callback that returns true, the event is consumed and does not reach further
-//! layouts or widgets. To set this callback with a closure:
+//! layouts or widgets.
+//! Note that the mouse_pos parameter is available to you; it contains the
+//! coordinates of the mouse click relative to the widget. So if the coordinates are (3, 2), it
+//! means the click was located in the widget on the third pixel from the left and the second pixel
+//! from the top. You can access the coordinates through 'mouse_pos.x' and 'mouse_pos.y'.
+//! To set this callback with a closure:
 //! ```
 //! use ez_term::*;
 //! let (root_widget, mut state_tree, mut scheduler) = load_ui();
@@ -1860,7 +1962,10 @@
 //! The previous drag position argument is an Option<Coordinates>; on the very first drag event,
 //! the previous drag position will be None. This is how you know the drag is new. Subsequently,
 //! the previous drag position will contain Coordinates. Because you have both the current and the
-//! previous position, you know which direction the drag is going.
+//! previous coodinates, you know which direction the drag is going.
+//! The coordinates are relative to the widget. So if the coordinates are (3, 2), it means the
+//! click was located in the widget on the third pixel from the left and the second pixel from the
+//! top. You can access the coordinates through 'mouse_pos.x' and 'mouse_pos.y'.
 //! To set this callback with a closure:
 //! ```
 //! use ez_term::*;
@@ -1887,6 +1992,7 @@
 //! let new_callback_config = CallbackConfig::from_on_drag(Box::new(my_callback));
 //! scheduler.update_callback_config("my_label", new_callback_config);
 //! ```
+//!
 //! <a name="scheduler_callbacks_up"></a>
 //! ##### 1.3.3.11 On_scroll_up
 //!
@@ -1894,12 +2000,12 @@
 //! when a widget is scrolled, any layouts underneath it are also scrolled. The root layout is the
 //! first to receive the scroll event, followed by sub layouts, and finally the widget. If any
 //! layout has a callback that returns true, the event is consumed and does not reach further
-//! layouts or widgets. To set this callback with a closure:
+//! layouts or widgets.
 //! ```
 //! use ez_term::*;
 //! let (root_widget, mut state_tree, mut scheduler) = load_ui();
 //!
-//! let my_callback = move |context: EzContex| {
+//! let my_callback = move |context: EzContext| {
 //!
 //!     true
 //! };
@@ -1918,6 +2024,7 @@
 //! let new_callback_config = CallbackConfig::from_on_scroll_up(Box::new(my_callback));
 //! scheduler.update_callback_config("my_label", new_callback_config);
 //! ```
+//!
 //! <a name="scheduler_callbacks_down"></a>
 //! ##### 1.3.3.12 On_scroll_down
 //!
@@ -1930,7 +2037,7 @@
 //! use ez_term::*;
 //! let (root_widget, mut state_tree, mut scheduler) = load_ui();
 //!
-//! let my_callback = move |context: EzContex| {
+//! let my_callback = move |context: EzContext| {
 //!
 //!     true
 //! };
@@ -1949,6 +2056,7 @@
 //! let new_callback_config = CallbackConfig::from_on_scroll_down(Box::new(my_callback));
 //! scheduler.update_callback_config("my_label", new_callback_config);
 //! ```
+//!
 //! <a name="scheduler_callbacks_value"></a>
 //! ##### 1.3.3.13 On_value_change
 //!
@@ -1981,6 +2089,7 @@
 //! let new_callback_config = CallbackConfig::from_on_value_change(Box::new(my_callback));
 //! scheduler.update_callback_config("my_checkbox", new_callback_config);
 //! ```
+//!
 //! <a name="scheduler_callbacks_keymap"></a>
 //! ##### 1.3.3.14 Custom key binds
 //!
@@ -2020,6 +2129,7 @@
 //! let new_callback_config = CallbackConfig::from_keymap(keymap);
 //! scheduler.update_callback_config("my_checkbox", new_callback_config);
 //! ```
+//!
 //! <a name="scheduler_callbacks_property"></a>
 //! ##### 1.3.3.15 Property binds
 //!
@@ -2037,7 +2147,7 @@
 //!     true
 //! };
 //!
-//! let state = state_tree.get_by_id("my_label").as_label_mut();
+//! let state = state_tree.get("my_label").as_label_mut();
 //! state.size.height.bind(Box::new(my_callback), &mut scheduler);
 //! ```
 //! The same example but using a function:
@@ -2050,7 +2160,7 @@
 //!     true
 //! };
 //!
-//! let state = state_tree.get_by_id("my_label").as_label_mut();
+//! let state = state_tree.get("my_label").as_label_mut();
 //! state.size.height.bind(Box::new(my_callback), &mut scheduler);
 //! ```
 //!
@@ -2086,7 +2196,7 @@
 //!
 //! let my_task = |context: EzContext| {
 //!
-//!     let state = state_tree.get_by_id("my_label").as_label_mut();
+//!     let state = state_tree.get("my_label").as_label_mut();
 //!     state.set_text("10 seconds have passed!".to_string());
 //!     state.update(context.scheduler);
 //! };
@@ -2120,7 +2230,7 @@
 //!
 //! let my_task = |context: EzContext| {
 //!
-//!     let state = state_tree.get_by_id("my_label").as_label_mut();
+//!     let state = state_tree.get("my_label").as_label_mut();
 //!     state.set_text("Button was pressed 10 seconds ago!".to_string());
 //!     state.update(context.scheduler);
 //! };
@@ -2163,7 +2273,7 @@
 //! let mut counter: usize = 1;
 //! let my_task = move |context: EzContext| {
 //!
-//!     let state = context.state_tree.get_by_id_mut("my_label").as_label_mut();
+//!     let state = context.state_tree.get_mut("my_label").as_label_mut();
 //!     state.set_text(format!("Counting {}", counter));
 //!     state.update(context.scheduler);
 //!     counter += 1;
@@ -2189,7 +2299,7 @@
 //! let mut counter: usize = 1;
 //! let my_task = move |context: EzContext| {
 //!
-//!     let state = context.state_tree.get_by_id_mut("my_label").as_label_mut();
+//!     let state = context.state_tree.get_mut("my_label").as_label_mut();
 //!     state.set_text(format!("Counting {}", counter));
 //!     state.update(context.scheduler);
 //!     counter += 1;
@@ -2246,19 +2356,19 @@
 //! fn mock_app(mut properties: EzPropertiesMap, mut state_tree: StateTree) {
 //!
 //!    for x in 1..=5 {
-//!        state_tree.get_by_id_mut("progress_bar").as_progress_bar_mut().set_value(x*20);
-//!        state_tree.get_by_id_mut("progress_label").as_label_mut().set_text(format!("{}%", x*20));
+//!        state_tree.get_mut("progress_bar").as_progress_bar_mut().set_value(x*20);
+//!        state_tree.get_mut("progress_label").as_label_mut().set_text(format!("{}%", x*20));
 //!        std::thread::sleep(Duration::from_secs(1)) };
 //! }
 //!
 //! let on_finish = |context: EzContext| {
 //!
-//!        let state = context.state_tree.get_by_id_mut("progress_label").as_label_mut();
+//!        let state = context.state_tree.get_mut("progress_label").as_label_mut();
 //!        state.set_text("Finished!".to_string());
 //!        state.update(context.scheduler);
 //! };
 //!
-//! scheduler.schedule_threaded(Box::new(mock_app), Box::new(on_finish));
+//! scheduler.schedule_threaded(Box::new(mock_app), Some(Box::new(on_finish)));
 //! ```
 //!
 //! <a name="scheduler_tasks_property"></a>
@@ -2494,19 +2604,24 @@
 //! called.
 //!
 //!
-//! ### 1.3.6 Creating widgets programmatically
+//! ### 1.3.6 Managing widgets programmatically
+//!
+//! #### 1.3.6.1 Creating widgets from code
 //!
 //! The static parts of your UI are created from the .ez files. In some cases however you need to
 //! create widgets dynamically. Maybe you are retrieving records from a database and need to display
-//! them. They will be retrieved at runtime and so cannot be known in advance (and even if you could,
+//! them. They will be retrieved at runtime and so cannot be known in advance (and even if they could,
 //! it would be too much work to put them all in the .ez files). In cases like this you could create
-//! widgets from code.
+//! widgets from code. Once you've called the scheduler.create_widget method (example below), the
+//! widgets will be added to the UI on the next frame. The states of the new widgets however are
+//! available as soon as you've called scheduler.create_widget. This is important, because it gives
+//! you the chance to make changes to the widget state from code right away.
 //!
 //! You can spawn any kind of layout or widget from code, including templates. In fact, creating
 //! them from templates is usually the best way to do it. Let's use the SQL record example we used
 //! above: we will create a layout template that can display an entire SQL record. Then we'll
 //! iterate over the SQL records from code and create widgets for them. We'll also create a UI that
-//! can display the record widgets. First the .ez file:
+//! can display the sql record widgets. First the .ez file:
 //! ```
 //! - Layout:
 //!     mode: box
@@ -2532,27 +2647,41 @@
 //!         id: record_date
 //!         auto_scale: true, true
 //! ```
-//! We now have a main UI that can hold our records. We also have a Layout template that can spawned
-//! as a record. Let's now go to the code:
+//! We now have a main UI that can hold our records. We also have a Layout template that can be
+//! spawned to display a record. Let's now go to the code:
 //! ```
 //! use ez_term::*;
 //! let (root_widget, mut state_tree, mut scheduler) = load_ui();
 //!
 //! let sql_records = get_sql_records();
 //! for (i, sql_record) in sql_records.iter().enumerate() {
-//!     // The parameters for the create_widget method are:
-//!     // - widget (or template) name (&str),
-//!     // - id of new widget (&str)
-//!     // - parent id or path where widget will be placed (&str)
-//!     // - StateTree
-//!     let state = scheduler.create_widget("SqlRecord", format!("record_{}", i).as_str(),
-//!                                         "sql_records_layout", &mut state_tree);
+//!
+//!     let template_name = "SqlRecord";
+//!     let parent_id = "sql_records_layout";
+//!     let new_id = format!("record_{}", i).as_str();
+//!     scheduler.create_widget(template_name, new_id, parent_id, &mut state_tree);
+//!
+//!     let new_record_widget = state_tree.get_mut(new_id);
+//!     new_record_widget.get("record_id").as_label_mut().set_text(sql_record.id);
+//!     new_record_widget.get("record_name").as_label_mut().set_text(sql_record.name);
+//!     new_record_widget.get("record_date").as_label_mut().set_text(sql_record.date);
 //!
 //! }
-//!
 //! run(root_widget, state_tree, scheduler);
-//!
 //! ```
+//! Note that after we create the sql record widget its state is immediately available for us. We use
+//! this to our advantage by setting the text of the Label subwidgets of each record. In this way we
+//! can dynamically create widgets at runtime.
+//!
+//! #### 1.3.6.1 Removing widgets from code
+//!
+//! It's also possible to remove widgets from code. Simply use the 'remove_widget' method of the
+//! scheduler and the path or ID of the widget you wish to remove. If you use an ID, it must be
+//! globally unique:
+//! ```
+//! scheduler.remove_widget("/root/layout/widget");
+//! ```
+//! The widget will be removed on the next frame after you call remove_widget.
 mod run;
 mod scheduler;
 mod widgets;

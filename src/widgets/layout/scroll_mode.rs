@@ -10,7 +10,7 @@ impl Layout {
     /// Handle command by user to scroll down by increasing the scroll_view of y
     pub fn handle_scroll_down(&self, state_tree: &mut StateTree, scheduler: &mut SchedulerFrontend) {
 
-        let state = state_tree.get_by_path_mut(&self.path).as_layout_mut();
+        let state = state_tree.get_mut(&self.path).as_layout_mut();
         if !state.get_scrolling_config().get_scroll_y() { return }
         let scroll_chunk = (state.get_effective_size().height as f64 /
             state.get_scrolling_config().get_original_height() as f64) * 0.75;
@@ -24,7 +24,7 @@ impl Layout {
     /// Handle command by user to scroll down by decreasing the scroll_view of y
     pub fn handle_scroll_up(&self, state_tree: &mut StateTree, scheduler: &mut SchedulerFrontend) {
 
-        let state = state_tree.get_by_path_mut(&self.path).as_layout_mut();
+        let state = state_tree.get_mut(&self.path).as_layout_mut();
         if !state.get_scrolling_config().get_scroll_y() { return }
         let scroll_chunk = (state.get_effective_size().height as f64 /
             state.get_scrolling_config().get_original_height() as f64) * 0.75;
@@ -39,7 +39,7 @@ impl Layout {
     /// Handle command by user to scroll down by increasing the scroll_view of x
     pub fn handle_scroll_right(&self, state_tree: &mut StateTree, scheduler: &mut SchedulerFrontend) {
 
-        let state = state_tree.get_by_path_mut(&self.path).as_layout_mut();
+        let state = state_tree.get_mut(&self.path).as_layout_mut();
         if !state.get_scrolling_config().get_scroll_x() { return }
         let scroll_chunk = state.get_effective_size().width as f64 /
             state.get_scrolling_config().get_original_width() as f64;
@@ -53,7 +53,7 @@ impl Layout {
     /// Handle command by user to scroll down by decreasing the scroll_view of x
     pub fn handle_scroll_left(&self, state_tree: &mut StateTree, scheduler: &mut SchedulerFrontend) {
 
-        let state = state_tree.get_by_path_mut(&self.path).as_layout_mut();
+        let state = state_tree.get_mut(&self.path).as_layout_mut();
         if !state.get_scrolling_config().get_scroll_x() { return }
         
         let scroll_chunk = state.get_effective_size().width as f64 /
@@ -70,7 +70,7 @@ impl Layout {
     pub fn create_horizontal_scroll_box(&self, state_tree: &mut StateTree, contents: PixelMap)
                                     -> PixelMap {
 
-        let state = state_tree.get_by_path_mut(&self.get_full_path())
+        let state = state_tree.get_mut(&self.get_path())
             .as_layout_mut();
         if !state.get_scrolling_config().get_scroll_x()
             || contents.len() <= state.get_effective_size().width {
@@ -96,7 +96,7 @@ impl Layout {
     pub fn create_vertical_scroll_box(&self, state_tree: &mut StateTree, contents: PixelMap)
         -> PixelMap {
 
-        let state = state_tree.get_by_path_mut(&self.get_full_path())
+        let state = state_tree.get_mut(&self.get_path())
             .as_layout_mut();
         let largest = contents.iter().map(|x| x.len()).max().unwrap_or(0);
         if !state.get_scrolling_config().get_scroll_y() || largest <= state.get_effective_size().height {
@@ -123,7 +123,7 @@ impl Layout {
     fn create_horizontal_scrollbar(
         &self, state_tree: &mut StateTree, mut contents: PixelMap, view_start: usize) -> PixelMap {
 
-        let state = state_tree.get_by_path(&self.get_full_path()).as_layout();
+        let state = state_tree.get(&self.get_path()).as_layout();
         let (fg_color, _) = state.get_context_colors();
         let bg_color = state.get_color_config().get_bg_color();
 
@@ -146,7 +146,7 @@ impl Layout {
         &self, state_tree: &mut StateTree, mut contents: PixelMap, view_start: usize) -> PixelMap {
 
         let mut scrollbar = Vec::new();
-        let state = state_tree.get_by_path(&self.get_full_path()).as_layout();
+        let state = state_tree.get(&self.get_path()).as_layout();
         let (fg_color, _) = state.get_context_colors();
         let bg_color = state.get_color_config().get_bg_color();
 

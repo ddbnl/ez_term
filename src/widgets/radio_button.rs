@@ -54,7 +54,7 @@ impl RadioButton {
         self.state.set_group(load_string_property(
             parameter_value.trim(), scheduler, path.clone(),
             Box::new(move |state_tree: &mut StateTree, val: EzValues| {
-                let state = state_tree.get_by_path_mut(&path)
+                let state = state_tree.get_mut(&path)
                     .as_radio_button_mut();
                 state.set_group(val.as_string().to_owned());
                 path.clone()
@@ -69,7 +69,7 @@ impl RadioButton {
         self.state.set_active(load_bool_property(
             parameter_value.trim(), scheduler, path.clone(),
             Box::new(move |state_tree: &mut StateTree, val: EzValues| {
-                let state = state_tree.get_by_path_mut(&path)
+                let state = state_tree.get_mut(&path)
                     .as_radio_button_mut();
                 state.set_active(val.as_bool().to_owned());
                 path.clone()
@@ -84,7 +84,7 @@ impl RadioButton {
         self.state.set_active_symbol(load_string_property(
             parameter_value.trim(), scheduler, path.clone(),
             Box::new(move |state_tree: &mut StateTree, val: EzValues| {
-                let state = state_tree.get_by_path_mut(&path).as_checkbox_mut();
+                let state = state_tree.get_mut(&path).as_checkbox_mut();
                 state.set_active_symbol(val.as_string().to_owned());
                 path.clone()
             }))?);
@@ -98,7 +98,7 @@ impl RadioButton {
         self.state.set_inactive_symbol(load_string_property(
             parameter_value.trim(), scheduler, path.clone(),
             Box::new(move |state_tree: &mut StateTree, val: EzValues| {
-                let state = state_tree.get_by_path_mut(&path).as_checkbox_mut();
+                let state = state_tree.get_mut(&path).as_checkbox_mut();
                 state.set_inactive_symbol(val.as_string().to_owned());
                 path.clone()
             }))?);
@@ -134,13 +134,13 @@ impl EzObject for RadioButton {
         Ok(())
     }
 
-    fn set_id(&mut self, id: String) { self.id = id }
+    fn set_id(&mut self, id: &str) { self.id = id.to_string() }
 
     fn get_id(&self) -> String { self.id.clone() }
 
-    fn set_full_path(&mut self, path: String) { self.path = path }
+    fn set_path(&mut self, id: &str) { self.id = id.to_string() }
 
-    fn get_full_path(&self) -> String { self.path.clone() }
+    fn get_path(&self) -> String { self.path.clone() }
 
     fn get_state(&self) -> EzState { EzState::RadioButton(self.state.clone()) }
     
@@ -149,7 +149,7 @@ impl EzObject for RadioButton {
     fn get_contents(&self, state_tree: &mut StateTree) -> PixelMap {
 
         let state = state_tree
-            .get_by_path_mut(&self.get_full_path()).as_radio_button_mut();
+            .get_mut(&self.get_path()).as_radio_button_mut();
         state.set_width(5);
         state.set_height(1);
         let active_symbol =
@@ -173,8 +173,8 @@ impl EzObject for RadioButton {
                                 state.get_color_config());
         }
         let state = state_tree
-            .get_by_path(&self.get_full_path()).as_radio_button();
-        let parent_colors = state_tree.get_by_path(self.get_full_path()
+            .get(&self.get_path()).as_radio_button();
+        let parent_colors = state_tree.get(self.get_path()
             .rsplit_once('/').unwrap().0).as_generic().get_color_config();
         contents = add_padding(
             contents, state.get_padding(), parent_colors.get_bg_color(),
@@ -217,16 +217,16 @@ impl RadioButton {
 
         // Find all other radio buttons in same group and make them inactive (mutual exclusivity)
         let group_name =
-            state_tree.get_by_path(&self.path).as_radio_button().get_group();
-        for (path, state) in state_tree.objects.iter_mut() {
+            state_tree.get(&self.path).as_radio_button().get_group();
+        for state in state_tree.get_all_mut().iter_mut() {
             if let EzState::RadioButton(ref mut i) = state {
-                if i.get_group() == group_name && path != &self.get_full_path() {
-                    state.as_radio_button_mut().set_active(false);
+                if i.get_group() == group_name && i.get_path() != &self.get_path() {
+                    i.set_active(false);
                 }
             }
         }
         // Set entered radio button to active and select it
-        let state = state_tree.get_by_path_mut(&self.get_full_path())
+        let state = state_tree.get_mut(&self.get_path())
             .as_radio_button_mut();
         if !state.get_active() {
             state.set_active(true);
