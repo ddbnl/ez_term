@@ -15,7 +15,7 @@
 //! [Reference](#reference) section to look up details on available properties, callbacks, etc.
 //!
 //! **Docs table of contents:**
-//! 1. [How to use EzTerm](#how_to_use)
+//! 1. [Tutorial - How to use EzTerm](#how_to_use)
 //!     1. [Project structure](#structure)
 //!         1. [UI config files](#ui_config_files)
 //!         2. [UI Rust modules](#ui_rust_modules)
@@ -48,21 +48,21 @@
 //!         1. [Widget states and the State Tree](#scheduler_states)
 //!         2. [Using the scheduler object](#scheduler_object)
 //!         3. [Managing callbacks](#scheduler_callbacks)
-//!             1. [General callback structure][#scheduler_callbacks_structure]
-//!             2. [Callback config][#scheduler_callbacks_config]
-//!             3. [On_keyboard_enter][#scheduler_callbacks_enter]
-//!             4. [On_left_mouse_click][#scheduler_callbacks_left]
-//!             5. [On_press][#scheduler_callbacks_press]
-//!             6. [On_select][#scheduler_callbacks_select]
-//!             7. [On_deselect][#scheduler_callbacks_deselect]
-//!             8. [On_right_mouse_click][#scheduler_callbacks_right]
-//!             9. [On_hover][#scheduler_callbacks_hover]
-//!             10. [On_drag][#scheduler_callbacks_drag]
-//!             11. [On_scroll_up][#scheduler_callbacks_up]
-//!             12. [On_scroll_down][#scheduler_callbacks_down]
-//!             13. [On_value_change][#scheduler_callbacks_value]
-//!             14. [Custom key binds][#scheduler_callbacks_keymap]
-//!             15. [Property binds][#scheduler_callbacks_property]
+//!             1. [General callback structure](#scheduler_callbacks_structure)
+//!             2. [Callback config](#scheduler_callbacks_config)
+//!             3. [On_keyboard_enter](#scheduler_callbacks_enter)
+//!             4. [On_left_mouse_click](#scheduler_callbacks_left)
+//!             5. [On_press](#scheduler_callbacks_press)
+//!             6. [On_select](#scheduler_callbacks_select)
+//!             7. [On_deselect](#scheduler_callbacks_deselect)
+//!             8. [On_right_mouse_click](#scheduler_callbacks_right)
+//!             9. [On_hover](#scheduler_callbacks_hover)
+//!             10. [On_drag](#scheduler_callbacks_drag)
+//!             11. [On_scroll_up](#scheduler_callbacks_up)
+//!             12. [On_scroll_down](#scheduler_callbacks_down)
+//!             13. [On_value_change](#scheduler_callbacks_value)
+//!             14. [Custom key binds](#scheduler_callbacks_keymap)
+//!             15. [Property binds](#scheduler_callbacks_property)
 //!         4. [Managing scheduled tasks](#scheduler_tasks)
 //!             1. [Single execution](#scheduler_tasks_single)
 //!             2. [Recurring execution](#scheduler_tasks_recurring)
@@ -70,8 +70,10 @@
 //!                 1. [Using StateTree](#scheduler_tasks_threaded_state)
 //!                 2. [Using custom properties](#scheduler_tasks_threaded_property)
 //!         5. [Creating custom properties](#scheduler_properties)
-//!         6. [Managing popups](#scheduler_popups)
+//!         6. [Managing popups](#scheduler_modals)
 //!         7. [Managing widgets programmatically](#scheduler_widgets_from_code)
+//!             1. [Creating widgets from code](#scheduler_programmatic_create)
+//!             2. [Removing widgets from code](#scheduler_programmatic_remove)
 //!         8. [Updating widgets](#scheduler_updating)
 //!         9. [Managing widget selection](#scheduler_selection)
 //!     4. [Global (key)bindings](#)
@@ -102,18 +104,18 @@
 //!
 //!
 //! <a name="how_to_use"></a>
-//! ## 1. How to use
+//! ## 1. Tutorial - How to use EzTerm
 //!
-//! This section will explain how to use this framework step-by-step. This concerns only the basics.
-//! There will be links to other doc pages showing more advanced uses of the various components. It
-//! might be easiest to read this section first, then use the examples to get you started on your
-//! own UI, and finally using the docs of specific components to fill in any gaps as you work on
-//! your project.
+//! This section will explain how to use this framework step-by-step. It functions as a general
+//! tutorial, explaining all the features with little examples. Depending on your preferences,
+//! you could read this first and then go to the [examples], or go to [examples] first and consult
+//! this tutorial for more details. Using both this tutorial and the examples you should be able to
+//! get started on your own project. Once you are, you can use [reference] for a full API reference.
 //!
 //! <a name="structure"></a>
 //! ### 1.1 The structure on an EzTerm project
 //!
-//! An EzTerm project consists of three parts:
+//! First we will learn how to prepare an EzTerm project; it consists of three parts:
 //! - UI config files (files with the '.ez' extension)
 //! - UI Rust module(s)
 //! - Your actual app (also Rust modules)
@@ -123,13 +125,12 @@
 //!
 //! UI config files have the '.ez' extension. They define what your UI will look like using layouts
 //! and widgets. You can have as many .ez files as you like, so you can split up your UI along
-//! multiple files. The docs for the .ez file syntax can be found under [ez_lang]. It helps looking
-//! at the examples as well.
+//! multiple files. The language syntax will be explained below in [Ez Language](#ez_language).
 //!
 //! When you compile your project, the .ez files are automatically merged into your binary, so you
 //! do not have to ship them alongside your executable. In order to merge the .ez files into your
-//! binary, cargo needs to know where they are. You declare this in an environment variable before
-//! you compile (EZ_FOLDER). Let's say you put the .ez files in your project root in a folder
+//! binary, cargo needs to know where they are. You declare this in an environment variable called
+//! "EZ_FOLDER" before you compile. Let's say you put the .ez files in your project root in a folder
 //! called 'ui':
 //! ```
 //! /project_root
@@ -147,11 +148,13 @@
 //! ```
 //! $env:EZ_FOLDER="C:\path\to\project\ui"
 //! ```
+//! Note that the path should be a full path, not a relative one. Once we have one or more .ez files
+//! and we set the environment variable, we can move on to the Rust code.
 
 //! <a name="ui_rust_modules"></a>
 //!  #### 1.1.2 UI Rust module(s)
 //!
-//! We now have our .ez files describing what our UI should look like. Now we need a rust module
+//! We have our .ez files describing what our UI should look like. Now we need a rust module
 //! that will initialize the UI and start it. It makes sense for this to be main.rs, but it does
 //! not have to be. Here is what the the module should contain at an absolute minimum:
 //! ```
@@ -164,11 +167,10 @@
 //! }
 //! ```
 //!
-//! Initializing- and starting the UI are separate steps, because you might want to use the
-//! initialized [Scheduler] to schedule callbacks, register new [EzProperty], etc., before you
-//! actually start the UI. More on the Scheduler will follow later, for now we will only note that
-//! callbacks can be closures or fully defined functions. If you will make use of full functions as
-//! callbacks you could define them in this same module, or a separate one as you like.
+//! Initializing- and starting the UI are separate steps, because you might want to make some
+//! changes to the UI from code before it starts (we'll cover this in de Scheduler chapter).
+//! We will discuss callbacks later, but for now we will note that callbacks (either as closures
+//! or full functions) could also be defined in this same module, or a separate mode as you like.
 //!
 //! To summarize, we now have a folder with our .ez files, a module to initialize- and start our UI,
 //! and perhaps another module containing callbacks:
@@ -188,10 +190,8 @@
 //! Finally your project will obviously contain the Rust modules of your actual app (that you are
 //! building the UI for). The UI will run in the main thread and will call (parts of) your App to
 //! run in a background thread through callbacks (for example, when a button is pushed), or through
-//! a scheduled task (e.g. run every 10 seconds without user input). Your app can communicate with
-//! the UI through [EzProperty]. For example, you could create a 'usize' [EzProperty] and bind it
-//! to the 'value' parameter of a [ProgressBar] widget. Then, if your app increments this property,
-//! the progress bar widget will update in the UI automatically. This will all be explained later.
+//! a scheduled task (e.g. run every 10 seconds without user input). We'll discuss how to run your
+//! app, and how your app can manipulate the UI, later in the Scheduler section.
 //! With your actual app included, the full project structure could look like this:
 //! ```
 //! /project_root
@@ -208,7 +208,7 @@
 //! #### 1.1.4 Minimal example
 //!
 //! Now that we know the structure of an EzTerm project, we'll create the smallest working example
-//! possible to get the structure into our fingers. After that we will move on to explain the
+//! possible to get the structure into our fingers. After that we will move on to explain
 //! how to create the actual UI in detail (for which we can use the project we are now creating).
 //!
 //! **Step 1: Create a new cargo project:**
@@ -278,8 +278,8 @@
 //! ```
 //! $env:EZ_FOLDER="C:\path\to\ez_term_test\ui"
 //! ```
-//! Cargo needs to know the location of our .ez files so it can merge them into the binary.
-//! Now run the following cargo command in any OS terminal:
+//! Make sure you use a full path. Cargo needs to know the location of our .ez files so it can merge
+//! them into the binary. Now run the following cargo command in any OS terminal:
 //! ```
 //! cargo run
 //! ```
@@ -303,8 +303,7 @@
 //! As you can see in the above example, widget definitions start with a "-" dash. This makes it
 //! easier to read the .ez files. After a widget definition we can define the properties of that
 //! widget by indenting four spaces on the next line and using the "property: value" syntax. You
-//! can find every possible property of each widget in the docs (see table of contents on the top of
-//! this page).
+//! can find every possible property of each widget in [reference].
 //!
 //! Every widget must defined inside of a layout. A layout may also be defined inside of another
 //! layout, or it can be the root layout. Every EzTerm project must contain exactly one root layout:
@@ -333,8 +332,9 @@
 //! In the above example we gave the screen layouts an ID through the 'id' property; the ID is
 //! optional but becomes necessary when you want to refer to your layout/widget (either from code
 //! or from EzLang). It also makes the config file more readable. We will learn how to use the ID
-//! when we discuss callbacks and EzProperties. Don't worry if the properties look unfamiliar,
-//! we'll get into them later; for now we are just discussing the basics of the syntax.
+//! in a later section. Don't worry if the properties look unfamiliar, we'll get into them later;
+//! for now we are
+//! just discussing the basics of the syntax.
 //!
 //! <a name="ez_language_templates"></a>
 //! #### 1.2.2 Templates
@@ -466,8 +466,7 @@
 //! you don't have to handle UI scaling. Instead, smart layouts do the work for you unless you
 //! specify that you want manual positions. To give you control over the way in which objects are
 //! placed on the screen, you can choose between layout modes and layout orientations. Here is a
-//! short overview of the layout modes (for detailed info, see the dedicated entries in the table
-//! of contents at the top of this page).
+//! short overview of the layout modes:
 //!
 //!
 //! <a name="ez_language_box"></a>
@@ -762,7 +761,8 @@
 //! Note that the active_screen property is optional, by default the first screen is active.
 //! Unlike tabs, there is no default way for users to switch between screens. You will have to
 //! write callbacks for this. An obvious example would be switching screen after clicking a button
-//! (for example in a main menu). Here is an example of the EzLang and rust code needed for this:
+//! (for example in a main menu). Callbacks will be discussed later in the Scheduler chapter, but
+//! for reference we'll look at an example of switching screens through a callback:
 //!
 //! **EzLang**
 //! ```
@@ -819,8 +819,7 @@
 //! }
 //! ```
 //! This example used a button callback, but it could of course be any kind of callback or
-//! scheduled task. More on callbacks and scheduling tasks later (see table of contents at top of
-//! page).
+//! scheduled task.
 //!
 //! <a name="ez_language_scrolling"></a>
 //! ##### 1.2.3.6 Scrolling
@@ -873,7 +872,9 @@
 //!
 //! **Label:**
 //! A textbox. Can be used to display (colored) text. If the label has a height higher than one,
-//! text will be automatically wrapped to respect word boundaries. Formatted text and justify
+//! text will be automatically wrapped to respect word boundaries. The text of a label comes either
+//! from its 'text' property, or from a text file using the 'from_file' property.
+//! Formatted text and justify
 //! options are on the roadmap with priority.
 //! ```
 //! - Label:
@@ -984,7 +985,7 @@
 //!         size_hint_x: 1
 //! ```
 //! The widgets will always respect their size hints, even when the window resizes. We can make the
-//! above example shorter by removing the 'size_hint_x' properties, because they are already set to
+//! above example shorter by removing the 'size_hint_x' properties, because size hints are already set to
 //! '1' by default. As a convenience, there is also a 'size_hint' property which allows you to
 //! specify both size hints on one line in the format 'size_hint: x, y':
 //! ```
@@ -1004,7 +1005,7 @@
 //!
 //! All widgets support auto-scaling; when enabled, they will automatically size themselves to their
 //! contents. Auto-scaling is turned off by default, and overwrites size_hint if enabled.
-//! A widget with auto-scaling enabled for one of both axes (auto_scale_height and/or
+//! A widget with auto-scaling enabled for one or both axes (auto_scale_height and/or
 //! auto_scale_width) will initially be given infinite size on those axes to create their content.
 //! Once they have created their content, their size is then set to the size of their content.
 //! For example, a label with text "Hello world" and "auto_scale_width" enabled will have infinite
@@ -1030,7 +1031,7 @@
 //! ```
 //! The label still takes up the entire height of the screen, but the width is now cropped to the
 //! content of the label. We could enable scaling on both axes, using the convenience "auto_scale"
-//! property that allows us to set both at the same time in the format: "auto_scale: width, height":
+//! property that allows us to set both at the same time in the format "auto_scale: width, height":
 //! ```
 //! - Layout:
 //!     mode: box
@@ -1109,7 +1110,7 @@
 //! hints you give the relative position you want the widget to be in, and it will be handled for
 //! you. There are horizontal position hints (pos_hint_x) and vertical position hints (pos_hint_y).
 //!
-//! The available setting for pos_hint_x are:
+//! The available settings for pos_hint_x are:
 //! - Left
 //! - Center
 //! - Right
@@ -1342,7 +1343,7 @@
 //! width: root.layout_1.layout_2.label_1.width
 //! ```
 //!
-//! To provide a relative path there are two possibilities: "self", "parent". "self" refers to the
+//! To provide a relative path there are two possibilities: "self" or "parent". "self" refers to the
 //! widget itself; it can be used to bind one property of a widget to another. E.g. to bind the
 //! width of a widget to its height:
 //! ```
@@ -1356,7 +1357,7 @@
 //! ```
 //!
 //! There is one other piece of syntax: "property". This can be used to refer to custom properties
-//! that you have scheduled with the scheduler. We will discuss these in the coming [Scheduler]
+//! that you have created with the scheduler. We will discuss these in the coming [Scheduler]
 //! chapter. We'll just note for now that we can refer to custom properties from EzLang in the
 //! following format:
 //! ```
@@ -1479,20 +1480,26 @@
 //! search by ID.
 //!
 //! **By chaining get calls**:
+//!
 //! The last method is to chain get calls. The 'get' method returns another part of the state tree, so
 //! we could just call 'get' again:
 //! ```
 //! let label_state = state_tree.get("layout").get("sub_layout").get("my_label").as_label();
 //! ```
 //! This is very verbose; so when is this useful? Mostly you want to avoid it, but it comes in handy
-//! when you want to manipulate multiple child states. Let's say you have a layout with three
+//! when you want to manipulate multiple child states with non-unique IDs. Perhaps you spawned some
+//! widgets from code, and non-unique IDs were unavoidable. Let's say you have layouts with three
 //! labels, and you want to update the text of each label. You could retrieve the layout state first,
 //! and then access each child state from there:
 //! ```
-//! let layout = state_tree.get("sub_layout");
-//! layout.get("my_label_1").as_label_mut().set_text("Some".to_string());
-//! layout.get("my_label_2").as_label_mut().set_text("new".to_string());
-//! layout.get("my_label_3").as_label_mut().set_text("Text".to_string());
+//! let layout_1 = state_tree.get("sub_layout_1");
+//! layout_1.get("my_label_1").as_label_mut().set_text("Some".to_string());
+//! layout_1.get("my_label_2").as_label_mut().set_text("new".to_string());
+//! layout_1.get("my_label_3").as_label_mut().set_text("Text".to_string());
+//! let layout_2 = state_tree.get("sub_layout_2");
+//! layout_2.get("my_label_1").as_label_mut().set_text("Some".to_string());
+//! layout_2.get("my_label_2").as_label_mut().set_text("new".to_string());
+//! layout_2.get("my_label_3").as_label_mut().set_text("Text".to_string());
 //! ```
 //!
 //! We will describe callbacks in detail below, but we will note for now that the state tree is
@@ -1550,7 +1557,7 @@
 //! ```
 //!
 //! Now that we know how to use the scheduler object when initializing the UI, from callbacks, and
-//! from scheduled tasks, we will look at the manu things we can do with the scheduler. Here is a
+//! from scheduled tasks, we will look at the many things we can do with the scheduler. Here is a
 //! short overview of the features we will look at:
 //! - Managing callbacks
 //! - Scheduling tasks
@@ -1589,7 +1596,7 @@
 //! If the event is not consumed, the widget is allowed to execute its default behavior if it has
 //! any. For example, the checkbox widget has default "on_press" behavior: when pressed, it will toggle
 //! on/off. If you bind a custom "on_press" callback for a checkbox, you control whether the default
-//! behavior will be executed by returning 'true' (allowed to run) or 'false' (not allowed to run).
+//! behavior will be executed by returning 'false' (allowed to run) or 'true' (not allowed to run).
 //! This gives you the option to overwrite default widget behavior, or supplement it. If you want to
 //! know if returning true for a widget callback would overwrite default behavior, see the
 //! [reference] entry for that widget and check the callback chapter. For mouse callbacks (such as
@@ -2429,6 +2436,8 @@
 //! the label text to "my_progress", but it was useful to see an example of binding any type of
 //! property to a string property, and scheduling a threaded task without an on_finish function.
 //!
+//!
+//! <a name="scheduler_properties"></a>
 //! ### 1.3.5 Creating custom properties
 //!
 //! It is possible to create custom EzTerm properties. You can then bind widget properties to these
@@ -2531,6 +2540,7 @@
 //! - new_size_hint_property(name: &str, value: SizeHint)
 //!
 //!
+//! <a name="scheduler_modals"></a>
 //! ### 1.3.6 Managing modals (popups)
 //!
 //! A modal is a layout that is shown in front of the main UI; one of its main use cases is creating
@@ -2604,9 +2614,11 @@
 //! called.
 //!
 //!
-//! ### 1.3.6 Managing widgets programmatically
+//! <a name="scheduler_programmatic_widgets"></a>
+//! ### 1.3.7 Managing widgets programmatically
 //!
-//! #### 1.3.6.1 Creating widgets from code
+//! <a name="scheduler_programmatic_widgets_create"></a>
+//! #### 1.3.7.1 Creating widgets from code
 //!
 //! The static parts of your UI are created from the .ez files. In some cases however you need to
 //! create widgets dynamically. Maybe you are retrieving records from a database and need to display
@@ -2673,7 +2685,8 @@
 //! this to our advantage by setting the text of the Label subwidgets of each record. In this way we
 //! can dynamically create widgets at runtime.
 //!
-//! #### 1.3.6.1 Removing widgets from code
+//! <a name="scheduler_programmatic_remove"></a>
+//! #### 1.3.7.1 Removing widgets from code
 //!
 //! It's also possible to remove widgets from code. Simply use the 'remove_widget' method of the
 //! scheduler and the path or ID of the widget you wish to remove. If you use an ID, it must be
@@ -2682,6 +2695,45 @@
 //! scheduler.remove_widget("/root/layout/widget");
 //! ```
 //! The widget will be removed on the next frame after you call remove_widget.
+//!
+//!
+//! <a name="scheduler_updating"></a>
+//! ### 1.3.8 Updating widgets
+//!
+//! <a name="scheduler_updating_individual"></a>
+//! #### 1.3.8.1 Updating individual widgets
+//!
+//! If you change a widget state through code, that widget is not updated automatically. Usually you
+//! want to call the 'update' method from the widget state; for example if we're in a callback:
+//! ```
+//! use ez_term::*;
+//! fn my_callback(context: EzContext) {
+//!     let label_state = context.state_tree.get_mut("my_label").to_label_mut();
+//!     label_state.set_text("new_text".to_string());
+//!     label_state.update(context.scheduler);
+//! }
+//! ```
+//! The update method is in fact a convenience that calls "scheduler.update_widget". This scheduler
+//! method takes a full path parameter (IDs cannot be used here). It is therefore almost always more
+//! convenient to call 'update' on the widget state.
+//!
+//! <a name="scheduler_updating_global"></a>
+//! #### 1.3.8.2 Global update (force redraw)
+//!
+//! It is also possible to call a global screen update. In this case, all widgets, starting from the
+//! root layout, will be redrawn. For performance reasons, only changed pixels will actually be
+//! redrawn, but global updates will still be more costly than updating individual states. The
+//! option is made available but should generally not be used.
+//!
+//! <a name="scheduler_updating_threaded"></a>
+//! #### 1.3.8.2 Custom properties and threads
+//!
+//! There are two cases where you do not need to manually update a state. If you bind a widget
+//! property to a custom property, and you change the value of the custom property, the widgets
+//! bound to it will update automatically.
+//!
+//! Also, if you manipulate the state tree from a background thread, any state that changes will
+//! trigger a widget update automatically (because the
 mod run;
 mod scheduler;
 mod widgets;

@@ -4,10 +4,11 @@
 use std::thread::{JoinHandle, spawn};
 use std::time::Instant;
 
-use crate::{CallbackConfig, EzContext};
+use crate::{CallbackConfig, EzContext, EzObject, LayoutMode};
 use crate::run::definitions::{CallbackTree, StateTree};
 use crate::run::select::{deselect_widget, select_widget};
 use crate::scheduler::scheduler::SchedulerFrontend;
+use crate::states::ez_state::EzState;
 use crate::widgets::ez_object::EzObjects;
 use crate::widgets::layout::layout::Layout;
 
@@ -110,7 +111,7 @@ pub fn run_tasks(scheduler: &mut SchedulerFrontend, state_tree: &mut StateTree) 
 
 /// Check if there are any new widgets to create.
 pub fn create_new_widgets(scheduler: &mut SchedulerFrontend, root_widget: &mut Layout,
-                          state_tree: &mut StateTree, callback_tree: &mut CallbackTree) {
+                          callback_tree: &mut CallbackTree) {
 
     let widgets_to_create = scheduler.backend.widgets_to_create.clone();
     scheduler.backend.widgets_to_create.clear();
@@ -130,6 +131,46 @@ pub fn create_new_widgets(scheduler: &mut SchedulerFrontend, root_widget: &mut L
         }
         parent.add_child(new_widget, scheduler);
         scheduler.force_redraw();
+    }
+}
+
+pub fn remove_widgets(scheduler: &mut SchedulerFrontend, root_widget: &mut Layout,
+                      state_tree: &mut StateTree, callback_tree: &mut CallbackTree) {
+
+    while !scheduler.backend.widgets_to_remove.is_empty() {
+        let name = scheduler.backend.widgets_to_remove.pop().unwrap();
+        let full_path = state_tree.get(&name).as_generic().get_path().clone();
+
+        let (parent, id) = full_path.rsplit_once('/').unwrap();
+        let parent_widget = root_widget.get_child_by_path_mut(parent)
+            .unwrap_or_else(|| panic!("Could not remove widget: {}. It could not be found.",
+                                      full_path)).as_layout_mut();
+
+        let widget_index = parent_widget.child_lookup.get(id)
+            .unwrap_or_else(|| panic!("Could not remove widget: {}. It could not be found.",
+                                      full_path)).clone();
+        // todo! Make func and handle changing index when remove
+        parent_widget.child_lookup.remove(id);
+        parent_widget.children.remove(widget_index);
+        if state_tree.get(parent).as_layout().mode.value == LayoutMode::Tab {
+            let header_id = format!("{}_tab_header", state_tree.get(&full_path)
+                .as_layout().get_tab_name());
+            let widget_index = parent_widget.child_lookup.get(&header_id)
+                .unwrap_or_else(|| panic!("Could not remove widget: {}. It could not be found.",
+                                          &header_id)).clone();
+            parent_widget.child_lookup.remove(&header_id);
+            parent_widget.children.remove(widget_index);
+        }
+        scheduler.update_widget(parent_widget.get_path());
+
+        let removed_state = state_tree.remove_node(full_path.clone());
+        if let Some(i) = removed_state {
+            i.as_generic().clean_up_properties(scheduler);
+            for child in i.get_all() {
+                child.as_generic().clean_up_properties(scheduler);
+            }
+        }
+        callback_tree.remove_node(full_path.clone());
     }
 }
 

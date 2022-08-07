@@ -131,6 +131,8 @@ fn main() {
         state_tree.get_mut(new_id.as_str()).as_label_mut()
             .set_text(format!("Generated label {}", i));
     }
+    // Remove on widget programmatically.
+    scheduler.remove_widget("generation_box");
 
     // We will bind a callback to a property
     let size_callback = |context: EzContext | {

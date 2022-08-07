@@ -305,6 +305,63 @@ impl SchedulerFrontend {
 
     }
 
+    /// Create a new widget from code. After calling this method, the widget will appear on the
+    /// next frame. The state of the new widget will be available in the state tree immediately
+    /// after calling this method. The parameters are:
+    /// Widget_type (&str): name of the widget or template to create
+    /// Id (&str): ID of the new widget
+    /// Parent (&str): Path or ID of the parent layout to create this widget in
+    /// State_tree (&mut StateTree): the state tree root.
+    ///
+    /// # Example
+    ///
+    /// Here is an example spawning mock Sql records in a layout. First the .ez file:
+    /// ```
+    /// - Layout:
+    ///     mode: box
+    ///     orientation: vertical
+    ///     - Label:
+    ///         text: Retrieved SQL records:
+    ///         auto_scale: true, true
+    ///     - Layout:
+    ///         id: sql_records_layout
+    ///         mode: box
+    ///         orientation: vertical
+    ///
+    /// - <SqlRecord@Layout>:
+    ///     mode: box
+    ///     orientation: horizontal
+    ///     - Label:
+    ///         id: record_id
+    ///         auto_scale: true, true
+    ///     - Label:
+    ///         id: record_name
+    ///         auto_scale: true, true
+    ///     - Label:
+    ///         id: record_date
+    ///         auto_scale: true, true
+    /// ```
+    /// The code:
+    /// ```
+    /// use ez_term::*;
+    /// let (root_widget, mut state_tree, mut scheduler) = load_ui();
+    ///
+    /// let sql_records = get_sql_records();
+    /// for (i, sql_record) in sql_records.iter().enumerate() {
+    ///
+    ///     let template_name = "SqlRecord";
+    ///     let parent_id = "sql_records_layout";
+    ///     let new_id = format!("record_{}", i).as_str();
+    ///     scheduler.create_widget(template_name, new_id, parent_id, &mut state_tree);
+    ///
+    ///     let new_record_widget = state_tree.get_mut(new_id);
+    ///     new_record_widget.get("record_id").as_label_mut().set_text(sql_record.id);
+    ///     new_record_widget.get("record_name").as_label_mut().set_text(sql_record.name);
+    ///     new_record_widget.get("record_date").as_label_mut().set_text(sql_record.date);
+    ///
+    /// }
+    /// run(root_widget, state_tree, scheduler);
+    /// ```
     pub fn create_widget(&mut self, widget_type: &str, id: &str, parent: &str,
                          state_tree: &mut StateTree)  {
 
@@ -337,6 +394,11 @@ impl SchedulerFrontend {
         };
         self.backend.widgets_to_create.push(new_widget);
 
+    }
+
+    /// Remove a widget on the next frame. Pass the path or ID of the widget to remove.
+    pub fn remove_widget(&mut self, name: &str) {
+        self.backend.widgets_to_remove.push(name.to_string());
     }
 
     /// Register a new property and return it. After a property has been registered it's possible
@@ -636,6 +698,9 @@ pub struct Scheduler {
 
     /// List of new widgets that will be created on the next frame. Use [create_widget] for this.
     pub widgets_to_create: Vec<EzObjects>,
+
+    /// List of new widgets that will be removed on the next frame. Use [remove_widget] for this.
+    pub widgets_to_remove: Vec<String>,
 
     /// List of <Widget path, [CallbackConfig]. Every frame this list is checked, and the widget
     /// belonging to the widget path will have its' [CallbackConfig] replaced with the new one.
