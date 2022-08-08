@@ -4,7 +4,7 @@
 use std::thread::{JoinHandle, spawn};
 use std::time::Instant;
 
-use crate::{CallbackConfig, EzContext, EzObject, LayoutMode};
+use crate::{CallbackConfig, EzContext, EzObject, KeyMap, LayoutMode};
 use crate::run::definitions::{CallbackTree, StateTree};
 use crate::run::select::{deselect_widget, select_widget};
 use crate::scheduler::scheduler::SchedulerFrontend;
@@ -168,7 +168,8 @@ pub fn remove_widgets(scheduler: &mut SchedulerFrontend, root_widget: &mut Layou
 
 
 /// Check if any callback configs were scheduled to be updated or replaced.
-pub fn update_callback_configs(scheduler: &mut SchedulerFrontend, callback_tree: &mut CallbackTree) {
+pub fn update_callback_configs(scheduler: &mut SchedulerFrontend, callback_tree: &mut CallbackTree,
+                               global_keymap: &mut KeyMap) {
 
     while !scheduler.backend.new_callback_configs.is_empty() {
         let (path, callback_config) =
@@ -180,6 +181,21 @@ pub fn update_callback_configs(scheduler: &mut SchedulerFrontend, callback_tree:
             scheduler.backend.updated_callback_configs.remove(0);
         callback_tree.get_mut(&path_or_id).obj.update_from(callback_config);
     }
+    for (key, callback) in
+            scheduler.backend.update_global_keymap.drain() {
+        global_keymap.insert(key, callback);
+    }
+    scheduler.backend.update_global_keymap.clear();
+    
+    for key in scheduler.backend.remove_global_keymap.iter() {
+        global_keymap.remove_entry(&key);
+    }
+    scheduler.backend.remove_global_keymap.clear();
+    
+    if scheduler.backend.clear_global_keymap {
+        global_keymap.clear()
+    }
+
 }
 
 /// Check all EzProperty that have at least one subscriber and check if they've send a new

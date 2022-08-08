@@ -4,6 +4,7 @@
 use std::process::exit;
 
 use crossterm::event::{Event, KeyCode, KeyEvent, MouseButton, MouseEvent, MouseEventKind};
+use crate::{EzContext, KeyMap};
 
 use crate::run::definitions::{CallbackTree, Coordinates, StateTree};
 use crate::run::select::{get_widget_by_position, select_next, select_previous};
@@ -46,11 +47,12 @@ pub fn handle_modal_event (event: Event, state_tree: &mut StateTree,
 pub fn handle_global_event(event: Event, state_tree: &mut StateTree,
                        root_widget: &Layout, callback_tree: &mut CallbackTree,
                        scheduler: &mut SchedulerFrontend, selected_widget: &mut String,
-                       dragging: &mut Option<String>, last_dragging_pos: &mut Coordinates) -> bool {
+                       dragging: &mut Option<String>, last_dragging_pos: &mut Coordinates,
+                       global_keymap: &mut KeyMap) -> bool {
 
     match event {
         Event::Key(key) => {
-            handle_key_event(key, state_tree, root_widget, callback_tree, scheduler,
+            handle_key_event(key, global_keymap, state_tree, root_widget, callback_tree, scheduler,
                              selected_widget)
         }
         Event::Mouse(event) => {
@@ -64,11 +66,11 @@ pub fn handle_global_event(event: Event, state_tree: &mut StateTree,
 
 /// Global key handler. If a key event matches one of these keys it will be consumed and not passed
 /// on any further.
-fn handle_key_event(key: KeyEvent, state_tree: &mut StateTree,
+fn handle_key_event(key: KeyEvent, global_keymap: &mut KeyMap, state_tree: &mut StateTree,
                     root_widget: &Layout, callback_tree: &mut CallbackTree,
                     scheduler: &mut SchedulerFrontend, selected_widget: &mut String) -> bool {
 
-    match key.code {
+    let consumed = match key.code {
         KeyCode::Down => {
             select_next(state_tree, root_widget, callback_tree, scheduler,
                         selected_widget);
@@ -91,8 +93,15 @@ fn handle_key_event(key: KeyEvent, state_tree: &mut StateTree,
             shutdown_terminal().unwrap();
             exit(0);
         }
-        _ => false
+        _ => false,
+    };
+    if !consumed && global_keymap.contains_key(&key.code) {
+        let context = EzContext::new("".to_string(), state_tree, scheduler);
+        let callback =
+            global_keymap.get_mut(&key.code).unwrap();
+        return callback(context, key.code);
     }
+    false
 }
 
 
@@ -169,7 +178,7 @@ fn handle_mouse_hover_event(event: MouseEvent, state_tree: &mut StateTree,
             return true
         }
     }
-    if !selected_widget.is_empty() {
+    if !selected_widget.is_empty() && !scheduler.backend.deselect {
         if let EzState::TextInput(_) = state_tree.get(selected_widget).obj {
 
         } else {

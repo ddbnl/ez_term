@@ -301,7 +301,7 @@ impl<T> Tree<T> {
         } else {
             return Err(Error::new(
                 ErrorKind::InvalidData,
-                format!("ID \"{}\" could not be found in \"{}\". It either does not \
+                format!("ID '{}' could not be found in '{}'. It either does not \
                        exist or is not unique in this tree", id, self.id)))
         }
     }
@@ -317,7 +317,7 @@ impl<T> Tree<T> {
         } else {
             return Err(Error::new(
                 ErrorKind::InvalidData,
-                format!("ID \"{}\" could not be found in \"{}\". It either does not \
+                format!("ID '{}' could not be found in '{}'. It either does not \
                        exist or is not unique in this tree", id, self.id)))
         }
     }

@@ -5,17 +5,18 @@ use std::collections::HashMap;
 use std::sync::mpsc::Receiver;
 use std::thread::{JoinHandle};
 use std::time::{Duration, Instant};
+use crossterm::event::KeyCode;
 
 use crossterm::style::Color;
 
-use crate::{CallbackConfig, EzPropertiesMap};
+use crate::{CallbackConfig, EzPropertiesMap, KeyMap};
 use crate::parser::ez_definition::Templates;
 use crate::property::ez_properties::EzProperties;
 use crate::property::ez_property::EzProperty;
 use crate::property::ez_values::EzValues;
 use crate::run::definitions::{Coordinates, StateTree};
 use crate::run::run::{open_and_register_modal, stop};
-use crate::scheduler::definitions::{EzPropertyUpdater, EzThread, GenericFunction, GenericRecurringTask, GenericTask};
+use crate::scheduler::definitions::{EzPropertyUpdater, EzThread, GenericFunction, GenericRecurringTask, GenericTask, KeyboardCallbackFunction};
 use crate::states::definitions::{HorizontalAlignment, HorizontalPosHint, LayoutMode, LayoutOrientation, VerticalAlignment, VerticalPosHint};
 use crate::states::ez_state::EzState;
 use crate::widgets::ez_object::EzObjects;
@@ -651,6 +652,22 @@ impl SchedulerFrontend {
     /// selection if any, and calls the appropriate callbacks.
     pub fn deselect_widget(&mut self) { self.backend.deselect = true }
 
+    /// Globally bind a keyboard key (CrossTerm [KeyCode]). These keybinds take priority over all 
+    /// others and work in all contexts.
+    pub fn bind_global_key(&mut self, key: KeyCode, callback: KeyboardCallbackFunction) {
+        self.backend.update_global_keymap.insert(key, callback);
+    }
+
+    /// Remove a single global keybind by keycode.
+    pub fn remove_global_key(&mut self, key: KeyCode) {
+        self.backend.remove_global_keymap.push(key);
+    }
+
+    /// Remove all custom global keybinds currently active.
+    pub fn clear_global_keys(&mut self) {
+        self.backend.clear_global_keymap = true;
+    }
+
     /// Gracefully exit the app.
     pub fn exit(&self) { stop(); }
 }
@@ -734,6 +751,16 @@ pub struct Scheduler {
 
     /// If true, deselect the currently selection widget (if any) on the next frame.
     pub deselect: bool,
+
+    /// KeyMap containing global keybinds. Keys bound here take priority over widget keymaps, and
+    /// work in all contexts.
+    pub update_global_keymap: KeyMap,
+    
+    /// KeyCodes in this vec will be removed from the global keymap on the next frame.
+    pub remove_global_keymap: Vec<KeyCode>,
+    
+    /// Entire global keymap will be cleared on the next frame.
+    pub clear_global_keymap: bool,
 }
 
 /// A struct representing a run-once. This struct is not directly used by the

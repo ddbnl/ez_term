@@ -2137,6 +2137,40 @@
 //! scheduler.update_callback_config("my_checkbox", new_callback_config);
 //! ```
 //!
+//! <a name="scheduler_callbacks_global"></a>
+//! ##### 1.3.3.14 Global key binds
+//!
+//! There is a global keymap. It functions like the custom keymap, except keys from the global
+//! keymap always have prioroty in consuming events, and are available in all situations. The
+//! 'bind_global_key' function of the scheduler allows you to bind global keys to callabcks. The
+//! 'remove_global_key' and 'clear_global_keys' allow you to remove one or all global keybinds.
+//! Let's look at an example: we want to bind the 'a' key on the keyboard to toggling a checkbox on
+//! or off:
+//! ```
+//! use ez_term::*;
+//! let (root_widget, mut state_tree, mut scheduler) = load_ui();
+//!
+//! fn my_callback(context: EzContext, keycode: KeyCode) -> bool {
+//!
+//!     let checkbox_state = context.state_tree.get_mut("my_checkbox").as_checkbox_mut();
+//!     checkbox_state.set_active(!checkbox_state.get_active());
+//!     checkbox_state.update(context.scheduler);
+//!     true
+//! };
+//!
+//! scheduler.bind_global_key(KeyCode::Char('a'), Box::new(my_callback));
+//! ```
+//!
+//! If we now wanted to remove the 'a' keybind specifically:
+//! ```
+//! scheduler.remove_global_key(KeyCode::Char('a'));
+//! ```
+//!
+//! If we wanted to clear all keys:
+//! ```
+//! scheduler.clear_global_keys();
+//! ```
+//!
 //! <a name="scheduler_callbacks_property"></a>
 //! ##### 1.3.3.15 Property binds
 //!

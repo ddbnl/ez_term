@@ -152,6 +152,17 @@ fn main() {
     state.size.height.bind(Box::new(size_callback), &mut scheduler);
 
     scheduler.new_usize_property("my_progress", 0);
+
+    // Bind a global key
+    scheduler.bind_global_key(
+        KeyCode::Char('a'),Box::new(|context: EzContext, key: KeyCode| {
+            let state = context.state_tree.get_mut("checkbox").as_checkbox_mut();
+            state.set_active(!state.get_active());
+            state.update(context.scheduler);
+            test_checkbox_on_value_change(context);
+            true
+        }));
+
     // Step 3: Run app
     // Now everything must happen from bindings as root widget is passed over
     run(root_widget, state_tree, scheduler);
@@ -165,8 +176,7 @@ fn test_checkbox_on_value_change(context: EzContext) -> bool {
     // First we get the widget state object of the widget that changed value, using the 'widget_path'
     // parameter as a key. The state contains the current value. Then we cast the generic widget
     // state as a CheckboxState, so we can access all its fields. Then we check the 'active' field.
-    let enabled = context.state_tree
-        .get(&context.widget_path).as_checkbox().get_active();
+    let enabled = context.state_tree.get("checkbox").as_checkbox().get_active();
     // Now we will create a text and a color depending on whether the checkbox was turned on or off
     let text = if enabled {"Enabled"} else {"Disabled"};
     let color = if enabled {Color::Green} else {Color::Red};

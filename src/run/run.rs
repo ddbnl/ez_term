@@ -7,7 +7,7 @@ use std::time::{Duration, Instant};
 use crossterm::{event::{Event, MouseEventKind, poll, read}, Result};
 use crossterm::event::MouseButton;
 
-use crate::CallbackConfig;
+use crate::{CallbackConfig, KeyMap};
 use crate::run::definitions::{CallbackTree, Coordinates, StateTree};
 use crate::run::terminal::{redraw_changed_widgets, write_to_screen};
 use crate::run::tree::{clean_trees, initialize_callback_tree, ViewTree};
@@ -118,6 +118,7 @@ fn run_loop(mut root_widget: Layout, mut state_tree: StateTree, mut callback_tre
     let mut selected_widget = String::new(); // Currently selected widget
     let mut dragging: Option<String> = None; // Widget currently being dragged if any
     let mut last_dragging_pos = Coordinates::new(0, 0);
+    let mut global_keymap = KeyMap::new();
     scheduler.force_redraw();
     loop {
 
@@ -185,7 +186,7 @@ fn run_loop(mut root_widget: Layout, mut state_tree: StateTree, mut callback_tre
             if !consumed {
                 consumed = handle_global_event(
                     event, &mut state_tree, &root_widget, &mut callback_tree, &mut scheduler,
-                    &mut selected_widget, &mut dragging, &mut last_dragging_pos);
+                    &mut selected_widget, &mut dragging, &mut last_dragging_pos, &mut global_keymap);
             }
             // Try to let currently selected widget handle and consume the event
             if !consumed && !selected_widget.is_empty() {
@@ -220,7 +221,7 @@ fn run_loop(mut root_widget: Layout, mut state_tree: StateTree, mut callback_tre
         remove_widgets(&mut scheduler, &mut root_widget, &mut state_tree, &mut callback_tree);
         selected_widget = handle_next_selection(&mut scheduler, &mut state_tree, &root_widget,
                                                 &mut callback_tree, selected_widget);
-        update_callback_configs(&mut scheduler, &mut callback_tree);
+        update_callback_configs(&mut scheduler, &mut callback_tree, &mut global_keymap);
         add_property_callbacks(&mut scheduler, &mut callback_tree);
         run_tasks(&mut scheduler, &mut state_tree);
         update_threads(&mut scheduler, &mut state_tree);
