@@ -118,6 +118,7 @@ fn run_loop(mut root_widget: Layout, mut state_tree: StateTree, mut callback_tre
     let mut selected_widget = String::new(); // Currently selected widget
     let mut dragging: Option<String> = None; // Widget currently being dragged if any
     let mut last_dragging_pos = Coordinates::new(0, 0);
+    scheduler.force_redraw();
     loop {
 
         // We check for and deal with a possible event
@@ -187,12 +188,13 @@ fn run_loop(mut root_widget: Layout, mut state_tree: StateTree, mut callback_tre
                     &mut selected_widget, &mut dragging, &mut last_dragging_pos);
             }
             // Try to let currently selected widget handle and consume the event
-            if !consumed && !selected_widget.is_empty() &&
-                !state_tree.get(&selected_widget).as_generic().get_disabled() {
+            if !consumed && !selected_widget.is_empty() {
                 if let Some(widget) =
                 root_widget.get_child_by_path(&selected_widget) {
-                    consumed = widget.as_ez_object().handle_event(
-                        event, &mut state_tree, &mut callback_tree, &mut scheduler);
+                    if !state_tree.get(&selected_widget).as_generic().get_disabled() {
+                        consumed = widget.as_ez_object().handle_event(
+                            event, &mut state_tree, &mut callback_tree, &mut scheduler);
+                    }
                 }
             }
             if !consumed {

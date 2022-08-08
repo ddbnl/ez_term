@@ -253,12 +253,12 @@ impl GenericState for LayoutState {
 
         let width_result: isize = self.size.get_width() as isize
             -if self.get_border_config().get_border() {2} else {0}
-            -if self.scrolling_config.get_is_scrolling_y() {1} else {0}
+            -if self.scrolling_config.get_scroll_y() {1} else {0}
             -self.get_padding().get_padding_left() as isize - self.get_padding().get_padding_right() as isize;
         let width = if width_result < 0 {0} else { width_result};
         let height_result: isize = self.size.get_height() as isize
             -if self.get_border_config().get_border() {2} else {0}
-            -if self.scrolling_config.get_is_scrolling_x() {1} else {0}
+            -if self.scrolling_config.get_scroll_x() {1} else {0}
             -self.get_padding().get_padding_top() as isize - self.get_padding().get_padding_bottom() as isize;
         let height = if height_result < 0 {0} else { height_result};
         Size::new(width as usize, height as usize)
@@ -345,6 +345,8 @@ impl GenericState for LayoutState {
         self.pos_hint.clean_up_properties(scheduler);
         self.auto_scale.clean_up_properties(scheduler);
         self.padding.clean_up_properties(scheduler);
+        clean_up_property(scheduler, &self.mode.name);
+        clean_up_property(scheduler, &self.orientation.name);
         clean_up_property(scheduler, &self.halign.name);
         clean_up_property(scheduler, &self.valign.name);
         clean_up_property(scheduler, &self.active_screen.name);
@@ -439,7 +441,7 @@ impl LayoutState {
                                     scheduler: &mut SchedulerFrontend) -> Vec<(String, EzState)> {
         let mut popup = self.templates.get(&template).unwrap().clone();
         let config = vec!("id: modal".to_string());
-        let mut init_popup = popup.parse(scheduler,"/root".to_string(), 0,
+        let init_popup = popup.parse(scheduler,"/root".to_string(), 0,
                                      Some(config));
         self.open_modal(init_popup)
     }

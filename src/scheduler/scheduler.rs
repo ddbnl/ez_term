@@ -249,11 +249,8 @@ impl SchedulerFrontend {
     pub fn dismiss_modal(&mut self, state_tree: &mut StateTree) {
         state_tree.as_layout_mut().dismiss_modal(self);
         let removed = state_tree.remove_node("/modal".to_string());
-        if let Some(i) = removed {
-            i.as_generic().clean_up_properties(self);
-            for state in i.get_all() {
-                state.as_generic().clean_up_properties(self);
-            }
+        for state in removed.get_all() {
+            state.as_generic().clean_up_properties(self);
         }
         self.deselect_widget();
         self.force_redraw();
@@ -630,7 +627,7 @@ impl SchedulerFrontend {
     ///
     /// scheduler.bind_ez_property_callback("my_property", Box::new(my_callback));
     /// ```
-    pub fn bind_property_callback(&mut self, mut name: &str, callback: GenericFunction) {
+    pub fn bind_property_callback(&mut self, name: &str, callback: GenericFunction) {
 
         if self.backend.property_callbacks.contains(&name.to_string()) {
             self.backend.new_property_callbacks.push((name.to_string(), callback));

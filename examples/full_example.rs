@@ -132,7 +132,7 @@ fn main() {
             .set_text(format!("Generated label {}", i));
     }
     // Remove on widget programmatically.
-    scheduler.remove_widget("generation_box");
+    scheduler.remove_widget("label_9");
 
     // We will bind a callback to a property
     let size_callback = |context: EzContext | {

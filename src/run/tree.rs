@@ -35,13 +35,13 @@ pub struct Tree<T> {
     /// HashMap of objects to provide caching and ID lookup for
     objects: HashMap<String, Tree<T>>,
 
-    cache: HashMap<String, Vec<String>>,
+    id_cache: HashMap<String, Vec<String>>,
 
 }
 impl<T> Tree<T> {
 
     pub fn new(name: String, node: T) -> Self {
-        Tree { id: name, obj: node, objects: HashMap::new(), cache: HashMap::new(), }
+        Tree { id: name, obj: node, objects: HashMap::new(), id_cache: HashMap::new(), }
     }
 
     /// Add a node to the state tree. There's generally no reason to use this as an
@@ -58,8 +58,8 @@ impl<T> Tree<T> {
 
     fn _add_node(&mut self, mut steps: Vec<&str>, node: T) {
 
-        self.cache.insert(steps.last().unwrap().to_string(),
-                          steps.iter().map(|x| x.to_string()).collect());
+        self.id_cache.insert(steps.last().unwrap().to_string(),
+                             steps.iter().map(|x| x.to_string()).collect());
         if steps.len() == 1 {
             let id = steps.pop().unwrap();
             let node = Tree::new(id.to_string(), node);
@@ -71,33 +71,45 @@ impl<T> Tree<T> {
 
     /// Remove a node from the state tree. There's generally no reason to use this as
     /// an end-user; the tree will be pruned regularly.
-    pub fn remove_node(&mut self, path: String) -> Option<Self> {
+    pub fn remove_node(&mut self, path: String) -> Self {
 
         let steps = if !path.contains('/') {
-            vec!(path.as_str())
+            let _steps = vec!(path.as_str());
+            if _steps[0] == self.id {
+                panic!("Cannot remove self from tree. Remove from parent \
+                                           node instead")
+            }
+            _steps
         } else {
-            let vec: Vec<&str> = path.split('/').collect();
-            vec[1..].to_vec()
+            let _steps: Vec<&str> = path.split('/').collect();
+            let mut _steps = _steps[1..].to_vec();
+            if _steps[0] == self.id {
+                if _steps.len() == 1 {
+                    panic!("Cannot remove self from tree. Remove from parent \
+                                               node instead")
+                } else {
+                    _steps.remove(0);
+                }
+            }
+            _steps
         };
         self._remove_node(steps)
     }
 
-    fn _remove_node(&mut self, mut steps: Vec<&str>) -> Option<Self> {
+    fn _remove_node(&mut self, mut steps: Vec<&str>) -> Self {
 
         if steps.len() == 1 {
-            let id = steps.pop().unwrap();
-            return if self.objects.contains_key(id) {
-                self.objects.remove(id)
-            } else {
-                None
-            }
+            let id = steps.remove(0);
+            self.objects.remove(id).unwrap_or_else(
+                || panic!("Node '{}' could not resolve '{:?}' at step '{}' when removing state",
+                          self.id, steps, id))
         } else {
-            let id = steps.pop().unwrap();
-            if self.objects.contains_key(id) {
-                return self.objects.get_mut(id).unwrap()._remove_node(steps)
-            }
+            let id = steps.remove(0);
+            return self.objects.get_mut(id).unwrap_or_else(
+                || panic!("Node '{}' could not resolve '{:?}' at step '{}' when removing state",
+                          self.id, steps, id))
+                ._remove_node(steps)
         }
-        None
     }
 
     /// Find a node on the (state) tree and get a ref. Parameter can be an ID or a path; both will
@@ -256,7 +268,7 @@ impl<T> Tree<T> {
         Ok(node)
     }
 
-    /// Get object refs in the tree recursively.
+    /// Get object refs in the tree recursively, including self.
     pub fn get_all(&self) -> Vec<&T> {
 
         let mut results = Vec::new();
@@ -267,7 +279,7 @@ impl<T> Tree<T> {
         results
     }
 
-    /// Get object mut refs in the tree recursively.
+    /// Get object mut refs in the tree recursively including self.
     pub fn get_all_mut(&mut self) -> Vec<&mut T> {
 
         let mut results = Vec::new();
@@ -283,7 +295,7 @@ impl<T> Tree<T> {
     /// is unique.
     fn get_by_id(&self, id: &str) -> Result<&Tree<T>, Error> {
 
-        let steps = self.cache.get(id).cloned();
+        let steps = self.id_cache.get(id).cloned();
         if let Some(path) = steps {
             Ok(self._get_recursive(&path.iter().map(|x| x.as_str()).collect())?)
         } else {
@@ -299,7 +311,7 @@ impl<T> Tree<T> {
     /// is unique.
     fn get_by_id_mut(&mut self, id: &str) -> Result<&mut Tree<T>, Error> {
 
-        let steps = self.cache.get(id).cloned();
+        let steps = self.id_cache.get(id).cloned();
         if let Some(path) = steps {
             Ok(self._get_recursive_mut(&path.iter().map(|x| x.as_str()).collect())?)
         } else {

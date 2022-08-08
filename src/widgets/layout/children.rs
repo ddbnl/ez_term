@@ -179,13 +179,14 @@ impl Layout {
                 tab_header.state.set_size_hint_x(None);
                 tab_header.state.set_size_hint_y(None);
                 tab_header.state.set_text(tab_name.clone());
-                tab_header.state.colors = self.state.colors.clone();
                 tab_header.state.colors.fg_color.set(self.state.colors.tab_fg_color.value);
                 tab_header.state.colors.bg_color.set(self.state.colors.tab_bg_color.value);
                 tab_header.state.colors.disabled_fg_color.set(self.state.colors.active_fg_color.value);
                 tab_header.state.colors.disabled_bg_color.set(self.state.colors.active_bg_color.value);
                 tab_header.state.colors.border_fg_color.set(self.state.colors.tab_border_fg_color.value);
                 tab_header.state.colors.border_bg_color.set(self.state.colors.tab_border_bg_color.value);
+                tab_header.state.colors.selection_fg_color.set(self.state.colors.selection_fg_color.value);
+                tab_header.state.colors.selection_bg_color.set(self.state.colors.selection_bg_color.value);
 
                 let tab_on_click = move |context: EzContext| {
                     let state = context.state_tree
@@ -200,6 +201,22 @@ impl Layout {
                 self.add_child(EzObjects::Button(tab_header), scheduler);
             }
         }
+    }
+
+    /// Remove a widget. Never remove a child directly but call this instead. It keeps the child
+    /// lookup table cache up to date.
+    pub fn remove_child(&mut self, id: &str) {
+
+        let widget_index = self.child_lookup.get(id)
+            .unwrap_or_else(|| panic!("Could not remove widget: {}. It could not be found.",
+                                      id)).clone();
+        self.children.remove(widget_index);
+        self.child_lookup.clear();
+        for (i, child) in self.children.iter().enumerate() {
+            self.child_lookup.insert(child.as_ez_object().get_id(), i);
+        }
+
+
     }
 
     /// Get a list of children non-recursively. Can be [layout] or [EzWidget]

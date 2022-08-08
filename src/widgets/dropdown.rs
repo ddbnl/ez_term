@@ -172,12 +172,13 @@ impl EzObject for Dropdown {
         if consumed { return consumed}
         let modal_id = format!("modal");
         let modal_path = format!("/root/modal");
-        if state_tree.contains("modal") {
+        if state_tree.as_layout().has_modal() {
             return false
         }
 
-        let state = state_tree.get(&self.get_path())
-            .as_dropdown();
+        let state = state_tree.get_mut(&self.get_path())
+            .as_dropdown_mut();
+        state.disabled.set(true);
 
         let position =
             StateCoordinates::new(
@@ -209,11 +210,11 @@ impl EzObject for Dropdown {
                 format!("{}/selection_order", modal_path).as_str(), 0),
             state.get_absolute_position(),
             PosHint::new(None, None, modal_path.clone(), scheduler),
-            1,
+            0,
             state.get_border_config().clone(),
             state.get_color_config().clone(),
             scheduler.new_string_property(format!("{}/choice", modal_path).as_str(),
-                                                  state.get_choice()),
+                                                  state.get_options()[0].to_string()),
             self.path.clone(),
         );
         let new_modal = DroppedDownMenu {
@@ -397,7 +398,6 @@ impl DroppedDownMenu {
             .as_dropped_down_menu().parent_path.clone();
         let state = state_tree.get_mut(&parent).as_dropdown_mut();
         state.set_choice(choice);
-        state.update(scheduler);
         let state = state_tree.as_layout_mut();
         state.dismiss_modal(scheduler);
         state.update(scheduler);
@@ -442,10 +442,9 @@ impl DroppedDownMenu {
                     .clone();
                 let state = state_tree.get_mut(&parent).as_dropdown_mut();
                 state.set_choice(choice);
-                state.update(scheduler);
+                state.set_disabled(false);
                 scheduler.dismiss_modal(state_tree);
-                let state = state_tree.as_layout_mut();
-                state.update(scheduler);
+                scheduler.force_redraw();
                 if let Some(ref mut i) = callback_tree
                     .get_mut(&parent).obj.on_value_change {
                     let context = EzContext::new(parent, state_tree, scheduler);
@@ -455,7 +454,8 @@ impl DroppedDownMenu {
         } else {
             let state = state_tree.as_layout_mut();
             state.dismiss_modal(scheduler);
-            state.update(scheduler);
+            let state = state_tree.get_mut(&parent).as_dropdown_mut();
+            state.set_disabled(false);
         }
     }
 

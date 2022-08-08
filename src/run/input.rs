@@ -38,7 +38,7 @@ pub fn handle_modal_event (event: Event, state_tree: &mut StateTree,
             }
         }
     }
-    false
+    consumed
 }
 
 /// Try to handle an event as a global keybind. Examples are up/down keys for navigating menu,
@@ -55,7 +55,7 @@ pub fn handle_global_event(event: Event, state_tree: &mut StateTree,
         }
         Event::Mouse(event) => {
             handle_mouse_event(event, state_tree, root_widget, callback_tree, scheduler,
-                               dragging, last_dragging_pos)
+                               dragging, last_dragging_pos, selected_widget)
         }
         _ => false,
     }
@@ -102,10 +102,11 @@ fn handle_key_event(key: KeyEvent, state_tree: &mut StateTree,
 fn handle_mouse_event(event: MouseEvent, state_tree: &mut StateTree,
                       root_widget: &Layout, callback_tree: &mut CallbackTree,
                       scheduler: &mut SchedulerFrontend, dragging: &mut Option<String>,
-                      last_dragging_pos: &mut Coordinates) -> bool {
+                      last_dragging_pos: &mut Coordinates, selected_widget: &str) -> bool {
 
     if let MouseEventKind::Moved = event.kind {
-        return handle_mouse_hover_event(event, state_tree, root_widget, callback_tree, scheduler);
+        return handle_mouse_hover_event(event, state_tree, root_widget, callback_tree, scheduler,
+                                        selected_widget);
     }
     if let MouseEventKind::Drag(_) = event.kind {
         return handle_mouse_drag_event(event, state_tree, root_widget, callback_tree, scheduler,
@@ -155,7 +156,7 @@ fn handle_mouse_press_event(event: MouseEvent, button: MouseButton, state_tree: 
 
 fn handle_mouse_hover_event(event: MouseEvent, state_tree: &mut StateTree,
                             root_widget: &Layout, callback_tree: &mut CallbackTree,
-                            scheduler: &mut SchedulerFrontend) -> bool {
+                            scheduler: &mut SchedulerFrontend, selected_widget: &str) -> bool {
 
     let mouse_position = Coordinates::new(event.column as usize,event.row as usize);
 
@@ -168,7 +169,13 @@ fn handle_mouse_hover_event(event: MouseEvent, state_tree: &mut StateTree,
             return true
         }
     }
-    scheduler.deselect_widget();
+    if !selected_widget.is_empty() {
+        if let EzState::TextInput(_) = state_tree.get(selected_widget).obj {
+
+        } else {
+            scheduler.deselect_widget();
+        }
+    }
     true
 }
 

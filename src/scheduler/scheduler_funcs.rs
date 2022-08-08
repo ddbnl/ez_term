@@ -8,7 +8,6 @@ use crate::{CallbackConfig, EzContext, EzObject, LayoutMode};
 use crate::run::definitions::{CallbackTree, StateTree};
 use crate::run::select::{deselect_widget, select_widget};
 use crate::scheduler::scheduler::SchedulerFrontend;
-use crate::states::ez_state::EzState;
 use crate::widgets::ez_object::EzObjects;
 use crate::widgets::layout::layout::Layout;
 
@@ -117,7 +116,7 @@ pub fn create_new_widgets(scheduler: &mut SchedulerFrontend, root_widget: &mut L
     scheduler.backend.widgets_to_create.clear();
     for new_widget in widgets_to_create {
         let widget_path = new_widget.as_ez_object().get_path();
-        let (parent_path, id) = widget_path.rsplit_once('/').unwrap();
+        let (parent_path, _) = widget_path.rsplit_once('/').unwrap();
 
         let parent = root_widget.get_child_by_path_mut(parent_path).unwrap_or_else(
             || panic!("Could not create new widget, parent path does not exist: {}", parent_path)
@@ -146,29 +145,22 @@ pub fn remove_widgets(scheduler: &mut SchedulerFrontend, root_widget: &mut Layou
             .unwrap_or_else(|| panic!("Could not remove widget: {}. It could not be found.",
                                       full_path)).as_layout_mut();
 
-        let widget_index = parent_widget.child_lookup.get(id)
-            .unwrap_or_else(|| panic!("Could not remove widget: {}. It could not be found.",
-                                      full_path)).clone();
-        // todo! Make func and handle changing index when remove
-        parent_widget.child_lookup.remove(id);
-        parent_widget.children.remove(widget_index);
-        if state_tree.get(parent).as_layout().mode.value == LayoutMode::Tab {
-            let header_id = format!("{}_tab_header", state_tree.get(&full_path)
-                .as_layout().get_tab_name());
-            let widget_index = parent_widget.child_lookup.get(&header_id)
-                .unwrap_or_else(|| panic!("Could not remove widget: {}. It could not be found.",
-                                          &header_id)).clone();
-            parent_widget.child_lookup.remove(&header_id);
-            parent_widget.children.remove(widget_index);
+        parent_widget.remove_child(id);
+        let parent_state = state_tree.get_mut(parent).as_layout();
+        if parent_state.mode.value == LayoutMode::Tab {
+            let own_state = state_tree.get(&full_path).as_layout();
+            let header_id = format!("{}_tab_header", own_state.get_tab_name());
+            let header_path =
+                parent_widget.get_child(&header_id).unwrap().as_ez_object().get_path().clone();
+            parent_widget.remove_child(&header_id);
+            let removed = state_tree.remove_node(header_path);
+            removed.obj.as_generic().clean_up_properties(scheduler);
         }
         scheduler.update_widget(parent_widget.get_path());
 
         let removed_state = state_tree.remove_node(full_path.clone());
-        if let Some(i) = removed_state {
-            i.as_generic().clean_up_properties(scheduler);
-            for child in i.get_all() {
-                child.as_generic().clean_up_properties(scheduler);
-            }
+        for child in removed_state.get_all() {
+            child.as_generic().clean_up_properties(scheduler);
         }
         callback_tree.remove_node(full_path.clone());
     }

@@ -180,8 +180,9 @@ pub fn get_widget_by_position<'a>(pos: Coordinates, root_widget: &'a Layout,
                     root_widget.get_child_by_path(generic_state.get_path()).unwrap().as_ez_object());
             }
         } else if state.as_generic().collides_effective(pos) {
-            results.push(
-                root_widget.get_child_by_path(generic_state.get_path()).unwrap().as_ez_object());
+            if let Some(i) = root_widget.get_child_by_path(generic_state.get_path()) {
+                results.push(i.as_ez_object());
+            }
         }
     }
     results

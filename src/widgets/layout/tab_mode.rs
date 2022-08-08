@@ -94,7 +94,7 @@ impl Layout {
                 child_state.set_effective_width(
                     if own_effective_size.width >= 1 {
                         own_effective_size.width -
-                            if child_state.get_scrolling_config().get_is_scrolling_y() {1} else {0}
+                            if child_state.get_scrolling_config().get_scroll_y() {1} else {0}
                     } else {0}
                 );
                 child_state.get_position_mut().set_x(0);
