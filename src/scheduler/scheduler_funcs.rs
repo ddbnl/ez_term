@@ -183,17 +183,17 @@ pub fn update_callback_configs(scheduler: &mut SchedulerFrontend, callback_tree:
     }
     for (key, callback) in
             scheduler.backend.update_global_keymap.drain() {
-        global_keymap.insert(key, callback);
+        global_keymap.keymap.insert(key, callback);
     }
     scheduler.backend.update_global_keymap.clear();
     
     for key in scheduler.backend.remove_global_keymap.iter() {
-        global_keymap.remove_entry(&key);
+        global_keymap.keymap.remove_entry(&key);
     }
     scheduler.backend.remove_global_keymap.clear();
     
     if scheduler.backend.clear_global_keymap {
-        global_keymap.clear()
+        global_keymap.keymap.clear()
     }
 
 }

@@ -3,7 +3,7 @@
 //! This module has functions that handle user input through keyboard and mouse.
 use std::process::exit;
 
-use crossterm::event::{Event, KeyCode, KeyEvent, MouseButton, MouseEvent, MouseEventKind};
+use crossterm::event::{Event, KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind};
 use crate::{EzContext, KeyMap};
 
 use crate::run::definitions::{CallbackTree, Coordinates, StateTree};
@@ -95,11 +95,11 @@ fn handle_key_event(key: KeyEvent, global_keymap: &mut KeyMap, state_tree: &mut 
         }
         _ => false,
     };
-    if !consumed && global_keymap.contains_key(&key.code) {
+    if !consumed && global_keymap.contains(key.code, key.modifiers) {
         let context = EzContext::new("".to_string(), state_tree, scheduler);
         let callback =
-            global_keymap.get_mut(&key.code).unwrap();
-        return callback(context, key.code);
+            global_keymap.get_mut(key.code, key.modifiers).unwrap();
+        return callback(context, key.code, key.modifiers);
     }
     false
 }

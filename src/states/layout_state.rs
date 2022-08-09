@@ -363,7 +363,14 @@ impl GenericState for LayoutState {
 impl LayoutState {
 
     /// Set [LayoutMode]
-    pub fn set_mode(&mut self, mode: LayoutMode) { self.mode.set(mode); }
+    pub fn set_mode(&mut self, mode: LayoutMode) {
+        if (mode == LayoutMode::Stack || mode == LayoutMode::Table) &&
+                self.orientation.value == LayoutOrientation::Horizontal {
+            // Default for table and stack is different than box
+            self.set_orientation(LayoutOrientation::TopBottomLeftRight)
+        }
+        self.mode.set(mode);
+    }
 
     /// Get [LayoutMode]
     pub fn get_mode(&self) -> &LayoutMode { &self.mode.value }

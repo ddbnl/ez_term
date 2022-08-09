@@ -155,7 +155,8 @@ fn main() {
 
     // Bind a global key
     scheduler.bind_global_key(
-        KeyCode::Char('a'),Box::new(|context: EzContext, key: KeyCode| {
+        KeyCode::Char('a'), Some(vec!(KeyModifiers::SHIFT)),
+        Box::new(|context: EzContext, key: KeyCode, modifiers: KeyModifiers| {
             let state = context.state_tree.get_mut("checkbox").as_checkbox_mut();
             state.set_active(!state.get_active());
             state.update(context.scheduler);

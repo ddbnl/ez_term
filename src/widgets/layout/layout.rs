@@ -450,12 +450,14 @@ impl EzObject for Layout {
                     callback_tree: &mut CallbackTree, scheduler: &mut SchedulerFrontend) -> bool {
 
         if let Event::Key(key) = event {
-            if callback_tree.get(&self.path).obj.keymap.contains_key(&key.code) {
+            if callback_tree.get(&self.path).obj.keymap
+                .contains(key.code, key.modifiers) {
                 let func =
-                    callback_tree.get_mut(&self.path).obj.keymap.get_mut(&key.code).unwrap();
+                    callback_tree.get_mut(&self.path).obj.keymap
+                        .get_mut(key.code, key.modifiers).unwrap();
                 let context = EzContext::new(
                     self.get_path(), state_tree, scheduler);
-                let consumed = func(context, key.code);
+                let consumed = func(context, key.code, key.modifiers);
                 if consumed { return true }
             }
             if key.code == KeyCode::PageUp {
@@ -632,9 +634,11 @@ impl EzObject for Layout {
 
         if self.on_scroll_up_callback(state_tree, callback_tree, scheduler) { return true }
         let state = state_tree.get_mut(&self.path).as_layout_mut();
-        if state.get_scrolling_config().get_is_scrolling_y() ||
-            state.get_scrolling_config().get_is_scrolling_x() {
+        if state.get_scrolling_config().get_is_scrolling_y() {
             self.handle_scroll_up(state_tree, scheduler);
+            return true
+        } else if state.get_scrolling_config().get_is_scrolling_x() {
+            self.handle_scroll_left(state_tree, scheduler);
             return true
         }
         false
@@ -645,12 +649,14 @@ impl EzObject for Layout {
 
         if self.on_scroll_down_callback(state_tree, callback_tree, scheduler) { return true }
         let state = state_tree.get_mut(&self.path).as_layout_mut();
-        if state.get_scrolling_config().get_is_scrolling_y() ||
-                state.get_scrolling_config().get_is_scrolling_x() {
+        if state.get_scrolling_config().get_is_scrolling_y() {
             self.handle_scroll_down(state_tree, scheduler);
             return true
+        } else if state.get_scrolling_config().get_is_scrolling_x() {
+            self.handle_scroll_right(state_tree, scheduler);
+            return true
         }
-        false
+    false
     }
 
     fn on_select(&self, state_tree: &mut StateTree, callback_tree: &mut CallbackTree,

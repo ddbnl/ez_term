@@ -90,7 +90,11 @@ impl Layout {
                 let child_state = state_tree
                     .get_mut(&child.as_ez_object().get_path()).as_layout_mut();
                 child_state.set_effective_height(
-                    if own_effective_size.height >= 3 { own_effective_size.height - 3} else {0});
+                    if own_effective_size.height >= 3 {
+                        own_effective_size.height - 3 -
+                            if child_state.get_scrolling_config().get_scroll_x() {1} else {0}}
+                    else {0}
+                );
                 child_state.set_effective_width(
                     if own_effective_size.width >= 1 {
                         own_effective_size.width -

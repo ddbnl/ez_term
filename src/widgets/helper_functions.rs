@@ -310,7 +310,7 @@ pub fn offset_scrolled_absolute_position(mut absolute_position: IsizeCoordinates
                                          -> IsizeCoordinates {
     
     if scrolling.get_is_scrolling_x() && size.width > 0 {
-        let view_start = scrolling.get_absolute_view_start_y(size.height);
+        let view_start = scrolling.get_absolute_view_start_x(size.width);
         let offset = ((view_start / size.width) * size.width) +
             (view_start % size.width);
         absolute_position.x -= offset as isize;

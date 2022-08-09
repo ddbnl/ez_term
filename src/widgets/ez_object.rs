@@ -310,14 +310,14 @@ pub trait EzObject {
                     callback_tree: &mut CallbackTree, scheduler: &mut SchedulerFrontend) -> bool {
 
         if let Event::Key(key) = event {
-            if callback_tree.get(&self.get_path()).obj
-                .keymap.contains_key(&key.code) {
+            if callback_tree.get(&self.get_path()).obj.keymap
+                .contains(key.code, key.modifiers) {
                 let func =
                     callback_tree.get_mut(&self.get_path()).obj
-                    .keymap.get_mut(&key.code).unwrap();
+                    .keymap.get_mut(key.code, key.modifiers).unwrap();
                 let context = EzContext::new(
                     self.get_path(), state_tree, scheduler);
-                func(context, key.code);
+                func(context, key.code, key.modifiers);
                 return true
             }
         }

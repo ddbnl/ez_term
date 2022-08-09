@@ -3,7 +3,7 @@
 //! This module implements definitions for the [Scheduler] struct.
 use std::collections::HashMap;
 
-use crossterm::event::KeyCode;
+use crossterm::event::{KeyCode, KeyModifiers};
 
 use crate::property::ez_properties::EzProperties;
 use crate::property::ez_values::EzValues;
@@ -17,7 +17,7 @@ pub type EzPropertiesMap = HashMap<String, EzProperties>;
 
 /// This is used for binding keyboard callbacks to widgets, meaning that any callback functions a
 /// user makes should use this signature.
-pub type KeyboardCallbackFunction = Box<dyn FnMut(EzContext, KeyCode) -> bool >;
+pub type KeyboardCallbackFunction = Box<dyn FnMut(EzContext, KeyCode, KeyModifiers) -> bool >;
 
 
 /// This is used for binding mouse event callbacks to widgets, meaning that any callback functions

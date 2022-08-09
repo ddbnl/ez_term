@@ -5,7 +5,7 @@ use std::collections::HashMap;
 use std::sync::mpsc::Receiver;
 use std::thread::{JoinHandle};
 use std::time::{Duration, Instant};
-use crossterm::event::KeyCode;
+use crossterm::event::{KeyCode, KeyModifiers};
 
 use crossterm::style::Color;
 
@@ -16,8 +16,9 @@ use crate::property::ez_property::EzProperty;
 use crate::property::ez_values::EzValues;
 use crate::run::definitions::{Coordinates, StateTree};
 use crate::run::run::{open_and_register_modal, stop};
-use crate::scheduler::definitions::{EzPropertyUpdater, EzThread, GenericFunction, GenericRecurringTask, GenericTask, KeyboardCallbackFunction};
-use crate::states::definitions::{HorizontalAlignment, HorizontalPosHint, LayoutMode, LayoutOrientation, VerticalAlignment, VerticalPosHint};
+use crate::scheduler::definitions::{EzPropertyUpdater, EzThread, GenericFunction, GenericRecurringTask, GenericTask,
+                                    KeyboardCallbackFunction};
+use crate::states::definitions::{create_keymap_modifiers, HorizontalAlignment, HorizontalPosHint, LayoutMode, LayoutOrientation, VerticalAlignment, VerticalPosHint};
 use crate::states::ez_state::EzState;
 use crate::widgets::ez_object::EzObjects;
 
@@ -654,13 +655,18 @@ impl SchedulerFrontend {
 
     /// Globally bind a keyboard key (CrossTerm [KeyCode]). These keybinds take priority over all 
     /// others and work in all contexts.
-    pub fn bind_global_key(&mut self, key: KeyCode, callback: KeyboardCallbackFunction) {
-        self.backend.update_global_keymap.insert(key, callback);
+    pub fn bind_global_key(&mut self, key: KeyCode, modifiers: Option<Vec<KeyModifiers>>,
+                           callback: KeyboardCallbackFunction) {
+
+        let modifiers = create_keymap_modifiers(modifiers);
+        self.backend.update_global_keymap.insert((key, modifiers), callback);
     }
 
     /// Remove a single global keybind by keycode.
-    pub fn remove_global_key(&mut self, key: KeyCode) {
-        self.backend.remove_global_keymap.push(key);
+    pub fn remove_global_key(&mut self, key: KeyCode, modifiers: Option<Vec<KeyModifiers>>) {
+
+        let modifiers = create_keymap_modifiers(modifiers);
+        self.backend.remove_global_keymap.push((key, modifiers));
     }
 
     /// Remove all custom global keybinds currently active.
@@ -754,10 +760,10 @@ pub struct Scheduler {
 
     /// KeyMap containing global keybinds. Keys bound here take priority over widget keymaps, and
     /// work in all contexts.
-    pub update_global_keymap: KeyMap,
+    pub update_global_keymap: HashMap<(KeyCode, KeyModifiers), KeyboardCallbackFunction>,
     
     /// KeyCodes in this vec will be removed from the global keymap on the next frame.
-    pub remove_global_keymap: Vec<KeyCode>,
+    pub remove_global_keymap: Vec<(KeyCode, KeyModifiers)>,
     
     /// Entire global keymap will be cleared on the next frame.
     pub clear_global_keymap: bool,

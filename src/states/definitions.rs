@@ -1,8 +1,9 @@
 use std::collections::HashMap;
-use crossterm::event::KeyCode;
+use crossterm::event::{KeyCode, KeyModifiers};
 use crossterm::style::Color;
 use crate::property::ez_property::EzProperty;
-use crate::scheduler::definitions::{GenericFunction, KeyboardCallbackFunction, MouseCallbackFunction, MouseDragCallbackFunction, OptionalMouseCallbackFunction};
+use crate::scheduler::definitions::{GenericFunction, KeyboardCallbackFunction, MouseCallbackFunction,
+                                    MouseDragCallbackFunction, OptionalMouseCallbackFunction};
 use crate::scheduler::scheduler::{SchedulerFrontend};
 use crate::scheduler::scheduler_funcs::clean_up_property;
 
@@ -778,42 +779,8 @@ pub struct CallbackConfig {
     /// ```
     pub on_value_change: Option<GenericFunction>,
 
-    /// Custom keymaps allow you to bind keyboard keys to a callback. Keep in mind that for this to work,
-    /// a widget must already be selected; only then will it receive the keyboard event.
-    /// To bind a custom key, you must first create a KeyMap object This KeyMap object is then inserted
-    /// into a CallbackConfig object, which is bound to a widget as normal. To bind for example the "a"
-    /// key with a closure:
-    /// ```
-    /// use ez_term::*;
-    /// let (root_widget, mut state_tree, mut scheduler) = load_ui();
-    ///
-    /// let my_callback = move |context: EzContext, keycode: KeyCode| {
-    ///
-    ///     true
-    /// };
-    ///
-    /// let mut keymap = KeyMap::new();
-    /// keymap.insert(KeyCode::Char('a'), Box::new(my_callback));
-    ///
-    /// let new_callback_config = CallbackConfig::from_keymap(keymap);
-    /// scheduler.update_callback_config("my_checkbox", new_callback_config);
-    /// ```
-    /// To do the same with a function:
-    /// ```
-    /// use ez_term::*;
-    /// let (root_widget, mut state_tree, mut scheduler) = load_ui();
-    ///
-    /// fn my_callback(context: EzContext, keycode: KeyCode) -> bool {
-    ///
-    ///     true
-    /// };
-    ///
-    /// let mut keymap = KeyMap::new();
-    /// keymap.insert(KeyCode::Char('a'), Box::new(my_callback));
-    ///
-    /// let new_callback_config = CallbackConfig::from_keymap(keymap);
-    /// scheduler.update_callback_config("my_checkbox", new_callback_config);
-    /// ```
+    /// Hash containing keyboard key and modifiers as key, and a callback as a value. As an
+    /// end-user, use CallbackConfig.bind_key, or scheduler.bind_global_key.
     pub keymap: KeyMap,
 
     /// A list of callbacks to call when a property changes. It's recommended to call the 'bind'
@@ -829,8 +796,8 @@ impl CallbackConfig {
     /// Create a [CallbackConfig] from a keybinding.
     /// the callback function signature should be: (EzContext, KeyCode)
     /// See [EzContext] for more information on the context. The KeyCode is the key that was pressed.
-    pub fn bind_key(&mut self, key: KeyCode, func: KeyboardCallbackFunction) {
-        self.keymap.insert(key, func);
+    pub fn bind_key(&mut self, key: KeyCode, modifiers: Option<Vec<KeyModifiers>>, func: KeyboardCallbackFunction) {
+        self.keymap.bind_key(key, modifiers, func);
     }
 
     /// Create a [CallbackConfig] from an on_select callback.
@@ -972,15 +939,109 @@ impl CallbackConfig {
             else { self.on_hover = other.on_hover};
         if let None = other.on_drag {}
             else { self.on_drag = other.on_drag};
-        self.keymap.extend(other.keymap);
+        self.keymap.keymap.extend(other.keymap.keymap);
     }
 
 }
 
 
-/// A HashMap containg a KeyCode as key and a callback as Value. This is used for setting the
-/// keymap property of a [CallbackConfig]
-pub type KeyMap = HashMap<KeyCode, KeyboardCallbackFunction>;
+/// Keymap for binding keys to callbacks. As an end-user, use CallbackConfig.bind_key or
+/// scheduler.bind_global_key
+#[derive(Default)]
+pub struct KeyMap {
+    pub keymap: HashMap<(KeyCode, KeyModifiers), KeyboardCallbackFunction>,
+}
+impl KeyMap {
+
+    pub fn new() -> Self {
+        KeyMap { keymap: HashMap::new() }
+    }
+
+
+    pub fn bind_key(&mut self, key: KeyCode, modifiers: Option<Vec<KeyModifiers>>, func: KeyboardCallbackFunction) {
+        let modifiers = create_keymap_modifiers(modifiers);
+        self.keymap.insert((key, modifiers), func);
+    }
+
+    /// Wrap method that makes keycodes uppercase insensitive
+    pub fn contains(&self, key: KeyCode, modifiers: KeyModifiers) -> bool {
+
+        if let KeyCode::Char(i) = key {
+            if i.is_alphabetic() {
+                let other = if i.is_uppercase() {
+                    KeyCode::Char(i.to_lowercase().into_iter().next().unwrap())
+                } else {
+                    KeyCode::Char(i.to_uppercase().into_iter().next().unwrap())
+                };
+                let mut contains = self.keymap.contains_key(&(key, modifiers));
+                if !contains {
+                    contains = self.keymap.contains_key(&(other, modifiers));
+                }
+                return contains
+            }
+        }
+        self.keymap.contains_key(&(key, modifiers))
+    }
+
+     pub fn get(&self, key: KeyCode, modifiers: KeyModifiers) -> Option<&KeyboardCallbackFunction> {
+
+         if let KeyCode::Char(i) = key {
+             if i.is_alphabetic() {
+                 let other = if i.is_uppercase() {
+                     KeyCode::Char(i.to_lowercase().into_iter().next().unwrap())
+                 } else {
+                     KeyCode::Char(i.to_uppercase().into_iter().next().unwrap())
+                 };
+                 let mut contains = self.keymap.get(&(key, modifiers));
+                 if contains.is_none() {
+                     contains = self.keymap.get(&(other, modifiers));
+                 }
+                 return contains
+             }
+         }
+         self.keymap.get(&(key, modifiers))
+     }
+
+    pub fn get_mut(&mut self, key: KeyCode, modifiers: KeyModifiers) -> Option<&mut KeyboardCallbackFunction> {
+
+        if let KeyCode::Char(i) = key {
+            if i.is_alphabetic() {
+                let other = if i.is_uppercase() {
+                    KeyCode::Char(i.to_lowercase().into_iter().next().unwrap())
+                } else {
+                    KeyCode::Char(i.to_uppercase().into_iter().next().unwrap())
+                };
+                if self.keymap.contains_key(&(key, modifiers)) {
+                    return self.keymap.get_mut(&(key, modifiers))
+                } else {
+                    return self.keymap.get_mut(&(other, modifiers))
+                }
+            }
+        }
+        self.keymap.get_mut(&(key, modifiers))
+    }
+}
+
+pub fn create_keymap_modifiers(modifiers: Option<Vec<KeyModifiers>>) -> KeyModifiers {
+    if let Some(i) = modifiers {
+        let mut obj = KeyModifiers::NONE;
+        if i.contains(&KeyModifiers::CONTROL) {
+            obj.set(KeyModifiers::CONTROL, true);
+            obj.set(KeyModifiers::NONE, false);
+        };
+        if i.contains(&KeyModifiers::ALT) {
+            obj.set(KeyModifiers::ALT, true);
+            obj.set(KeyModifiers::NONE, false);
+        };
+        if i.contains(&KeyModifiers::SHIFT) {
+            obj.set(KeyModifiers::SHIFT, true);
+            obj.set(KeyModifiers::NONE, false);
+        };
+        obj
+    } else {
+        KeyModifiers::NONE
+    }
+}
 
 
 /// Composite object containing all properties related to scrolling. As an end-user, you should

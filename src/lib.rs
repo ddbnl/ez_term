@@ -2102,9 +2102,14 @@
 //!
 //! Custom keymaps allow you to bind keyboard keys to a callback. Keep in mind that for this to work,
 //! a widget must already be selected; only then will it receive the keyboard event.
-//! To bind a custom key, you must first create a KeyMap object This KeyMap object is then inserted
-//! into a CallbackConfig object, which is bound to a widget as normal. To bind for example the "a"
-//! key with a closure:
+//! To bind a key, we will use the CallbackConfig again, and use its 'bind_key' method to bind keys.
+//! The first parameter of bind_key is the KeyCode we want to bind; the second parameter the
+//! modifiers (which can be None, or one of the modifiers CTRL, SHIFT or ALT), and the third
+//! parameter is the callback. We can call this method as many times as we like to bind different
+//! keys.
+//!
+//! Let's bind a couple of different keys to a callback closure, to demonstrate simple keys
+//! and modified keys:
 //! ```
 //! use ez_term::*;
 //! let (root_widget, mut state_tree, mut scheduler) = load_ui();
@@ -2114,10 +2119,23 @@
 //!     true
 //! };
 //!
-//! let mut keymap = KeyMap::new();
-//! keymap.insert(KeyCode::Char('a'), Box::new(my_callback));
+//! let mut new_callback_config = CallbackConfig::default();
 //!
-//! let new_callback_config = CallbackConfig::from_keymap(keymap);
+//! // Bind a simple character
+//! new_callback_config.bind_key(KeyCode::Char('a'), None, Box::new(my_callback));
+//!
+//! // Bind a functional key like the Tab key
+//! new_callback_config.bind_key(KeyCode::Tab, None, Box::new(my_callback));
+//!
+//! // Bind a modified character
+//! new_callback_config.bind_key(KeyCode::Char('a'), Some(vec!(KeyModifiers::CONTROL)),
+//!                              Box::new(my_callback));
+//!
+//! // Bind a double modifier
+//! new_callback_config.bind_key(KeyCode::Char('a'),
+//!                              Some(vec!(KeyModifiers::CONTROL, KeyModifiers::ALT)),
+//!                              Box::new(my_callback));
+//!
 //! scheduler.update_callback_config("my_checkbox", new_callback_config);
 //! ```
 //! To do the same with a function:
@@ -2130,10 +2148,8 @@
 //!     true
 //! };
 //!
-//! let mut keymap = KeyMap::new();
-//! keymap.insert(KeyCode::Char('a'), Box::new(my_callback));
-//!
-//! let new_callback_config = CallbackConfig::from_keymap(keymap);
+//! let mut new_callback_config = CallbackConfig::default();
+//! new_callback_config.bind_key(KeyCode::Char('a'), None, Box::new(my_callback));
 //! scheduler.update_callback_config("my_checkbox", new_callback_config);
 //! ```
 //!
@@ -2141,10 +2157,12 @@
 //! ##### 1.3.3.14 Global key binds
 //!
 //! There is a global keymap. It functions like the custom keymap, except keys from the global
-//! keymap always have prioroty in consuming events, and are available in all situations. The
-//! 'bind_global_key' function of the scheduler allows you to bind global keys to callabcks. The
-//! 'remove_global_key' and 'clear_global_keys' allow you to remove one or all global keybinds.
-//! Let's look at an example: we want to bind the 'a' key on the keyboard to toggling a checkbox on
+//! keymap always have priority in consuming events, and are available in all situations. The
+//! 'bind_global_key' function of the scheduler allows you to bind global keys to callbacks. The
+//! 'remove_global_key' and 'clear_global_keys' methods allow you to remove one or all global
+//! keybinds.
+//!
+//! Let's look at some examples: we want to bind various keys to a callback toggling a checkbox on
 //! or off:
 //! ```
 //! use ez_term::*;
@@ -2158,12 +2176,30 @@
 //!     true
 //! };
 //!
-//! scheduler.bind_global_key(KeyCode::Char('a'), Box::new(my_callback));
+//!
+//! // Bind a simple character
+//! scheduler.bind_global_key(KeyCode::Char('a'), None, Box::new(my_callback));
+//!
+//! // Bind a functional key like the Tab key
+//! scheduler.bind_global_key(KeyCode::Tab, None, Box::new(my_callback));
+//!
+//! // Bind a modified character
+//! scheduler.bind_global_key(KeyCode::Char('a'), Some(vec!(KeyModifiers::CONTROL)),
+//!                           Box::new(my_callback));
+//!
+//! // Bind a double modifier
+//! scheduler.bind_global_key(KeyCode::Char('a'),
+//!                           Some(vec!(KeyModifiers::CONTROL, KeyModifiers::ALT)),
+//!                           Box::new(my_callback));
 //! ```
 //!
 //! If we now wanted to remove the 'a' keybind specifically:
 //! ```
-//! scheduler.remove_global_key(KeyCode::Char('a'));
+//! use ez_term::*;
+//! scheduler.remove_global_key(KeyCode::Char('a'), None);
+//! scheduler.remove_global_key(KeyCode::Tab, None);
+//! scheduler.remove_global_key(KeyCode::Char('a'), vec!(KeyModifiers::CONTROL));
+//! scheduler.remove_global_key(KeyCode::Char('a'), vec!(KeyModifiers::CONTROL, KeyModifiers::ALT));
 //! ```
 //!
 //! If we wanted to clear all keys:
@@ -2780,7 +2816,7 @@ pub use crate::parser::parse_lang::load_ui;
 pub use crate::run::run::run;
 
 pub use crate::run::definitions::Coordinates;
-pub use crossterm::event::KeyCode;
+pub use crossterm::event::{KeyCode, KeyModifiers};
 
 pub use crate::scheduler::definitions::{EzContext, EzPropertiesMap};
 pub use crate::run::definitions::StateTree;
