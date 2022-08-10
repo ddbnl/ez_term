@@ -2819,7 +2819,137 @@
 //! bound to it will update automatically.
 //!
 //! Also, if you manipulate the state tree from a background thread, any state that changes will
-//! trigger a widget update automatically (because the
+//! trigger a widget update automatically (because you do not have access to the scheduler from
+//! threads, as its not thread-safe).
+//!
+//! <a name="scheduler_selection"></a>
+//! ### 1.3.9 Managing widget selection
+//!
+//! Widgets can be selected by the user by mouse hover and up/down arrow keyboard keys (as long as
+//! the widget has the selection_order property set). Widgets can only be selected if they're
+//! selectable in general; selectable widgets are:
+//! - Layout (when scrolling or when tabbed)
+//! - Button
+//! - Checkbox
+//! - Radio button
+//! - Dropdown
+//! - Slider
+//! - Text input (selectable by keyboard up/down or mouse click, not hover)
+//!
+//! Only one selection can be active at any time. You can control selection from code as well,
+//! using scheduler.set_selected_widget and scheduler.deselect_widget:
+//!
+//!
+//! <a name="scheduler_selection_selecting"></a>
+//! #### 1.3.9.1 Selecting
+//!
+//! A widget can be selected through code. You have to pass the widget path or ID (must be globally
+//! unique), and an optional mouse_pos parameter. As selection can occur through the mouse, you have
+//! the option of passing custom coordinates, or just passing None; let's select a text input from
+//! code on the first character (position (1, 1):
+//! ```
+//! use ez_term::*;
+//! let (root_widget, mut state_tree, mut scheduler) = load_ui();
+//!
+//! scheduler.set_selected_widget("my_text_input", Some(Coordinates::new(1, 1)));
+//!
+//! run(root_widget, state_tree, scheduler)
+//! ```
+//!
+//! If we don't care about coordinates it could look like this:
+//! ```
+//! use ez_term::*;
+//! let (root_widget, mut state_tree, mut scheduler) = load_ui();
+//!
+//! scheduler.set_selected_widget("my_text_input", None);
+//!
+//! run(root_widget, state_tree, scheduler)
+//! ```
+//!
+//! <a name="scheduler_selection_selecting"></a>
+//! #### 1.3.9.2 Deselection
+//!
+//! To deselect a widget from code we do not need any parameters. Only one widget can be selected at
+//! any time, so deselect simply deselects any active selection, or does nothing if there is no
+//! selection. It's always safe to call this method. Let's deselect:
+//! ```
+//! use ez_term::*;
+//! let (root_widget, mut state_tree, mut scheduler) = load_ui();
+//!
+//! scheduler.deselect_widget();
+//!
+//! run(root_widget, state_tree, scheduler)
+//! ```
+//!
+//! <a name="keybindings"></a>
+//! ## 1.4 Global (key)bindings
+//!
+//! EzTerm UIs come with some global built-in bindings, which allow the user to navigate the UI.
+//! There are:
+//!
+//! **Keyboard escape key:**
+//! Exits the process.
+//!
+//!
+//! **Keyboard up key:**
+//! Selects the previous widget according to the 'selection_order' properties of widgets. So if a
+//! widget with order 4 is selected and a widget with order 3 exists, 3 will be selected next.
+//!
+//!
+//! **Keyboard down key:**
+//! Selects the next widget according to the 'selection_order' properties of widgets. So if a
+//! widget with order 4 is selected and a widget with order 5 exists, 5 will be selected next.
+//!
+//!
+//! **Keyboard enter key:**
+//! Calls the on_keyboard_enter callback on the currently selected widget (if any). Certain widgets
+//! have a standard implementation for this callback; for example, checkboxes toggle on/off.
+//!
+//!
+//! **Keyboard right key:**
+//! If a horizontal scroll bar is selected, this scrolls to the right. If a tab header is selected,
+//! this selects the tab header to the right.
+//!
+//!
+//! **Keyboard left key:**
+//! If a horizontal scroll bar is selected, this scrolls to the left. If a tab header is selected,
+//! this selects the tab header to the left.
+//!
+//!
+//! **Keyboard PageUp key:**
+//! If a vertical scroll bar is selected, this scrolls to up.
+//!
+//!
+//! **Keyboard PageDown key:**
+//! If a vertical scroll bar is selected, this scrolls to down.
+//!
+//!
+//! **Keyboard CTRL+V key:**
+//! Pasts content into the terminal.
+//!
+//!
+//! **Mouse scroll up:**
+//! If a layout has a vertical scrollbar, this will scroll it up.
+//! If a layout has a horizontal scrollbar, this will scroll it left.
+//!
+//!
+//! **Mouse scroll down:**
+//! If a layout has a vertical scrollbar, this will scroll it down.
+//! If a layout has a horizontal scrollbar, this will scroll it right.
+//!
+//!
+//! **Mouse drag:**
+//! Layout scrollbars can be dragged up/down/left/right. Modals can by default be dragged around the
+//! screen. Sliders can be dragged left/right.
+//!
+//!
+//! **Mouse hover:**
+//! Mouse hovering selectable widgets (except text inputs) will select them, to make it clear to the
+//! user that something can be interacted with.
+//!
+//!
+//! **Mouse left click:**
+//! All interactive widgets implement an on_left_mouse_click callback with default behavior.
 mod run;
 mod scheduler;
 mod widgets;
