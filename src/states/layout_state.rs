@@ -93,7 +93,7 @@ pub struct LayoutState {
     /// A list of open modals. Modals are widgets that overlap other content; in other words, they
     /// open 'in front of' other content. Only one can be shown at a time (the first on in the
     /// list).
-    open_modal: Option<Box<EzObjects>>,
+    pub open_modal: Option<Box<EzObjects>>,
 
     /// A hashmap of 'Template Name > [EzWidgetDefinition]'. Used to instantiate widget templates
     /// at runtime. E.g. when spawning popups.

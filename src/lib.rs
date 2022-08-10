@@ -2591,8 +2591,24 @@
 //! As you can see, we update the "my_progress" custom property in our mock app. When we do this,
 //! the progress bar and the label will update automatically too, because we bound their properties
 //! to the custom property. If you imagine that our mock app needed a usize variable to function
-//! anyway, then we saved ourselves some effort by replacing the usise variable with an EzTerm usize
+//! anyway, then we saved ourselves some effort by replacing the usize variable with an EzTerm usize
 //! property, and binding it to the UI for automatic updates.
+//!
+//! You can access custom properties outside of threads through the scheduler.get_property(name)
+//! and scheduler.get_property_mut(name) methods:
+//! ```
+//! use ez_term::*;
+//! use std::time::Duration;
+//! let (root_widget, mut state_tree, mut scheduler) = load_ui();
+//!
+//! // We must register our custom property!
+//! scheduler.new_usize_property("my_progress", 0);
+//! let property = scheduler.get_property("my_progress");
+//! let property_mut = scheduler.get_property_mut("my_progress");
+//! property_mut.as_usize_mut().set(10);
+//!
+//! run(root_widget, state_tree, scheduler);
+//! ```
 //!
 //! The following functions are available from the scheduler to create custom properties:
 //!

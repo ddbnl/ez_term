@@ -18,7 +18,7 @@
         selection_fg_color: red
         - Label:
             size_hint_y: none
-            from_file: ./Examples/FullExample/dummy.txt
+            from_file: ./examples/FullExample/dummy.txt
     - Layout:
         tab_name: Tables
         mode: box

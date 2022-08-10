@@ -1,10 +1,11 @@
 //! # Scheduler funcs
 //! 
 //! This module contains supporting functions for the [Scheduler] struct.
+use std::collections::HashMap;
 use std::thread::{JoinHandle, spawn};
 use std::time::Instant;
 
-use crate::{CallbackConfig, EzContext, EzObject, KeyMap, LayoutMode};
+use crate::{CallbackConfig, EzContext, EzObject, EzProperties, KeyMap, LayoutMode};
 use crate::run::definitions::{CallbackTree, StateTree};
 use crate::run::select::{deselect_widget, select_widget};
 use crate::scheduler::scheduler::SchedulerFrontend;
@@ -28,10 +29,16 @@ pub fn start_new_threads(scheduler: &mut SchedulerFrontend, state_tree: &mut Sta
     while !scheduler.backend.threads_to_start.is_empty() {
         let (thread_func, on_finish) =
             scheduler.backend.threads_to_start.pop().unwrap();
-        let properties = scheduler.backend.properties.clone();
+        let mut custom_properties: HashMap<String, EzProperties> = HashMap::new();
+
+        for (name, custom_property) in scheduler.backend.properties.iter()
+            .filter(|(name, (property, _))| !name.contains('/'))
+            .map(|(name, (property, _)) | (name, property)) {
+            custom_properties.insert(name.clone(), custom_property.clone());
+        }
 
         let state_tree = state_tree.clone();
-        let handle: JoinHandle<()> = spawn(move || thread_func(properties, state_tree));
+        let handle: JoinHandle<()> = spawn(move || thread_func(custom_properties, state_tree));
         scheduler.backend.thread_handles.push((handle, on_finish))
     }
 }
@@ -206,10 +213,9 @@ pub fn update_properties(scheduler: &mut SchedulerFrontend,
     let mut to_update = Vec::new();
     let mut to_callback: Vec<String> = Vec::new();
 
-    for name in scheduler.backend.properties.keys() {
+    for (name, (property, receiver))
+            in scheduler.backend.properties.iter() {
         let mut new_val = None;
-        let receiver =
-            scheduler.backend.property_receivers.get(name).unwrap();
         // Drain all new values if any, we only care about the latest.
         while let Ok(new) = receiver.try_recv() {
             new_val = Some(new);

@@ -8,6 +8,7 @@ use crossterm::{event::{Event, MouseEventKind, poll, read}, Result};
 use crossterm::event::MouseButton;
 
 use crate::{CallbackConfig, KeyMap};
+use crate::parser::parse_lang::parse_level;
 use crate::run::definitions::{CallbackTree, Coordinates, StateTree};
 use crate::run::terminal::{redraw_changed_widgets, write_to_screen};
 use crate::run::tree::{clean_trees, initialize_callback_tree, ViewTree};
@@ -227,7 +228,12 @@ fn run_loop(mut root_widget: Layout, mut state_tree: StateTree, mut callback_tre
         update_threads(&mut scheduler, &mut state_tree);
         update_properties(&mut scheduler, &mut state_tree, &mut callback_tree);
         // Update root widget state as it might contain new modals it need to access internally
-        root_widget.state = state_tree.as_layout().clone();
+        if state_tree.as_layout().open_modal.is_some() && root_widget.state.open_modal.is_none() {
+            root_widget.state.open_modal = state_tree.as_layout().open_modal.clone();
+        } else if state_tree.as_layout().open_modal.is_none() &&
+            root_widget.state.open_modal.is_some() {
+            root_widget.state.open_modal = None;
+        }
 
         // Redraw individual widgets or the entire screen in case of forced_redraw. If the entire
         // Screen is redrawn individual widgets are not redrawn.

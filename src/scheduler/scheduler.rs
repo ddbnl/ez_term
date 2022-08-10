@@ -409,9 +409,8 @@ impl SchedulerFrontend {
 
         let (property, receiver) =
             EzProperty::new(name.to_string(), value);
-        self.backend.properties.insert(name.to_string(),
-                                       EzProperties::Usize(property.clone()));
-        self.backend.property_receivers.insert(name.to_string(), receiver);
+        self.backend.properties.insert(
+            name.to_string(),(EzProperties::Usize(property.clone()), receiver));
         property
     }
 
@@ -424,9 +423,8 @@ impl SchedulerFrontend {
 
         let (property, receiver) =
             EzProperty::new(name.to_string(), value);
-        self.backend.properties.insert(name.to_string(),
-                                       EzProperties::F64(property.clone()));
-        self.backend.property_receivers.insert(name.to_string(), receiver);
+        self.backend.properties.insert(
+            name.to_string(),(EzProperties::F64(property.clone()), receiver));
         property
     }
 
@@ -439,9 +437,8 @@ impl SchedulerFrontend {
 
         let (property, receiver) =
             EzProperty::new(name.to_string(), value);
-        self.backend.properties.insert(name.to_string(),
-                                       EzProperties::String(property.clone()));
-        self.backend.property_receivers.insert(name.to_string(), receiver);
+        self.backend.properties.insert(
+            name.to_string(),(EzProperties::String(property.clone()), receiver));
         property
     }
 
@@ -454,9 +451,8 @@ impl SchedulerFrontend {
 
         let (property, receiver) =
             EzProperty::new(name.to_string(), value);
-        self.backend.properties.insert(name.to_string(),
-                                       EzProperties::Bool(property.clone()));
-        self.backend.property_receivers.insert(name.to_string(), receiver);
+        self.backend.properties.insert(
+            name.to_string(),(EzProperties::Bool(property.clone()), receiver));
         property
     }
 
@@ -469,9 +465,8 @@ impl SchedulerFrontend {
 
         let (property, receiver) =
             EzProperty::new(name.to_string(), value);
-        self.backend.properties.insert(name.to_string(),
-                                       EzProperties::Color(property.clone()));
-        self.backend.property_receivers.insert(name.to_string(), receiver);
+        self.backend.properties.insert(
+            name.to_string(),(EzProperties::Color(property.clone()), receiver));
         property
     }
 
@@ -485,9 +480,8 @@ impl SchedulerFrontend {
 
         let (property, receiver) =
             EzProperty::new(name.to_string(), value);
-        self.backend.properties.insert(name.to_string(),
-                                       EzProperties::LayoutMode(property.clone()));
-        self.backend.property_receivers.insert(name.to_string(), receiver);
+        self.backend.properties.insert(
+            name.to_string(),(EzProperties::LayoutMode(property.clone()), receiver));
         property
     }
 
@@ -501,9 +495,8 @@ impl SchedulerFrontend {
 
         let (property, receiver) =
             EzProperty::new(name.to_string(), value);
-        self.backend.properties.insert(name.to_string(),
-                                       EzProperties::LayoutOrientation(property.clone()));
-        self.backend.property_receivers.insert(name.to_string(), receiver);
+        self.backend.properties.insert(
+            name.to_string(),(EzProperties::LayoutOrientation(property.clone()), receiver));
         property
     }
 
@@ -517,9 +510,8 @@ impl SchedulerFrontend {
 
         let (property, receiver) =
             EzProperty::new(name.to_string(), value);
-        self.backend.properties.insert(name.to_string(),
-                                       EzProperties::VerticalAlignment(property.clone()));
-        self.backend.property_receivers.insert(name.to_string(), receiver);
+        self.backend.properties.insert(
+            name.to_string(),(EzProperties::VerticalAlignment(property.clone()), receiver));
         property
     }
 
@@ -533,9 +525,8 @@ impl SchedulerFrontend {
 
         let (property, receiver) =
             EzProperty::new(name.to_string(), value);
-        self.backend.properties.insert(name.to_string(),
-                                       EzProperties::HorizontalAlignment(property.clone()));
-        self.backend.property_receivers.insert(name.to_string(), receiver);
+        self.backend.properties.insert(
+            name.to_string(),(EzProperties::HorizontalAlignment(property.clone()), receiver));
         property
     }
 
@@ -549,9 +540,8 @@ impl SchedulerFrontend {
 
         let (property, receiver) =
             EzProperty::new(name.to_string(), value);
-        self.backend.properties.insert(name.to_string(),
-                                       EzProperties::HorizontalPosHint(property.clone()));
-        self.backend.property_receivers.insert(name.to_string(), receiver);
+        self.backend.properties.insert(
+            name.to_string(),(EzProperties::HorizontalPosHint(property.clone()), receiver));
         property
     }
 
@@ -565,9 +555,8 @@ impl SchedulerFrontend {
 
         let (property, receiver) =
             EzProperty::new(name.to_string(), value);
-        self.backend.properties.insert(name.to_string(),
-                                       EzProperties::VerticalPosHint(property.clone()));
-        self.backend.property_receivers.insert(name.to_string(), receiver);
+        self.backend.properties.insert(
+            name.to_string(),(EzProperties::VerticalPosHint(property.clone()), receiver));
         property
     }
 
@@ -581,10 +570,25 @@ impl SchedulerFrontend {
 
         let (property, receiver) =
             EzProperty::new(name.to_string(), value);
-        self.backend.properties.insert(name.to_string(),
-                                       EzProperties::SizeHint(property.clone()));
-        self.backend.property_receivers.insert(name.to_string(), receiver);
+        self.backend.properties.insert(
+            name.to_string(),(EzProperties::SizeHint(property.clone()), receiver));
         property
+    }
+
+    /// Retrieve a property. Should be used to retrieve custom properties; access widget properties
+    /// through the state_tree.
+    pub fn get_property(&self, name: &str) -> &EzProperties {
+        &self.backend.properties.get(name).unwrap_or_else(
+            || panic!("Could not find property: {}", name)
+        ).0
+    }
+
+    /// Retrieve a property. Should be used to retrieve custom properties; access widget properties
+    /// through the state_tree.
+    pub fn get_property_mut(&mut self, name: &str) -> &mut EzProperties {
+        &mut self.backend.properties.get_mut(name).unwrap_or_else(
+            || panic!("Could not find property: {}", name)
+        ).0
     }
 
     /// Subscribe one property to another, ensuring the subscriber will always have the value of the
@@ -693,7 +697,7 @@ pub struct Scheduler {
 
     /// A <Name, [EzProperty]> HashMap to keep track of all properties at runtime. Also passed to
     /// closures that are spawned in background threads, as [EzProperty] is thread-safe.
-    pub properties: HashMap<String, EzProperties>,
+    pub properties: HashMap<String, (EzProperties, Receiver<EzValues>)>,
 
     /// A list of scheduled tasks. These are checked on every frame, and ran if the 'after'
     /// delay has passed.
