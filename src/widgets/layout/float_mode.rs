@@ -15,22 +15,21 @@ impl Layout {
         let own_width = own_state.get_effective_size().width;
 
 
+        let (filler_symbol, filler_fg_color, filler_bg_color) =
+            if own_state.get_fill() {
+                (own_state.get_filler_symbol(), own_state.colors.get_filler_fg_color(),
+                 own_state.colors.get_filler_bg_color())
+            } else {
+                (" ".to_string(), own_state.colors.get_fg_color(), own_state.colors.get_bg_color())
+            };
         // Fill self with background first. Then overlay widgets.
-        let filler = Pixel::new(own_state.get_filler_symbol(),
-                                own_state.get_color_config().get_filler_fg_color(),
-                                own_state.get_color_config().get_filler_bg_color());
+        let filler = Pixel::new(filler_symbol, filler_fg_color,
+                                filler_bg_color);
+
         for _ in 0..own_width {
             content.push(Vec::new());
             for _ in 0..own_height {
-                if own_state.get_fill() {
-                    content.last_mut().unwrap().push(filler.clone());
-                } else {
-                    content.last_mut().unwrap().push(
-                        Pixel::new(
-                            " ".to_string(),
-                            own_state.get_color_config().get_fg_color(),
-                            own_state.get_color_config().get_bg_color()));
-                }
+                content.last_mut().unwrap().push(filler.clone());
             }
         }
         for child in self.get_children() {

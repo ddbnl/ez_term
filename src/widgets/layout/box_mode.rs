@@ -1,3 +1,4 @@
+use crossterm::style::Color;
 use crate::GenericState;
 use crate::run::definitions::{Coordinates, Pixel, PixelMap, StateTree};
 use crate::states::definitions::{ColorConfig, LayoutOrientation};
@@ -35,6 +36,14 @@ impl Layout{
         let own_infinite_size = state.get_infinite_size().clone();
         let own_colors = state.get_color_config().clone();
         let own_scrolling = state.get_scrolling_config().clone();
+
+        let (filler_symbol, filler_fg_color, filler_bg_color) =
+            if state.get_fill() {
+                (state.get_filler_symbol(), own_colors.get_filler_fg_color(),
+                 own_colors.get_filler_bg_color())
+            } else {
+                (" ".to_string(), own_colors.get_fg_color(), own_colors.get_bg_color())
+            };
 
         let mut position = Coordinates::new(0, 0);
         let mut content_list = Vec::new();
@@ -99,10 +108,11 @@ impl Layout{
             merged_content = self.merge_horizontal_contents(
                 merged_content, content,
                 own_effective_size.height,
-                own_infinite_size.height,own_colors.clone(),
+                own_infinite_size.height,
                 state_tree.get_mut(
                     &self.children.get(i).unwrap().as_ez_object()
-                    .get_path()).as_generic_mut());
+                    .get_path()).as_generic_mut(), filler_symbol.clone(),
+                filler_fg_color, filler_bg_color);
         }
         merged_content
     }
@@ -118,6 +128,14 @@ impl Layout{
         let own_infinite_size = state.get_infinite_size().clone();
         let own_colors = state.get_color_config().clone();
         let own_scrolling = state.get_scrolling_config().clone();
+
+        let (filler_symbol, filler_fg_color, filler_bg_color) =
+            if state.get_fill() {
+                (state.get_filler_symbol(), own_colors.get_filler_fg_color(),
+                 own_colors.get_filler_bg_color())
+            } else {
+                (" ".to_string(), own_colors.get_fg_color(), own_colors.get_bg_color())
+            };
 
         let mut position = Coordinates::new(0, 0);
         let mut content_list = Vec::new();
@@ -182,30 +200,30 @@ impl Layout{
         let own_effective_size = state_tree.get_mut(&self.get_path())
             .as_layout().get_effective_size();
         let mut merged_content = PixelMap::new();
+
         for (i, content) in content_list.into_iter().enumerate() {
             merged_content = self.merge_vertical_contents(
                 merged_content, content,
                 own_effective_size.width, own_infinite_size.width,
-                own_colors.clone(),
                 state_tree.get_mut(
                     &self.children.get(i).unwrap().as_ez_object()
-                    .get_path()).as_generic_mut());
+                    .get_path()).as_generic_mut(), filler_symbol.clone(),
+                filler_fg_color,filler_bg_color);
         }
         merged_content
     }
 
     /// Take a [PixelMap] and merge it horizontally with another [PixelMap]
-    pub fn merge_horizontal_contents(&self, mut merged_content: PixelMap, mut new: PixelMap,
-                                     parent_height: usize, parent_infinite_height: bool,
-                                     parent_colors: ColorConfig, state: &mut dyn GenericState)
-                                     -> PixelMap {
+    pub fn merge_horizontal_contents(
+        &self, mut merged_content: PixelMap, mut new: PixelMap, parent_height: usize,
+        parent_infinite_height: bool, state: &mut dyn GenericState,
+        filler_symbol: String, fill_fg_color: Color, fill_bg_color: Color) -> PixelMap {
 
         if !parent_infinite_height && parent_height > new[0].len() {
             let offset;
             (new, offset) = align_content_vertically(
                 new, state.get_vertical_alignment(), parent_height,
-                parent_colors.get_fg_color(),
-                parent_colors.get_bg_color());
+                filler_symbol.clone(), fill_fg_color, fill_bg_color);
             state.set_y(state.get_position().get_y() + offset);
         }
 
@@ -218,7 +236,8 @@ impl Layout{
     /// Take a [PixelMap] and merge it vertically with another [PixelMap]
     pub fn merge_vertical_contents(
         &self, mut merged_content: PixelMap, mut new: PixelMap, parent_width: usize,
-        parent_infinite_width: bool, parent_colors: ColorConfig, state: &mut dyn GenericState)
+        parent_infinite_width: bool, state: &mut dyn GenericState,
+        filler_symbol: String, fill_fg_color: Color, fill_bg_color: Color)
         -> PixelMap {
 
         if new.is_empty() {
@@ -229,11 +248,13 @@ impl Layout{
         if parent_width > new.len() && !parent_infinite_width {
             (new, offset) = align_content_horizontally(
                 new, state.get_horizontal_alignment(), parent_width,
-                parent_colors.get_fg_color(),
-                parent_colors.get_bg_color());
+                filler_symbol.clone(),
+                fill_fg_color, fill_bg_color);
             state.set_x(state.get_position().get_x() + offset);
         }
 
+        let fill_pixel = Pixel::new(filler_symbol, fill_fg_color,
+                                    fill_bg_color);
         let write_width = if !state.get_infinite_size().width { parent_width }
                               else { new.len() };
         for x in 0..write_width {
@@ -244,10 +265,7 @@ impl Layout{
                 if x < new.len() && y < new[x].len() {
                     merged_content[x].push(new[x][y].clone())
                 } else {
-                    merged_content[x].push(Pixel { symbol: " ".to_string(),
-                        foreground_color: parent_colors.get_fg_color(),
-                        background_color: parent_colors.get_bg_color(),
-                        underline: false});
+                    merged_content[x].push(fill_pixel.clone());
                 }
             }
         }

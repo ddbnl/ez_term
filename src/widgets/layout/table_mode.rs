@@ -33,6 +33,8 @@ impl Layout{
         let own_infinite_size = state.get_infinite_size().clone();
         let own_colors = state.get_color_config().clone();
         let own_scrolling = state.get_scrolling_config().clone();
+        let own_fill = state.get_fill();
+        let own_filler_symbol = state.get_filler_symbol();
 
         let (child_table, rows, cols) =
             self.get_table_model(&own_table_config, own_orientation);
@@ -49,8 +51,19 @@ impl Layout{
         let content_list = self.get_table_mode_child_content(
             state_tree, &own_infinite_size, &own_scrolling, &own_effective_size);
 
-        self.draw_table(&child_table, content_list, rows, cols, &own_table_config, default_width,
-                        default_height, &own_colors, state_tree)
+        let content = self.draw_table(
+            &child_table, content_list, rows, cols, &own_table_config, default_width,
+            default_height, &own_colors, state_tree, own_fill, own_filler_symbol);
+
+        let state = state_tree.get_mut(&self.get_path()).as_layout_mut();
+        if state.get_auto_scale().get_auto_scale_width() {
+            state.set_effective_width(content.len());
+        }
+        if state.get_auto_scale().get_auto_scale_height() {
+            state.set_effective_height(content.iter()
+                .map(|x| x.len()).max().unwrap_or(0));
+        }
+        content
     }
 
     /// Calculate the amount of needed rows and columns based on the number of children
@@ -292,8 +305,18 @@ impl Layout{
     /// orientation.
     fn draw_table(&self, child_table: &Vec<Vec<usize>>, mut content_list: Vec<PixelMap>,
                   rows: usize, cols:usize, table_config: &TableConfig, default_width: usize,
-                  default_height: usize, colors: &ColorConfig, state_tree: &mut StateTree)
+                  default_height: usize, colors: &ColorConfig, state_tree: &mut StateTree,
+                  fill: bool, filler_symbol: String)
         -> PixelMap {
+
+
+        let (symbol, fg_color, bg_color) =
+            if fill {
+                (filler_symbol.clone(), colors.get_filler_fg_color(),
+                 colors.get_filler_bg_color())
+            } else {
+                (" ".to_string(), colors.get_fg_color(), colors.get_bg_color())
+            };
 
         let row_heights = self.get_row_heights(
             table_config, rows, cols, child_table, &content_list, default_height);
@@ -302,8 +325,8 @@ impl Layout{
         let total_height: usize = row_heights.iter().sum();
         let total_width: usize = col_widths.iter().sum();
         let mut content = vec!(
-            vec!(Pixel::new(" ".to_string(), colors.get_fg_color(),
-                            colors.get_bg_color()); total_height); total_width);
+            vec!(Pixel::new(symbol, fg_color,bg_color);
+                 total_height); total_width);
 
         let mut write_pos = Coordinates::new(0, 0);
         for x in 0..cols {
@@ -319,13 +342,13 @@ impl Layout{
                 let (child_content, offset) = align_content_horizontally(
                     child_content,
                     state.get_horizontal_alignment(), row_heights[y],
-                    colors.get_fg_color(), colors.get_bg_color());
+                    filler_symbol.clone(), fg_color, bg_color);
                 state.get_position_mut().set_x(write_pos.x + offset);
 
                 let (child_content, offset) = align_content_vertically(
                     child_content,
                     state.get_vertical_alignment(), row_heights[y],
-                    colors.get_fg_color(), colors.get_bg_color());
+                    filler_symbol.clone(), fg_color, bg_color);
                 state.get_position_mut().set_y(write_pos.y + offset);
 
                 for child_x in 0..col_widths[x] {

@@ -9,7 +9,9 @@
     tab_bg_color: red
     tab_border_fg_color: dark_cyan
     active_fg_color: yellow
+    active_tab: tables_tab
     - Layout:
+        id: scrolling_tab
         tab_name: Scrolling
         mode: box
         orientation: horizontal
@@ -20,6 +22,7 @@
             size_hint_y: none
             from_file: ./examples/FullExample/dummy.txt
     - Layout:
+        id: tables_tab
         tab_name: Tables
         mode: box
         orientation: vertical
@@ -113,6 +116,7 @@
             - TableShowcase:
                 orientation: bt-rl
     - Layout:
+        id: stacks_tab
         tab_name: Stacks
         mode: box
         orientation: vertical

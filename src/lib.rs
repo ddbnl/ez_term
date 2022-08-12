@@ -76,7 +76,7 @@
 //!             2. [Removing widgets from code](#scheduler_programmatic_remove)
 //!         8. [Updating widgets](#scheduler_updating)
 //!         9. [Managing widget selection](#scheduler_selection)
-//!     4. [Global (key)bindings](#)
+//!     4. [Global (key)bindings](#keybindings)
 //! 2. [Reference]
 //!     1. [Layouts]
 //!         1. [General]
@@ -100,7 +100,7 @@
 //!         9. [Dropdown widget]
 //!         10. [Progress bar widget]
 //!         11. [Canvas widget]
-//! 4. Examples
+//! 3. Examples
 //!
 //!
 //! <a name="how_to_use"></a>
@@ -2632,13 +2632,18 @@
 //! A modal is a layout that is shown in front of the main UI; one of its main use cases is creating
 //! popups. A modal is always created from a Layout template created in an .ez file. In other words,
 //! you first define what the modal looks like in the .ez file, and then you spawn it from code.
+//!
+//!
 //! You can spawn a popup anytime you have access to the scheduler (i.e. when initializing the UI,
 //! from a callback, or from a scheduled task). Only one modal can exist at any time; if a modal is
-//! opened when another one already exists, the existing one is dismissed first. The modal is
-//! spawned in the root layout, so size hints and position hints will size and position the modal
-//! relative to the root layout. Modals can be dismissed from the scheduler. If you want a button
-//! in your modal that dismisses it, you need to bind a callback to the button in the modal that
-//! calls the dismiss_modal method of the scheduler. Modals can be dragged across the screen by
+//! opened when another one already exists, the existing one is dismissed first. The ID of a modal
+//! will *always* be 'modal'. The full path of a modal will *always* be '/root/modal'. Any widgets
+//! defined inside of the template layout will have their own IDs, e.g. '/root/modal/my_popup_label'.
+//!
+//! The modal is spawned in the root layout, so size hints and position hints will size and position
+//! the modal relative to the root layout. Modals can be dismissed from the scheduler. If you want
+//! a button in your modal that dismisses it, you need to bind a callback to the button in the modal
+//! that calls the dismiss_modal method of the scheduler. Modals can be dragged across the screen by
 //! the user (as long as they click on an empty part of the modal); if you want to disable this
 //! behavior set can_drag to false on the layout template used to spawn the modal. Lastly, when a
 //! modal is open only widgets in the modal can be selected or clicked; events do not reach the main
@@ -2950,6 +2955,1417 @@
 //!
 //! **Mouse left click:**
 //! All interactive widgets implement an on_left_mouse_click callback with default behavior.
+//!
+//!
+//! # 2. Reference
+//!
+//! This section will provide the details on every widget: properties, available callbacks, and
+//! default callback implementations. It will also have a reference for all the methods of the
+//! scheduler.
+//!
+//! ## 2.1 Common properties reference
+//!
+//! Here we'll look at the properties that are available on every available widget and layout.
+//! These properties, along with the specific properties mentioned in the specific widget reference,
+//! form a complete reference of properties.
+//!
+//! ##### x
+//!
+//! The horizontal position of the widget going left to right (so 0 is the left edge of a layout).
+//! Only works if the layout the object is placed in has the layout_mode property set to float.
+//! Unless you are explicitly doing manual positioning, you usually do not set this property.
+//!
+//! **Property type:**
+//!
+//! usize
+//!
+//! **Possible values:**
+//!
+//! Any usize value that falls within the width of the parent layout.
+//!
+//! **Default value:**
+//!
+//! 0
+//!
+//! **Usage examples:**
+//!
+//! In EzLang files:
+//! ```
+//! - Layout:
+//!     mode: float
+//!     Label:
+//!         x: 5
+//! ```
+//!
+//! In code:
+//! ```
+//! use ez_term::*;
+//! use ez_term::GenericState;
+//! let (root_widget, mut state_tree, mut scheduler) = load_ui();
+//! let state = state_tree.get_mut("my_label").as_layout_mut();
+//!
+//! state.set_x(5);
+//!
+//! run(root_widget, state_tree, scheduler);
+//! ```
+//!
+//! ##### y
+//!
+//! The vertical position of the widget going top to bottom (so 0 is the top edge of a layout).
+//! Only works if the layout the object is placed in has the layout_mode property set to float.
+//! Unless you are explicitly doing manual positioning, you usually do not set this property.
+//!
+//! **Property type:**
+//!
+//! usize
+//!
+//! **Possible values:**
+//!
+//! Any usize value that falls within the height of the parent layout.
+//!
+//! **Default value:**
+//!
+//! 0
+//!
+//! **Usage examples:**
+//!
+//! In EzLang files:
+//! ```
+//! - Layout:
+//!     mode: float
+//!     Label:
+//!         y: 5
+//! ```
+//!
+//! In code:
+//! ```
+//! use ez_term::*;
+//! use ez_term::GenericState;
+//! let (root_widget, mut state_tree, mut scheduler) = load_ui();
+//! let state = state_tree.get_mut("my_label").as_layout_mut();
+//!
+//! state.set_y(5);
+//!
+//! run(root_widget, state_tree, scheduler);
+//! ```
+//!
+//! ##### pos
+//!
+//! This is an EzLang convenience that allows you to set 'x' and 'y' at the same time (in that order).
+//! See the individual properties for more info.
+//!
+//! **Usage examples:**
+//!
+//! In EzLang files:
+//! ```
+//! - Layout:
+//!     mode: float
+//!     Label:
+//!         pos: 5, 3
+//! ```
+//!
+//! ##### width
+//!
+//! The absolute width of the widget. Only works if the 'size_hint_x' property is set to None
+//! (because relative sizing is the default). Unless you are explicitly doing manual sizing,
+//! you usually do not set this property.
+//!
+//! **Property type:**
+//!
+//! usize
+//!
+//! **Possible values:**
+//!
+//! Any usize value that fits within the width of the parent.
+//!
+//! **Default value:**
+//!
+//! 0
+//!
+//! **Usage examples:**
+//!
+//! In EzLang files:
+//! ```
+//! - Layout:
+//!     Label:
+//!         width: 20
+//!         size_hint_x: none
+//! ```
+//!
+//! In code:
+//! ```
+//! use ez_term::*;
+//! use ez_term::GenericState;
+//! let (root_widget, mut state_tree, mut scheduler) = load_ui();
+//! let state = state_tree.get_mut("my_label").as_layout_mut();
+//!
+//! state.set_width(20);
+//! state.set_size_hint_x(None);
+//!
+//! run(root_widget, state_tree, scheduler);
+//! ```
+//!
+//! ##### height
+//!
+//! The absolute height of the widget. Only works if the 'size_hint_y' property is set to None
+//! (because relative sizing is the default). Unless you are explicitly doing manual sizing,
+//! you usually do not set this property.
+//!
+//! **Property type:**
+//!
+//! usize
+//!
+//! **Possible values:**
+//!
+//! Any usize value that fits within the height of the parent.
+//!
+//! **Default value:**
+//!
+//! 0
+//!
+//! **Usage examples:**
+//!
+//! In EzLang files:
+//! ```
+//! - Layout:
+//!     Label:
+//!         height: 20
+//!         size_hint_y: none
+//! ```
+//!
+//! In code:
+//! ```
+//! use ez_term::*;
+//! use ez_term::GenericState;
+//! let (root_widget, mut state_tree, mut scheduler) = load_ui();
+//! let state = state_tree.get_mut("my_label").as_layout_mut();
+//!
+//! state.set_height(20);
+//! state.set_size_hint_y(None);
+//!
+//! run(root_widget, state_tree, scheduler);
+//! ```
+//!
+//! ##### size
+//!
+//! This is an EzLang convenience that allows you to set 'width' and 'height' at the same time (
+//! in that order). See the individual properties for more info.
+//!
+//! **Usage examples:**
+//!
+//! In EzLang files:
+//! ```
+//! - Layout:
+//!     Label:
+//!         size: 20, 10
+//!         size_hint: none, none
+//! ```
+//!
+//! ##### size_hint_x
+//!
+//! ##### size_hint_y
+//!
+//! ##### pos_hint_x
+//!
+//! ##### pos_hint_y
+//!
+//! ##### auto_scale_width
+//!
+//! ##### auto_scale_height
+//!
+//! ##### padding_top
+//!
+//! ##### padding_bottom
+//!
+//! ##### padding_left
+//!
+//! ##### padding_right
+//!
+//! ##### halign
+//!
+//! ##### valign
+//!
+//! ##### disabled
+//!
+//! ##### selection_order
+//!
+//! ##### border
+//!
+//! ##### horizontal_symbol
+//!
+//! ##### vertical_symbol
+//!
+//! ##### top_left_symbol
+//!
+//! ##### top_right_symbol
+//!
+//! ##### bottom_left_symbol
+//!
+//! ##### bottom_right_symbol
+//!
+//! ##### fg_color
+//!
+//! ##### bg_color
+//!
+//! ##### selection_fg_color
+//!
+//! ##### selection_bg_color
+//!
+//! ##### disabled_fg_color
+//!
+//! ##### disabled_bg_color
+//!
+//! ##### active_fg_color
+//!
+//! ##### active_bg_color
+//!
+//! ##### flash_fg_color
+//!
+//! ##### flash_bg_color
+//!
+//! ##### border_fg_color
+//!
+//! ##### border_bg_color
+//!
+//! ##### cursor_color
+//!
+//!
+//! ## 2.2 Widget reference
+//!
+//! We will lay out the properties, callbacks and default callback implementations of all widgets.
+//! When listing properties, we will list specific properties first, followed by the properties
+//! common to all widgets.
+//!
+//! ### 2.2.1 Layout:
+//!
+//! The layout is needed to place widgets in the UI. It has different modes to provide control over
+//! how to place the widgets. Some properties are specific to one or more modes.
+//!
+//! #### 2.2.1.1 Properties
+//!
+//! ##### mode
+//!
+//! Sets the layout mode, which controls how to place child widgets on the screen. See the
+//! tutorial for a full explanation of each mode.
+//!
+//! **Property type:**
+//!
+//! LayoutMode
+//!
+//! **Possible values:**
+//! - box
+//! - stack
+//! - table
+//! - float
+//! - tab
+//! - screen
+//!
+//! **Default value:**
+//!
+//! box
+//!
+//! **Usage examples:**
+//!
+//! In EzLang files:
+//! ```
+//! - Layout:
+//!     mode: box
+//! ```
+//!
+//! In code:
+//! ```
+//! use ez_term::*;
+//! let (root_widget, mut state_tree, mut scheduler) = load_ui();
+//! let state = state_tree.get_mut("my_layout").as_layout_mut();
+//!
+//! state.set_mode(LayoutMode::Box);
+//!
+//! run(root_widget, state_tree, scheduler);
+//! ```
+//!
+//! ##### orientation
+//!
+//! Sets the layout orientation, which controls how some layout modes behave. See the
+//! tutorial for a full explanation of each mode, which includes the available orientations. In
+//! short: Box mode support horizontal/vertical and stack/table mode supports the 8 bidirectional
+//! orientations (such as tb-lr).
+//!
+//! **Property type:**
+//!
+//! LayoutOrientation
+//!
+//! **Possible values:**
+//! - horizontal
+//! - vertical
+//! - tb-lr
+//! - tb-rl
+//! - bt-lr
+//! - bt-rl
+//! - lr-tb
+//! - lr-bt
+//! - rl-tb
+//! - rl-bt
+//!
+//! **Default value:**
+//!
+//! For box mode default is 'horizontal'. For stack and table mode default is: 'tb-lr'.
+//!
+//! **Usage examples:**
+//!
+//! In EzLang files:
+//! ```
+//! - Layout:
+//!     orientation: horizontal
+//! ```
+//!
+//! In code:
+//! ```
+//! use ez_term::*;
+//! let (root_widget, mut state_tree, mut scheduler) = load_ui();
+//! let state = state_tree.get_mut("my_layout").as_layout_mut();
+//!
+//! state.set_orientation(LayoutOrientation::Horizontal);
+//!
+//! run(root_widget, state_tree, scheduler);
+//! ```
+//!
+//! ##### active_screen
+//!
+//! Only works when the layout mode property is set to 'screen'. This property determines which
+//! child layout (i.e. screen) is shown to the user. By default the first screen is shown, so it is
+//! not required to set this property. If you want to set this property, use the ID of the child
+//! layout you want to show.
+//!
+//! **Property type:**
+//!
+//! String
+//!
+//! **Default value:**
+//!
+//! Empty string. When string is empty, active_screen will initially be set to first child layout.
+//!
+//! **Possible values:**
+//!
+//! The ID property of any of the child layouts (i.e. screens).
+//!
+//! **Usage examples:**
+//!
+//! In EzLang files:
+//! ```
+//! - Layout:
+//!     mode: screen
+//!     active_screen: my_screen_2
+//!     - Layout:
+//!         id: my_screen_1
+//!     - Layout:
+//!         id: my_screen_2
+//! ```
+//!
+//! In code:
+//! ```
+//! use ez_term::*;
+//! let (root_widget, mut state_tree, mut scheduler) = load_ui();
+//! let state = state_tree.get_mut("my_layout").as_layout_mut();
+//!
+//! state.set_active_screen("my_screen_2");
+//!
+//! run(root_widget, state_tree, scheduler);
+//! ```
+//!
+//! ##### active_tab
+//!
+//! Only works when the layout mode property is set to 'tab'. This property determines which
+//! child layout (i.e. tab) is shown to the user. By default the first tab is shown, so it is
+//! not required to set this property. If you want to set this property, use the ID of the child
+//! layout you want to show.
+//!
+//! **Property type:**
+//!
+//! String
+//!
+//! **Possible values:**
+//!
+//! The ID property of any of the child layouts (i.e. tabs).
+//!
+//! **Default value:**
+//!
+//! Empty string. When string is empty, active_tab is initially set to the first child layout.
+//!
+//! **Usage examples:**
+//!
+//! In EzLang files:
+//! ```
+//! - Layout:
+//!     mode: screen
+//!     active_tab: my_tab_2
+//!     - Layout:
+//!         id: my_tab_1
+//!     - Layout:
+//!         id: my_tab_2
+//! ```
+//!
+//! In code:
+//! ```
+//! use ez_term::*;
+//! let (root_widget, mut state_tree, mut scheduler) = load_ui();
+//! let state = state_tree.get_mut("my_layout").as_layout_mut();
+//!
+//! state.set_active_tab("my_tab_2");
+//!
+//! run(root_widget, state_tree, scheduler);
+//! ```
+//!
+//! ##### tab_name
+//!
+//! Only works when the *parent* layout mode property is set to 'tab'. This property determines the
+//! name displayed in the tab header, which when clicked, makes this layout the active tab in
+//! the parent. By default, this is set to the ID property, so it is not required to set.
+//!
+//! **Property type:**
+//!
+//! String
+//!
+//! **Possible values:**
+//!
+//! Any string. You might want to keep it somewhat short, otherwise the tab header buttons will be
+//! very wide.
+//!
+//! **Default value:**
+//!
+//! Empty string. When string is empty, ID of the layout is used as tab header name.
+//!
+//! **Usage examples:**
+//!
+//! In EzLang files:
+//! ```
+//! - Layout:
+//!     mode: tab
+//!     - Layout:
+//!         id: my_tab_1
+//!         tab_name: My tab
+//! ```
+//!
+//! In code:
+//! ```
+//! use ez_term::*;
+//! let (root_widget, mut state_tree, mut scheduler) = load_ui();
+//! let state = state_tree.get_mut("my_layout").as_layout_mut();
+//!
+//! state.set_tab_name("My tab");
+//!
+//! run(root_widget, state_tree, scheduler);
+//! ```
+//!
+//! ##### tab_fg_color
+//!
+//! Only works when the layout is in tab mode. Sets the fg_color of the tab header button. In other
+//! words, the color of the text on the tab header.
+//!
+//! **Property type:**
+//!
+//! Color
+//!
+//! **Possible values:**
+//!
+//! - RGB value: 0-255, 0-255, 0-255
+//! - Color words:
+//!     - black
+//!     - blue
+//!     - dark_blue
+//!     - cyan
+//!     - dark_cyan
+//!     - green
+//!     - dark_green
+//!     - grey
+//!     - dark_grey
+//!     - magenta
+//!     - dark_magenta
+//!     - red
+//!     - dark_red
+//!     - white
+//!     - yellow
+//!     - dark_yellow
+//!
+//! **Default value:**
+//!
+//! white
+//!
+//! **Usage examples:**
+//!
+//! In EzLang files:
+//! ```
+//! - Layout:
+//!     mode: tab
+//!     tab_fg_color: red
+//! ```
+//! ```
+//! - Layout:
+//!     mode: tab
+//!     tab_fg_color: 255, 0, 0
+//! ```
+//!
+//! In code:
+//! ```
+//! use ez_term::*;
+//! use ez_term::GenericState;
+//! let (root_widget, mut state_tree, mut scheduler) = load_ui();
+//! let state = state_tree.get_mut("my_layout").as_layout_mut();
+//!
+//! // Table properties are wrapping into a TableConfig object, which we have to retrieve
+//! // first:
+//! state.get_color_config_mut().set_tab_fg_color(Color::Red);
+//! state.get_color_config_mut().set_tab_fg_color(Color::from((255, 0, 0)));
+//!
+//! run(root_widget, state_tree, scheduler);
+//! ```
+//!
+//! ##### tab_bg_color
+//!
+//! Only works when the layout is in tab mode. Sets the background color of the tab header button.
+//!
+//! **Property type:**
+//!
+//! Color
+//!
+//! **Possible values:**
+//!
+//! - RGB value: 0-255, 0-255, 0-255
+//! - Color words:
+//!     - black
+//!     - blue
+//!     - dark_blue
+//!     - cyan
+//!     - dark_cyan
+//!     - green
+//!     - dark_green
+//!     - grey
+//!     - dark_grey
+//!     - magenta
+//!     - dark_magenta
+//!     - red
+//!     - dark_red
+//!     - white
+//!     - yellow
+//!     - dark_yellow
+//!
+//! **Default value:**
+//!
+//! black
+//!
+//! **Usage examples:**
+//!
+//! In EzLang files:
+//! ```
+//! - Layout:
+//!     mode: tab
+//!     tab_bg_color: blue
+//! ```
+//! ```
+//! - Layout:
+//!     mode: tab
+//!     tab_bg_color: 0, 0, 255
+//! ```
+//!
+//! In code:
+//! ```
+//! use ez_term::*;
+//! use ez_term::GenericState;
+//! let (root_widget, mut state_tree, mut scheduler) = load_ui();
+//! let state = state_tree.get_mut("my_layout").as_layout_mut();
+//!
+//! // Table properties are wrapping into a TableConfig object, which we have to retrieve
+//! // first:
+//! state.get_color_config_mut().set_tab_bg_color(Color::Blue);
+//! state.get_color_config_mut().set_tab_bg_color(Color::from((0, 0, 255)));
+//!
+//! run(root_widget, state_tree, scheduler);
+//! ```
+//!
+//! ##### tab_border_fg_color
+//!
+//! Only works when the layout is in tab mode. Sets the foreground color of the tab header button
+//! borders.
+//!
+//! **Property type:**
+//!
+//! Color
+//!
+//! **Possible values:**
+//!
+//! - RGB value: 0-255, 0-255, 0-255
+//! - Color words:
+//!     - black
+//!     - blue
+//!     - dark_blue
+//!     - cyan
+//!     - dark_cyan
+//!     - green
+//!     - dark_green
+//!     - grey
+//!     - dark_grey
+//!     - magenta
+//!     - dark_magenta
+//!     - red
+//!     - dark_red
+//!     - white
+//!     - yellow
+//!     - dark_yellow
+//!
+//! **Default value:**
+//!
+//! white
+//!
+//! **Usage examples:**
+//!
+//! In EzLang files:
+//! ```
+//! - Layout:
+//!     mode: tab
+//!     tab_border_fg_color: blue
+//! ```
+//! ```
+//! - Layout:
+//!     mode: tab
+//!     tab_border_fg_color: 0, 0, 255
+//! ```
+//!
+//! In code:
+//! ```
+//! use ez_term::*;
+//! use ez_term::GenericState;
+//! let (root_widget, mut state_tree, mut scheduler) = load_ui();
+//! let state = state_tree.get_mut("my_layout").as_layout_mut();
+//!
+//! // Table properties are wrapping into a TableConfig object, which we have to retrieve
+//! // first:
+//! state.get_color_config_mut().set_tab_fg_color(Color::Blue);
+//! state.get_color_config_mut().set_tab_fg_color(Color::from((0, 0, 255)));
+//!
+//! run(root_widget, state_tree, scheduler);
+//! ```
+//!
+//! ##### tab_border_bg_color
+//!
+//! Only works when the layout is in tab mode. Sets the background color of the tab header button
+//! borders.
+//!
+//! **Property type:**
+//!
+//! Color
+//!
+//! **Possible values:**
+//!
+//! - RGB value: 0-255, 0-255, 0-255
+//! - Color words:
+//!     - black
+//!     - blue
+//!     - dark_blue
+//!     - cyan
+//!     - dark_cyan
+//!     - green
+//!     - dark_green
+//!     - grey
+//!     - dark_grey
+//!     - magenta
+//!     - dark_magenta
+//!     - red
+//!     - dark_red
+//!     - white
+//!     - yellow
+//!     - dark_yellow
+//!
+//! **Default value:**
+//!
+//! black
+//!
+//! **Usage examples:**
+//!
+//! In EzLang files:
+//! ```
+//! - Layout:
+//!     mode: tab
+//!     tab_border_bg_color: blue
+//! ```
+//! ```
+//! - Layout:
+//!     mode: tab
+//!     tab_border_bg_color: 0, 0, 255
+//! ```
+//!
+//! In code:
+//! ```
+//! use ez_term::*;
+//! use ez_term::GenericState;
+//! let (root_widget, mut state_tree, mut scheduler) = load_ui();
+//! let state = state_tree.get_mut("my_layout").as_layout_mut();
+//!
+//! // Table properties are wrapping into a TableConfig object, which we have to retrieve
+//! // first:
+//! state.get_color_config_mut().set_tab_bg_color(Color::Blue);
+//! state.get_color_config_mut().set_tab_bg_color(Color::from((0, 0, 255)));
+//!
+//! run(root_widget, state_tree, scheduler);
+//! ```
+//!
+//! ##### can_drag
+//!
+//! Only works on a Layout template which is spawned as a modal (see tutorial). When can_drag is
+//! true, the modal can be dragged across the screen.
+//!
+//! **Property type:**
+//!
+//! Bool
+//!
+//! **Possible values:**
+//!
+//! - true
+//! - false
+//!
+//! **Default value:**
+//!
+//! true
+//!
+//! **Usage examples:**
+//!
+//! In EzLang files:
+//! ```
+//! - <MyPopup@Layout>:
+//!     can_drag: false
+//! ```
+//!
+//! In code:
+//! ```
+//! use ez_term::*;
+//! let (root_widget, mut state_tree, mut scheduler) = load_ui();
+//!
+//! scheduler.open_modal("MyPopup", &mut state_tree);
+//! let state = state_tree.get_mut("modal").as_layout_mut();
+//!
+//! state.set_can_drag(false);
+//!
+//! run(root_widget, state_tree, scheduler);
+//! ```
+//!
+//! ##### fill
+//!
+//! A bool that determines whether fill is enabled. If enabled, all empty pixels in the layout will
+//! be filled with a symbol. The symbol is determined by the property 'filler_symbol' (see property
+//! below). The color of the filler is determined by properties 'filler_fg_color' and
+//! 'filler_bg_color'.
+//!
+//! **Property type:**
+//!
+//! bool
+//!
+//! **Possible values:**
+//!
+//! - true
+//! - false
+//!
+//! **Default value:**
+//!
+//! false
+//!
+//! **Usage examples:**
+//!
+//! In EzLang files:
+//! ```
+//! - Layout:
+//!     fill: true
+//! ```
+//!
+//! In code:
+//! ```
+//! use ez_term::*;
+//! let (root_widget, mut state_tree, mut scheduler) = load_ui();
+//! let state = state_tree.get_mut("my_layout").as_layout_mut();
+//!
+//! state.set_fill(true);
+//!
+//! run(root_widget, state_tree, scheduler);
+//! ```
+//!
+//! ##### filler_symbol
+//!
+//! The symbol that will be used to fill empty pixels in the layout if the 'fill' property is set
+//! to true.
+//!
+//! **Property type:**
+//!
+//! String (only 1st character is used)
+//!
+//! **Possible values:**
+//!
+//! Any String, but only first character is used. Unicode allowed.
+//!
+//! **Default value:**
+//!
+//! Empty string.
+//!
+//! **Usage examples:**
+//!
+//! In EzLang files:
+//! ```
+//! - Layout:
+//!     filler_symbol: ░
+//! ```
+//!
+//! In code:
+//! ```
+//! use ez_term::*;
+//! let (root_widget, mut state_tree, mut scheduler) = load_ui();
+//! let state = state_tree.get_mut("my_layout").as_layout_mut();
+//!
+//! state.set_fill(true);
+//!
+//! run(root_widget, state_tree, scheduler);
+//! ```
+//!
+//! ##### filler_fg_color
+//!
+//! Only works when the layout is in box, stack, table or float mode, and the fill property is set
+//! to true. Determines the foreground color of the filler pixels (i.e. the color of the filler
+//! symbol).
+//!
+//! **Property type:**
+//!
+//! Color
+//!
+//! **Possible values:**
+//!
+//! - RGB value: 0-255, 0-255, 0-255
+//! - Color words:
+//!     - black
+//!     - blue
+//!     - dark_blue
+//!     - cyan
+//!     - dark_cyan
+//!     - green
+//!     - dark_green
+//!     - grey
+//!     - dark_grey
+//!     - magenta
+//!     - dark_magenta
+//!     - red
+//!     - dark_red
+//!     - white
+//!     - yellow
+//!     - dark_yellow
+//!
+//! **Default value:**
+//!
+//! white
+//!
+//! **Usage examples:**
+//!
+//! In EzLang files:
+//! ```
+//! - Layout:
+//!     filler_fg_color: red
+//! ```
+//! ```
+//! - Layout:
+//!     filler_fg_color: 255, 0, 0
+//! ```
+//!
+//! In code:
+//! ```
+//! use ez_term::*;
+//! use ez_term::GenericState;
+//! let (root_widget, mut state_tree, mut scheduler) = load_ui();
+//! let state = state_tree.get_mut("my_layout").as_layout_mut();
+//!
+//! // Table properties are wrapping into a TableConfig object, which we have to retrieve
+//! // first:
+//! state.get_color_config_mut().set_filler_fg_color()Color::Blue);
+//! state.get_color_config_mut().set_filler_fg_color(Color::from((0, 0, 255)));
+//!
+//! run(root_widget, state_tree, scheduler);
+//! ```
+//!
+//! ##### filler_bg_color
+//!
+//! Only works when the layout is in box, stack, table or float mode, and the fill property is set
+//! to true. Determines the background color of the filler pixels.
+//!
+//! **Property type:**
+//!
+//! Color
+//!
+//! **Possible values:**
+//!
+//! - RGB value: 0-255, 0-255, 0-255
+//! - Color words:
+//!     - black
+//!     - blue
+//!     - dark_blue
+//!     - cyan
+//!     - dark_cyan
+//!     - green
+//!     - dark_green
+//!     - grey
+//!     - dark_grey
+//!     - magenta
+//!     - dark_magenta
+//!     - red
+//!     - dark_red
+//!     - white
+//!     - yellow
+//!     - dark_yellow
+//!
+//! **Default value:**
+//!
+//! black
+//!
+//! **Usage examples:**
+//!
+//! In EzLang files:
+//! ```
+//! - Layout:
+//!     mode: tab
+//!     filler_bg_color: red
+//! ```
+//! ```
+//! - Layout:
+//!     mode: tab
+//!     filler_bg_color: 255, 0, 0
+//! ```
+//!
+//! In code:
+//! ```
+//! use ez_term::*;
+//! use ez_term::GenericState;
+//! let (root_widget, mut state_tree, mut scheduler) = load_ui();
+//! let state = state_tree.get_mut("my_layout").as_layout_mut();
+//!
+//! // Table properties are wrapping into a TableConfig object, which we have to retrieve
+//! // first:
+//! state.get_color_config_mut().set_filler_bg_color(Color::Blue);
+//! state.get_color_config_mut().set_filler_bg_color(Color::from((0, 0, 255)));
+//!
+//! run(root_widget, state_tree, scheduler);
+//! ```
+//!
+//! ##### scroll_x
+//!
+//! Only works when the layout mode is 'box', 'table', 'stack' or 'float'. Makes the width of the
+//! layout infinite and adds a horizontal scrollbar to move through the content. In most cases the
+//! easiest way to implement scrolling is to enable it on a box layout.
+//!
+//! **Property type:**
+//!
+//! bool
+//!
+//! **Possible values:**
+//!
+//! - true
+//! - false
+//!
+//! **Default value:**
+//!
+//! false
+//!
+//! **Usage examples:**
+//!
+//! In EzLang files:
+//! ```
+//! - Layout:
+//!     scroll_x: true
+//! ```
+//!
+//! In code:
+//! ```
+//! use ez_term::*;
+//! let (root_widget, mut state_tree, mut scheduler) = load_ui();
+//! let state = state_tree.get_mut("my_layout").as_layout_mut();
+//!
+//! // Scrolling properties are wrapping into a ScrollingConfig object, which we have to retrieve
+//! // first:
+//! state.get_scrolling_config_mut().set_scroll_x(true);
+//!
+//! run(root_widget, state_tree, scheduler);
+//! ```
+//!
+//! ##### scroll_y
+//!
+//! Only works when the layout mode is 'box', 'table', 'stack' or 'float'. Makes the height of the
+//! layout infinite and adds a vertical scrollbar to move through the content. In most cases the
+//! easiest way to implement scrolling is to enable it on a box layout.
+//!
+//! **Property type:**
+//!
+//! bool
+//!
+//! **Possible values:**
+//!
+//! - true
+//! - false
+//!
+//! **Default value:**
+//!
+//! false
+//!
+//! **Usage examples:**
+//!
+//! In EzLang files:
+//! ```
+//! - Layout:
+//!     scroll_y: true
+//! ```
+//!
+//! In code:
+//! ```
+//! use ez_term::*;
+//! let (root_widget, mut state_tree, mut scheduler) = load_ui();
+//! let state = state_tree.get_mut("my_layout").as_layout_mut();
+//!
+//! // Scrolling properties are wrapping into a ScrollingConfig object, which we have to retrieve
+//! // first:
+//! state.get_scrolling_config_mut().set_scroll_y(true);
+//!
+//! run(root_widget, state_tree, scheduler);
+//! ```
+//!
+//! ##### view_start_x
+//!
+//! Only works when the layout is scrolling horizontally. Determines the view of the scroll by a
+//! value between 0 and 1. If the total content is 100 pixels wide, then a view_start_x of 0.5 will
+//! show content starting from pixel 50. A value of 0 means the beginning of the content, a value
+//! of 1 means show the tail end of the content. Use with EzLang to optionally set a custom initial
+//! view for the scrollbar. Use in code to programmatically control the scrollbar.
+//!
+//! **Property type:**
+//!
+//! f64
+//!
+//! **Possible values:**
+//!
+//! F64 value between 0 and 1.
+//!
+//! **Default value:**
+//!
+//! 0.0
+//!
+//! **Usage examples:**
+//!
+//! In EzLang files:
+//! ```
+//! - Layout:
+//!     view_start_x: 1.0
+//! ```
+//!
+//! In code:
+//! ```
+//! use ez_term::*;
+//! let (root_widget, mut state_tree, mut scheduler) = load_ui();
+//! let state = state_tree.get_mut("my_layout").as_layout_mut();
+//!
+//! // Scrolling properties are wrapping into a ScrollingConfig object, which we have to retrieve
+//! // first:
+//! state.get_scrolling_config_mut().set_view_start_x(1.0);
+//!
+//! run(root_widget, state_tree, scheduler);
+//! ```
+//!
+//! ##### view_start_y
+//!
+//! Only works when the layout is scrolling vertically. Determines the view of the scroll by a
+//! value between 0 and 1. If the total content is 100 pixels high, then a view_start_y of 0.5 will
+//! show content starting from pixel 50. A value of 0 means the beginning of the content, a value
+//! of 1 means show the tail end of the content. Use with EzLang to optionally set a custom initial
+//! view for the scrollbar. Use in code to programmatically control the scrollbar.
+//!
+//! **Property type:**
+//!
+//! f64
+//!
+//! **Possible values:**
+//!
+//! F64 value between 0 and 1.
+//!
+//! **Default value:**
+//!
+//! 0.0
+//!
+//! **Usage examples:**
+//!
+//! In EzLang files:
+//! ```
+//! - Layout:
+//!     view_start_y: 1.0
+//! ```
+//!
+//! In code:
+//! ```
+//! use ez_term::*;
+//! let (root_widget, mut state_tree, mut scheduler) = load_ui();
+//! let state = state_tree.get_mut("my_layout").as_layout_mut();
+//!
+//! // Scrolling properties are wrapping into a ScrollingConfig object, which we have to retrieve
+//! // first:
+//! state.get_scrolling_config_mut().set_view_start_y(1.0);
+//!
+//! run(root_widget, state_tree, scheduler);
+//! ```
+//!
+//! ##### rows
+//!
+//! Only works when the layout is in table mode. Fixes the amount of rows in the table. If you set
+//! only the amount of rows, the amount of columns will grow to fit all the content. If you set both,
+//! the table will be fixed in size. It is mandatory to set either rows or cols, because the table
+//! needs to know if it should grow, and if so, in which direction. By default rows is 0 (will grow)
+//! and cols is 4 (will not grow).
+//!
+//! **Property type:**
+//!
+//! usize
+//!
+//! **Possible values:**
+//!
+//! Any usize number
+//!
+//! **Default value:**
+//!
+//! 0
+//!
+//! **Usage examples:**
+//!
+//! In EzLang files:
+//! ```
+//! - Layout:
+//!     mode: table
+//!     rows: 10
+//! ```
+//!
+//! In code:
+//! ```
+//! use ez_term::*;
+//! let (root_widget, mut state_tree, mut scheduler) = load_ui();
+//! let state = state_tree.get_mut("my_layout").as_layout_mut();
+//!
+//! // Table properties are wrapping into a TableConfig object, which we have to retrieve
+//! // first:
+//! state.get_table_config_mut().set_rows(10);
+//!
+//! run(root_widget, state_tree, scheduler);
+//! ```
+//!
+//! ##### cols
+//!
+//! Only works when the layout is in table mode. Fixes the amount of columns in the table. If you set
+//! only the amount of columns, the amount of rows will grow to fit all the content. If you set both,
+//! the table will be fixed in size. It is mandatory to set either rows or cols, because the table
+//! needs to know if it should grow, and if so, in which direction. By default rows is 0 (will grow)
+//! and cols is 4 (will not grow).
+//!
+//! **Property type:**
+//!
+//! usize
+//!
+//! **Possible values:**
+//!
+//! Any usize number
+//!
+//! **Default value:**
+//!
+//! 4
+//!
+//! **Usage examples:**
+//!
+//! In EzLang files:
+//! ```
+//! - Layout:
+//!     mode: table
+//!     cols: 3
+//! ```
+//!
+//! In code:
+//! ```
+//! use ez_term::*;
+//! let (root_widget, mut state_tree, mut scheduler) = load_ui();
+//! let state = state_tree.get_mut("my_layout").as_layout_mut();
+//!
+//! // Table properties are wrapping into a TableConfig object, which we have to retrieve
+//! // first:
+//! state.get_table_config_mut().set_cols(3);
+//!
+//! run(root_widget, state_tree, scheduler);
+//! ```
+//!
+//! ##### col_default_width
+//!
+//! Only works when the layout is in table mode. Sets the default width for columns, meaning that
+//! columns will be at least that width, but can still grow to accommodate widgets wider than the
+//! default width. Without setting this property, each individual column will be the width of its
+//! widest widget. Setting this property is useful if you want all your columns to be at least a
+//! certain width, even if all its widgets are smaller. Another use case is using this property in
+//! combination wih 'force_default_col_width: true' (see property below). In this case, you are
+//! hard coding each column to be exactly the col_default_width, without the ability to grow.
+//!
+//! **Property type:**
+//!
+//! usize
+//!
+//! **Possible values:**
+//!
+//! Any usize number
+//!
+//! **Default value:**
+//!
+//! 0 (each column grows to the widest widget).
+//!
+//! **Usage examples:**
+//!
+//! In EzLang files:
+//! ```
+//! - Layout:
+//!     mode: table
+//!     col_default_width: 20
+//! ```
+//!
+//! In code:
+//! ```
+//! use ez_term::*;
+//! let (root_widget, mut state_tree, mut scheduler) = load_ui();
+//! let state = state_tree.get_mut("my_layout").as_layout_mut();
+//!
+//! // Table properties are wrapping into a TableConfig object, which we have to retrieve
+//! // first:
+//! state.get_table_config_mut().set_col_default_width(20);
+//!
+//! run(root_widget, state_tree, scheduler);
+//! ```
+//!
+//! ##### force_default_col_width
+//!
+//! Only works when the layout is in table mode and the 'col_default_width' property is set to a
+//! value higher than 0. Ensures that each column is *exactly* the col_default_width, without any
+//! ability to grow.
+//!
+//! **Property type:**
+//!
+//! bool
+//!
+//! **Possible values:**
+//!
+//! - true
+//! - false
+//!
+//! **Default value:**
+//!
+//! false
+//!
+//! **Usage examples:**
+//!
+//! In EzLang files:
+//! ```
+//! - Layout:
+//!     mode: table
+//!     col_default_width: 20
+//!     force_default_col_width: true
+//! ```
+//!
+//! In code:
+//! ```
+//! use ez_term::*;
+//! let (root_widget, mut state_tree, mut scheduler) = load_ui();
+//! let state = state_tree.get_mut("my_layout").as_layout_mut();
+//!
+//! // Table properties are wrapping into a TableConfig object, which we have to retrieve
+//! // first:
+//! state.get_table_config_mut().set_col_default_width(20);
+//! state.get_table_config_mut().set_force_default_col_width(true);
+//!
+//! run(root_widget, state_tree, scheduler);
+//! ```
+//!
+//! ##### row_default_height
+//!
+//! Only works when the layout is in table mode. Sets the default height for rows, meaning that
+//! rows will be at least that height, but can still grow to accommodate widgets higher than the
+//! default height. Without setting this property, each individual row will be the height of its
+//! highest widget. Setting this property is useful if you want all your rows to be at least a
+//! certain height, even if all its widgets are smaller. Another use case is using this property in
+//! combination wih 'force_default_row_height: true' (see property below). In this case, you are
+//! hard coding each row to be exactly the row_default_height, without the ability to grow.
+//!
+//! **Property type:**
+//!
+//! usize
+//!
+//! **Possible values:**
+//!
+//! Any usize number
+//!
+//! **Default value:**
+//!
+//! 0 (each row grows to the highest widget).
+//!
+//! **Usage examples:**
+//!
+//! In EzLang files:
+//! ```
+//! - Layout:
+//!     mode: table
+//!     row_default_height: 20
+//! ```
+//!
+//! In code:
+//! ```
+//! use ez_term::*;
+//! let (root_widget, mut state_tree, mut scheduler) = load_ui();
+//! let state = state_tree.get_mut("my_layout").as_layout_mut();
+//!
+//! // Table properties are wrapping into a TableConfig object, which we have to retrieve
+//! // first:
+//! state.get_table_config_mut().set_row_default_height(20);
+//!
+//! run(root_widget, state_tree, scheduler);
+//! ```
+//!
+//! ##### force_default_row_height
+//!
+//! Only works when the layout is in table mode and the 'row_default_height' property is set to a
+//! value higher than 0. Ensures that each row is *exactly* the row_default_height, without any
+//! ability to grow.
+//!
+//! **Property type:**
+//!
+//! bool
+//!
+//! **Possible values:**
+//!
+//! - true
+//! - false
+//!
+//! **Default value:**
+//!
+//! false
+//!
+//! **Usage examples:**
+//!
+//! In EzLang files:
+//! ```
+//! - Layout:
+//!     mode: table
+//!     row_default_height: 20
+//!     force_default_row_height: true
+//! ```
+//!
+//! In code:
+//! ```
+//! use ez_term::*;
+//! let (root_widget, mut state_tree, mut scheduler) = load_ui();
+//! let state = state_tree.get_mut("my_layout").as_layout_mut();
+//!
+//! // Table properties are wrapping into a TableConfig object, which we have to retrieve
+//! // first:
+//! state.get_table_config_mut().set_row_default_height(20);
+//! state.get_table_config_mut().set_force_default_row_height(true);
+//!
+//! run(root_widget, state_tree, scheduler);
+//! ```
+
 mod run;
 mod scheduler;
 mod widgets;
@@ -2963,6 +4379,7 @@ pub use crate::run::run::run;
 
 pub use crate::run::definitions::Coordinates;
 pub use crossterm::event::{KeyCode, KeyModifiers};
+pub use crossterm::style::Color;
 
 pub use crate::scheduler::definitions::{EzContext, EzPropertiesMap};
 pub use crate::run::definitions::StateTree;

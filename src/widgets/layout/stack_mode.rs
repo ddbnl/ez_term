@@ -27,42 +27,46 @@ impl Layout {
         let own_infinite_size = state.get_infinite_size().clone();
         let own_colors = state.get_color_config().clone();
         let own_scrolling = state.get_scrolling_config().clone();
+        let own_fill = state.get_fill();
+        let own_filler_symbol = state.get_filler_symbol();
 
         let content_list = self.get_stack_mode_child_content(
             state_tree, &own_infinite_size, &own_scrolling, &own_effective_size);
         self.get_orientated_content(own_orientation, state_tree, &content_list,
-                                    &own_effective_size, &own_colors, &own_auto_scaling)
+                                    &own_effective_size, &own_colors, &own_auto_scaling,
+                                    own_fill, own_filler_symbol)
     }
 
     fn get_orientated_content(&self, orientation: LayoutOrientation, state_tree: &mut StateTree,
                               content_list: &[PixelMap], effective_size: &Size,
-                              colors: &ColorConfig, auto_scaling: &AutoScale) -> PixelMap {
+                              colors: &ColorConfig, auto_scaling: &AutoScale,
+                              fill: bool, filler_symbol: String) -> PixelMap {
 
         match orientation {
             LayoutOrientation::LeftRightTopBottom =>
                 self.get_left_right_top_bottom_content(state_tree, content_list, effective_size,
-                                                       colors, auto_scaling),
+                                                       colors, auto_scaling, fill, filler_symbol),
             LayoutOrientation::LeftRightBottomTop =>
                 self.get_left_right_bottom_top_content(state_tree, content_list, effective_size,
-                                                       colors, auto_scaling),
+                                                       colors, auto_scaling, fill ,filler_symbol),
             LayoutOrientation::RightLeftTopBottom =>
                 self.get_right_left_top_bottom_content(state_tree, content_list, effective_size,
-                                                       colors, auto_scaling),
+                                                       colors, auto_scaling, fill, filler_symbol),
             LayoutOrientation::RightLeftBottomTop =>
                 self.get_right_left_bottom_top_content(state_tree, content_list, effective_size,
-                                                       colors, auto_scaling),
+                                                       colors, auto_scaling, fill, filler_symbol),
             LayoutOrientation::TopBottomLeftRight =>
                 self.top_bottom_left_right_content(state_tree, content_list, effective_size,
-                                                   colors, auto_scaling),
+                                                   colors, auto_scaling, fill, filler_symbol),
             LayoutOrientation::TopBottomRightLeft =>
                 self.top_bottom_right_left_content(state_tree, content_list, effective_size,
-                                                   colors, auto_scaling),
+                                                   colors, auto_scaling, fill, filler_symbol),
             LayoutOrientation::BottomTopLeftRight =>
                 self.bottom_top_left_right_content(state_tree, content_list, effective_size,
-                                                   colors, auto_scaling),
+                                                   colors, auto_scaling, fill, filler_symbol),
             LayoutOrientation::BottomTopRightLeft =>
                 self.bottom_top_right_left_content(state_tree, content_list, effective_size,
-                                                   colors, auto_scaling),
+                                                   colors, auto_scaling, fill, filler_symbol),
             _ => panic!("Invalid orientation for stack"),
         }
     }
@@ -111,13 +115,11 @@ impl Layout {
 
     fn get_left_right_top_bottom_content(
         &self, state_tree: &mut StateTree, content_list: &[PixelMap],
-        effective_size: &Size, colors: &ColorConfig, auto_scaling: &AutoScale) -> PixelMap {
+        effective_size: &Size, colors: &ColorConfig, auto_scaling: &AutoScale, filler: bool,
+        filler_symbol: String) -> PixelMap {
 
-        let mut merged_content = vec!(
-            vec!(Pixel::new(" ".to_string(),
-                            colors.get_fg_color(),
-                            colors.get_bg_color()
-            ); effective_size.height); effective_size.width);
+        let mut merged_content = self.get_filler_content(
+            effective_size, colors, filler, filler_symbol);
 
         let (mut largest_x, mut largest_y) = (0, 0);
         let mut pos = Coordinates::default();
@@ -159,13 +161,11 @@ impl Layout {
 
     fn get_left_right_bottom_top_content(
         &self, state_tree: &mut StateTree, content_list: &[PixelMap],
-        effective_size: &Size, colors: &ColorConfig, auto_scaling: &AutoScale) -> PixelMap {
+        effective_size: &Size, colors: &ColorConfig, auto_scaling: &AutoScale, filler: bool,
+        filler_symbol: String) -> PixelMap {
 
-        let mut merged_content = vec!(
-            vec!(Pixel::new(" ".to_string(),
-                            colors.get_fg_color(),
-                            colors.get_bg_color()
-            ); effective_size.height); effective_size.width);
+        let mut merged_content = self.get_filler_content(
+            effective_size, colors, filler, filler_symbol);
 
         let (mut largest_x, mut smallest_y) = (0, effective_size.height - 1);
         let mut pos = Coordinates::new(0, effective_size.height - 1);
@@ -206,13 +206,11 @@ impl Layout {
 
     fn get_right_left_top_bottom_content(
         &self, state_tree: &mut StateTree, content_list: &[PixelMap],
-        effective_size: &Size, colors: &ColorConfig, auto_scaling: &AutoScale) -> PixelMap {
+        effective_size: &Size, colors: &ColorConfig, auto_scaling: &AutoScale, filler: bool,
+        filler_symbol: String) -> PixelMap {
 
-        let mut merged_content = vec!(
-            vec!(Pixel::new(" ".to_string(),
-                            colors.get_fg_color(),
-                            colors.get_bg_color()
-            ); effective_size.height); effective_size.width);
+        let mut merged_content = self.get_filler_content(
+            effective_size, colors, filler, filler_symbol);
 
         let (mut smallest_x, mut largest_y) = (effective_size.width - 1, 0);
         let mut pos = Coordinates::new(effective_size.width - 1, 0);
@@ -253,13 +251,11 @@ impl Layout {
 
     fn get_right_left_bottom_top_content(
         &self, state_tree: &mut StateTree, content_list: &[PixelMap],
-        effective_size: &Size, colors: &ColorConfig, auto_scaling: &AutoScale) -> PixelMap {
+        effective_size: &Size, colors: &ColorConfig, auto_scaling: &AutoScale, filler: bool,
+        filler_symbol: String) -> PixelMap {
 
-        let mut merged_content = vec!(
-            vec!(Pixel::new(" ".to_string(),
-                            colors.get_fg_color(),
-                            colors.get_bg_color()
-            ); effective_size.height); effective_size.width);
+        let mut merged_content = self.get_filler_content(
+            effective_size, colors, filler, filler_symbol);
 
         let (mut smallest_x, mut smallest_y) =
             (effective_size.width - 1, effective_size.height - 1);
@@ -303,13 +299,11 @@ impl Layout {
 
     fn top_bottom_left_right_content(
         &self, state_tree: &mut StateTree, content_list: &[PixelMap],
-        effective_size: &Size, colors: &ColorConfig, auto_scaling: &AutoScale) -> PixelMap {
+        effective_size: &Size, colors: &ColorConfig, auto_scaling: &AutoScale, filler: bool,
+        filler_symbol: String) -> PixelMap {
 
-        let mut merged_content = vec!(
-            vec!(Pixel::new(" ".to_string(),
-                            colors.get_fg_color(),
-                            colors.get_bg_color()
-            ); effective_size.height); effective_size.width);
+        let mut merged_content = self.get_filler_content(
+            effective_size, colors, filler, filler_symbol);
 
         let (mut largest_x, mut largest_y) = (0, 0);
         let mut pos = Coordinates::default();
@@ -351,13 +345,11 @@ impl Layout {
 
     fn top_bottom_right_left_content(
         &self, state_tree: &mut StateTree, content_list: &[PixelMap],
-        effective_size: &Size, colors: &ColorConfig, auto_scaling: &AutoScale) -> PixelMap {
+        effective_size: &Size, colors: &ColorConfig, auto_scaling: &AutoScale, filler: bool,
+        filler_symbol: String) -> PixelMap {
 
-        let mut merged_content = vec!(
-            vec!(Pixel::new(" ".to_string(),
-                            colors.get_fg_color(),
-                            colors.get_bg_color()
-            ); effective_size.height); effective_size.width);
+        let mut merged_content = self.get_filler_content(
+            effective_size, colors, filler, filler_symbol);
 
         let (mut smallest_x, mut largest_y) = (effective_size.width - 1, 0);
         let mut pos = Coordinates::new(effective_size.width - 1, 0);
@@ -399,13 +391,11 @@ impl Layout {
 
     fn bottom_top_left_right_content(
         &self, state_tree: &mut StateTree, content_list: &[PixelMap],
-        effective_size: &Size, colors: &ColorConfig, auto_scaling: &AutoScale) -> PixelMap {
+        effective_size: &Size, colors: &ColorConfig, auto_scaling: &AutoScale, filler: bool,
+        filler_symbol: String) -> PixelMap {
 
-        let mut merged_content = vec!(
-            vec!(Pixel::new(" ".to_string(),
-                            colors.get_fg_color(),
-                            colors.get_bg_color()
-            ); effective_size.height); effective_size.width);
+        let mut merged_content = self.get_filler_content(
+            effective_size, colors, filler, filler_symbol);
 
         let (mut largest_x, mut smallest_y) = (0, effective_size.height - 1);
         let mut pos = Coordinates::new(0,effective_size.height - 1);
@@ -449,13 +439,11 @@ impl Layout {
     }
     fn bottom_top_right_left_content(
         &self, state_tree: &mut StateTree, content_list: &[PixelMap],
-        effective_size: &Size, colors: &ColorConfig, auto_scaling: &AutoScale) -> PixelMap {
+        effective_size: &Size, colors: &ColorConfig, auto_scaling: &AutoScale, filler: bool,
+        filler_symbol: String) -> PixelMap {
 
-        let mut merged_content = vec!(
-            vec!(Pixel::new(" ".to_string(),
-                            colors.get_fg_color(),
-                            colors.get_bg_color()
-            ); effective_size.height); effective_size.width);
+        let mut merged_content = self.get_filler_content(
+            effective_size, colors, filler, filler_symbol);
 
         let (mut smallest_x, mut smallest_y) = (effective_size.width - 1,
                                                 effective_size.height - 1);
@@ -499,5 +487,24 @@ impl Layout {
                 .map(|x| x[smallest_y..].to_vec()).collect();
         }
         merged_content
+    }
+
+    fn get_filler_content(&self, effective_size: &Size, colors: &ColorConfig, fill: bool,
+        filler_symbol: String) -> PixelMap {
+
+        let (symbol, fg_color, bg_color) =
+            if fill {
+                (filler_symbol, colors.get_filler_fg_color(),
+                 colors.get_filler_bg_color())
+            } else {
+                (" ".to_string(), colors.get_fg_color(), colors.get_bg_color())
+            };
+
+        let mut merged_content = vec!(
+            vec!(Pixel::new(symbol, fg_color, bg_color);
+                 effective_size.height); effective_size.width);
+
+        merged_content
+
     }
 }

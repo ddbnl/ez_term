@@ -855,10 +855,12 @@ impl Layout {
                                 state.get_color_config().get_filler_fg_color(),
                                 state.get_color_config().get_filler_bg_color());
 
-        for x in 0..state.get_effective_size().width {
+        for x in 0..contents.len() {
             for y in contents[x].iter_mut() {
                 if y.symbol.is_empty() || y.symbol == " " {
                     y.symbol = filler.symbol.clone();
+                    y.foreground_color = filler.foreground_color;
+                    y.background_color = filler.background_color;
                 }
             }
             while contents[x].len() < (state.get_effective_size().height) {

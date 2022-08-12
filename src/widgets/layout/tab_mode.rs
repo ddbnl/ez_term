@@ -76,6 +76,12 @@ impl Layout {
             } else {
                 return PixelMap::new()
             }
+        } else if !state.get_active_tab().contains('/') {
+            let id = state.get_active_tab();
+            let path = self.get_child(&id).unwrap_or_else(
+                || panic!("Cannot set '{}' as active tab for {}: ID not found", id, self.id)
+            ).as_ez_object().get_path();
+            state.set_active_tab(&path);
         }
         let active_tab = state.get_active_tab();
 
@@ -154,8 +160,8 @@ impl Layout {
                 button_content = self.merge_horizontal_contents(
                     button_content, content,
                     custom_size.height, own_infinite_size.height,
-                    own_colors.clone(),
-                    child_state);
+                    child_state, " ".to_string(), own_colors.get_fg_color(),
+                    own_colors.get_bg_color());
                 child_state.set_absolute_position(
                     IsizeCoordinates::new(own_pos.x + pos_x as isize, own_pos.y + 1));
 
@@ -169,6 +175,7 @@ impl Layout {
 
             }
         }
+
         let fill_pixel = Pixel::new(" ".to_string(),
                                     own_colors.get_fg_color(),
                                     own_colors.get_bg_color());
@@ -211,6 +218,7 @@ impl Layout {
             button_content,
             tab_content,
             own_effective_size.width, own_infinite_size.width,
-            own_colors, state)
+            state, " ".to_string(), own_colors.get_fg_color(),
+        own_colors.get_bg_color())
     }
 }

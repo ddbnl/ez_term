@@ -391,7 +391,9 @@ impl LayoutState {
 
     /// Set the id of the layout that is currently active as the current tab (i.e. content is
     /// showing)
-    pub fn set_active_tab(&mut self, tab: &str) { self.active_tab.set(tab.to_string()); }
+    pub fn set_active_tab(&mut self, tab: &str) { 
+        self.active_tab.set(tab.to_string()); 
+    }
 
     /// Get the id of the layout that is currently active as a tab (i.e. content is showing)
     pub fn get_active_tab(&self) -> String { self.active_tab.value.clone() }

@@ -137,10 +137,12 @@ impl EzObject for Button {
         }
         (contents, _) = align_content_horizontally(
             contents,HorizontalAlignment::Center,
-            state.get_effective_size().width, fg_color, bg_color);
+            state.get_effective_size().width, " ".to_string(), fg_color,
+            bg_color);
         (contents, _) = align_content_vertically(
             contents,VerticalAlignment::Middle,
-            state.get_effective_size().height, fg_color, bg_color);
+            state.get_effective_size().height, " ".to_string(), fg_color,
+            bg_color);
         contents = add_border(
             contents, state.get_border_config(), state.get_color_config());
         let state = state_tree.get(&self.get_path()).as_button();

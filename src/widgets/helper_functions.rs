@@ -155,11 +155,12 @@ pub fn add_padding(mut content: PixelMap, padding: &Padding, bg_color: Color, fg
 ///
 /// With offset 1.
 pub fn align_content_horizontally(mut content: PixelMap, halign: HorizontalAlignment,
-                                  total_width: usize, fg_color: Color, bg_color: Color)
+                                  total_width: usize, filler_symbol: String, fg_color: Color,
+                                  bg_color: Color)
                                   -> (PixelMap, usize) {
 
     if content.len() >= total_width { return (content, 0 ) }
-    let empty_pixel = Pixel { symbol: " ".to_string(), foreground_color: fg_color,
+    let empty_pixel = Pixel { symbol: filler_symbol, foreground_color: fg_color,
         background_color: bg_color, underline: false};
     let mut offset = 0;
     for i in 0..total_width - content.len() {
@@ -210,13 +211,13 @@ pub fn align_content_horizontally(mut content: PixelMap, halign: HorizontalAlign
 /// ````
 /// With offset 1.
 pub fn align_content_vertically(mut content: PixelMap, valign: VerticalAlignment,
-                                total_height: usize, fg_color: Color, bg_color: Color)
-                                -> (PixelMap, usize){
+                                total_height: usize, filler_symbol: String, fg_color: Color,
+                                bg_color: Color) -> (PixelMap, usize) {
 
     if content.is_empty() { return (content, 0) }
     if content[0].len() >= total_height { return (content, 0 ) }
 
-    let empty_pixel = Pixel { symbol: " ".to_string(), foreground_color: fg_color,
+    let empty_pixel = Pixel { symbol: filler_symbol, foreground_color: fg_color,
         background_color: bg_color, underline: false};
 
     let mut offset = 0;
