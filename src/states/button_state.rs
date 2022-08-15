@@ -136,6 +136,8 @@ impl GenericState for ButtonState {
             "disabled_bg_color" => self.colors.disabled_bg_color.set_from_ez_value(value),
             "flash_fg_color" => self.colors.flash_fg_color.set_from_ez_value(value),
             "flash_bg_color" => self.colors.flash_bg_color.set_from_ez_value(value),
+            "active_fg_color" => self.colors.active_fg_color.set_from_ez_value(value),
+            "active_bg_color" => self.colors.active_bg_color.set_from_ez_value(value),
             "border_fg_color" => self.colors.border_fg_color.set_from_ez_value(value),
             "border_bg_color" => self.colors.border_bg_color.set_from_ez_value(value),
             "text" => self.text.set_from_ez_value(value),

@@ -156,7 +156,7 @@ impl GenericState for SliderState {
             "min" => self.min.set_from_ez_value(value),
             "max" => self.max.set_from_ez_value(value),
             "step" => self.step.set_from_ez_value(value),
-            _ => panic!("Invalid property name for button state: {}", name),
+            _ => panic!("Invalid property name for slider state: {}", name),
         }
     }
     fn get_size_hint(&self) -> &SizeHint { &self.size_hint }
@@ -255,18 +255,21 @@ impl SliderState {
 
     pub fn set_min(&mut self, min: usize) {
         self.min.set(min);
+        if self.get_value() < min { self.set_value( min )}
     }
 
     pub fn get_min(&self) -> usize { self.min.value }
 
     pub fn set_max(&mut self, max: usize) {
         self.max.set(max);
+        if self.get_value() > max { self.set_value( max )}
     }
 
     pub fn get_max(&self) -> usize { self.max.value }
 
     pub fn set_step(&mut self, step: usize) {
         self.step.set(step);
+        if self.get_value() % step != 0 { self.set_value( self.min.value )}
     }
 
     pub fn get_step(&self) -> usize { self.step.value }

@@ -201,6 +201,8 @@ impl GenericState for LayoutState {
             "tab_bg_color" => self.colors.tab_bg_color.set_from_ez_value(value),
             "tab_border_fg_color" => self.colors.tab_border_fg_color.set_from_ez_value(value),
             "tab_border_bg_color" => self.colors.tab_border_bg_color.set_from_ez_value(value),
+            "active_fg_color" => self.colors.active_fg_color.set_from_ez_value(value),
+            "active_bg_color" => self.colors.active_bg_color.set_from_ez_value(value),
             "border_fg_color" => self.colors.border_fg_color.set_from_ez_value(value),
             "border_bg_color" => self.colors.border_bg_color.set_from_ez_value(value),
             "orientation" => self.orientation.set_from_ez_value(value),
@@ -221,7 +223,7 @@ impl GenericState for LayoutState {
             "force_default_col_width" => self.table_config.force_default_col_width.set_from_ez_value(value),
             "row_default_height" => self.table_config.row_default_height.set_from_ez_value(value),
             "force_default_row_height" => self.table_config.force_default_row_height.set_from_ez_value(value),
-            _ => panic!("Invalid property name for button state: {}", name),
+            _ => panic!("Invalid property name for layout state: {}", name),
         }
     }
     fn get_size_hint(&self) -> &SizeHint { &self.size_hint }

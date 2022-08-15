@@ -71,12 +71,12 @@ impl Dropdown {
         -> Result<(), Error> {
 
         let path = self.path.clone();
-        self.state.set_choice(load_string_property(
+        self.state.set_choice(&load_string_property(
             parameter_value.trim(), scheduler, path.clone(),
             Box::new(move |state_tree: &mut StateTree, val: EzValues| {
                 let state = state_tree.get_mut(&path)
                     .as_dropdown_mut();
-                state.set_choice(val.as_string().clone());
+                state.set_choice(val.as_string().as_str());
                 path.clone()
             }))?);
         Ok(())
@@ -128,7 +128,7 @@ impl EzObject for Dropdown {
         // If dropped down get full content instead
         // Set a default value if user didn't give one
         if state.get_choice().is_empty() && !state.get_allow_none() {
-            state.set_choice(state.get_options().first()
+            state.set_choice(&state.get_options().first()
                 .expect("Dropdown widget must have at least one option").to_string());
         }
         // Create a bordered label representing currently active value
@@ -397,7 +397,7 @@ impl DroppedDownMenu {
         let parent = state_tree.get(&self.get_path())
             .as_dropped_down_menu().parent_path.clone();
         let state = state_tree.get_mut(&parent).as_dropdown_mut();
-        state.set_choice(choice);
+        state.set_choice(&choice);
         let state = state_tree.as_layout_mut();
         state.dismiss_modal(scheduler);
         state.update(scheduler);
@@ -441,7 +441,7 @@ impl DroppedDownMenu {
                 let choice = state.get_dropped_down_options()[clicked_row - 1]
                     .clone();
                 let state = state_tree.get_mut(&parent).as_dropdown_mut();
-                state.set_choice(choice);
+                state.set_choice(&choice);
                 state.set_disabled(false);
                 scheduler.dismiss_modal(state_tree);
                 scheduler.force_redraw();

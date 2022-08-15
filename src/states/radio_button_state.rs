@@ -161,7 +161,7 @@ impl GenericState for RadioButtonState {
             "active" => self.active.set_from_ez_value(value),
             "active_symbol" => self.active_symbol.set_from_ez_value(value),
             "inactive_symbol" => self.inactive_symbol.set_from_ez_value(value),
-            _ => panic!("Invalid property name for button state: {}", name),
+            _ => panic!("Invalid property name for radio button state: {}", name),
         }
     }
     fn get_size_hint(&self) -> &SizeHint { &self.size_hint }

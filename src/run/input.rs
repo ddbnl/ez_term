@@ -3,7 +3,7 @@
 //! This module has functions that handle user input through keyboard and mouse.
 use std::process::exit;
 
-use crossterm::event::{Event, KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind};
+use crossterm::event::{Event, KeyCode, KeyEvent, MouseButton, MouseEvent, MouseEventKind};
 use crate::{EzContext, KeyMap};
 
 use crate::run::definitions::{CallbackTree, Coordinates, StateTree};

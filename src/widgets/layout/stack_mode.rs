@@ -500,7 +500,7 @@ impl Layout {
                 (" ".to_string(), colors.get_fg_color(), colors.get_bg_color())
             };
 
-        let mut merged_content = vec!(
+        let merged_content = vec!(
             vec!(Pixel::new(symbol, fg_color, bg_color);
                  effective_size.height); effective_size.width);
 

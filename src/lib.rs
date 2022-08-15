@@ -77,29 +77,156 @@
 //!         8. [Updating widgets](#scheduler_updating)
 //!         9. [Managing widget selection](#scheduler_selection)
 //!     4. [Global (key)bindings](#keybindings)
-//! 2. [Reference]
-//!     1. [Layouts]
-//!         1. [General]
-//!         2. [General - scrolling]
-//!         3. [General - Properties]
-//!         4. [Box Layout]
-//!         5. [Stack Layout]
-//!         6. [Table Layout]
-//!         7. [Float Layout]
-//!         8. [Tab Layout]
-//!         9. [Screen Layout]
-//!     2. Widgets
-//!         1. [General]
-//!         2. [General - Properties]
-//!         3. [Label widget]
-//!         4. [Button widget]
-//!         5. [Checkbox widget]
-//!         6. [Radio button widget]
-//!         7. [Slider widget]
-//!         8. [Text input widget]
-//!         9. [Dropdown widget]
-//!         10. [Progress bar widget]
-//!         11. [Canvas widget]
+//! 2. [Reference](#reference)
+//!     1. [Common properties](#reference_common)
+//!         1. [x](#reference_common_x)
+//!         2. [y](#reference_common_y)
+//!         3. [pos](#reference_common_pos)
+//!         4. [width](#reference_common_width)
+//!         5. [height](#reference_common_height)
+//!         6. [size](#reference_common_size)
+//!         7. [size_hint_x](#reference_common_size_hint_x)
+//!         8. [size_hint_y](#reference_common_size_hint_y)
+//!         9. [size_hint](#reference_common_size_hint)
+//!         10. [pos_hint_x](#reference_common_pos_hint_x)
+//!         11. [pos_hint_y](#reference_common_pos_hint_y)
+//!         12. [pos_hint](#reference_common_pos_hint)
+//!         13. [auto_scale_width](#reference_common_auto_scale_width)
+//!         14. [auto_scale_height](#reference_common_auto_scale_height)
+//!         15. [auto_scale](#reference_common_auto_scale)
+//!         16. [padding_top](#reference_common_padding_top)
+//!         17. [padding_bottom](#reference_common_padding_bottom)
+//!         18. [padding_left](#reference_common_padding_left)
+//!         19. [padding_right](#reference_common_padding_right)
+//!         20. [padding_x](#reference_common_padding_x)
+//!         21. [padding_y](#reference_common_padding_y)
+//!         22. [padding](#reference_common_padding)
+//!         23. [halign](#reference_common_halign)
+//!         24. [valign](#reference_common_valign)
+//!         25. [disabled](#reference_common_disabled)
+//!         26. [selection_order](#reference_common_selection_order)
+//!         27. [border](#reference_common_border)
+//!         28. [horizontal_symbol](#reference_common_horizontal_symbol)
+//!         29. [vertical_symbol](#reference_common_vertical_symbol)
+//!         30. [top_left_symbol](#reference_common_top_left_symbol)
+//!         31. [top_right_symbol](#reference_common_top_right_symbol)
+//!         32. [bottom_left_symbol](#reference_common_bottom_left_symbol)
+//!         33. [bottom_right_symbol](#reference_common_bottom_right_symbol)
+//!         34. [fg_color](#reference_common_fg_color)
+//!         35. [bg_color](#reference_common_bg_color)
+//!         36. [selection_fg_color](#reference_common_selection_fg_color)
+//!         37. [selection_bg_color](#reference_common_selection_bg_color)
+//!         38. [disabled_fg_color](#reference_common_disabled_fg_color)
+//!         39. [disabled_bg_color](#reference_common_disabled_bg_color)
+//!         40. [border_fg_color](#reference_common_border_fg_color)
+//!         41. [border_bg_color](#reference_common_border_bg_color)
+//!     2. [Layout](#reference_layout)
+//!         1. [Properties](#reference_layout_properties)
+//!             1. [mode](#reference_layout_properties_mode)
+//!             2. [orientation](#reference_layout_properties_orientation)
+//!             3. [active_screen](#reference_layout_properties_active_screen)
+//!             4. [active_tab](#reference_layout_properties_active_tab)
+//!             5. [tab_name](#reference_layout_properties_tab_name)
+//!             6. [tab_fg_color](#reference_layout_properties_tab_fg_color)
+//!             7. [tab_bg_color](#reference_layout_properties_tab_bg_color)
+//!             8. [tab_border_fg_color](#reference_layout_properties_tab_border_fg_color)
+//!             9. [tab_border_bg_color](#reference_layout_properties_tab_border_bg_color)
+//!             10. [active_fg_color](#reference_layout_properties_active_fg_color)
+//!             11. [active_bg_color](#reference_layout_properties_active_bg_color)
+//!             12. [can_drag](#reference_layout_properties_can_drag)
+//!             13. [fill](#reference_layout_properties_fill)
+//!             14. [filler_symbol](#reference_layout_properties_filler_symbol)
+//!             15. [filler_fg_color](#reference_layout_properties_filler_fg_color)
+//!             16. [filler_bg_color](#reference_layout_properties_filler_bg_color)
+//!             17. [scroll_x](#reference_layout_properties_scroll_x)
+//!             18. [scroll_y](#reference_layout_properties_scroll_y)
+//!             19. [view_start_x](#reference_layout_properties_view_start_x)
+//!             20. [view_start_y](#reference_layout_properties_view_start_y)
+//!             21. [rows](#reference_layout_properties_rows)
+//!             22. [cols](#reference_layout_properties_cols)
+//!             23. [col_default_width](#reference_layout_properties_col_default_width)
+//!             24. [force_default_col_width](#reference_layout_properties_force_default_col_width)
+//!             25. [row_default_height](#reference_layout_properties_row_default_height)
+//!             26. [force_default_row_height](#reference_layout_properties_force_default_row_height)
+//!         2. [Default callback implementations](#reference_layout_default_callbacks)
+//!             1. [Scroll up](#reference_layout_default_callbacks_scrollup)
+//!             2. [Scroll down](#reference_layout_default_callbacks_scrolldown)
+//!         3. [Available callbacks](#reference_layout_available_callbacks)
+//!     3. [Label](#reference_label)
+//!         1. [Properties](#reference_label_properties)
+//!             1. [text](#reference_label_properties_text)
+//!             2. [from_file](#reference_label_properties_from_file)
+//!         2. [Default callback implementations](#reference_label_default_callbacks)
+//!         3. [Available callbacks](#reference_label_available_callbacks)
+//!     4. [Button](#reference_button)
+//!         1. [Properties](#reference_button_properties)
+//!             1. [text](#reference_button_properties_text)
+//!             2. [flash_fg_color](#reference_button_properties_flash_fg_color)
+//!             3. [flash_bg_color](#reference_button_properties_flash_bg_color)
+//!         2. [Default callback implementations](#reference_button_default_callbacks)
+//!             1. [Left click](#reference_button_default_callbacks_leftclick)
+//!             2. [Keyboard enter](#reference_button_default_callbacks_enter)
+//!         3. [Available callbacks](#reference_button_available_callbacks)
+//!     5. [Checkbox](#reference_checkbox)
+//!         1. [Properties](#reference_checkbox_properties)
+//!             1. [active](#reference_checkbox_properties_active)
+//!             2. [active_symbol](#reference_checkbox_properties_active_symbol)
+//!             3. [inactive_symbol](#reference_checkbox_properties_inactive_symbol)
+//!         2. [Default callback implementations](#reference_checkbox_default_callbacks)
+//!             1. [Left click](#reference_checkbox_default_callbacks_leftclick)
+//!             2. [Keyboard enter](#reference_checkbox_default_callbacks_enter)
+//!         3. [Available callbacks](#reference_checkbox_available_callbacks)
+//!     6. [Radio button](#reference_radiobutton)
+//!         1. [Properties](#reference_radiobutton_properties)
+//!             1. [active](#reference_radiobutton_properties_active)
+//!             2. [active_symbol](#reference_radiobutton_properties_active_symbol)
+//!             3. [inactive_symbol](#reference_radiobutton_properties_inactive_symbol)
+//!             1. [group](#reference_radiobutton_properties_group)
+//!         2. [Default callback implementations](#reference_radiobutton_default_callbacks)
+//!             1. [Left click](#reference_radiobutton_default_callbacks_leftclick)
+//!             2. [Keyboard enter](#reference_radiobutton_default_callbacks_enter)
+//!         3. [Available callbacks](#reference_radiobutton_available_callbacks)
+//!     7. [Dropdown](#reference_dropdown)
+//!         1. [Properties](#reference_dropdown_properties)
+//!             1. [choice](#reference_dropdown_properties_choice)
+//!             2. [options](#reference_dropdown_properties_options)
+//!             3. [allow_none](#reference_dropdown_properties_allow_none)
+//!         2. [Default callback implementations](#reference_dropdown_default_callbacks)
+//!             1. [Left click](#reference_dropdown_default_callbacks_leftclick)
+//!             2. [Keyboard enter](#reference_dropdown_default_callbacks_enter)
+//!         3. [Available callbacks](#reference_dropdown_available_callbacks)
+//!     8. [Slider](#reference_slider)
+//!         1. [Properties](#reference_slider_properties)
+//!             1. [value](#reference_slider_properties_value)
+//!             2. [min](#reference_slider_properties_min)
+//!             3. [max](#reference_slider_properties_max)
+//!             4. [step](#reference_slider_properties_step)
+//!         2. [Default callback implementations](#reference_slider_default_callbacks)
+//!             1. [Left click](#reference_slider_default_callbacks_leftclick)
+//!             2. [Drag](#reference_slider_default_callbacks_drag)
+//!         3. [Available callbacks](#reference_slider_available_callbacks)
+//!     9. [Text input](#reference_textinput)
+//!         1. [Properties](#reference_textinput_properties)
+//!             1. [text](#reference_textinput_properties_text)
+//!             1. [max_length](#reference_textinput_properties_max_length)
+//!             1. [cursor_color](#reference_textinput_properties_cursor_color)
+//!             1. [text](#reference_textinput_properties_text)
+//!         2. [Default callback implementations](#reference_textinput_default_callbacks)
+//!             1. [Left click](#reference_textinput_default_callbacks_leftclick)
+//!             2. [Select](#reference_textinput_default_callbacks_select)
+//!         3. [Available callbacks](#reference_textinput_available_callbacks)
+//!     10. [Progress bar](#reference_progressbar)
+//!         1. [Properties](#reference_progressbar_properties)
+//!             1. [value](#reference_progressbar_properties_value)
+//!             1. [max](#reference_progressbar_max_value)
+//!         2. [Default callback implementations](#reference_progressbar_default_callbacks)
+//!         3. [Available callbacks](#reference_progressbar_available_callbacks)
+//!     11. [Canvas](#reference_canvas)
+//!         1. [Properties](#reference_canvas_properties)
+//!             1. [from_file](#reference_canvas_properties_from_file)
+//!             1. [Setting content from code](#reference_canvas_properties_from_code)
+//!         2. [Default callback implementations](#reference_canvas_default_callbacks)
+//!         3. [Available callbacks](#reference_canvas_available_callbacks)
 //! 3. Examples
 //!
 //!
@@ -2957,18 +3084,21 @@
 //! All interactive widgets implement an on_left_mouse_click callback with default behavior.
 //!
 //!
+//! <a name="reference"></a>
 //! # 2. Reference
 //!
 //! This section will provide the details on every widget: properties, available callbacks, and
 //! default callback implementations. It will also have a reference for all the methods of the
 //! scheduler.
 //!
+//! <a name="reference_common"></a>
 //! ## 2.1 Common properties reference
 //!
 //! Here we'll look at the properties that are available on every available widget and layout.
 //! These properties, along with the specific properties mentioned in the specific widget reference,
 //! form a complete reference of properties.
 //!
+//! <a name="reference_common_x"></a>
 //! ##### x
 //!
 //! The horizontal position of the widget going left to right (so 0 is the left edge of a layout).
@@ -3009,6 +3139,7 @@
 //! run(root_widget, state_tree, scheduler);
 //! ```
 //!
+//! <a name="reference_common_y"></a>
 //! ##### y
 //!
 //! The vertical position of the widget going top to bottom (so 0 is the top edge of a layout).
@@ -3049,6 +3180,7 @@
 //! run(root_widget, state_tree, scheduler);
 //! ```
 //!
+//! <a name="reference_common_pos"></a>
 //! ##### pos
 //!
 //! This is an EzLang convenience that allows you to set 'x' and 'y' at the same time (in that order).
@@ -3064,6 +3196,7 @@
 //!         pos: 5, 3
 //! ```
 //!
+//! <a name="reference_common_width"></a>
 //! ##### width
 //!
 //! The absolute width of the widget. Only works if the 'size_hint_x' property is set to None
@@ -3105,6 +3238,7 @@
 //! run(root_widget, state_tree, scheduler);
 //! ```
 //!
+//! <a name="reference_common_height"></a>
 //! ##### height
 //!
 //! The absolute height of the widget. Only works if the 'size_hint_y' property is set to None
@@ -3146,6 +3280,7 @@
 //! run(root_widget, state_tree, scheduler);
 //! ```
 //!
+//! <a name="reference_common_size"></a>
 //! ##### size
 //!
 //! This is an EzLang convenience that allows you to set 'width' and 'height' at the same time (
@@ -3161,6 +3296,7 @@
 //!         size_hint: none, none
 //! ```
 //!
+//! <a name="reference_common_size_hint_x"></a>
 //! ##### size_hint_x
 //!
 //! Horizontal size hint, which can be none, or a value between 0 and 1. If a value is set, the
@@ -3208,6 +3344,7 @@
 //! run(root_widget, state_tree, scheduler);
 //! ```
 //!
+//! <a name="reference_common_size_hint_y"></a>
 //! ##### size_hint_y
 //!
 //! Vertical size hint, which can be none, or a value between 0 and 1. If a value is set, the
@@ -3255,6 +3392,7 @@
 //! run(root_widget, state_tree, scheduler);
 //! ```
 //!
+//! <a name="reference_common_size_hint"></a>
 //! ##### size_hint
 //!
 //! This is an EzLang convenience that allows you to set 'size_hint_x' and 'size_hint_y' at the
@@ -3269,6 +3407,7 @@
 //!         size_hint: 0.5, none
 //! ```
 //!
+//! <a name="reference_common_pos_hint_x"></a>
 //! ##### pos_hint_x
 //!
 //! Horizontal position hint; works only when the parent layout is set to float mode. Positions
@@ -3301,7 +3440,7 @@
 //! ```
 //! - Layout:
 //!     mode: float
-//!     = Label:
+//!     - Label:
 //!         pos_hint_x: right: 0.75
 //! ```
 //! ```
@@ -3329,6 +3468,7 @@
 //! run(root_widget, state_tree, scheduler);
 //! ```
 //!
+//! <a name="reference_common_pos_hint_y"></a>
 //! ##### pos_hint_y
 //!
 //! Vertical position hint; works only when the parent layout is set to float mode. Positions
@@ -3389,6 +3529,7 @@
 //! run(root_widget, state_tree, scheduler);
 //! ```
 //!
+//! <a name="reference_common_pos_hint"></a>
 //! ##### pos_hint
 //!
 //! This is an EzLang convenience that allows you to set 'pos_hint_x' and 'pos_hint_y' at the
@@ -3403,6 +3544,7 @@
 //!         pos_hint: right: 0.75, bottom: 0.75
 //! ```
 //!
+//! <a name="reference_common_auto_scale_width"></a>
 //! ##### auto_scale_width
 //!
 //! This property automatically scales the width of the widget to its content. This property has
@@ -3444,6 +3586,7 @@
 //! run(root_widget, state_tree, scheduler);
 //! ```
 //!
+//! <a name="reference_common_auto_scale_height"></a>
 //! ##### auto_scale_height
 //!
 //! This property automatically scales the height of the widget to its content. This property has
@@ -3485,6 +3628,7 @@
 //! run(root_widget, state_tree, scheduler);
 //! ```
 //!
+//! <a name="reference_common_auto_scale"></a>
 //! ##### auto_scale
 //!
 //! This is an EzLang convenience that allows you to set 'auto_scale_width' and 'auto_scale_height'
@@ -3499,6 +3643,7 @@
 //!         auto_scale: true, true
 //! ```
 //!
+//! <a name="reference_common_padding_top"></a>
 //! ##### padding_top
 //!
 //! This property determines if, and how many, empty pixels should be above the widget. This allows
@@ -3537,6 +3682,7 @@
 //! run(root_widget, state_tree, scheduler);
 //! ```
 //!
+//! <a name="reference_common_padding_bottom"></a>
 //! ##### padding_bottom
 //!
 //! This property determines if, and how many, empty pixels should be below the widget. This allows
@@ -3575,6 +3721,7 @@
 //! run(root_widget, state_tree, scheduler);
 //! ```
 //!
+//! <a name="reference_common_padding_left"></a>
 //! ##### padding_left
 //!
 //! This property determines if, and how many, empty pixels should be added to the left of the
@@ -3614,6 +3761,7 @@
 //! run(root_widget, state_tree, scheduler);
 //! ```
 //!
+//! <a name="reference_common_padding_right"></a>
 //! ##### padding_right
 //!
 //! This property determines if, and how many, empty pixels should be added to the right of the
@@ -3653,6 +3801,54 @@
 //! run(root_widget, state_tree, scheduler);
 //! ```
 //!
+//!
+//! <a name="reference_common_padding_x"></a>
+//! ##### padding_x
+//!
+//! This is an EzLang convenience that allows you to set 'pos_left' and 'padding_right',
+//! at the same time (in that order). See the individual properties for more info.
+//!
+//! **Usage examples:**
+//!
+//! In EzLang files:
+//! ```
+//! - Layout:
+//!     - Label:
+//!         padding_x: 2, 2
+//! ```
+//!
+//! <a name="reference_common_padding_y"></a>
+//! ##### padding_y
+//!
+//! This is an EzLang convenience that allows you to set 'pos_top' and 'padding_bottom',
+//! at the same time (in that order). See the individual properties for more info.
+//!
+//! **Usage examples:**
+//!
+//! In EzLang files:
+//! ```
+//! - Layout:
+//!     - Label:
+//!         padding_y: 2, 2
+//! ```
+//!
+//! <a name="reference_common_padding"></a>
+//! ##### padding
+//!
+//! This is an EzLang convenience that allows you to set 'pos_top', 'padding_bottom',
+//! 'padding_left' and 'padding_right' at the same time (in that order). See the individual
+//! properties for more info.
+//!
+//! **Usage examples:**
+//!
+//! In EzLang files:
+//! ```
+//! - Layout:
+//!     - Label:
+//!         padding: 2, 2, 2, 2
+//! ```
+//!
+//! <a name="reference_common_halign"></a>
 //! ##### halign
 //!
 //! This property aligns the widget horizontally; this only works if the parent layout is in box
@@ -3695,6 +3891,7 @@
 //! run(root_widget, state_tree, scheduler);
 //! ```
 //!
+//! <a name="reference_common_valign"></a>
 //! ##### valign
 //!
 //! This property aligns the widget vertically; this only works if the parent layout is in box
@@ -3737,6 +3934,7 @@
 //! run(root_widget, state_tree, scheduler);
 //! ```
 //!
+//! <a name="reference_common_disabled"></a>
 //! ##### disabled
 //!
 //! If set to true, disables the widget for all callbacks. E.g., button cannot be pressed, layout
@@ -3776,6 +3974,7 @@
 //! run(root_widget, state_tree, scheduler);
 //! ```
 //!
+//! <a name="reference_common_selection_order"></a>
 //! ##### selection_order
 //!
 //! The global order in which this widget will be selected by keyboard arrows up/down. Pressing
@@ -3816,6 +4015,7 @@
 //! run(root_widget, state_tree, scheduler);
 //! ```
 //!
+//! <a name="reference_common_border"></a>
 //! ##### border
 //!
 //! If set to true, draws a border around the widget. Uses border_fg_color and border_bg_color for
@@ -3856,6 +4056,7 @@
 //! run(root_widget, state_tree, scheduler);
 //! ```
 //!
+//! <a name="reference_common_horizontal_symbol"></a>
 //! ##### horizontal_symbol
 //!
 //! Sets the horizontal symbol used to draw a border; only works when border is set to true.
@@ -3895,6 +4096,7 @@
 //! run(root_widget, state_tree, scheduler);
 //! ```
 //!
+//! <a name="reference_common_vertical_symbol"></a>
 //! ##### vertical_symbol
 //!
 //! Sets the vertical symbol used to draw a border; only works when border is set to true.
@@ -3934,6 +4136,7 @@
 //! run(root_widget, state_tree, scheduler);
 //! ```
 //!
+//! <a name="reference_common_top_left_symbol"></a>
 //! ##### top_left_symbol
 //!
 //! Sets the top left symbol used to draw a border; only works when border is set to true.
@@ -3973,6 +4176,7 @@
 //! run(root_widget, state_tree, scheduler);
 //! ```
 //!
+//! <a name="reference_common_top_right_symbol"></a>
 //! ##### top_right_symbol
 //!
 //! Sets the top right symbol used to draw a border; only works when border is set to true.
@@ -4012,6 +4216,7 @@
 //! run(root_widget, state_tree, scheduler);
 //! ```
 //!
+//! <a name="reference_common_bottom_left_symbol"></a>
 //! ##### bottom_left_symbol
 //!
 //! Sets the bottom left symbol used to draw a border; only works when border is set to true.
@@ -4051,6 +4256,7 @@
 //! run(root_widget, state_tree, scheduler);
 //! ```
 //!
+//! <a name="reference_common_bottom_right_symbol"></a>
 //! ##### bottom_right_symbol
 //!
 //! Sets the bottom right symbol used to draw a border; only works when border is set to true.
@@ -4090,6 +4296,7 @@
 //! run(root_widget, state_tree, scheduler);
 //! ```
 //!
+//! <a name="reference_common_fg_color"></a>
 //! ##### fg_color
 //!
 //! Foreground color used for the widget, i.e. the color used for the symbol of the pixel.
@@ -4152,6 +4359,7 @@
 //! run(root_widget, state_tree, scheduler);
 //! ```
 //!
+//! <a name="reference_common_bg_color"></a>
 //! ##### bg_color
 //!
 //! Background color used for the widget, i.e. the empty space around the symbol of the pixel.
@@ -4214,6 +4422,7 @@
 //! run(root_widget, state_tree, scheduler);
 //! ```
 //!
+//! <a name="reference_common_selection_fg_color"></a>
 //! ##### selection_fg_color
 //!
 //! Foreground color used for the widget when it is selected (through keyboard up/down, mouse hover,
@@ -4277,6 +4486,7 @@
 //! run(root_widget, state_tree, scheduler);
 //! ```
 //!
+//! <a name="reference_common_selection_bg_color"></a>
 //! ##### selection_bg_color
 //!
 //! Background color used for the widget when it is selected (through keyboard up/down, mouse hover,
@@ -4340,6 +4550,7 @@
 //! run(root_widget, state_tree, scheduler);
 //! ```
 //!
+//! <a name="reference_common_disabled_fg_color"></a>
 //! ##### disabled_fg_color
 //!
 //! Foreground color used for the widget when it is disabled.
@@ -4402,6 +4613,7 @@
 //! run(root_widget, state_tree, scheduler);
 //! ```
 //!
+//! <a name="reference_common_disabled_bg_color"></a>
 //! ##### disabled_bg_color
 //!
 //! Background color used for the widget when it is disabled.
@@ -4464,130 +4676,8 @@
 //! run(root_widget, state_tree, scheduler);
 //! ```
 //!
-//! ##### flash_fg_color
 //!
-//! Foreground color used for the button flash animation shown after the button is clicked.
-//!
-//! **Property type:**
-//!
-//! Color
-//!
-//! **Possible values:**
-//!
-//! - RGB value: 0-255, 0-255, 0-255
-//! - Color words:
-//!     - black
-//!     - blue
-//!     - dark_blue
-//!     - cyan
-//!     - dark_cyan
-//!     - green
-//!     - dark_green
-//!     - grey
-//!     - dark_grey
-//!     - magenta
-//!     - dark_magenta
-//!     - red
-//!     - dark_red
-//!     - white
-//!     - yellow
-//!     - dark_yellow
-//!
-//! **Default value:**
-//!
-//! white
-//!
-//! **Usage examples:**
-//!
-//! In EzLang files:
-//! ```
-//! - Layout:
-//!     - Label:
-//!         flash_fg_color: red
-//! ```
-//! ```
-//! - Layout:
-//!     - Label:
-//!         flash_fg_color: 255, 0, 0
-//! ```
-//!
-//! In code:
-//! ```
-//! use ez_term::*;
-//! use ez_term::GenericState;
-//! let (root_widget, mut state_tree, mut scheduler) = load_ui();
-//! let state = state_tree.get_mut("my_button").as_layout_mut();
-//!
-//! // Table properties are wrapping into a TableConfig object, which we have to retrieve
-//! // first:
-//! state.get_color_config_mut().set_flash_fg_color(Color::Red);
-//! state.get_color_config_mut().set_flash_fg_color(Color::from((255, 0, 0)));
-//!
-//! run(root_widget, state_tree, scheduler);
-//! ```
-//!
-//! ##### flash_bg_color
-//!
-//! Background color used for the button flash animation shown after the button is clicked.
-//!
-//! **Property type:**
-//!
-//! Color
-//!
-//! **Possible values:**
-//!
-//! - RGB value: 0-255, 0-255, 0-255
-//! - Color words:
-//!     - black
-//!     - blue
-//!     - dark_blue
-//!     - cyan
-//!     - dark_cyan
-//!     - green
-//!     - dark_green
-//!     - grey
-//!     - dark_grey
-//!     - magenta
-//!     - dark_magenta
-//!     - red
-//!     - dark_red
-//!     - white
-//!     - yellow
-//!     - dark_yellow
-//!
-//! **Default value:**
-//!
-//! white
-//!
-//! **Usage examples:**
-//!
-//! In EzLang files:
-//! ```
-//! - Layout:
-//!     - Label:
-//!         flash_bg_color: red
-//! ```
-//! ```
-//! - Layout:
-//!     - Label:
-//!         flash_bg_color: 255, 0, 0
-//! ```
-//!
-//! In code:
-//! ```
-//! use ez_term::*;
-//! use ez_term::GenericState;
-//! let (root_widget, mut state_tree, mut scheduler) = load_ui();
-//! let state = state_tree.get_mut("my_button").as_layout_mut();
-//!
-//! // Table properties are wrapping into a TableConfig object, which we have to retrieve
-//! // first:
-//! state.get_color_config_mut().set_flash_bg_color(Color::Red);
-//! state.get_color_config_mut().set_flash_bg_color(Color::from((255, 0, 0)));
-//!
-//! run(root_widget, state_tree, scheduler);
-//! ```
-//!
+//! <a name="reference_common_border_fg_color"></a>
 //! ##### border_fg_color
 //!
 //! Foreground color used for the border of a widget if enabled.
@@ -4652,6 +4742,7 @@
 //! run(root_widget, state_tree, scheduler);
 //! ```
 //!
+//! <a name="reference_common_border_bg_color"></a>
 //! ##### border_bg_color
 //!
 //! Background color used for the border of a widget if enabled.
@@ -4716,83 +4807,17 @@
 //! run(root_widget, state_tree, scheduler);
 //! ```
 //!
-//! ##### cursor_color
 //!
-//! Color used for the cursor of the text input.
-//!
-//! **Property type:**
-//!
-//! Color
-//!
-//! **Possible values:**
-//!
-//! - RGB value: 0-255, 0-255, 0-255
-//! - Color words:
-//!     - black
-//!     - blue
-//!     - dark_blue
-//!     - cyan
-//!     - dark_cyan
-//!     - green
-//!     - dark_green
-//!     - grey
-//!     - dark_grey
-//!     - magenta
-//!     - dark_magenta
-//!     - red
-//!     - dark_red
-//!     - white
-//!     - yellow
-//!     - dark_yellow
-//!
-//! **Default value:**
-//!
-//! dark_yellow
-//!
-//! **Usage examples:**
-//!
-//! In EzLang files:
-//! ```
-//! - Layout:
-//!     - Label:
-//!         cursor_color: red
-//! ```
-//! ```
-//! - Layout:
-//!     - Label:
-//!         cursor_color: 255, 0, 0
-//!         border: true
-//! ```
-//!
-//! In code:
-//! ```
-//! use ez_term::*;
-//! use ez_term::GenericState;
-//! let (root_widget, mut state_tree, mut scheduler) = load_ui();
-//! let state = state_tree.get_mut("my_layout").as_layout_mut();
-//!
-//! // Table properties are wrapping into a TableConfig object, which we have to retrieve
-//! // first:
-//! state.get_color_config_mut().set_cursor_fg_color(Color::Red);
-//! state.get_color_config_mut().set_cursor_fg_color(Color::from((255, 0, 0)));
-//!
-//! run(root_widget, state_tree, scheduler);
-//! ```
-//!
-//!
-//! ## 2.2 Widget reference
-//!
-//! We will lay out the properties, callbacks and default callback implementations of all widgets.
-//! When listing properties, we will list specific properties first, followed by the properties
-//! common to all widgets.
-//!
-//! ### 2.2.1 Layout:
+//! <a name="reference_layout"></a>
+//! ## 2.2 Layout:
 //!
 //! The layout is needed to place widgets in the UI. It has different modes to provide control over
 //! how to place the widgets. Some properties are specific to one or more modes.
 //!
-//! #### 2.2.1.1 Properties
+//! <a name="reference_layout_properties"></a>
+//! #### 2.2.1 Properties
 //!
+//! <a name="reference_layout_properties_mode"></a>
 //! ##### mode
 //!
 //! Sets the layout mode, which controls how to place child widgets on the screen. See the
@@ -4833,6 +4858,7 @@
 //! run(root_widget, state_tree, scheduler);
 //! ```
 //!
+//! <a name="reference_layout_properties_orientation"></a>
 //! ##### orientation
 //!
 //! Sets the layout orientation, which controls how some layout modes behave. See the
@@ -4879,6 +4905,7 @@
 //! run(root_widget, state_tree, scheduler);
 //! ```
 //!
+//! <a name="reference_layout_properties_active_screen"></a>
 //! ##### active_screen
 //!
 //! Only works when the layout mode property is set to 'screen'. This property determines which
@@ -4922,6 +4949,7 @@
 //! run(root_widget, state_tree, scheduler);
 //! ```
 //!
+//! <a name="reference_layout_properties_active_tab"></a>
 //! ##### active_tab
 //!
 //! Only works when the layout mode property is set to 'tab'. This property determines which
@@ -4965,6 +4993,7 @@
 //! run(root_widget, state_tree, scheduler);
 //! ```
 //!
+//! <a name="reference_layout_properties_tab_name"></a>
 //! ##### tab_name
 //!
 //! Only works when the *parent* layout mode property is set to 'tab'. This property determines the
@@ -5006,6 +5035,7 @@
 //! run(root_widget, state_tree, scheduler);
 //! ```
 //!
+//! <a name="reference_layout_properties_tab_fg_color"></a>
 //! ##### tab_fg_color
 //!
 //! Only works when the layout is in tab mode. Sets the fg_color of the tab header button. In other
@@ -5069,6 +5099,7 @@
 //! run(root_widget, state_tree, scheduler);
 //! ```
 //!
+//! <a name="reference_layout_properties_tab_bg_color"></a>
 //! ##### tab_bg_color
 //!
 //! Only works when the layout is in tab mode. Sets the background color of the tab header button.
@@ -5131,6 +5162,7 @@
 //! run(root_widget, state_tree, scheduler);
 //! ```
 //!
+//! <a name="reference_layout_properties_tab_border_fg_color"></a>
 //! ##### tab_border_fg_color
 //!
 //! Only works when the layout is in tab mode. Sets the foreground color of the tab header button
@@ -5194,6 +5226,7 @@
 //! run(root_widget, state_tree, scheduler);
 //! ```
 //!
+//! <a name="reference_layout_properties_tab_border_bg_color"></a>
 //! ##### tab_border_bg_color
 //!
 //! Only works when the layout is in tab mode. Sets the background color of the tab header button
@@ -5257,6 +5290,7 @@
 //! run(root_widget, state_tree, scheduler);
 //! ```
 //!
+//! <a name="reference_layout_properties_active_fg_color"></a>
 //! ##### active_fg_color
 //!
 //! Foreground color used for the tab header button that is active (meaning the associated tab is
@@ -5320,6 +5354,7 @@
 //! run(root_widget, state_tree, scheduler);
 //! ```
 //!
+//! <a name="reference_layout_properties_active_bg_color"></a>
 //! ##### active_bg_color
 //!
 //! Background color used for the tab header button that is active (meaning the associated tab is
@@ -5384,6 +5419,7 @@
 //! ```
 //!
 //!
+//! <a name="reference_layout_properties_can_drag"></a>
 //! ##### can_drag
 //!
 //! Only works on a Layout template which is spawned as a modal (see tutorial). When can_drag is
@@ -5423,6 +5459,7 @@
 //! run(root_widget, state_tree, scheduler);
 //! ```
 //!
+//! <a name="reference_layout_properties_fill"></a>
 //! ##### fill
 //!
 //! A bool that determines whether fill is enabled. If enabled, all empty pixels in the layout will
@@ -5462,6 +5499,7 @@
 //! run(root_widget, state_tree, scheduler);
 //! ```
 //!
+//! <a name="reference_layout_properties_filler_symbol"></a>
 //! ##### filler_symbol
 //!
 //! The symbol that will be used to fill empty pixels in the layout if the 'fill' property is set
@@ -5498,6 +5536,7 @@
 //! run(root_widget, state_tree, scheduler);
 //! ```
 //!
+//! <a name="reference_layout_properties_filler_fg_color"></a>
 //! ##### filler_fg_color
 //!
 //! Only works when the layout is in box, stack, table or float mode, and the fill property is set
@@ -5560,6 +5599,7 @@
 //! run(root_widget, state_tree, scheduler);
 //! ```
 //!
+//! <a name="reference_layout_properties_filler_bg_color"></a>
 //! ##### filler_bg_color
 //!
 //! Only works when the layout is in box, stack, table or float mode, and the fill property is set
@@ -5623,6 +5663,7 @@
 //! run(root_widget, state_tree, scheduler);
 //! ```
 //!
+//! <a name="reference_layout_properties_scroll_x"></a>
 //! ##### scroll_x
 //!
 //! Only works when the layout mode is 'box', 'table', 'stack' or 'float'. Makes the width of the
@@ -5663,6 +5704,7 @@
 //! run(root_widget, state_tree, scheduler);
 //! ```
 //!
+//! <a name="reference_layout_properties_scroll_y"></a>
 //! ##### scroll_y
 //!
 //! Only works when the layout mode is 'box', 'table', 'stack' or 'float'. Makes the height of the
@@ -5703,6 +5745,7 @@
 //! run(root_widget, state_tree, scheduler);
 //! ```
 //!
+//! <a name="reference_layout_properties_view_start_x"></a>
 //! ##### view_start_x
 //!
 //! Only works when the layout is scrolling horizontally. Determines the view of the scroll by a
@@ -5744,6 +5787,7 @@
 //! run(root_widget, state_tree, scheduler);
 //! ```
 //!
+//! <a name="reference_layout_properties_view_start_y"></a>
 //! ##### view_start_y
 //!
 //! Only works when the layout is scrolling vertically. Determines the view of the scroll by a
@@ -5785,6 +5829,7 @@
 //! run(root_widget, state_tree, scheduler);
 //! ```
 //!
+//! <a name="reference_layout_properties_rows"></a>
 //! ##### rows
 //!
 //! Only works when the layout is in table mode. Fixes the amount of rows in the table. If you set
@@ -5827,6 +5872,7 @@
 //! run(root_widget, state_tree, scheduler);
 //! ```
 //!
+//! <a name="reference_layout_properties_cols"></a>
 //! ##### cols
 //!
 //! Only works when the layout is in table mode. Fixes the amount of columns in the table. If you set
@@ -5869,6 +5915,7 @@
 //! run(root_widget, state_tree, scheduler);
 //! ```
 //!
+//! <a name="reference_layout_properties_col_default_width"></a>
 //! ##### col_default_width
 //!
 //! Only works when the layout is in table mode. Sets the default width for columns, meaning that
@@ -5913,6 +5960,7 @@
 //! run(root_widget, state_tree, scheduler);
 //! ```
 //!
+//! <a name="reference_layout_properties_force_default_col_width"></a>
 //! ##### force_default_col_width
 //!
 //! Only works when the layout is in table mode and the 'col_default_width' property is set to a
@@ -5956,6 +6004,7 @@
 //! run(root_widget, state_tree, scheduler);
 //! ```
 //!
+//! <a name="reference_layout_properties_row_default_height"></a>
 //! ##### row_default_height
 //!
 //! Only works when the layout is in table mode. Sets the default height for rows, meaning that
@@ -6000,6 +6049,7 @@
 //! run(root_widget, state_tree, scheduler);
 //! ```
 //!
+//! <a name="reference_layout_properties_force_default_row_height"></a>
 //! ##### force_default_row_height
 //!
 //! Only works when the layout is in table mode and the 'row_default_height' property is set to a
@@ -6043,8 +6093,10 @@
 //! run(root_widget, state_tree, scheduler);
 //! ```
 //!
-//! #### 2.2.1.2 Default callback implementations
+//! <a name="reference_layout_default_callbacks"></a>
+//! #### 2.2.2 Default callback implementations
 //!
+//! <a name="reference_layout_default_callbacks_scrollup"></a>
 //! ##### on_scroll_up
 //!
 //! If the layout is scrolling horizontally, this scrolls the layout to the left. If the layout is
@@ -6053,6 +6105,7 @@
 //! supplement it.
 //!
 //!
+//! <a name="reference_layout_default_callbacks_scrolldown"></a>
 //! ##### on_scroll_down
 //!
 //! If the layout is scrolling horizontally, this scrolls the layout to the right. If the layout is
@@ -6060,7 +6113,8 @@
 //! If you implement your own callback, returns true to surpress this behavior, or false to
 //! supplement it.
 //!
-//! #### 2.2.1.2 Available callbacks
+//! <a name="reference_layout_available_callbacks"></a>
+//! #### 2.2.3 Available callbacks
 //!
 //! - on_scroll_up
 //! - on_scroll_down
@@ -6071,13 +6125,16 @@
 //! - on_select (called when a scrollbar is selected)
 //!
 //!
-//! ### 2.2.2 Label:
+//! <a name="reference_label"></a>
+//! ## 2.3 Label:
 //!
 //! A widget that displays (colored) text.
 //!
-//! #### 2.2.1.1 Properties
+//! <a name="reference_label_properties"></a>
+//! ### 2.3.1 Properties
 //!
-//! ##### text
+//! <a name="reference_label_properties_text"></a>
+//! #### text
 //!
 //! The text that will be displayed in the label. If the label has a height more than 1, it will
 //! wrap text respecting word boundaries.
@@ -6113,7 +6170,8 @@
 //! run(root_widget, state_tree, scheduler);
 //! ```
 //!
-//! ##### from_file
+//! <a name="reference_label_properties_from_file"></a>
+//! #### from_file
 //!
 //! Label will display text loaded from this file path. Overwrites the text property if set.
 //!
@@ -6148,11 +6206,13 @@
 //! run(root_widget, state_tree, scheduler);
 //! ```
 //!
-//! #### 2.2.1.2 Default callbacks implementations
+//! <a name="reference_label_default_callbacks"></a>
+//! ### 2.3.2 Default callbacks implementations
 //!
-//! The Label widget does not have any.
+//! The Label widget does not have any default callback implementations.
 //!
-//! #### 2.2.1.3 Available callbacks
+//! <a name="reference_label_available_callbacks"></a>
+//! ### 2.3.3 Available callbacks
 //!
 //! - on_scroll_up
 //! - on_scroll_down
@@ -6161,14 +6221,17 @@
 //! - on_left_click
 //! - on_right_click
 //!
-//! ### 2.2.3 Button:
+//! <a name="reference_button"></a>
+//! ## 2.4 Button:
 //!
 //! A button that shows a small animation when clicked. Has text and always has a border. Usually
 //! you want to bind an on_press callback to make something happen when pressed.
 //!
-//! #### 2.2.3.1 Properties
+//! <a name="reference_button_properties"></a>
+//! ### 2.4.1 Properties
 //!
-//! ##### text
+//! <a name="reference_button_properties_text"></a>
+//! #### text
 //!
 //! The text that will be displayed in the button. If the button has a height more than 1, it will
 //! wrap text respecting word boundaries.
@@ -6204,17 +6267,149 @@
 //! run(root_widget, state_tree, scheduler);
 //! ```
 //!
-//! #### 2.2.3.2 Default callbacks implementations
 //!
-//! ##### on_left_click
+//! <a name="reference_button_properties_flash_fg_color"></a>
+//! #### flash_fg_color
+//!
+//! Foreground color used for the button flash animation shown after the button is clicked.
+//!
+//! **Property type:**
+//!
+//! Color
+//!
+//! **Possible values:**
+//!
+//! - RGB value: 0-255, 0-255, 0-255
+//! - Color words:
+//!     - black
+//!     - blue
+//!     - dark_blue
+//!     - cyan
+//!     - dark_cyan
+//!     - green
+//!     - dark_green
+//!     - grey
+//!     - dark_grey
+//!     - magenta
+//!     - dark_magenta
+//!     - red
+//!     - dark_red
+//!     - white
+//!     - yellow
+//!     - dark_yellow
+//!
+//! **Default value:**
+//!
+//! white
+//!
+//! **Usage examples:**
+//!
+//! In EzLang files:
+//! ```
+//! - Layout:
+//!     - Label:
+//!         flash_fg_color: red
+//! ```
+//! ```
+//! - Layout:
+//!     - Label:
+//!         flash_fg_color: 255, 0, 0
+//! ```
+//!
+//! In code:
+//! ```
+//! use ez_term::*;
+//! use ez_term::GenericState;
+//! let (root_widget, mut state_tree, mut scheduler) = load_ui();
+//! let state = state_tree.get_mut("my_button").as_layout_mut();
+//!
+//! // Table properties are wrapping into a TableConfig object, which we have to retrieve
+//! // first:
+//! state.get_color_config_mut().set_flash_fg_color(Color::Red);
+//! state.get_color_config_mut().set_flash_fg_color(Color::from((255, 0, 0)));
+//!
+//! run(root_widget, state_tree, scheduler);
+//! ```
+//!
+//! <a name="reference_button_properties_flash_bg_color"></a>
+//! #### flash_bg_color
+//!
+//! Background color used for the button flash animation shown after the button is clicked.
+//!
+//! **Property type:**
+//!
+//! Color
+//!
+//! **Possible values:**
+//!
+//! - RGB value: 0-255, 0-255, 0-255
+//! - Color words:
+//!     - black
+//!     - blue
+//!     - dark_blue
+//!     - cyan
+//!     - dark_cyan
+//!     - green
+//!     - dark_green
+//!     - grey
+//!     - dark_grey
+//!     - magenta
+//!     - dark_magenta
+//!     - red
+//!     - dark_red
+//!     - white
+//!     - yellow
+//!     - dark_yellow
+//!
+//! **Default value:**
+//!
+//! white
+//!
+//! **Usage examples:**
+//!
+//! In EzLang files:
+//! ```
+//! - Layout:
+//!     - Label:
+//!         flash_bg_color: red
+//! ```
+//! ```
+//! - Layout:
+//!     - Label:
+//!         flash_bg_color: 255, 0, 0
+//! ```
+//!
+//! In code:
+//! ```
+//! use ez_term::*;
+//! use ez_term::GenericState;
+//! let (root_widget, mut state_tree, mut scheduler) = load_ui();
+//! let state = state_tree.get_mut("my_button").as_layout_mut();
+//!
+//! // Table properties are wrapping into a TableConfig object, which we have to retrieve
+//! // first:
+//! state.get_color_config_mut().set_flash_bg_color(Color::Red);
+//! state.get_color_config_mut().set_flash_bg_color(Color::from((255, 0, 0)));
+//!
+//! run(root_widget, state_tree, scheduler);
+//! ```
+//!
+//!
+//! <a name="reference_button_default_callbacks"></a>
+//! ### 2.4.2 Default callbacks implementations
+//!
+//! <a name="reference_button_default_callbacks_leftclick"></a>
+//! #### on_left_click
 //!
 //! Calls the on_press callback.
 //!
-//! ##### on_keyboard_enter
+//! <a name="reference_button_default_callbacks_enter"></a>
+//! #### on_keyboard_enter
 //!
 //! Calls the on_press callback.
 //!
-//! #### 2.2.3.3 Available callbacks
+//! <a name="reference_button_available_callbacks"></a>
+//! ### 2.4.3 Available callbacks
 //!
 //! - on_keyboard_enter
 //! - on_press
@@ -6228,14 +6423,17 @@
 //! - on_right_click
 //! - Custom keys
 //!
-//! ### 2.2.4 Checkbox:
+//! <a name="reference_checkbox"></a>
+//! ## 2.5 Checkbox:
 //!
 //! A simple switch that can be toggled on and off. A checkbox is always 5 width and 1 height.
 //! Often used with on_value_change callback.
 //!
-//! #### 2.2.4.1 Properties
+//! <a name="reference_checkbox_properties"></a>
+//! ### 2.5.1 Properties
 //!
-//! ##### active
+//! <a name="reference_checkbox_properties_active"></a>
+//! #### active
 //!
 //! Property that represents whether the checkbox is on (active) or off.
 //!
@@ -6271,7 +6469,8 @@
 //! run(root_widget, state_tree, scheduler);
 //! ```
 //!
-//! ##### active_symbol
+//! <a name="reference_checkbox_properties_active_symbol"></a>
+//! #### active_symbol
 //!
 //! The symbol used to indicate the checkbox is active. If for example the symbol is X, then the
 //! checkbox will look like this when active: [ X ].
@@ -6307,7 +6506,8 @@
 //! run(root_widget, state_tree, scheduler);
 //! ```
 //!
-//! ##### inactive_symbol
+//! <a name="reference_checkbox_properties_inactive_symbol"></a>
+//! #### inactive_symbol
 //!
 //! The symbol used to indicate the checkbox is inactive. If for example the symbol is -, then the
 //! checkbox will look like this when inactive: [ - ].
@@ -6343,17 +6543,21 @@
 //! run(root_widget, state_tree, scheduler);
 //! ```
 //!
-//! #### 2.2.1.2 Default callbacks implementations
+//! <a name="reference_checkbox_default_callbacks"></a>
+//! ### 2.5.2 Default callbacks implementations
 //!
-//! ##### on_left_click
-//!
-//! Calls the on_press callback.
-//!
-//! ##### on_keyboard_enter
+//! <a name="reference_checkbox_default_callbacks_leftclick"></a>
+//! #### on_left_click
 //!
 //! Calls the on_press callback.
 //!
-//! #### 2.2.1.1 Available callbacks
+//! <a name="reference_checkbox_default_callbacks_enter"></a>
+//! #### on_keyboard_enter
+//!
+//! Calls the on_press callback.
+//!
+//! <a name="reference_checkbox_available_callbacks"></a>
+//! ### 2.5.3 Available callbacks
 //!
 //! - on_value_change
 //! - on_keyboard_enter
@@ -6369,7 +6573,8 @@
 //! - Custom keys
 //!
 //!
-//! ### 2.2.4 Radio button:
+//! <a name="reference_radiobutton"></a>
+//! ## 2.6 Radio button:
 //!
 //! A simple switch that can be toggled on and off. A radio button is always 5 width and 1 height.
 //! A radio button can be part of a group (by setting the group property of multiple radio buttons
@@ -6377,9 +6582,11 @@
 //! becomes active, the others become inactive. Often used with on_value_change callbacs. Only the
 //! radio button that become active triggers an on_value_change callback.
 //!
-//! #### 2.2.4.1 Properties
+//! <a name="reference_radiobutton_properties"></a>
+//! ### 2.6.1 Properties
 //!
-//! ##### active
+//! <a name="reference_radiobutton_properties_active"></a>
+//! #### active
 //!
 //! Property that represents whether the radio button is on (active) or off.
 //!
@@ -6400,7 +6607,7 @@
 //!
 //! In EzLang files:
 //! ```
-//! - Radio button:
+//! - Radiobutton:
 //!     active: true
 //! ```
 //!
@@ -6415,7 +6622,8 @@
 //! run(root_widget, state_tree, scheduler);
 //! ```
 //!
-//! ##### active_symbol
+//! <a name="reference_radiobutton_properties_active_symbol"></a>
+//! #### active_symbol
 //!
 //! The symbol used to indicate the radio button is active. If for example the symbol is X, then the
 //! checkbox will look like this when active: ( X ).
@@ -6451,7 +6659,8 @@
 //! run(root_widget, state_tree, scheduler);
 //! ```
 //!
-//! ##### inactive_symbol
+//! <a name="reference_radiobutton_properties_inactive_symbol"></a>
+//! #### inactive_symbol
 //!
 //! The symbol used to indicate the radio button is inactive. If for example the symbol is -, then the
 //! radio button will look like this when inactive: ( - ).
@@ -6487,7 +6696,8 @@
 //! run(root_widget, state_tree, scheduler);
 //! ```
 //!
-//! ##### group
+//! <a name="reference_radiobutton_properties_group"></a>
+//! #### group
 //!
 //! This property determines which radio buttons belong together, and are therefore mutually
 //! exclusive. Set multiple radio buttons to the same group value to make them part of the same
@@ -6524,17 +6734,21 @@
 //! run(root_widget, state_tree, scheduler);
 //! ```
 //!
-//! #### 2.2.1.2 Default callbacks implementations
+//! <a name="reference_radiobutton_default_callbacks"></a>
+//! ### 2.6.2 Default callbacks implementations
 //!
-//! ##### on_left_click
-//!
-//! Calls the on_press callback.
-//!
-//! ##### on_keyboard_enter
+//! <a name="reference_radiobutton_default_callbacks_leftclick"></a>
+//! #### on_left_click
 //!
 //! Calls the on_press callback.
 //!
-//! #### 2.2.1.1 Available callbacks
+//! <a name="reference_radiobutton_default_callbacks_enter"></a>
+//! #### on_keyboard_enter
+//!
+//! Calls the on_press callback.
+//!
+//! <a name="reference_radiobutton_available_callbacks"></a>
+//! ### 2.6.3 Available callbacks
 //!
 //! - on_value_change (only if radio button became active)
 //! - on_keyboard_enter
@@ -6548,6 +6762,720 @@
 //! - on_left_click
 //! - on_right_click
 //! - Custom keys
+//!
+//!
+//! <a name="reference_dropdown"></a>
+//! ## 2.7 Dropdown:
+//!
+//! A widget with a list op options (Vec<String>). Initially, only the active option is visible.
+//! When pressed, the full list drops down for the user to choose from.
+//!
+//! <a name="reference_dropdown_properties"></a>
+//! ### 2.7.1 Properties
+//!
+//! <a name="reference_dropdown_properties_choice"></a>
+//! #### choice
+//!
+//! Property that determines the active option, i.e. current choice.
+//!
+//! **Property type:**
+//!
+//! String
+//!
+//! **Possible values:**
+//!
+//! Any string.
+//!
+//! **Default value:**
+//!
+//! Empty value if allow_none is true, otherwise the first option from the options property.
+//!
+//! **Usage examples:**
+//!
+//! In EzLang files:
+//! ```
+//! - Dropdown:
+//!     choice: my_option_1
+//! ```
+//!
+//! In code:
+//! ```
+//! use ez_term::*;
+//! let (root_widget, mut state_tree, mut scheduler) = load_ui();
+//! let state = state_tree.get_mut("my_dropdown").as_dropdown_mut();
+//!
+//! state.set_choice("my_option_1");
+//!
+//! run(root_widget, state_tree, scheduler);
+//! ```
+//!
+//! <a name="reference_dropdown_properties_options"></a>
+//! #### options
+//!
+//! The list of options the user can choose from. If you want to allow an empty choice, set
+//! allow_none to true rather than adding an empty string. A dropdown must have at least one value,
+//! so either this property must be set, or the allow_none property.
+//!
+//! **Property type:**
+//!
+//! Vec<String>
+//!
+//! **Possible values:**
+//!
+//! A vector of >0 character Strings.
+//!
+//! **Default value:**
+//!
+//! Empty vec.
+//!
+//! **Usage examples:**
+//!
+//! In EzLang files:
+//! ```
+//! - Dropdown:
+//!     options: my_option_1, my_option_2, my_option_3
+//! ```
+//!
+//! In code:
+//! ```
+//! use ez_term::*;
+//! let (root_widget, mut state_tree, mut scheduler) = load_ui();
+//! let state = state_tree.get_mut("my_dropdown").as_dropdown_mut();
+//!
+//! let options = vec!("my_option_1".to_string(),
+//!                    "my_option_2".to_string(),
+//!                    "my_option_3".to_string());
+//! state.set_options(options);
+//!
+//! run(root_widget, state_tree, scheduler);
+//! ```
+//!
+//! <a name="reference_dropdown_properties_allow_none"></a>
+//! #### allow_none
+//!
+//! If set to true, includes an empty choice in the dropdown. Enabled by default.
+//!
+//! **Property type:**
+//!
+//! bool
+//!
+//! **Possible values:**
+//!
+//! - true
+//! - false
+//!
+//! **Default value:**
+//!
+//! true
+//!
+//! **Usage examples:**
+//!
+//! In EzLang files:
+//! ```
+//! - Dropdown:
+//!     allow_none: false
+//! ```
+//!
+//! In code:
+//! ```
+//! use ez_term::*;
+//! let (root_widget, mut state_tree, mut scheduler) = load_ui();
+//! let state = state_tree.get_mut("my_dropdown").as_dropdown_mut();
+//!
+//! state.set_allow_none(false);
+//!
+//! run(root_widget, state_tree, scheduler);
+//! ```
+//!
+//! <a name="reference_dropdown_default"></a>
+//! ### 2.7.2 Default callbacks implementations
+//!
+//! <a name="reference_dropdown_default_callbacks_leftclick"></a>
+//! #### on_left_click
+//!
+//! Opens the dropped down menu.
+//!
+//! <a name="reference_dropdown_default_callbacks_enter"></a>
+//! #### on_keyboard_enter
+//!
+//! Opens the dropped down menu.
+//!
+//! <a name="reference_dropdown_available_callbacks"></a>
+//! ### 2.7.3 Available callbacks
+//!
+//! - on_value_change
+//! - on_keyboard_enter
+//! - on_press
+//! - on_select
+//! - on_deselect
+//! - on_scroll_up
+//! - on_scroll_down
+//! - on_hover
+//! - on_drag
+//! - on_left_click
+//! - on_right_click
+//! - Custom keys
+//!
+//!
+//! <a name="reference_slider"></a>
+//! ## 2.8 Slider:
+//!
+//! A widget representing a numerical value. User can slide left or right to decrease/increase the
+//! value (using left click, mouse drag, or left/right keyboard arrow keys.
+//! Thee slider has a minimum-, maximum-, current- and step value. The step value determines the
+//! amount by which the value can be adjusted; it also determines (together with min and max) how
+//! many possible values there are with the equation: (max - min) / step.
+//! Auto scaling for sliders depends on the amount of possible values; 1 width will be added for
+//! each possible value (the amount of values depends on min, max and step as explained above).
+//!
+//! <a name="reference_slider_properties"></a>
+//! ### 2.8.1 Properties
+//!
+//! <a name="reference_slider_properties_value"></a>
+//! #### value
+//!
+//! Current value of the widget. *Must* be a multiple of the step value, not be higher than the
+//! minimum value, and not be higher than the maximum value. If minimum is 0, maximum is 10,
+//! and step is 5, then value can be 0, 5 or 10.
+//!
+//! **Property type:**
+//!
+//! usize
+//!
+//! **Possible values:**
+//!
+//! Multiple of step between minimum and maximum.
+//!
+//! **Default value:**
+//!
+//! minimum
+//!
+//! **Usage examples:**
+//!
+//! In EzLang files:
+//! ```
+//! - Slider:
+//!     value: 10
+//! ```
+//!
+//! In code:
+//! ```
+//! use ez_term::*;
+//! let (root_widget, mut state_tree, mut scheduler) = load_ui();
+//! let state = state_tree.get_mut("my_slider").as_slider_mut();
+//!
+//! state.set_value(10);
+//!
+//! run(root_widget, state_tree, scheduler);
+//! ```
+//!
+//! <a name="reference_slider_properties_min"></a>
+//! #### min
+//!
+//! Minimum possible value of the widget. *Must* be a multiple of the step value.
+//!
+//! **Property type:**
+//!
+//! usize
+//!
+//! **Possible values:**
+//!
+//! Multiple of step.
+//!
+//! **Default value:**
+//!
+//! 0
+//!
+//! **Usage examples:**
+//!
+//! In EzLang files:
+//! ```
+//! - Slider:
+//!     min: 1
+//! ```
+//!
+//! In code:
+//! ```
+//! use ez_term::*;
+//! let (root_widget, mut state_tree, mut scheduler) = load_ui();
+//! let state = state_tree.get_mut("my_slider").as_slider_mut();
+//!
+//! state.set_min(1);
+//!
+//! run(root_widget, state_tree, scheduler);
+//! ```
+//!
+//! <a name="reference_slider_properties_max"></a>
+//! #### max
+//!
+//! Maximum possible value of the widget. *Must* be a multiple of the step value.
+//!
+//! **Property type:**
+//!
+//! usize
+//!
+//! **Possible values:**
+//!
+//! Multiple of step.
+//!
+//! **Default value:**
+//!
+//! 100
+//!
+//! **Usage examples:**
+//!
+//! In EzLang files:
+//! ```
+//! - Slider:
+//!     max: 50
+//! ```
+//!
+//! In code:
+//! ```
+//! use ez_term::*;
+//! let (root_widget, mut state_tree, mut scheduler) = load_ui();
+//! let state = state_tree.get_mut("my_slider").as_slider_mut();
+//!
+//! state.set_max(50);
+//!
+//! run(root_widget, state_tree, scheduler);
+//! ```
+//!
+//! <a name="reference_slider_properties_step"></a>
+//! #### step
+//!
+//! Determines the amount by which the value may be adjusted. Keep in mind that the min, max and
+//! value properties must all be multiples of step.
+//!
+//! **Property type:**
+//!
+//! usize
+//!
+//! **Possible values:**
+//!
+//! Any usize.
+//!
+//! **Default value:**
+//!
+//! 1
+//!
+//! **Usage examples:**
+//!
+//! In EzLang files:
+//! ```
+//! - Slider:
+//!     step: 5
+//! ```
+//!
+//! In code:
+//! ```
+//! use ez_term::*;
+//! let (root_widget, mut state_tree, mut scheduler) = load_ui();
+//! let state = state_tree.get_mut("my_slider").as_slider_mut();
+//!
+//! state.set_step(5);
+//!
+//! run(root_widget, state_tree, scheduler);
+//! ```
+//!
+//! <a name="reference_slider_default_callbacks"></a>
+//! ### 2.8.2 Default callbacks implementations
+//!
+//! <a name="reference_slider_default_callbacks_leftclick"></a>
+//! #### on_left_click
+//!
+//! Instantly sets the slider to the value under the cursor.
+//!
+//! <a name="reference_slider_default_callbacks_drag"></a>
+//! #### on_drag
+//!
+//! Drags the slider along the cursor.
+//!
+//! <a name="reference_slider_available_callbacks"></a>
+//! ### 2.8.3 Available callbacks
+//!
+//! - on_value_change
+//! - on_keyboard_enter
+//! - on_press
+//! - on_select
+//! - on_deselect
+//! - on_scroll_up
+//! - on_scroll_down
+//! - on_hover
+//! - on_drag
+//! - on_left_click
+//! - on_right_click
+//! - Custom keys
+//!
+//!
+//! <a name="reference_textinput"></a>
+//! ## 2.2.9 Text input:
+//!
+//! An interactive textbox. User can select it through keyboard up/down (if selection_order) is set,
+//! or by clicking in the textbox. A cursor will appear and the user can type text, or
+//! backspace/delete text.
+//!
+//! <a name="reference_textinput_properties"></a>
+//! ### 2.9.1 Properties
+//!
+//! <a name="reference_textinput_properties_text"></a>
+//! #### text
+//!
+//! The current text of the textbox.
+//!
+//! **Property type:**
+//!
+//! String
+//!
+//! **Possible values:**
+//!
+//! Any string.
+//!
+//! **Default value:**
+//!
+//! Empty String.
+//!
+//! **Usage examples:**
+//!
+//! In EzLang files:
+//! ```
+//! - TextInput:
+//!     text: Hello world!
+//! ```
+//!
+//! In code:
+//! ```
+//! use ez_term::*;
+//! let (root_widget, mut state_tree, mut scheduler) = load_ui();
+//! let state = state_tree.get_mut("my_text_input").as_text_input_mut();
+//!
+//! state.set_text("Hello world!".to_string());
+//!
+//! run(root_widget, state_tree, scheduler);
+//! ```
+//!
+//! <a name="reference_textinput_properties_max_length"></a>
+//! #### max_length
+//!
+//! Maximum amount of allowed characters. When reached, typing in the texbox does nothing. If set to
+//! 0 then the max_length is infinite.
+//!
+//! **Property type:**
+//!
+//! usize
+//!
+//! **Possible values:**
+//!
+//! Any usize (0 means infinite)
+//!
+//! **Default value:**
+//!
+//! 0 (infinite)
+//!
+//! **Usage examples:**
+//!
+//! In EzLang files:
+//! ```
+//! - TextInput:
+//!     max_length: 100
+//! ```
+//!
+//! In code:
+//! ```
+//! use ez_term::*;
+//! let (root_widget, mut state_tree, mut scheduler) = load_ui();
+//! let state = state_tree.get_mut("my_text_input").as_text_input_mut();
+//!
+//! state.set_max_length(100);
+//!
+//! run(root_widget, state_tree, scheduler);
+//! ```
+//!
+//! <a name="reference_textinput_properties_cursor_color"></a>
+//! #### cursor_color
+//!
+//! Color used for the cursor of the text input.
+//!
+//! **Property type:**
+//!
+//! Color
+//!
+//! **Possible values:**
+//!
+//! - RGB value: 0-255, 0-255, 0-255
+//! - Color words:
+//!     - black
+//!     - blue
+//!     - dark_blue
+//!     - cyan
+//!     - dark_cyan
+//!     - green
+//!     - dark_green
+//!     - grey
+//!     - dark_grey
+//!     - magenta
+//!     - dark_magenta
+//!     - red
+//!     - dark_red
+//!     - white
+//!     - yellow
+//!     - dark_yellow
+//!
+//! **Default value:**
+//!
+//! dark_yellow
+//!
+//! **Usage examples:**
+//!
+//! In EzLang files:
+//! ```
+//! - Layout:
+//!     - Label:
+//!         cursor_color: red
+//! ```
+//! ```
+//! - Layout:
+//!     - Label:
+//!         cursor_color: 255, 0, 0
+//!         border: true
+//! ```
+//!
+//! In code:
+//! ```
+//! use ez_term::*;
+//! use ez_term::GenericState;
+//! let (root_widget, mut state_tree, mut scheduler) = load_ui();
+//! let state = state_tree.get_mut("my_layout").as_layout_mut();
+//!
+//! // Table properties are wrapping into a TableConfig object, which we have to retrieve
+//! // first:
+//! state.get_color_config_mut().set_cursor_fg_color(Color::Red);
+//! state.get_color_config_mut().set_cursor_fg_color(Color::from((255, 0, 0)));
+//!
+//! run(root_widget, state_tree, scheduler);
+//! ```
+//!
+//!
+//! <a name="reference_textinput_default_callbacks"></a>
+//! ### 2.9.2 Default callbacks implementations
+//!
+//! <a name="reference_textinput_default_callbacks_leftclick"></a>
+//! #### on_left_click
+//!
+//! Calls on-select.
+//!
+//! <a name="reference_textinput_default_callbacks_select"></a>
+//! #### on_select
+//!
+//! Enters text editing mode.
+//!
+//! <a name="reference_textinput_available_callbacks"></a>
+//! ### 2.9.3 Available callbacks
+//!
+//! - on_value_change
+//! - on_keyboard_enter
+//! - on_press
+//! - on_select
+//! - on_deselect
+//! - on_scroll_up
+//! - on_scroll_down
+//! - on_hover
+//! - on_drag
+//! - on_left_click
+//! - on_right_click
+//!
+//!
+//! <a name="reference_progressbar"></a>
+//! ## 2.10 Progress bar:
+//!
+//! A widget with a max- and current value used to display progress
+//!
+//! <a name="reference_progressbar_properties"></a>
+//! ### 2.10.1 Properties
+//!
+//! <a name="reference_progressbar_properties_value"></a>
+//! #### value
+//!
+//! Property that determines the current value; used together with max to determine progress
+//! (minimum value is always implicitly 0).
+//!
+//! **Property type:**
+//!
+//! usize
+//!
+//! **Possible values:**
+//!
+//! Any usize.
+//!
+//! **Default value:**
+//!
+//! 0
+//!
+//! **Usage examples:**
+//!
+//! In EzLang files:
+//! ```
+//! - ProgressBar:
+//!     value: 50
+//! ```
+//!
+//! In code:
+//! ```
+//! use ez_term::*;
+//! let (root_widget, mut state_tree, mut scheduler) = load_ui();
+//! let state = state_tree.get_mut("my_progress_bar").as_progress_bar_mut();
+//!
+//! state.set_value(50);
+//!
+//! run(root_widget, state_tree, scheduler);
+//! ```
+//!
+//! <a name="reference_progressbar_properties_max"></a>
+//! #### max
+//!
+//! Maximum value; i.e. value where progress is 100%. Must be larger than 0.
+//!
+//! **Property type:**
+//!
+//! usize
+//!
+//! **Possible values:**
+//!
+//! Any usize > 0.
+//!
+//! **Default value:**
+//!
+//! 100
+//!
+//! **Usage examples:**
+//!
+//! In EzLang files:
+//! ```
+//! - ProgressBar:
+//!     max: 50
+//! ```
+//!
+//! In code:
+//! ```
+//! use ez_term::*;
+//! let (root_widget, mut state_tree, mut scheduler) = load_ui();
+//! let state = state_tree.get_mut("my_progress_bar").as_progress_bar_mut();
+//!
+//! state.set_max(50);
+//!
+//! run(root_widget, state_tree, scheduler);
+//! ```
+//!
+//! <a name="reference_progressbar_default_callbacks"></a>
+//! ### 2.10.2 Default callbacks implementations
+//!
+//! The Progress bar widget does not have any default callback implementations.
+//!
+//! <a name="reference_progressbar_available_callbacks"></a>
+//! ### 2.10.3 Available callbacks
+//!
+//! - on_scroll_up
+//! - on_scroll_down
+//! - on_hover
+//! - on_drag
+//! - on_left_click
+//! - on_right_click
+//! - Custom keys
+//!
+//!
+//! <a name="reference_canvas"></a>
+//! ## 2.11 Canvas:
+//!
+//! The canvas is a widget that allows custom content. It can load its graphic content from a text
+//! file, or it can be set programmatically.
+//!
+//! <a name="reference_canvas_properties"></a>
+//! ### 2.11.1 Properties
+//!
+//! <a name="reference_canvas_properties_from_file"></a>
+//! #### from_file
+//!
+//! File path to a text file from which to load visual context. Empty string means don't load from
+//! file.
+//!
+//! **Property type:**
+//!
+//! String
+//!
+//! **Possible values:**
+//!
+//! Any valid file path.
+//!
+//! **Default value:**
+//!
+//! Empty string.
+//!
+//! **Usage examples:**
+//!
+//! In EzLang files:
+//! ```
+//! - Canvas:
+//!     from_file: ./canvas_content.txt
+//! ```
+//!
+//! In code:
+//! ```
+//! use ez_term::*;
+//! let (root_widget, mut state_tree, mut scheduler) = load_ui();
+//! let state = state_tree.get_mut("my_canvas").as_canvas_mut();
+//!
+//! state.set_from_file("./canvas_content.txt");
+//!
+//! run(root_widget, state_tree, scheduler);
+//! ```
+//!
+//! <a name="reference_canvas_properties_from_code"></a>
+//! #### Setting content from code
+//!
+//! The alternative to loading content from a text file is setting content from code. You have to
+//! manually create the pixels and use them to construct a PixelMap (Vec<Vec<Pixel>>) Here is an
+//! example to create a square like this:
+//! ```
+//! S S S
+//! S S S
+//! S S S
+//! ```
+//!
+//! The code:
+//! ```
+//! use ez_term::*;
+//! let (root_widget, mut state_tree, mut scheduler) = load_ui();
+//! let state = state_tree.get_mut("my_canvas").as_canvas_mut();
+//!
+//! // We create a single pixel
+//! let pixel = Pixel::new("S".to_string(), Color::White, Color::Black);
+//!
+//! // We create a row of three pixels
+//! let row = vec!(pixel.clone(); 3);
+//!
+//! // We create a pixelmap of three rows (we now have a square)
+//! let content = vec!(row.clone(); 3);
+//!
+//! state.set_contents(content);
+//!
+//! run(root_widget, state_tree, scheduler);
+//! ```
+//!
+//! <a name="reference_canvas_default_callbacks"></a>
+//! ### 2.11.2 Default callbacks implementations
+//!
+//! The Canvas widget does not have any default callback implementations.
+//!
+//! <a name="reference_canvas_available_callbacks"></a>
+//! ### 2.11.3 Available callbacks
+//!
+//! - on_scroll_up
+//! - on_scroll_down
+//! - on_hover
+//! - on_drag
+//! - on_left_click
+//! - on_right_click
+
 mod run;
 mod scheduler;
 mod widgets;
@@ -6564,7 +7492,7 @@ pub use crossterm::event::{KeyCode, KeyModifiers};
 pub use crossterm::style::Color;
 
 pub use crate::scheduler::definitions::{EzContext, EzPropertiesMap};
-pub use crate::run::definitions::StateTree;
+pub use crate::run::definitions::{StateTree, PixelMap, Pixel};
 pub use crate::scheduler::scheduler::SchedulerFrontend;
 
 pub use crate::property::ez_properties::EzProperties;

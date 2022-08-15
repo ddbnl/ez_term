@@ -1,7 +1,7 @@
 use crossterm::style::Color;
 use crate::GenericState;
 use crate::run::definitions::{Coordinates, Pixel, PixelMap, StateTree};
-use crate::states::definitions::{ColorConfig, LayoutOrientation};
+use crate::states::definitions::{LayoutOrientation};
 use crate::widgets::helper_functions::{align_content_horizontally, align_content_vertically};
 use crate::widgets::ez_object::EzObject;
 use crate::widgets::layout::layout::Layout;

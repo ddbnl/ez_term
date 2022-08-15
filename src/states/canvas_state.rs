@@ -1,4 +1,3 @@
-use std::str::pattern::Pattern;
 use crate::EzProperty;
 use crate::property::ez_values::EzValues;
 use crate::run::definitions::{IsizeCoordinates, PixelMap};
@@ -133,7 +132,7 @@ impl GenericState for CanvasState {
             "border_fg_color" => self.colors.border_fg_color.set_from_ez_value(value),
             "border_bg_color" => self.colors.border_bg_color.set_from_ez_value(value),
             "from_file" => self.from_file.set_from_ez_value(value),
-            _ => panic!("Invalid property name for button state: {}", name),
+            _ => panic!("Invalid property name for canvas state: {}", name),
         }
     }
 

@@ -32,7 +32,7 @@ pub fn start_new_threads(scheduler: &mut SchedulerFrontend, state_tree: &mut Sta
         let mut custom_properties: HashMap<String, EzProperties> = HashMap::new();
 
         for (name, custom_property) in scheduler.backend.properties.iter()
-            .filter(|(name, (property, _))| !name.contains('/'))
+            .filter(|(name, (_, _))| !name.contains('/'))
             .map(|(name, (property, _)) | (name, property)) {
             custom_properties.insert(name.clone(), custom_property.clone());
         }
@@ -213,7 +213,7 @@ pub fn update_properties(scheduler: &mut SchedulerFrontend,
     let mut to_update = Vec::new();
     let mut to_callback: Vec<String> = Vec::new();
 
-    for (name, (property, receiver))
+    for (name, (_, receiver))
             in scheduler.backend.properties.iter() {
         let mut new_val = None;
         // Drain all new values if any, we only care about the latest.

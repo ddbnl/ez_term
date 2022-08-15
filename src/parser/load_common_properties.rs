@@ -273,12 +273,12 @@ pub fn load_padding_right_property(state: &mut dyn GenericState, property_value:
 pub fn load_border_horizontal_property(state: &mut dyn GenericState, property_value: &str,
                                         scheduler: &mut SchedulerFrontend, path: String) -> Result<(), Error>  {
 
-    state.get_border_config_mut().set_horizontal_symbol(load_base_properties::load_string_property(
+    state.get_border_config_mut().set_horizontal_symbol(&load_base_properties::load_string_property(
         property_value.trim(), scheduler, path.clone(),
         Box::new(move |state_tree: &mut StateTree, val: EzValues| {
             let state = state_tree.get_mut(&path)
                 .as_generic_mut();
-            state.get_border_config_mut().set_horizontal_symbol(val.as_string().clone());
+            state.get_border_config_mut().set_horizontal_symbol(val.as_string().as_str());
             path.to_string()
         }))?);
     Ok(())
@@ -288,12 +288,12 @@ pub fn load_border_horizontal_property(state: &mut dyn GenericState, property_va
 pub fn load_border_vertical_property(state: &mut dyn GenericState, property_value: &str,
                                         scheduler: &mut SchedulerFrontend, path: String) -> Result<(), Error>  {
 
-    state.get_border_config_mut().set_vertical_symbol(load_base_properties::load_string_property(
+    state.get_border_config_mut().set_vertical_symbol(&load_base_properties::load_string_property(
         property_value.trim(), scheduler, path.clone(),
         Box::new(move |state_tree: &mut StateTree, val: EzValues| {
             let state = state_tree.get_mut(&path.clone())
                 .as_generic_mut();
-            state.get_border_config_mut().set_vertical_symbol(val.as_string().clone());
+            state.get_border_config_mut().set_vertical_symbol(val.as_string().as_str());
             path.clone()
         }))?);
     Ok(())
@@ -303,12 +303,12 @@ pub fn load_border_vertical_property(state: &mut dyn GenericState, property_valu
 pub fn load_border_top_left_property(state: &mut dyn GenericState, property_value: &str,
                                      scheduler: &mut SchedulerFrontend, path: String) -> Result<(), Error>  {
 
-    state.get_border_config_mut().set_top_left_symbol(load_base_properties::load_string_property(
+    state.get_border_config_mut().set_top_left_symbol(&load_base_properties::load_string_property(
         property_value.trim(), scheduler, path.clone(),
         Box::new(move |state_tree: &mut StateTree, val: EzValues| {
             let state = state_tree.get_mut(&path.clone())
                 .as_generic_mut();
-            state.get_border_config_mut().set_top_left_symbol(val.as_string().clone());
+            state.get_border_config_mut().set_top_left_symbol(val.as_string().as_str());
             path.clone()
         }))?);
     Ok(())
@@ -318,12 +318,12 @@ pub fn load_border_top_left_property(state: &mut dyn GenericState, property_valu
 pub fn load_border_top_right_property(state: &mut dyn GenericState, property_value: &str,
                                       scheduler: &mut SchedulerFrontend, path: String) -> Result<(), Error>  {
 
-    state.get_border_config_mut().set_top_right_symbol(load_base_properties::load_string_property(
+    state.get_border_config_mut().set_top_right_symbol(&load_base_properties::load_string_property(
         property_value.trim(), scheduler, path.clone(),
         Box::new(move |state_tree: &mut StateTree, val: EzValues| {
             let state = state_tree.get_mut(&path.clone())
                 .as_generic_mut();
-            state.get_border_config_mut().set_top_right_symbol(val.as_string().clone());
+            state.get_border_config_mut().set_top_right_symbol(val.as_string().as_str());
             path.clone()
         }))?);
     Ok(())
@@ -332,12 +332,12 @@ pub fn load_border_top_right_property(state: &mut dyn GenericState, property_val
 
 pub fn load_border_bottom_left_property(state: &mut dyn GenericState, property_value: &str,
                                         scheduler: &mut SchedulerFrontend, path: String) -> Result<(), Error>  {
-    state.get_border_config_mut().set_bottom_left_symbol(load_base_properties::load_string_property(
+    state.get_border_config_mut().set_bottom_left_symbol(&load_base_properties::load_string_property(
         property_value.trim(), scheduler, path.clone(),
         Box::new(move |state_tree: &mut StateTree, val: EzValues| {
             let state = state_tree.get_mut(&path.clone())
                 .as_generic_mut();
-            state.get_border_config_mut().set_bottom_left_symbol(val.as_string().clone());
+            state.get_border_config_mut().set_bottom_left_symbol(val.as_string().as_str());
             path.clone()
         }))?);
     Ok(())
@@ -347,12 +347,12 @@ pub fn load_border_bottom_left_property(state: &mut dyn GenericState, property_v
 pub fn load_border_bottom_right_property(state: &mut dyn GenericState, property_value: &str,
                                          scheduler: &mut SchedulerFrontend, path: String) -> Result<(), Error>  {
 
-    state.get_border_config_mut().set_bottom_right_symbol(load_base_properties::load_string_property(
+    state.get_border_config_mut().set_bottom_right_symbol(&load_base_properties::load_string_property(
         property_value.trim(), scheduler, path.clone(),
         Box::new(move |state_tree: &mut StateTree, val: EzValues| {
             let state = state_tree.get_mut(&path.clone())
                 .as_generic_mut();
-            state.get_border_config_mut().set_bottom_right_symbol(val.as_string().clone());
+            state.get_border_config_mut().set_bottom_right_symbol(val.as_string().as_str());
             path.clone()
         }))?);
     Ok(())

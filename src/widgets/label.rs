@@ -48,12 +48,12 @@ impl Label {
                                -> Result<(), Error> {
 
         let path = self.path.clone();
-        self.state.set_from_file(load_string_property(
+        self.state.set_from_file(&load_string_property(
             parameter_value.trim(), scheduler, path.clone(),
             Box::new(move |state_tree: &mut StateTree, val: EzValues| {
                 let state = state_tree.get_mut(&path)
                     .as_label_mut();
-                state.set_from_file(val.as_string().to_string());
+                state.set_from_file(val.as_string().as_str());
                 path.clone()
             }))?);
         Ok(())

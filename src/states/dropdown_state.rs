@@ -138,7 +138,7 @@ impl GenericState for DropdownState {
             "border_bg_color" => self.colors.border_bg_color.set_from_ez_value(value),
             "allow_none" => self.allow_none.set_from_ez_value(value),
             "choice" => self.choice.set_from_ez_value(value),
-            _ => panic!("Invalid property name for button state: {}", name),
+            _ => panic!("Invalid property name for dropdown state: {}", name),
         }
     }
     fn get_size_hint(&self) -> &SizeHint { &self.size_hint }
@@ -226,7 +226,7 @@ impl GenericState for DropdownState {
 }
 
 impl DropdownState {
-    pub fn set_choice(&mut self, choice: String) { self.choice.set(choice); }
+    pub fn set_choice(&mut self, choice: &str) { self.choice.set(choice.to_string()); }
 
     pub fn get_choice(&self) -> String { self.choice.value.clone() }
 

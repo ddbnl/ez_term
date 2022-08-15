@@ -9,7 +9,7 @@ use crossterm::event::{KeyCode, KeyModifiers};
 
 use crossterm::style::Color;
 
-use crate::{CallbackConfig, EzPropertiesMap, KeyMap};
+use crate::{CallbackConfig, EzPropertiesMap};
 use crate::parser::ez_definition::Templates;
 use crate::property::ez_properties::EzProperties;
 use crate::property::ez_property::EzProperty;

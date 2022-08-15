@@ -133,7 +133,7 @@ impl GenericState for LabelState {
             "border_bg_color" => self.colors.border_bg_color.set_from_ez_value(value),
             "text" => self.text.set_from_ez_value(value),
             "from_file" => self.from_file.set_from_ez_value(value),
-            _ => panic!("Invalid property name for button state: {}", name),
+            _ => panic!("Invalid property name for label state: {}", name),
         }
     }
     fn get_size_hint(&self) -> &SizeHint { &self.size_hint }

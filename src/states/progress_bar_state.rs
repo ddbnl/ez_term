@@ -150,7 +150,7 @@ impl GenericState for ProgressBarState {
             "border_bg_color" => self.colors.border_bg_color.set_from_ez_value(value),
             "max" => self.max.set_from_ez_value(value),
             "value" => self.value.set_from_ez_value(value),
-            _ => panic!("Invalid property name for button state: {}", name),
+            _ => panic!("Invalid property name for progress bar state: {}", name),
         }
     }
     fn get_size_hint(&self) -> &SizeHint { &self.size_hint }

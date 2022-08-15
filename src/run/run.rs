@@ -8,7 +8,6 @@ use crossterm::{event::{Event, MouseEventKind, poll, read}, Result};
 use crossterm::event::MouseButton;
 
 use crate::{CallbackConfig, KeyMap};
-use crate::parser::parse_lang::parse_level;
 use crate::run::definitions::{CallbackTree, Coordinates, StateTree};
 use crate::run::terminal::{redraw_changed_widgets, write_to_screen};
 use crate::run::tree::{clean_trees, initialize_callback_tree, ViewTree};

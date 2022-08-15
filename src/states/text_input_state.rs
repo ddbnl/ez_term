@@ -162,7 +162,7 @@ impl GenericState for TextInputState {
             "cursor_color" => self.colors.cursor_color.set_from_ez_value(value),
             "text" => self.text.set_from_ez_value(value),
             "max_length" => self.max_length.set_from_ez_value(value),
-            _ => panic!("Invalid property name for button state: {}", name),
+            _ => panic!("Invalid property name for text input state: {}", name),
         }
     }
     fn get_size_hint(&self) -> &SizeHint { &self.size_hint }
