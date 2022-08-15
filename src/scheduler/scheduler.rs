@@ -46,7 +46,7 @@ impl SchedulerFrontend {
 
     /// Schedule a [GenericEzTask] to be executed once, after the passed duration. The duration can
     /// be 0 to start this on the next frame. This should only be used to manipulate the UI; to run
-    /// any functions that will not return immediately, use [schedule_threaded].
+    /// any functions that will not return immediately use [schedule_threaded].
     /// # The GenericEzTask function
     /// A [GenericEzTask] is any FnMut that accepts an [EzContext] parameter. The [EzContext]
     /// allows you to access the [StateTree] and [Scheduler] from within the function, so you can
@@ -189,7 +189,7 @@ impl SchedulerFrontend {
     /// // Let's define a mock app. This represents our app that we're building a UI for.
     /// use ez_term::*;
     /// use std::time::Duration;
-    /// fn progress_example_app(mut properties: EzPropertiesMap) {
+    /// fn progress_example_app(mut properties: EzPropertiesMap, state_tree: StateTree) {
     ///
     ///     for x in 1..10 {
     ///         std::thread::sleep(Duration::from_secs(1))

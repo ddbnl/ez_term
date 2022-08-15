@@ -227,6 +227,7 @@
 //!             1. [Setting content from code](#reference_canvas_properties_from_code)
 //!         2. [Default callback implementations](#reference_canvas_default_callbacks)
 //!         3. [Available callbacks](#reference_canvas_available_callbacks)
+//!     12. [Scheduler](#reference_scheduler)
 //! 3. Examples
 //!
 //!
@@ -7475,6 +7476,190 @@
 //! - on_drag
 //! - on_left_click
 //! - on_right_click
+//!
+//!
+//! <a name="reference_scheduler"></a>
+//! ## 2.12 Scheduler:
+//!
+//! Here you'll find a reference to all scheduler methods, with short examples. If you need more
+//! explanation, then most scheduler function are discussed in detail in
+//! [scheduler tutorial](#scheduler).
+//!
+//! <a name="reference_scheduler_schedule_once"></a>
+//! ### 2.12.1 schedule_once:
+//!
+//! Function that allows you to schedule a closure or function for single execution after a delay
+//! (which can be 0).
+//! Only intended for code that returns immediately (like manipulating the UI); to run blocking
+//! app-code, use schedule threaded.
+//! For a tutorial see: [Single execution](#scheduler_tasks_single).
+//!
+//! #### Parameters:
+//!
+//! - Scheduled task name: String
+//! - Function: Box<FnMut(EzContext)>
+//! - Delay: std::Duration;
+//!
+//! #### Example:
+//!
+//! As an example, we'll create a scheduled task that changes a label text:
+//! ```
+//! use std::time::Duration;
+//! use ez_term::*;
+//! let (root_widget, mut state_tree, mut scheduler) = load_ui();
+//!
+//! let my_closure = |context: EzContext| {
+//!     let state = context.state_tree.get_mut("my_label").as_label_mut();
+//!     state.set_text("New text!".to_string());
+//!     state.update(context.scheduler);
+//! };
+//! scheduler.schedule_once("my_task", Box::new(my_closure), Duration::from_secs(0));
+//! ```
+//!
+//! ### 2.12.2 cancel_task:
+//!
+//! Cancel a run-once task. This of course only works if called before the task was executed (possible
+//! if it had a delay). This function is always safe to call, if there's no task to cancel it will
+//! not panic.
+//!
+//! #### Parameters:
+//!
+//! - Scheduled task name: String
+//!
+//! #### Example:
+//!
+//! We'll schedule a run-once task and then cancel it:
+//!
+//! ```
+//! use std::time::Duration;
+//! use ez_term::*;
+//! let (root_widget, mut state_tree, mut scheduler) = load_ui();
+//!
+//! let my_closure = |context: EzContext| {
+//!     let state = context.state_tree.get_mut("my_label").as_label_mut();
+//!     state.set_text("New text!".to_string());
+//!     state.update(context.scheduler);
+//! };
+//! scheduler.schedule_once("my_task", Box::new(my_closure), Duration::from_secs(0));
+//!
+//! scheduler.cancel_task("my_task");
+//! ```
+//!
+//! ### 2.12.3 schedule_recurring:
+//!
+//! Function that allows you to schedule a closure or function for recurring execution; it will be
+//! executed on an interval as long as the function keeps returning true.
+//! Only intended for code that returns immediately (like manipulating the UI); to run blocking
+//! app-code, use schedule threaded.
+//! For more a tutorial see: [Recurring execution](#scheduler_tasks_recurring)
+//!
+//! #### Parameters:
+//!
+//! - Scheduled task name: String
+//! - Function: Box<FnMut(EzContext) -> bool>
+//! - Interval: std::Duration;
+//!
+//! #### Example:
+//!
+//! As an example, we'll create a scheduled task that changes a label text to count time. When 60
+//! seconds have been counted, the function will be cancelled:
+//! ```
+//! use std::time::Duration;
+//! use ez_term::*;
+//! let (root_widget, mut state_tree, mut scheduler) = load_ui();
+//!
+//! let counter: usize = 0;
+//! let my_closure = move |context: EzContext| {
+//!     let state = context.state_tree.get_mut("my_label").as_label_mut();
+//!     state.set_text(format!("Time passed {}", counter));
+//!     state.update(context.scheduler);
+//!     return if counter == 60 {
+//!         false
+//!     } else {
+//!         true
+//!    }
+//! };
+//! scheduler.schedule_recurring("my_task", Box::new(my_closure), Duration::from_secs(1));
+//! ```
+//!
+//! ### 2.12.4 cancel_recurring_task:
+//!
+//! Cancel a recurring task. This function is always safe to call, if there's no task to cancel it
+//! will not panic. An alternative way to cancel a recurring task is to return false from the
+//! scheduled function (which is recommended for most use cases. This function lets you cancel a
+//! recurring task 'from the outside'.
+//!
+//! #### Parameters:
+//!
+//! - Scheduled task name: String
+//!
+//! #### Example:
+//!
+//! We'll schedule a recurring task and then cancel it:
+//! ```
+//! use std::time::Duration;
+//! use ez_term::*;
+//! let (root_widget, mut state_tree, mut scheduler) = load_ui();
+//!
+//! let counter: usize = 0;
+//! let my_closure = move |context: EzContext| {
+//!     let state = context.state_tree.get_mut("my_label").as_label_mut();
+//!     state.set_text(format!("Time passed {}", counter));
+//!     state.update(context.scheduler);
+//!     return if counter == 60 {
+//!         false
+//!     } else {
+//!         true
+//!    }
+//! };
+//! scheduler.schedule_recurring("my_task", Box::new(my_closure), Duration::from_secs(1));
+//!
+//! scheduler.cancel_recurring_task("my_task");
+//! ```
+//! ### 2.12.5 schedule_threaded:
+//!
+//! Function that allows you to schedule a closure or function for threaded execution. This allows
+//! you to run code that does not return immediately (like your app code). You can use the
+//! state tree from the threaded function to manipulate the UI, but the scheduler will not be
+//! available from a thread. A hashmap with custom properties is also available.
+//! For more a tutorial see: [Threaded execution](#scheduler_tasks_threaded)
+//!
+//! #### Parameters:
+//!
+//! - Threaded function: Box<dyn FnOnce(HashMap<String, EzProperty>, StateTree) + Send>
+//! - On_finish callback function: Option<Box<FnMut(EzContext)>>>
+//!
+//! #### Example:
+//!
+//! We'll schedule a counter function that does not return immediately:
+//! ```
+//! use std::time::Duration;
+//! use ez_term::*;
+//! let (root_widget, mut state_tree, mut scheduler) = load_ui();
+//!
+//! fn example_app(mut properties: EzPropertiesMap, mut state_tree: StateTree) {
+//!
+//!     let state = state_tree.get_mut("my_label").as_label_mut();
+//!     for x in 1..10 {
+//!         state.set_text(format!("Time passed {}", x));
+//!         std::thread::sleep(Duration::from_secs(1))
+//!     };
+//! }
+//!
+//! fn on_finish_callback(context: EzContext) {
+//!     let state = state_tree.get_mut("my_label").as_label_mut();
+//!     state.set_text("Finished!".to_string());
+//! }
+//!
+//! scheduler.schedule_threaded(Box::new(example_app), Some(Box::new(on_finish_callback)));
+//! ```
+//!
+//!
+//!         9. [Managing widget selection](#scheduler_selection)
+//!         7. [Managing widgets programmatically](#scheduler_widgets_from_code)
+//!         5. [Creating custom properties](#scheduler_properties)
+//!         6. [Managing popups](#scheduler_modals)
+//!         8. [Updating widgets](#scheduler_updating)
 
 mod run;
 mod scheduler;
