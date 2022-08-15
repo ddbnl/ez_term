@@ -81,11 +81,11 @@ impl RadioButton {
                                    -> Result<(), Error>{
 
         let path = self.path.clone();
-        self.state.set_active_symbol(load_string_property(
+        self.state.set_active_symbol(&load_string_property(
             parameter_value.trim(), scheduler, path.clone(),
             Box::new(move |state_tree: &mut StateTree, val: EzValues| {
                 let state = state_tree.get_mut(&path).as_checkbox_mut();
-                state.set_active_symbol(val.as_string().to_owned());
+                state.set_active_symbol(val.as_string().as_str());
                 path.clone()
             }))?);
         Ok(())
@@ -95,11 +95,11 @@ impl RadioButton {
                                      -> Result<(), Error>{
 
         let path = self.path.clone();
-        self.state.set_inactive_symbol(load_string_property(
+        self.state.set_inactive_symbol(&load_string_property(
             parameter_value.trim(), scheduler, path.clone(),
             Box::new(move |state_tree: &mut StateTree, val: EzValues| {
                 let state = state_tree.get_mut(&path).as_checkbox_mut();
-                state.set_inactive_symbol(val.as_string().to_owned());
+                state.set_inactive_symbol(val.as_string().as_str());
                 path.clone()
             }))?);
         Ok(())

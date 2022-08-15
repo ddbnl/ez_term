@@ -341,13 +341,13 @@ impl Layout{
 
                 let (child_content, offset) = align_content_horizontally(
                     child_content,
-                    state.get_horizontal_alignment(), row_heights[y],
+                    state.get_halign(), row_heights[y],
                     filler_symbol.clone(), fg_color, bg_color);
                 state.get_position_mut().set_x(write_pos.x + offset);
 
                 let (child_content, offset) = align_content_vertically(
                     child_content,
-                    state.get_vertical_alignment(), row_heights[y],
+                    state.get_valign(), row_heights[y],
                     filler_symbol.clone(), fg_color, bg_color);
                 state.get_position_mut().set_y(write_pos.y + offset);
 

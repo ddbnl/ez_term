@@ -14,6 +14,15 @@ pub struct RadioButtonState {
     /// Path to the widget to which this state belongs
     pub path: String,
 
+    /// Bool representing whether this widget is currently active (i.e. checkbox is checked)
+    pub active: EzProperty<bool>,
+
+    /// [Pixel.symbol] used when the Checkbox is active
+    pub active_symbol: EzProperty<String>,
+
+    /// [Pixel.symbol] used when the Checkbox is not active
+    pub inactive_symbol: EzProperty<String>,
+
     /// Group this radio button belongs to. Set the same group value for a number of radio buttons
     /// to make them mutually exclusive.
     pub group: EzProperty<String>,
@@ -47,15 +56,6 @@ pub struct RadioButtonState {
 
     /// Vertical alignment of this widget
     pub valign: EzProperty<VerticalAlignment>,
-
-    /// Bool representing whether this widget is currently active (i.e. checkbox is checked)
-    pub active: EzProperty<bool>,
-
-    /// [Pixel.symbol] used when the Checkbox is active
-    pub active_symbol: EzProperty<String>,
-
-    /// [Pixel.symbol] used when the Checkbox is not active
-    pub inactive_symbol: EzProperty<String>,
 
     /// [BorderConfig] object that will be used to draw the border if enabled
     pub border_config: BorderConfig,
@@ -157,7 +157,6 @@ impl GenericState for RadioButtonState {
             "tab_border_bg_color" => self.colors.tab_border_bg_color.set_from_ez_value(value),
             "border_fg_color" => self.colors.border_fg_color.set_from_ez_value(value),
             "border_bg_color" => self.colors.border_bg_color.set_from_ez_value(value),
-            "cursor_color" => self.colors.cursor_color.set_from_ez_value(value),
             "group" => self.group.set_from_ez_value(value),
             "active" => self.active.set_from_ez_value(value),
             "active_symbol" => self.active_symbol.set_from_ez_value(value),
@@ -193,17 +192,17 @@ impl GenericState for RadioButtonState {
 
     fn get_absolute_position(&self) -> IsizeCoordinates { self.absolute_position }
 
-    fn set_horizontal_alignment(&mut self, alignment: HorizontalAlignment) {
+    fn set_halign(&mut self, alignment: HorizontalAlignment) {
         self.halign.set(alignment);
     }
 
-    fn get_horizontal_alignment(&self) -> HorizontalAlignment { self.halign.value }
+    fn get_halign(&self) -> HorizontalAlignment { self.halign.value }
 
-    fn set_vertical_alignment(&mut self, alignment: VerticalAlignment) {
+    fn set_valign(&mut self, alignment: VerticalAlignment) {
         self.valign.set(alignment);
     }
 
-    fn get_vertical_alignment(&self) -> VerticalAlignment { self.valign.value }
+    fn get_valign(&self) -> VerticalAlignment { self.valign.value }
 
     fn get_padding(&self) -> &Padding { &self.padding }
 
@@ -254,7 +253,7 @@ impl RadioButtonState {
 
     /// Set the group this radio button belongs to. Radio buttons that share a group are
     /// mutually exclusive.
-    pub fn set_group(&mut self, group: String) { self.group.set(group); }
+    pub fn set_group(&mut self, group: &str) { self.group.set(group.to_string()); }
 
     /// Get the group this radio button belongs to. Radio buttons that share a group are
     /// mutually exclusive.
@@ -266,11 +265,11 @@ impl RadioButtonState {
 
     pub fn get_active(&self) -> bool { self.active.value }
 
-    pub fn set_active_symbol(&mut self, symbol: String) { self.active_symbol.set(symbol); }
+    pub fn set_active_symbol(&mut self, symbol: &str) { self.active_symbol.set(symbol.to_string()); }
 
     pub fn get_active_symbol(&self) -> String { self.active_symbol.value.clone() }
 
-    pub fn set_inactive_symbol(&mut self, symbol: String) { self.inactive_symbol.set(symbol); }
+    pub fn set_inactive_symbol(&mut self, symbol: &str) { self.inactive_symbol.set(symbol.to_string()); }
 
     pub fn get_inactive_symbol(&self) -> String { self.inactive_symbol.value.clone() }
 }

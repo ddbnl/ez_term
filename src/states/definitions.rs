@@ -1267,48 +1267,48 @@ impl BorderConfig {
         self.border.value
     }
 
-    pub fn set_horizontal_symbol(&mut self, symbol: String) {
-        self.horizontal_symbol.set(symbol);
+    pub fn set_horizontal_symbol(&mut self, symbol: &str) {
+        self.horizontal_symbol.set(symbol.to_string());
     }
 
     pub fn get_horizontal_symbol(&self) -> String {
         self.horizontal_symbol.value.clone()
     }
 
-    pub fn set_vertical_symbol(&mut self, symbol: String) {
-        self.vertical_symbol.set(symbol);
+    pub fn set_vertical_symbol(&mut self, symbol: &str) {
+        self.vertical_symbol.set(symbol.to_string());
     }
 
     pub fn get_vertical_symbol(&self) -> String {
         self.vertical_symbol.value.clone()
     }
 
-    pub fn set_top_left_symbol(&mut self, symbol: String) {
-        self.top_left_symbol.set(symbol);
+    pub fn set_top_left_symbol(&mut self, symbol: &str) {
+        self.top_left_symbol.set(symbol.to_string());
     }
 
     pub fn get_top_left_symbol(&self) -> String {
         self.top_left_symbol.value.clone()
     }
 
-    pub fn set_top_right_symbol(&mut self, symbol: String) {
-        self.top_right_symbol.set(symbol);
+    pub fn set_top_right_symbol(&mut self, symbol: &str) {
+        self.top_right_symbol.set(symbol.to_string());
     }
 
     pub fn get_top_right_symbol(&self) -> String {
         self.top_right_symbol.value.clone()
     }
 
-    pub fn set_bottom_left_symbol(&mut self, symbol: String) {
-        self.bottom_left_symbol.set(symbol);
+    pub fn set_bottom_left_symbol(&mut self, symbol: &str) {
+        self.bottom_left_symbol.set(symbol.to_string());
     }
 
     pub fn get_bottom_left_symbol(&self) -> String {
         self.bottom_left_symbol.value.clone()
     }
 
-    pub fn set_bottom_right_symbol(&mut self, symbol: String) {
-        self.bottom_right_symbol.set(symbol);
+    pub fn set_bottom_right_symbol(&mut self, symbol: &str) {
+        self.bottom_right_symbol.set(symbol.to_string());
     }
 
     pub fn get_bottom_right_symbol(&self) -> String {
@@ -1414,7 +1414,7 @@ impl ColorConfig {
             format!("{}/active_bg_color", name).as_str(), Color::Black);
 
         let flash_foreground = scheduler.new_color_property(
-            format!("{}/flash_fg_color", name).as_str(), Color::Yellow);
+            format!("{}/flash_fg_color", name).as_str(), Color::White);
         let flash_background = scheduler.new_color_property(
             format!("{}/flash_bg_color", name).as_str(), Color::White);
 

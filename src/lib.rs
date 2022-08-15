@@ -2993,7 +2993,7 @@
 //! ```
 //! - Layout:
 //!     mode: float
-//!     Label:
+//!     - Label:
 //!         x: 5
 //! ```
 //!
@@ -3033,7 +3033,7 @@
 //! ```
 //! - Layout:
 //!     mode: float
-//!     Label:
+//!     - Label:
 //!         y: 5
 //! ```
 //!
@@ -3060,7 +3060,7 @@
 //! ```
 //! - Layout:
 //!     mode: float
-//!     Label:
+//!     - Label:
 //!         pos: 5, 3
 //! ```
 //!
@@ -3087,7 +3087,7 @@
 //! In EzLang files:
 //! ```
 //! - Layout:
-//!     Label:
+//!     - Label:
 //!         width: 20
 //!         size_hint_x: none
 //! ```
@@ -3128,7 +3128,7 @@
 //! In EzLang files:
 //! ```
 //! - Layout:
-//!     Label:
+//!     - Label:
 //!         height: 20
 //!         size_hint_y: none
 //! ```
@@ -3156,78 +3156,1628 @@
 //! In EzLang files:
 //! ```
 //! - Layout:
-//!     Label:
+//!     - Label:
 //!         size: 20, 10
 //!         size_hint: none, none
 //! ```
 //!
 //! ##### size_hint_x
 //!
+//! Horizontal size hint, which can be none, or a value between 0 and 1. If a value is set, the
+//! width of the widget will be set relative to the width of the parent; so 0.5 makes the widget
+//! half as wide as the parent, 1.0 equal width to the parent, etc. If set to none, some other
+//! method of sizing should be set; such as absolute size (width property) or scaling
+//! (auto_scale_width property).
+//!
+//! This is the default method of sizing, meaning this is set to 1.0 by default, making the widget
+//! as large as the parent. If there are multiple widgets in a layout, all with size_hint_x 1.0,
+//! their size hint will change to 1 divided by number of widgets (i.e. all widgets will be equal
+//! size).
+//!
+//! **Property type:**
+//!
+//! SizeHint (Option<f64>)
+//!
+//! **Possible values:**
+//!
+//! - f64 between 0.0 and 1.0
+//! - None
+//!
+//! **Default value:**
+//!
+//! 1.0
+//!
+//! **Usage examples:**
+//!
+//! In EzLang files:
+//! ```
+//! - Layout:
+//!     - Label:
+//!         size_hint_x: 0.5
+//! ```
+//!
+//! In code:
+//! ```
+//! use ez_term::*;
+//! use ez_term::GenericState;
+//! let (root_widget, mut state_tree, mut scheduler) = load_ui();
+//! let state = state_tree.get_mut("my_label").as_layout_mut();
+//!
+//! state.set_size_hint_x(Some(0.5));
+//!
+//! run(root_widget, state_tree, scheduler);
+//! ```
+//!
 //! ##### size_hint_y
+//!
+//! Vertical size hint, which can be none, or a value between 0 and 1. If a value is set, the
+//! height of the widget will be set relative to the height of the parent; so 0.5 makes the widget
+//! half as high as the parent, 1.0 equal height to the parent, etc. If set to none, some other
+//! method of sizing should be set; such as absolute size (height property) or scaling
+//! (auto_scale_height property).
+//!
+//! This is the default method of sizing, meaning this is set to 1.0 by default, making the widget
+//! as large as the parent. If there are multiple widgets in a layout, all with size_hint_y 1.0,
+//! their size hint will change to 1 divided by number of widgets (i.e. all widgets will be equal
+//! size).
+//!
+//! **Property type:**
+//!
+//! SizeHint (Option<f64>)
+//!
+//! **Possible values:**
+//!
+//! - f64 between 0.0 and 1.0
+//! - None
+//!
+//! **Default value:**
+//!
+//! 1.0
+//!
+//! **Usage examples:**
+//!
+//! In EzLang files:
+//! ```
+//! - Layout:
+//!     - Label:
+//!         size_hint_y: 0.5
+//! ```
+//!
+//! In code:
+//! ```
+//! use ez_term::*;
+//! use ez_term::GenericState;
+//! let (root_widget, mut state_tree, mut scheduler) = load_ui();
+//! let state = state_tree.get_mut("my_label").as_layout_mut();
+//!
+//! state.set_size_hint_y(Some(0.5));
+//!
+//! run(root_widget, state_tree, scheduler);
+//! ```
+//!
+//! ##### size_hint
+//!
+//! This is an EzLang convenience that allows you to set 'size_hint_x' and 'size_hint_y' at the
+//! same time (in that order). See the individual properties for more info.
+//!
+//! **Usage examples:**
+//!
+//! In EzLang files:
+//! ```
+//! - Layout:
+//!     - Label:
+//!         size_hint: 0.5, none
+//! ```
 //!
 //! ##### pos_hint_x
 //!
+//! Horizontal position hint; works only when the parent layout is set to float mode. Positions
+//! widget horizontally relative to the parent, according to keywords (left/center/right). Also
+//! takes an optional value between 0 and 1, which allows you to adjust the keyword position; e.g.
+//! 'right: 0.9' is 90% of the way towards the right edge of the parent layout. You cannot use the
+//! optional value with the 'left' keyword, as it represents position 0. By default the adjustment
+//! value is set to 1.0, so just the keyword is used.
+//!
+//! **Property type:**
+//!
+//! HorizontalPositionHint (Option<(HorizontalAlignment, f64>)
+//!
+//! **Possible values:**
+//!
+//! Possible keyword values:
+//!     - left
+//!     - center
+//!     - right
+//! Optional adjustment value:
+//!     - f64 between 0.0 and 1.0
+//!
+//! **Default value:**
+//!
+//! None
+//!
+//! **Usage examples:**
+//!
+//! In EzLang files:
+//! ```
+//! - Layout:
+//!     mode: float
+//!     = Label:
+//!         pos_hint_x: right: 0.75
+//! ```
+//! ```
+//! - Layout:
+//!     mode: float
+//!     - Label:
+//!         pos_hint_x: right
+//! ```
+//! ```
+//! - Layout:
+//!     mode: float
+//!     - Label:
+//!         pos_hint_x: none
+//! ```
+//!
+//! In code:
+//! ```
+//! use ez_term::*;
+//! use ez_term::GenericState;
+//! let (root_widget, mut state_tree, mut scheduler) = load_ui();
+//! let state = state_tree.get_mut("my_label").as_layout_mut();
+//!
+//! state.set_pos_hint_x(Some((HorizontalAlignment::Right, 0.75)));
+//!
+//! run(root_widget, state_tree, scheduler);
+//! ```
+//!
 //! ##### pos_hint_y
+//!
+//! Vertical position hint; works only when the parent layout is set to float mode. Positions
+//! widget vertically relative to the parent, according to keywords (top/middle/bottom). Also
+//! takes an optional value between 0 and 1, which allows you to adjust the keyword position; e.g.
+//! 'bottom: 0.9' is 90% of the way towards the bottom edge of the parent layout. You cannot use the
+//! optional value with the 'top' keyword, as it represents position 0. By default the adjustment
+//! value is set to 1.0, so just the keyword is used.
+//!
+//! **Property type:**
+//!
+//! VerticalPositionHint (Option<(VerticalAlignment, f64>)
+//!
+//! **Possible values:**
+//!
+//! Possible keyword values:
+//!     - top
+//!     - middle
+//!     - bottom
+//! Optional adjustment value:
+//!     - f64 between 0.0 and 1.0
+//!
+//! **Default value:**
+//!
+//! None
+//!
+//! **Usage examples:**
+//!
+//! In EzLang files:
+//! ```
+//! - Layout:
+//!     mode: float
+//!     - Label:
+//!         pos_hint_y: bottom: 0.75
+//! ```
+//! ```
+//! - Layout:
+//!     mode: float
+//!     - Label:
+//!         pos_hint_y: bottom
+//! ```
+//! ```
+//! - Layout:
+//!     mode: float
+//!     - Label:
+//!         pos_hint_y: none
+//! ```
+//!
+//! In code:
+//! ```
+//! use ez_term::*;
+//! use ez_term::GenericState;
+//! let (root_widget, mut state_tree, mut scheduler) = load_ui();
+//! let state = state_tree.get_mut("my_label").as_layout_mut();
+//!
+//! state.set_pos_hint_y(Some((VerticalAlignment::Bottom, 0.75)));
+//!
+//! run(root_widget, state_tree, scheduler);
+//! ```
+//!
+//! ##### pos_hint
+//!
+//! This is an EzLang convenience that allows you to set 'pos_hint_x' and 'pos_hint_y' at the
+//! same time (in that order). See the individual properties for more info.
+//!
+//! **Usage examples:**
+//!
+//! In EzLang files:
+//! ```
+//! - Layout:
+//!     - Label:
+//!         pos_hint: right: 0.75, bottom: 0.75
+//! ```
 //!
 //! ##### auto_scale_width
 //!
+//! This property automatically scales the width of the widget to its content. This property has
+//! priority over the size_hint_x and width properties. Initially, the widget is given infinite
+//! width to create its content. Then, when the content is created, the widget width is set to the
+//! content width.
+//!
+//! **Property type:**
+//!
+//! bool
+//!
+//! **Possible values:**
+//!
+//! - true
+//! - false
+//!
+//! **Default value:**
+//!
+//! false
+//!
+//! **Usage examples:**
+//!
+//! In EzLang files:
+//! ```
+//! - Layout:
+//!     - Label:
+//!         auto_scale_width: true
+//! ```
+//!
+//! In code:
+//! ```
+//! use ez_term::*;
+//! use ez_term::GenericState;
+//! let (root_widget, mut state_tree, mut scheduler) = load_ui();
+//! let state = state_tree.get_mut("my_label").as_layout_mut();
+//!
+//! state.set_auto_scale_width(true);
+//!
+//! run(root_widget, state_tree, scheduler);
+//! ```
+//!
 //! ##### auto_scale_height
+//!
+//! This property automatically scales the height of the widget to its content. This property has
+//! priority over the size_hint_y and height properties. Initially, the widget is given infinite
+//! height to create its content. Then, when the content is created, the widget height is set to the
+//! content height.
+//!
+//! **Property type:**
+//!
+//! bool
+//!
+//! **Possible values:**
+//!
+//! - true
+//! - false
+//!
+//! **Default value:**
+//!
+//! false
+//!
+//! **Usage examples:**
+//!
+//! In EzLang files:
+//! ```
+//! - Layout:
+//!     - Label:
+//!         auto_scale_height: true
+//! ```
+//!
+//! In code:
+//! ```
+//! use ez_term::*;
+//! use ez_term::GenericState;
+//! let (root_widget, mut state_tree, mut scheduler) = load_ui();
+//! let state = state_tree.get_mut("my_label").as_layout_mut();
+//!
+//! state.set_auto_scale_height(true);
+//!
+//! run(root_widget, state_tree, scheduler);
+//! ```
+//!
+//! ##### auto_scale
+//!
+//! This is an EzLang convenience that allows you to set 'auto_scale_width' and 'auto_scale_height'
+//! at the same time (in that order). See the individual properties for more info.
+//!
+//! **Usage examples:**
+//!
+//! In EzLang files:
+//! ```
+//! - Layout:
+//!     - Label:
+//!         auto_scale: true, true
+//! ```
 //!
 //! ##### padding_top
 //!
+//! This property determines if, and how many, empty pixels should be above the widget. This allows
+//! you to create space between widgets, or between a widget and the edge of a layout.
+//!
+//! **Property type:**
+//!
+//! usize
+//!
+//! **Possible values:**
+//!
+//! any usize value
+//!
+//! **Default value:**
+//!
+//! 0
+//!
+//! **Usage examples:**
+//!
+//! In EzLang files:
+//! ```
+//! - Layout:
+//!     - Label:
+//!         padding_top: 2
+//! ```
+//!
+//! In code:
+//! ```
+//! use ez_term::*;
+//! use ez_term::GenericState;
+//! let (root_widget, mut state_tree, mut scheduler) = load_ui();
+//! let state = state_tree.get_mut("my_label").as_layout_mut();
+//!
+//! state.set_padding_top(2);
+//!
+//! run(root_widget, state_tree, scheduler);
+//! ```
+//!
 //! ##### padding_bottom
+//!
+//! This property determines if, and how many, empty pixels should be below the widget. This allows
+//! you to create space between widgets, or between a widget and the edge of a layout.
+//!
+//! **Property type:**
+//!
+//! usize
+//!
+//! **Possible values:**
+//!
+//! any usize value
+//!
+//! **Default value:**
+//!
+//! 0
+//!
+//! **Usage examples:**
+//!
+//! In EzLang files:
+//! ```
+//! - Layout:
+//!     - Label:
+//!         padding_bottom: 2
+//! ```
+//!
+//! In code:
+//! ```
+//! use ez_term::*;
+//! use ez_term::GenericState;
+//! let (root_widget, mut state_tree, mut scheduler) = load_ui();
+//! let state = state_tree.get_mut("my_label").as_layout_mut();
+//!
+//! state.set_padding_bottom(2);
+//!
+//! run(root_widget, state_tree, scheduler);
+//! ```
 //!
 //! ##### padding_left
 //!
+//! This property determines if, and how many, empty pixels should be added to the left of the
+//! widget. This allows you to create space between widgets, or between a widget and the edge of a
+//! layout.
+//!
+//! **Property type:**
+//!
+//! usize
+//!
+//! **Possible values:**
+//!
+//! any usize value
+//!
+//! **Default value:**
+//!
+//! 0
+//!
+//! **Usage examples:**
+//!
+//! In EzLang files:
+//! ```
+//! - Layout:
+//!     - Label:
+//!         padding_left: 2
+//! ```
+//!
+//! In code:
+//! ```
+//! use ez_term::*;
+//! use ez_term::GenericState;
+//! let (root_widget, mut state_tree, mut scheduler) = load_ui();
+//! let state = state_tree.get_mut("my_label").as_layout_mut();
+//!
+//! state.set_padding_left(2);
+//!
+//! run(root_widget, state_tree, scheduler);
+//! ```
+//!
 //! ##### padding_right
+//!
+//! This property determines if, and how many, empty pixels should be added to the right of the
+//! widget. This allows you to create space between widgets, or between a widget and the edge of a
+//! layout.
+//!
+//! **Property type:**
+//!
+//! usize
+//!
+//! **Possible values:**
+//!
+//! any usize value
+//!
+//! **Default value:**
+//!
+//! 0
+//!
+//! **Usage examples:**
+//!
+//! In EzLang files:
+//! ```
+//! - Layout:
+//!     - Label:
+//!         padding_right: 2
+//! ```
+//!
+//! In code:
+//! ```
+//! use ez_term::*;
+//! use ez_term::GenericState;
+//! let (root_widget, mut state_tree, mut scheduler) = load_ui();
+//! let state = state_tree.get_mut("my_label").as_layout_mut();
+//!
+//! state.set_padding_top(2);
+//!
+//! run(root_widget, state_tree, scheduler);
+//! ```
 //!
 //! ##### halign
 //!
+//! This property aligns the widget horizontally; this only works if the parent layout is in box
+//! mode with orientation vertical, or if the parent layout is in table mode.
+//!
+//! **Property type:**
+//!
+//! HorizontalAlignment
+//!
+//! **Possible values:**
+//!
+//! - left
+//! - center
+//! - right
+//!
+//! **Default value:**
+//!
+//! left
+//!
+//! **Usage examples:**
+//!
+//! In EzLang files:
+//! ```
+//! - Layout:
+//!     mode: box
+//!     orientation: vertical
+//!     - Label:
+//!         halign: right
+//! ```
+//!
+//! In code:
+//! ```
+//! use ez_term::*;
+//! use ez_term::GenericState;
+//! let (root_widget, mut state_tree, mut scheduler) = load_ui();
+//! let state = state_tree.get_mut("my_label").as_layout_mut();
+//!
+//! state.set_halign(HorizontalAlignment::Right);
+//!
+//! run(root_widget, state_tree, scheduler);
+//! ```
+//!
 //! ##### valign
+//!
+//! This property aligns the widget vertically; this only works if the parent layout is in box
+//! mode with orientation horizontal, or if the parent layout is in table mode.
+//!
+//! **Property type:**
+//!
+//! HorizontalAlignment
+//!
+//! **Possible values:**
+//!
+//! - top
+//! - middle
+//! - bottom
+//!
+//! **Default value:**
+//!
+//! top
+//!
+//! **Usage examples:**
+//!
+//! In EzLang files:
+//! ```
+//! - Layout:
+//!     mode: box
+//!     orientation: horizontal
+//!     - Label:
+//!         valign: bottom
+//! ```
+//!
+//! In code:
+//! ```
+//! use ez_term::*;
+//! use ez_term::GenericState;
+//! let (root_widget, mut state_tree, mut scheduler) = load_ui();
+//! let state = state_tree.get_mut("my_label").as_layout_mut();
+//!
+//! state.set_valign(VerticalAlignment::Bottom);
+//!
+//! run(root_widget, state_tree, scheduler);
+//! ```
 //!
 //! ##### disabled
 //!
+//! If set to true, disables the widget for all callbacks. E.g., button cannot be pressed, layout
+//! cannot scroll, etc.
+//!
+//! **Property type:**
+//!
+//! bool
+//!
+//! **Possible values:**
+//!
+//! - true
+//! - false
+//!
+//! **Default value:**
+//!
+//! false
+//!
+//! **Usage examples:**
+//!
+//! In EzLang files:
+//! ```
+//! - Layout:
+//!     - Button:
+//!         disabled: true
+//! ```
+//!
+//! In code:
+//! ```
+//! use ez_term::*;
+//! use ez_term::GenericState;
+//! let (root_widget, mut state_tree, mut scheduler) = load_ui();
+//! let state = state_tree.get_mut("my_button").as_layout_mut();
+//!
+//! state.set_disabled(true);
+//!
+//! run(root_widget, state_tree, scheduler);
+//! ```
+//!
 //! ##### selection_order
+//!
+//! The global order in which this widget will be selected by keyboard arrows up/down. Pressing
+//! keyboard down increases the order (1>2>3) and keyboard up the opposite (3>2>1). These number
+//! do not have to be sequential, so 1>5>10 works as well. The number 0 means no order (cannot
+//! select).
+//!
+//! **Property type:**
+//!
+//! usize
+//!
+//! **Possible values:**
+//!
+//! 0 (cannot select), or any usize number above (can select)
+//!
+//! **Default value:**
+//!
+//! 0
+//!
+//! **Usage examples:**
+//!
+//! In EzLang files:
+//! ```
+//! - Layout:
+//!     - Button:
+//!         selection_order: 10
+//! ```
+//!
+//! In code:
+//! ```
+//! use ez_term::*;
+//! use ez_term::GenericState;
+//! let (root_widget, mut state_tree, mut scheduler) = load_ui();
+//! let state = state_tree.get_mut("my_label").as_layout_mut();
+//!
+//! state.set_selection_order(10);
+//!
+//! run(root_widget, state_tree, scheduler);
+//! ```
 //!
 //! ##### border
 //!
+//! If set to true, draws a border around the widget. Uses border_fg_color and border_bg_color for
+//! coloring. You can set the symbols using horizontal_symbol, vertical_symbol, top_left_symbol,
+//! top_right_symbol, bottom_left_symbol and bottom_right_symbol.
+//!
+//! **Property type:**
+//!
+//! bool
+//!
+//! **Possible values:**
+//!
+//! - true
+//! - false
+//!
+//! **Default value:**
+//!
+//! false
+//!
+//! **Usage examples:**
+//!
+//! In EzLang files:
+//! ```
+//! - Layout:
+//!     - Label:
+//!         border: true
+//! ```
+//!
+//! In code:
+//! ```
+//! use ez_term::*;
+//! use ez_term::GenericState;
+//! let (root_widget, mut state_tree, mut scheduler) = load_ui();
+//! let state = state_tree.get_mut("my_label").as_layout_mut();
+//!
+//! state.set_border(true);
+//!
+//! run(root_widget, state_tree, scheduler);
+//! ```
+//!
 //! ##### horizontal_symbol
+//!
+//! Sets the horizontal symbol used to draw a border; only works when border is set to true.
+//!
+//! **Property type:**
+//!
+//! String
+//!
+//! **Possible values:**
+//!
+//! Any String 1 character long
+//!
+//! **Default value:**
+//!
+//! ─
+//!
+//! **Usage examples:**
+//!
+//! In EzLang files:
+//! ```
+//! - Layout:
+//!     - Label:
+//!         border: true
+//!         horizontal_symbol: #
+//! ```
+//!
+//! In code:
+//! ```
+//! use ez_term::*;
+//! use ez_term::GenericState;
+//! let (root_widget, mut state_tree, mut scheduler) = load_ui();
+//! let state = state_tree.get_mut("my_label").as_layout_mut();
+//!
+//! // Border properties are grouped in a BorderConfig object, which we must access first:
+//! state.get_border_config().set_horizontal_symbol("#");
+//!
+//! run(root_widget, state_tree, scheduler);
+//! ```
 //!
 //! ##### vertical_symbol
 //!
+//! Sets the vertical symbol used to draw a border; only works when border is set to true.
+//!
+//! **Property type:**
+//!
+//! String
+//!
+//! **Possible values:**
+//!
+//! Any String 1 character long
+//!
+//! **Default value:**
+//!
+//! │
+//!
+//! **Usage examples:**
+//!
+//! In EzLang files:
+//! ```
+//! - Layout:
+//!     - Label:
+//!         border: true
+//!         vertical_symbol: #
+//! ```
+//!
+//! In code:
+//! ```
+//! use ez_term::*;
+//! use ez_term::GenericState;
+//! let (root_widget, mut state_tree, mut scheduler) = load_ui();
+//! let state = state_tree.get_mut("my_label").as_layout_mut();
+//!
+//! // Border properties are grouped in a BorderConfig object, which we must access first:
+//! state.get_border_config().set_vertical_symbol("#");
+//!
+//! run(root_widget, state_tree, scheduler);
+//! ```
+//!
 //! ##### top_left_symbol
+//!
+//! Sets the top left symbol used to draw a border; only works when border is set to true.
+//!
+//! **Property type:**
+//!
+//! String
+//!
+//! **Possible values:**
+//!
+//! Any String 1 character long
+//!
+//! **Default value:**
+//!
+//! ┌
+//!
+//! **Usage examples:**
+//!
+//! In EzLang files:
+//! ```
+//! - Layout:
+//!     - Label:
+//!         border: true
+//!         top_left_symbol: #
+//! ```
+//!
+//! In code:
+//! ```
+//! use ez_term::*;
+//! use ez_term::GenericState;
+//! let (root_widget, mut state_tree, mut scheduler) = load_ui();
+//! let state = state_tree.get_mut("my_label").as_layout_mut();
+//!
+//! // Border properties are grouped in a BorderConfig object, which we must access first:
+//! state.get_border_config().set_top_left_symbol("#");
+//!
+//! run(root_widget, state_tree, scheduler);
+//! ```
 //!
 //! ##### top_right_symbol
 //!
+//! Sets the top right symbol used to draw a border; only works when border is set to true.
+//!
+//! **Property type:**
+//!
+//! String
+//!
+//! **Possible values:**
+//!
+//! Any String 1 character long
+//!
+//! **Default value:**
+//!
+//! ┐
+//!
+//! **Usage examples:**
+//!
+//! In EzLang files:
+//! ```
+//! - Layout:
+//!     - Label:
+//!         border: true
+//!         top_right_symbol: #
+//! ```
+//!
+//! In code:
+//! ```
+//! use ez_term::*;
+//! use ez_term::GenericState;
+//! let (root_widget, mut state_tree, mut scheduler) = load_ui();
+//! let state = state_tree.get_mut("my_label").as_layout_mut();
+//!
+//! // Border properties are grouped in a BorderConfig object, which we must access first:
+//! state.get_border_config().set_top_right_symbol("#");
+//!
+//! run(root_widget, state_tree, scheduler);
+//! ```
+//!
 //! ##### bottom_left_symbol
+//!
+//! Sets the bottom left symbol used to draw a border; only works when border is set to true.
+//!
+//! **Property type:**
+//!
+//! String
+//!
+//! **Possible values:**
+//!
+//! Any String 1 character long
+//!
+//! **Default value:**
+//!
+//! └
+//!
+//! **Usage examples:**
+//!
+//! In EzLang files:
+//! ```
+//! - Layout:
+//!     - Label:
+//!         border: true
+//!         bottom_left_symbol: #
+//! ```
+//!
+//! In code:
+//! ```
+//! use ez_term::*;
+//! use ez_term::GenericState;
+//! let (root_widget, mut state_tree, mut scheduler) = load_ui();
+//! let state = state_tree.get_mut("my_label").as_layout_mut();
+//!
+//! // Border properties are grouped in a BorderConfig object, which we must access first:
+//! state.get_border_config().set_bottom_left_symbol("#");
+//!
+//! run(root_widget, state_tree, scheduler);
+//! ```
 //!
 //! ##### bottom_right_symbol
 //!
+//! Sets the bottom right symbol used to draw a border; only works when border is set to true.
+//!
+//! **Property type:**
+//!
+//! String
+//!
+//! **Possible values:**
+//!
+//! Any String 1 character long
+//!
+//! **Default value:**
+//!
+//! ┘
+//!
+//! **Usage examples:**
+//!
+//! In EzLang files:
+//! ```
+//! - Layout:
+//!     - Label:
+//!         border: true
+//!         bottom_right_symbol: #
+//! ```
+//!
+//! In code:
+//! ```
+//! use ez_term::*;
+//! use ez_term::GenericState;
+//! let (root_widget, mut state_tree, mut scheduler) = load_ui();
+//! let state = state_tree.get_mut("my_label").as_layout_mut();
+//!
+//! // Border properties are grouped in a BorderConfig object, which we must access first:
+//! state.get_border_config().set_bottom_right_symbol("#");
+//!
+//! run(root_widget, state_tree, scheduler);
+//! ```
+//!
 //! ##### fg_color
+//!
+//! Foreground color used for the widget, i.e. the color used for the symbol of the pixel.
+//!
+//! **Property type:**
+//!
+//! Color
+//!
+//! **Possible values:**
+//!
+//! - RGB value: 0-255, 0-255, 0-255
+//! - Color words:
+//!     - black
+//!     - blue
+//!     - dark_blue
+//!     - cyan
+//!     - dark_cyan
+//!     - green
+//!     - dark_green
+//!     - grey
+//!     - dark_grey
+//!     - magenta
+//!     - dark_magenta
+//!     - red
+//!     - dark_red
+//!     - white
+//!     - yellow
+//!     - dark_yellow
+//!
+//! **Default value:**
+//!
+//! white
+//!
+//! **Usage examples:**
+//!
+//! In EzLang files:
+//! ```
+//! - Layout:
+//!     - Label:
+//!         fg_color: red
+//! ```
+//! ```
+//! - Layout:
+//!     - Label:
+//!         fg_color: 255, 0, 0
+//! ```
+//!
+//! In code:
+//! ```
+//! use ez_term::*;
+//! use ez_term::GenericState;
+//! let (root_widget, mut state_tree, mut scheduler) = load_ui();
+//! let state = state_tree.get_mut("my_label").as_layout_mut();
+//!
+//! // Table properties are wrapping into a TableConfig object, which we have to retrieve
+//! // first:
+//! state.get_color_config_mut().set_fg_color(Color::Red);
+//! state.get_color_config_mut().set_fg_color(Color::from((255, 0, 0)));
+//!
+//! run(root_widget, state_tree, scheduler);
+//! ```
 //!
 //! ##### bg_color
 //!
+//! Background color used for the widget, i.e. the empty space around the symbol of the pixel.
+//!
+//! **Property type:**
+//!
+//! Color
+//!
+//! **Possible values:**
+//!
+//! - RGB value: 0-255, 0-255, 0-255
+//! - Color words:
+//!     - black
+//!     - blue
+//!     - dark_blue
+//!     - cyan
+//!     - dark_cyan
+//!     - green
+//!     - dark_green
+//!     - grey
+//!     - dark_grey
+//!     - magenta
+//!     - dark_magenta
+//!     - red
+//!     - dark_red
+//!     - white
+//!     - yellow
+//!     - dark_yellow
+//!
+//! **Default value:**
+//!
+//! Black
+//!
+//! **Usage examples:**
+//!
+//! In EzLang files:
+//! ```
+//! - Layout:
+//!     - Label:
+//!         bg_color: red
+//! ```
+//! ```
+//! - Layout:
+//!     - Label:
+//!         bg_color: 255, 0, 0
+//! ```
+//!
+//! In code:
+//! ```
+//! use ez_term::*;
+//! use ez_term::GenericState;
+//! let (root_widget, mut state_tree, mut scheduler) = load_ui();
+//! let state = state_tree.get_mut("my_label").as_layout_mut();
+//!
+//! // Table properties are wrapping into a TableConfig object, which we have to retrieve
+//! // first:
+//! state.get_color_config_mut().set_bg_color(Color::Red);
+//! state.get_color_config_mut().set_bg_color(Color::from((255, 0, 0)));
+//!
+//! run(root_widget, state_tree, scheduler);
+//! ```
+//!
 //! ##### selection_fg_color
+//!
+//! Foreground color used for the widget when it is selected (through keyboard up/down, mouse hover,
+//! or scheduler method).
+//!
+//! **Property type:**
+//!
+//! Color
+//!
+//! **Possible values:**
+//!
+//! - RGB value: 0-255, 0-255, 0-255
+//! - Color words:
+//!     - black
+//!     - blue
+//!     - dark_blue
+//!     - cyan
+//!     - dark_cyan
+//!     - green
+//!     - dark_green
+//!     - grey
+//!     - dark_grey
+//!     - magenta
+//!     - dark_magenta
+//!     - red
+//!     - dark_red
+//!     - white
+//!     - yellow
+//!     - dark_yellow
+//!
+//! **Default value:**
+//!
+//! yellow
+//!
+//! **Usage examples:**
+//!
+//! In EzLang files:
+//! ```
+//! - Layout:
+//!     - Label:
+//!         selection_fg_color: red
+//! ```
+//! ```
+//! - Layout:
+//!     - Label:
+//!         selection_fg_color: 255, 0, 0
+//! ```
+//!
+//! In code:
+//! ```
+//! use ez_term::*;
+//! use ez_term::GenericState;
+//! let (root_widget, mut state_tree, mut scheduler) = load_ui();
+//! let state = state_tree.get_mut("my_label").as_layout_mut();
+//!
+//! // Table properties are wrapping into a TableConfig object, which we have to retrieve
+//! // first:
+//! state.get_color_config_mut().set_selection_fg_color(Color::Red);
+//! state.get_color_config_mut().set_selection_fg_color(Color::from((255, 0, 0)));
+//!
+//! run(root_widget, state_tree, scheduler);
+//! ```
 //!
 //! ##### selection_bg_color
 //!
+//! Background color used for the widget when it is selected (through keyboard up/down, mouse hover,
+//! or scheduler method).
+//!
+//! **Property type:**
+//!
+//! Color
+//!
+//! **Possible values:**
+//!
+//! - RGB value: 0-255, 0-255, 0-255
+//! - Color words:
+//!     - black
+//!     - blue
+//!     - dark_blue
+//!     - cyan
+//!     - dark_cyan
+//!     - green
+//!     - dark_green
+//!     - grey
+//!     - dark_grey
+//!     - magenta
+//!     - dark_magenta
+//!     - red
+//!     - dark_red
+//!     - white
+//!     - yellow
+//!     - dark_yellow
+//!
+//! **Default value:**
+//!
+//! blue
+//!
+//! **Usage examples:**
+//!
+//! In EzLang files:
+//! ```
+//! - Layout:
+//!     - Label:
+//!         selection_bg_color: red
+//! ```
+//! ```
+//! - Layout:
+//!     - Label:
+//!         selection_bg_color: 255, 0, 0
+//! ```
+//!
+//! In code:
+//! ```
+//! use ez_term::*;
+//! use ez_term::GenericState;
+//! let (root_widget, mut state_tree, mut scheduler) = load_ui();
+//! let state = state_tree.get_mut("my_layout").as_layout_mut();
+//!
+//! // Table properties are wrapping into a TableConfig object, which we have to retrieve
+//! // first:
+//! state.get_color_config_mut().set_selection_bg_color(Color::Red);
+//! state.get_color_config_mut().set_selection_bg_color(Color::from((255, 0, 0)));
+//!
+//! run(root_widget, state_tree, scheduler);
+//! ```
+//!
 //! ##### disabled_fg_color
+//!
+//! Foreground color used for the widget when it is disabled.
+//!
+//! **Property type:**
+//!
+//! Color
+//!
+//! **Possible values:**
+//!
+//! - RGB value: 0-255, 0-255, 0-255
+//! - Color words:
+//!     - black
+//!     - blue
+//!     - dark_blue
+//!     - cyan
+//!     - dark_cyan
+//!     - green
+//!     - dark_green
+//!     - grey
+//!     - dark_grey
+//!     - magenta
+//!     - dark_magenta
+//!     - red
+//!     - dark_red
+//!     - white
+//!     - yellow
+//!     - dark_yellow
+//!
+//! **Default value:**
+//!
+//! white
+//!
+//! **Usage examples:**
+//!
+//! In EzLang files:
+//! ```
+//! - Layout:
+//!     - Label:
+//!         disabled_fg_color: red
+//! ```
+//! ```
+//! - Layout:
+//!     - Label:
+//!         disabled_fg_color: 255, 0, 0
+//! ```
+//!
+//! In code:
+//! ```
+//! use ez_term::*;
+//! use ez_term::GenericState;
+//! let (root_widget, mut state_tree, mut scheduler) = load_ui();
+//! let state = state_tree.get_mut("my_layout").as_layout_mut();
+//!
+//! // Table properties are wrapping into a TableConfig object, which we have to retrieve
+//! // first:
+//! state.get_color_config_mut().set_disabled_fg_color(Color::Red);
+//! state.get_color_config_mut().set_disabled_fg_color(Color::from((255, 0, 0)));
+//!
+//! run(root_widget, state_tree, scheduler);
+//! ```
 //!
 //! ##### disabled_bg_color
 //!
-//! ##### active_fg_color
+//! Background color used for the widget when it is disabled.
 //!
-//! ##### active_bg_color
+//! **Property type:**
+//!
+//! Color
+//!
+//! **Possible values:**
+//!
+//! - RGB value: 0-255, 0-255, 0-255
+//! - Color words:
+//!     - black
+//!     - blue
+//!     - dark_blue
+//!     - cyan
+//!     - dark_cyan
+//!     - green
+//!     - dark_green
+//!     - grey
+//!     - dark_grey
+//!     - magenta
+//!     - dark_magenta
+//!     - red
+//!     - dark_red
+//!     - white
+//!     - yellow
+//!     - dark_yellow
+//!
+//! **Default value:**
+//!
+//! white
+//!
+//! **Usage examples:**
+//!
+//! In EzLang files:
+//! ```
+//! - Layout:
+//!     - Label:
+//!         disabled_bg_color: red
+//! ```
+//! ```
+//! - Layout:
+//!     - Label:
+//!         disabled_bg_color: 255, 0, 0
+//! ```
+//!
+//! In code:
+//! ```
+//! use ez_term::*;
+//! use ez_term::GenericState;
+//! let (root_widget, mut state_tree, mut scheduler) = load_ui();
+//! let state = state_tree.get_mut("my_layout").as_layout_mut();
+//!
+//! // Table properties are wrapping into a TableConfig object, which we have to retrieve
+//! // first:
+//! state.get_color_config_mut().set_disabled_bg_color(Color::Red);
+//! state.get_color_config_mut().set_disabled_bg_color(Color::from((255, 0, 0)));
+//!
+//! run(root_widget, state_tree, scheduler);
+//! ```
 //!
 //! ##### flash_fg_color
 //!
+//! Foreground color used for the button flash animation shown after the button is clicked.
+//!
+//! **Property type:**
+//!
+//! Color
+//!
+//! **Possible values:**
+//!
+//! - RGB value: 0-255, 0-255, 0-255
+//! - Color words:
+//!     - black
+//!     - blue
+//!     - dark_blue
+//!     - cyan
+//!     - dark_cyan
+//!     - green
+//!     - dark_green
+//!     - grey
+//!     - dark_grey
+//!     - magenta
+//!     - dark_magenta
+//!     - red
+//!     - dark_red
+//!     - white
+//!     - yellow
+//!     - dark_yellow
+//!
+//! **Default value:**
+//!
+//! white
+//!
+//! **Usage examples:**
+//!
+//! In EzLang files:
+//! ```
+//! - Layout:
+//!     - Label:
+//!         flash_fg_color: red
+//! ```
+//! ```
+//! - Layout:
+//!     - Label:
+//!         flash_fg_color: 255, 0, 0
+//! ```
+//!
+//! In code:
+//! ```
+//! use ez_term::*;
+//! use ez_term::GenericState;
+//! let (root_widget, mut state_tree, mut scheduler) = load_ui();
+//! let state = state_tree.get_mut("my_button").as_layout_mut();
+//!
+//! // Table properties are wrapping into a TableConfig object, which we have to retrieve
+//! // first:
+//! state.get_color_config_mut().set_flash_fg_color(Color::Red);
+//! state.get_color_config_mut().set_flash_fg_color(Color::from((255, 0, 0)));
+//!
+//! run(root_widget, state_tree, scheduler);
+//! ```
+//!
 //! ##### flash_bg_color
+//!
+//! Background color used for the button flash animation shown after the button is clicked.
+//!
+//! **Property type:**
+//!
+//! Color
+//!
+//! **Possible values:**
+//!
+//! - RGB value: 0-255, 0-255, 0-255
+//! - Color words:
+//!     - black
+//!     - blue
+//!     - dark_blue
+//!     - cyan
+//!     - dark_cyan
+//!     - green
+//!     - dark_green
+//!     - grey
+//!     - dark_grey
+//!     - magenta
+//!     - dark_magenta
+//!     - red
+//!     - dark_red
+//!     - white
+//!     - yellow
+//!     - dark_yellow
+//!
+//! **Default value:**
+//!
+//! white
+//!
+//! **Usage examples:**
+//!
+//! In EzLang files:
+//! ```
+//! - Layout:
+//!     - Label:
+//!         flash_bg_color: red
+//! ```
+//! ```
+//! - Layout:
+//!     - Label:
+//!         flash_bg_color: 255, 0, 0
+//! ```
+//!
+//! In code:
+//! ```
+//! use ez_term::*;
+//! use ez_term::GenericState;
+//! let (root_widget, mut state_tree, mut scheduler) = load_ui();
+//! let state = state_tree.get_mut("my_button").as_layout_mut();
+//!
+//! // Table properties are wrapping into a TableConfig object, which we have to retrieve
+//! // first:
+//! state.get_color_config_mut().set_flash_bg_color(Color::Red);
+//! state.get_color_config_mut().set_flash_bg_color(Color::from((255, 0, 0)));
+//!
+//! run(root_widget, state_tree, scheduler);
+//! ```
 //!
 //! ##### border_fg_color
 //!
+//! Foreground color used for the border of a widget if enabled.
+//!
+//! **Property type:**
+//!
+//! Color
+//!
+//! **Possible values:**
+//!
+//! - RGB value: 0-255, 0-255, 0-255
+//! - Color words:
+//!     - black
+//!     - blue
+//!     - dark_blue
+//!     - cyan
+//!     - dark_cyan
+//!     - green
+//!     - dark_green
+//!     - grey
+//!     - dark_grey
+//!     - magenta
+//!     - dark_magenta
+//!     - red
+//!     - dark_red
+//!     - white
+//!     - yellow
+//!     - dark_yellow
+//!
+//! **Default value:**
+//!
+//! white
+//!
+//! **Usage examples:**
+//!
+//! In EzLang files:
+//! ```
+//! - Layout:
+//!     - Label:
+//!         border_fg_color: red
+//!         border: true
+//! ```
+//! ```
+//! - Layout:
+//!     - Label:
+//!         border_fg_color: 255, 0, 0
+//!         border: true
+//! ```
+//!
+//! In code:
+//! ```
+//! use ez_term::*;
+//! use ez_term::GenericState;
+//! let (root_widget, mut state_tree, mut scheduler) = load_ui();
+//! let state = state_tree.get_mut("my_layout").as_layout_mut();
+//!
+//! // Table properties are wrapping into a TableConfig object, which we have to retrieve
+//! // first:
+//! state.get_color_config_mut().set_border_fg_color(Color::Red);
+//! state.get_color_config_mut().set_border_fg_color(Color::from((255, 0, 0)));
+//!
+//! run(root_widget, state_tree, scheduler);
+//! ```
+//!
 //! ##### border_bg_color
 //!
+//! Background color used for the border of a widget if enabled.
+//!
+//! **Property type:**
+//!
+//! Color
+//!
+//! **Possible values:**
+//!
+//! - RGB value: 0-255, 0-255, 0-255
+//! - Color words:
+//!     - black
+//!     - blue
+//!     - dark_blue
+//!     - cyan
+//!     - dark_cyan
+//!     - green
+//!     - dark_green
+//!     - grey
+//!     - dark_grey
+//!     - magenta
+//!     - dark_magenta
+//!     - red
+//!     - dark_red
+//!     - white
+//!     - yellow
+//!     - dark_yellow
+//!
+//! **Default value:**
+//!
+//! white
+//!
+//! **Usage examples:**
+//!
+//! In EzLang files:
+//! ```
+//! - Layout:
+//!     - Label:
+//!         border_bg_color: red
+//!         border: true
+//! ```
+//! ```
+//! - Layout:
+//!     - Label:
+//!         border_bg_color: 255, 0, 0
+//!         border: true
+//! ```
+//!
+//! In code:
+//! ```
+//! use ez_term::*;
+//! use ez_term::GenericState;
+//! let (root_widget, mut state_tree, mut scheduler) = load_ui();
+//! let state = state_tree.get_mut("my_layout").as_layout_mut();
+//!
+//! // Table properties are wrapping into a TableConfig object, which we have to retrieve
+//! // first:
+//! state.get_color_config_mut().set_border_bg_color(Color::Red);
+//! state.get_color_config_mut().set_border_bg_color(Color::from((255, 0, 0)));
+//!
+//! run(root_widget, state_tree, scheduler);
+//! ```
+//!
 //! ##### cursor_color
+//!
+//! Color used for the cursor of the text input.
+//!
+//! **Property type:**
+//!
+//! Color
+//!
+//! **Possible values:**
+//!
+//! - RGB value: 0-255, 0-255, 0-255
+//! - Color words:
+//!     - black
+//!     - blue
+//!     - dark_blue
+//!     - cyan
+//!     - dark_cyan
+//!     - green
+//!     - dark_green
+//!     - grey
+//!     - dark_grey
+//!     - magenta
+//!     - dark_magenta
+//!     - red
+//!     - dark_red
+//!     - white
+//!     - yellow
+//!     - dark_yellow
+//!
+//! **Default value:**
+//!
+//! dark_yellow
+//!
+//! **Usage examples:**
+//!
+//! In EzLang files:
+//! ```
+//! - Layout:
+//!     - Label:
+//!         cursor_color: red
+//! ```
+//! ```
+//! - Layout:
+//!     - Label:
+//!         cursor_color: 255, 0, 0
+//!         border: true
+//! ```
+//!
+//! In code:
+//! ```
+//! use ez_term::*;
+//! use ez_term::GenericState;
+//! let (root_widget, mut state_tree, mut scheduler) = load_ui();
+//! let state = state_tree.get_mut("my_layout").as_layout_mut();
+//!
+//! // Table properties are wrapping into a TableConfig object, which we have to retrieve
+//! // first:
+//! state.get_color_config_mut().set_cursor_fg_color(Color::Red);
+//! state.get_color_config_mut().set_cursor_fg_color(Color::from((255, 0, 0)));
+//!
+//! run(root_widget, state_tree, scheduler);
+//! ```
 //!
 //!
 //! ## 2.2 Widget reference
@@ -3706,6 +5256,133 @@
 //!
 //! run(root_widget, state_tree, scheduler);
 //! ```
+//!
+//! ##### active_fg_color
+//!
+//! Foreground color used for the tab header button that is active (meaning the associated tab is
+//! currently displayed).
+//!
+//! **Property type:**
+//!
+//! Color
+//!
+//! **Possible values:**
+//!
+//! - RGB value: 0-255, 0-255, 0-255
+//! - Color words:
+//!     - black
+//!     - blue
+//!     - dark_blue
+//!     - cyan
+//!     - dark_cyan
+//!     - green
+//!     - dark_green
+//!     - grey
+//!     - dark_grey
+//!     - magenta
+//!     - dark_magenta
+//!     - red
+//!     - dark_red
+//!     - white
+//!     - yellow
+//!     - dark_yellow
+//!
+//! **Default value:**
+//!
+//! white
+//!
+//! **Usage examples:**
+//!
+//! In EzLang files:
+//! ```
+//! - Layout:
+//!     - Label:
+//!         active_fg_color: red
+//! ```
+//! ```
+//! - Layout:
+//!     - Label:
+//!         active_fg_color: 255, 0, 0
+//! ```
+//!
+//! In code:
+//! ```
+//! use ez_term::*;
+//! use ez_term::GenericState;
+//! let (root_widget, mut state_tree, mut scheduler) = load_ui();
+//! let state = state_tree.get_mut("my_layout").as_layout_mut();
+//!
+//! // Table properties are wrapping into a TableConfig object, which we have to retrieve
+//! // first:
+//! state.get_color_config_mut().set_active_fg_color(Color::Red);
+//! state.get_color_config_mut().set_active_fg_color(Color::from((255, 0, 0)));
+//!
+//! run(root_widget, state_tree, scheduler);
+//! ```
+//!
+//! ##### active_bg_color
+//!
+//! Background color used for the tab header button that is active (meaning the associated tab is
+//! currently displayed).
+//!
+//! **Property type:**
+//!
+//! Color
+//!
+//! **Possible values:**
+//!
+//! - RGB value: 0-255, 0-255, 0-255
+//! - Color words:
+//!     - black
+//!     - blue
+//!     - dark_blue
+//!     - cyan
+//!     - dark_cyan
+//!     - green
+//!     - dark_green
+//!     - grey
+//!     - dark_grey
+//!     - magenta
+//!     - dark_magenta
+//!     - red
+//!     - dark_red
+//!     - white
+//!     - yellow
+//!     - dark_yellow
+//!
+//! **Default value:**
+//!
+//! black
+//!
+//! **Usage examples:**
+//!
+//! In EzLang files:
+//! ```
+//! - Layout:
+//!     - Label:
+//!         active_bg_color: red
+//! ```
+//! ```
+//! - Layout:
+//!     - Label:
+//!         active_bg_color: 255, 0, 0
+//! ```
+//!
+//! In code:
+//! ```
+//! use ez_term::*;
+//! use ez_term::GenericState;
+//! let (root_widget, mut state_tree, mut scheduler) = load_ui();
+//! let state = state_tree.get_mut("my_layout").as_layout_mut();
+//!
+//! // Table properties are wrapping into a TableConfig object, which we have to retrieve
+//! // first:
+//! state.get_color_config_mut().set_active_bg_color(Color::Red);
+//! state.get_color_config_mut().set_active_bg_color(Color::from((255, 0, 0)));
+//!
+//! run(root_widget, state_tree, scheduler);
+//! ```
+//!
 //!
 //! ##### can_drag
 //!
@@ -4365,7 +6042,512 @@
 //!
 //! run(root_widget, state_tree, scheduler);
 //! ```
-
+//!
+//! #### 2.2.1.2 Default callback implementations
+//!
+//! ##### on_scroll_up
+//!
+//! If the layout is scrolling horizontally, this scrolls the layout to the left. If the layout is
+//! scrolling vertically, this scrolls the layout up.
+//! If you implement your own callback, returns true to surpress this behavior, or false to
+//! supplement it.
+//!
+//!
+//! ##### on_scroll_down
+//!
+//! If the layout is scrolling horizontally, this scrolls the layout to the right. If the layout is
+//! scrolling vertically, this scrolls the layout down.
+//! If you implement your own callback, returns true to surpress this behavior, or false to
+//! supplement it.
+//!
+//! #### 2.2.1.2 Available callbacks
+//!
+//! - on_scroll_up
+//! - on_scroll_down
+//! - on_hover
+//! - on_drag
+//! - on_left_click
+//! - on_right_click
+//! - on_select (called when a scrollbar is selected)
+//!
+//!
+//! ### 2.2.2 Label:
+//!
+//! A widget that displays (colored) text.
+//!
+//! #### 2.2.1.1 Properties
+//!
+//! ##### text
+//!
+//! The text that will be displayed in the label. If the label has a height more than 1, it will
+//! wrap text respecting word boundaries.
+//!
+//! **Property type:**
+//!
+//! String
+//!
+//! **Possible values:**
+//!
+//! Any String (including unicode)
+//!
+//! **Default value:**
+//!
+//! Empty string
+//!
+//! **Usage examples:**
+//!
+//! In EzLang files:
+//! ```
+//! - Label:
+//!     text: Hello world!
+//! ```
+//!
+//! In code:
+//! ```
+//! use ez_term::*;
+//! let (root_widget, mut state_tree, mut scheduler) = load_ui();
+//! let state = state_tree.get_mut("my_label").as_label_mut();
+//!
+//! state.set_text("Hello world!".to_string());
+//!
+//! run(root_widget, state_tree, scheduler);
+//! ```
+//!
+//! ##### from_file
+//!
+//! Label will display text loaded from this file path. Overwrites the text property if set.
+//!
+//! **Property type:**
+//!
+//! String
+//!
+//! **Possible values:**
+//!
+//! Any file path to a text file.
+//!
+//! **Default value:**
+//!
+//! Empty string
+//!
+//! **Usage examples:**
+//!
+//! In EzLang files:
+//! ```
+//! - Label:
+//!     from_file: ./my_text_file.txt
+//! ```
+//!
+//! In code:
+//! ```
+//! use ez_term::*;
+//! let (root_widget, mut state_tree, mut scheduler) = load_ui();
+//! let state = state_tree.get_mut("my_label").as_label_mut();
+//!
+//!
+//! state.set_from_file("./my_text_file.txt");
+//! run(root_widget, state_tree, scheduler);
+//! ```
+//!
+//! #### 2.2.1.2 Default callbacks implementations
+//!
+//! The Label widget does not have any.
+//!
+//! #### 2.2.1.3 Available callbacks
+//!
+//! - on_scroll_up
+//! - on_scroll_down
+//! - on_hover
+//! - on_drag
+//! - on_left_click
+//! - on_right_click
+//!
+//! ### 2.2.3 Button:
+//!
+//! A button that shows a small animation when clicked. Has text and always has a border. Usually
+//! you want to bind an on_press callback to make something happen when pressed.
+//!
+//! #### 2.2.3.1 Properties
+//!
+//! ##### text
+//!
+//! The text that will be displayed in the button. If the button has a height more than 1, it will
+//! wrap text respecting word boundaries.
+//!
+//! **Property type:**
+//!
+//! String
+//!
+//! **Possible values:**
+//!
+//! Any String (including unicode)
+//!
+//! **Default value:**
+//!
+//! Empty string
+//!
+//! **Usage examples:**
+//!
+//! In EzLang files:
+//! ```
+//! - Button:
+//!     text: Press me
+//! ```
+//!
+//! In code:
+//! ```
+//! use ez_term::*;
+//! let (root_widget, mut state_tree, mut scheduler) = load_ui();
+//! let state = state_tree.get_mut("my_button").as_button_mut();
+//!
+//! state.set_text("Press me".to_string());
+//!
+//! run(root_widget, state_tree, scheduler);
+//! ```
+//!
+//! #### 2.2.3.2 Default callbacks implementations
+//!
+//! ##### on_left_click
+//!
+//! Calls the on_press callback.
+//!
+//! ##### on_keyboard_enter
+//!
+//! Calls the on_press callback.
+//!
+//! #### 2.2.3.3 Available callbacks
+//!
+//! - on_keyboard_enter
+//! - on_press
+//! - on_select
+//! - on_deselect
+//! - on_scroll_up
+//! - on_scroll_down
+//! - on_hover
+//! - on_drag
+//! - on_left_click
+//! - on_right_click
+//! - Custom keys
+//!
+//! ### 2.2.4 Checkbox:
+//!
+//! A simple switch that can be toggled on and off. A checkbox is always 5 width and 1 height.
+//! Often used with on_value_change callback.
+//!
+//! #### 2.2.4.1 Properties
+//!
+//! ##### active
+//!
+//! Property that represents whether the checkbox is on (active) or off.
+//!
+//! **Property type:**
+//!
+//! bool
+//!
+//! **Possible values:**
+//!
+//! - true
+//! - false
+//!
+//! **Default value:**
+//!
+//! false
+//!
+//! **Usage examples:**
+//!
+//! In EzLang files:
+//! ```
+//! - Checkbox:
+//!     active: true
+//! ```
+//!
+//! In code:
+//! ```
+//! use ez_term::*;
+//! let (root_widget, mut state_tree, mut scheduler) = load_ui();
+//! let state = state_tree.get_mut("my_checkbox").as_checkbox_mut();
+//!
+//! state.set_active(true);
+//!
+//! run(root_widget, state_tree, scheduler);
+//! ```
+//!
+//! ##### active_symbol
+//!
+//! The symbol used to indicate the checkbox is active. If for example the symbol is X, then the
+//! checkbox will look like this when active: [ X ].
+//!
+//! **Property type:**
+//!
+//! String
+//!
+//! **Possible values:**
+//!
+//! Any one character string.
+//!
+//! **Default value:**
+//!
+//! X
+//!
+//! **Usage examples:**
+//!
+//! In EzLang files:
+//! ```
+//! - Checkbox:
+//!     active_symbol: 0
+//! ```
+//!
+//! In code:
+//! ```
+//! use ez_term::*;
+//! let (root_widget, mut state_tree, mut scheduler) = load_ui();
+//! let state = state_tree.get_mut("my_checkbox").as_checkbox_mut();
+//!
+//! state.set_active_symbol("0");
+//!
+//! run(root_widget, state_tree, scheduler);
+//! ```
+//!
+//! ##### inactive_symbol
+//!
+//! The symbol used to indicate the checkbox is inactive. If for example the symbol is -, then the
+//! checkbox will look like this when inactive: [ - ].
+//!
+//! **Property type:**
+//!
+//! String
+//!
+//! **Possible values:**
+//!
+//! Any one character string.
+//!
+//! **Default value:**
+//!
+//! -
+//!
+//! **Usage examples:**
+//!
+//! In EzLang files:
+//! ```
+//! - Checkbox:
+//!     inactive_symbol: .
+//! ```
+//!
+//! In code:
+//! ```
+//! use ez_term::*;
+//! let (root_widget, mut state_tree, mut scheduler) = load_ui();
+//! let state = state_tree.get_mut("my_checkbox").as_checkbox_mut();
+//!
+//! state.set_inactive_symbol(".");
+//!
+//! run(root_widget, state_tree, scheduler);
+//! ```
+//!
+//! #### 2.2.1.2 Default callbacks implementations
+//!
+//! ##### on_left_click
+//!
+//! Calls the on_press callback.
+//!
+//! ##### on_keyboard_enter
+//!
+//! Calls the on_press callback.
+//!
+//! #### 2.2.1.1 Available callbacks
+//!
+//! - on_value_change
+//! - on_keyboard_enter
+//! - on_press
+//! - on_select
+//! - on_deselect
+//! - on_scroll_up
+//! - on_scroll_down
+//! - on_hover
+//! - on_drag
+//! - on_left_click
+//! - on_right_click
+//! - Custom keys
+//!
+//!
+//! ### 2.2.4 Radio button:
+//!
+//! A simple switch that can be toggled on and off. A radio button is always 5 width and 1 height.
+//! A radio button can be part of a group (by setting the group property of multiple radio buttons
+//! to the same value). A group of radio buttons is mutually exclusive, meaning that when one
+//! becomes active, the others become inactive. Often used with on_value_change callbacs. Only the
+//! radio button that become active triggers an on_value_change callback.
+//!
+//! #### 2.2.4.1 Properties
+//!
+//! ##### active
+//!
+//! Property that represents whether the radio button is on (active) or off.
+//!
+//! **Property type:**
+//!
+//! bool
+//!
+//! **Possible values:**
+//!
+//! - true
+//! - false
+//!
+//! **Default value:**
+//!
+//! false
+//!
+//! **Usage examples:**
+//!
+//! In EzLang files:
+//! ```
+//! - Radio button:
+//!     active: true
+//! ```
+//!
+//! In code:
+//! ```
+//! use ez_term::*;
+//! let (root_widget, mut state_tree, mut scheduler) = load_ui();
+//! let state = state_tree.get_mut("my_radio_button").as_radio_button_mut();
+//!
+//! state.set_active(true);
+//!
+//! run(root_widget, state_tree, scheduler);
+//! ```
+//!
+//! ##### active_symbol
+//!
+//! The symbol used to indicate the radio button is active. If for example the symbol is X, then the
+//! checkbox will look like this when active: ( X ).
+//!
+//! **Property type:**
+//!
+//! String
+//!
+//! **Possible values:**
+//!
+//! Any one character string.
+//!
+//! **Default value:**
+//!
+//! X
+//!
+//! **Usage examples:**
+//!
+//! In EzLang files:
+//! ```
+//! - RadioButton:
+//!     active_symbol: 0
+//! ```
+//!
+//! In code:
+//! ```
+//! use ez_term::*;
+//! let (root_widget, mut state_tree, mut scheduler) = load_ui();
+//! let state = state_tree.get_mut("my_radio_button").as_radio_button_mut();
+//!
+//! state.set_active_symbol("0");
+//!
+//! run(root_widget, state_tree, scheduler);
+//! ```
+//!
+//! ##### inactive_symbol
+//!
+//! The symbol used to indicate the radio button is inactive. If for example the symbol is -, then the
+//! radio button will look like this when inactive: ( - ).
+//!
+//! **Property type:**
+//!
+//! String
+//!
+//! **Possible values:**
+//!
+//! Any one character string.
+//!
+//! **Default value:**
+//!
+//! -
+//!
+//! **Usage examples:**
+//!
+//! In EzLang files:
+//! ```
+//! - RadioButton:
+//!     inactive_symbol: .
+//! ```
+//!
+//! In code:
+//! ```
+//! use ez_term::*;
+//! let (root_widget, mut state_tree, mut scheduler) = load_ui();
+//! let state = state_tree.get_mut("my_radio_button").as_radio_button_mut();
+//!
+//! state.set_inactive_symbol(".");
+//!
+//! run(root_widget, state_tree, scheduler);
+//! ```
+//!
+//! ##### group
+//!
+//! This property determines which radio buttons belong together, and are therefore mutually
+//! exclusive. Set multiple radio buttons to the same group value to make them part of the same
+//! group.
+//!
+//! **Property type:**
+//!
+//! String
+//!
+//! **Possible values:**
+//!
+//! Any string.
+//!
+//! **Default value:**
+//!
+//! Empty string
+//!
+//! **Usage examples:**
+//!
+//! In EzLang files:
+//! ```
+//! - RadioButton:
+//!     group: my_group
+//! ```
+//!
+//! In code:
+//! ```
+//! use ez_term::*;
+//! let (root_widget, mut state_tree, mut scheduler) = load_ui();
+//! let state = state_tree.get_mut("my_radio_button").as_radio_button_mut();
+//!
+//! state.set_group("my_group");
+//!
+//! run(root_widget, state_tree, scheduler);
+//! ```
+//!
+//! #### 2.2.1.2 Default callbacks implementations
+//!
+//! ##### on_left_click
+//!
+//! Calls the on_press callback.
+//!
+//! ##### on_keyboard_enter
+//!
+//! Calls the on_press callback.
+//!
+//! #### 2.2.1.1 Available callbacks
+//!
+//! - on_value_change (only if radio button became active)
+//! - on_keyboard_enter
+//! - on_press
+//! - on_select
+//! - on_deselect
+//! - on_scroll_up
+//! - on_scroll_down
+//! - on_hover
+//! - on_drag
+//! - on_left_click
+//! - on_right_click
+//! - Custom keys
 mod run;
 mod scheduler;
 mod widgets;

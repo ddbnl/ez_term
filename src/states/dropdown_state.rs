@@ -134,19 +134,8 @@ impl GenericState for DropdownState {
             "selection_bg_color" => self.colors.selection_bg_color.set_from_ez_value(value),
             "disabled_fg_color" => self.colors.disabled_fg_color.set_from_ez_value(value),
             "disabled_bg_color" => self.colors.disabled_bg_color.set_from_ez_value(value),
-            "active_fg_color" => self.colors.active_fg_color.set_from_ez_value(value),
-            "active_bg_color" => self.colors.active_bg_color.set_from_ez_value(value),
-            "flash_fg_color" => self.colors.flash_fg_color.set_from_ez_value(value),
-            "flash_bg_color" => self.colors.flash_bg_color.set_from_ez_value(value),
-            "filler_fg_color" => self.colors.filler_fg_color.set_from_ez_value(value),
-            "filler_bg_color" => self.colors.filler_bg_color.set_from_ez_value(value),
-            "tab_fg_color" => self.colors.tab_fg_color.set_from_ez_value(value),
-            "tab_bg_color" => self.colors.tab_bg_color.set_from_ez_value(value),
-            "tab_border_fg_color" => self.colors.tab_border_fg_color.set_from_ez_value(value),
-            "tab_border_bg_color" => self.colors.tab_border_bg_color.set_from_ez_value(value),
             "border_fg_color" => self.colors.border_fg_color.set_from_ez_value(value),
             "border_bg_color" => self.colors.border_bg_color.set_from_ez_value(value),
-            "cursor_color" => self.colors.cursor_color.set_from_ez_value(value),
             "allow_none" => self.allow_none.set_from_ez_value(value),
             "choice" => self.choice.set_from_ez_value(value),
             _ => panic!("Invalid property name for button state: {}", name),
@@ -180,17 +169,17 @@ impl GenericState for DropdownState {
 
     fn get_absolute_position(&self) -> IsizeCoordinates { self.absolute_position }
 
-    fn set_horizontal_alignment(&mut self, alignment: HorizontalAlignment) {
+    fn set_halign(&mut self, alignment: HorizontalAlignment) {
         self.halign.set(alignment);
     }
 
-    fn get_horizontal_alignment(&self) -> HorizontalAlignment { self.halign.value }
+    fn get_halign(&self) -> HorizontalAlignment { self.halign.value }
 
-    fn set_vertical_alignment(&mut self, alignment: VerticalAlignment) {
+    fn set_valign(&mut self, alignment: VerticalAlignment) {
         self.valign.set(alignment);
     }
 
-    fn get_vertical_alignment(&self) -> VerticalAlignment { self.valign.value }
+    fn get_valign(&self) -> VerticalAlignment { self.valign.value }
 
     fn get_padding(&self) -> &Padding { &self.padding }
 
@@ -393,17 +382,17 @@ impl GenericState for DroppedDownMenuState {
 
     fn get_absolute_position(&self) -> IsizeCoordinates { self.absolute_position }
 
-    fn set_horizontal_alignment(&mut self, alignment: HorizontalAlignment) {
+    fn set_halign(&mut self, alignment: HorizontalAlignment) {
         self.halign.set(alignment);
     }
 
-    fn get_horizontal_alignment(&self) -> HorizontalAlignment { self.halign.value }
+    fn get_halign(&self) -> HorizontalAlignment { self.halign.value }
 
-    fn set_vertical_alignment(&mut self, alignment: VerticalAlignment) {
+    fn set_valign(&mut self, alignment: VerticalAlignment) {
         self.valign.set(alignment);
     }
 
-    fn get_vertical_alignment(&self) -> VerticalAlignment { self.valign.value }
+    fn get_valign(&self) -> VerticalAlignment { self.valign.value }
 
     fn get_padding(&self) -> &Padding { &self.padding }
 

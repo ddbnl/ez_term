@@ -410,16 +410,16 @@ pub trait GenericState {
     }
 
     /// Set [HorizontalAlignment] of this widget.
-    fn set_horizontal_alignment(&mut self, alignment: HorizontalAlignment);
+    fn set_halign(&mut self, alignment: HorizontalAlignment);
 
     /// Get [HorizontalAlignment] of this widget
-    fn get_horizontal_alignment(&self) -> HorizontalAlignment;
+    fn get_halign(&self) -> HorizontalAlignment;
 
     /// Set [VerticalAlignment] of this widget
-    fn set_vertical_alignment(&mut self, alignment: VerticalAlignment);
+    fn set_valign(&mut self, alignment: VerticalAlignment);
 
     /// Get [VerticalAlignment] of this widget
-    fn get_vertical_alignment(&self) -> VerticalAlignment;
+    fn get_valign(&self) -> VerticalAlignment;
 
     /// Get [padding]
     fn get_padding(&self) -> &Padding;

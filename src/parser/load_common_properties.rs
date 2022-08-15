@@ -655,12 +655,12 @@ pub fn load_cursor_background_color_property(state: &mut dyn GenericState, prope
 pub fn load_valign_property(state: &mut dyn GenericState, property_value: &str,
                             scheduler: &mut SchedulerFrontend, path: String) -> Result<(), Error>  {
 
-    state.set_vertical_alignment(load_base_properties::load_valign_property(
+    state.set_valign(load_base_properties::load_valign_property(
         property_value.trim(), scheduler, path.clone(),
         Box::new(move |state_tree: &mut StateTree, val: EzValues| {
             let state = state_tree.get_mut(&path.clone())
                 .as_generic_mut();
-            state.set_vertical_alignment(val.as_vertical_alignment());
+            state.set_valign(val.as_vertical_alignment());
             path.clone()
         }))?);
     Ok(())
@@ -670,12 +670,12 @@ pub fn load_valign_property(state: &mut dyn GenericState, property_value: &str,
 pub fn load_halign_property(state: &mut dyn GenericState, property_value: &str,
                             scheduler: &mut SchedulerFrontend, path: String) -> Result<(), Error>  {
 
-    state.set_horizontal_alignment(load_base_properties::load_halign_property(
+    state.set_halign(load_base_properties::load_halign_property(
         property_value.trim(), scheduler, path.clone(),
         Box::new(move |state_tree: &mut StateTree, val: EzValues| {
             let state = state_tree.get_mut(&path.clone())
                 .as_generic_mut();
-            state.set_horizontal_alignment(val.as_horizontal_alignment());
+            state.set_halign(val.as_horizontal_alignment());
             path.clone()
         }))?);
     Ok(())

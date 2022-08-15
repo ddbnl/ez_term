@@ -222,7 +222,7 @@ impl Layout{
         if !parent_infinite_height && parent_height > new[0].len() {
             let offset;
             (new, offset) = align_content_vertically(
-                new, state.get_vertical_alignment(), parent_height,
+                new, state.get_valign(), parent_height,
                 filler_symbol.clone(), fill_fg_color, fill_bg_color);
             state.set_y(state.get_position().get_y() + offset);
         }
@@ -247,7 +247,7 @@ impl Layout{
         let offset;
         if parent_width > new.len() && !parent_infinite_width {
             (new, offset) = align_content_horizontally(
-                new, state.get_horizontal_alignment(), parent_width,
+                new, state.get_halign(), parent_width,
                 filler_symbol.clone(),
                 fill_fg_color, fill_bg_color);
             state.set_x(state.get_position().get_x() + offset);
