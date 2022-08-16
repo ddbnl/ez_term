@@ -341,7 +341,7 @@ impl Layout{
 
                 let (child_content, offset) = align_content_horizontally(
                     child_content,
-                    state.get_halign(), row_heights[y],
+                    state.get_halign(), col_widths[x],
                     filler_symbol.clone(), fg_color, bg_color);
                 state.get_position_mut().set_x(write_pos.x + offset);
 
