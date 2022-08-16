@@ -139,11 +139,16 @@ impl Layout {
             state.set_y(pos.y);
             for child_x in 0..content.len() {
                 for child_y in 0..content[child_x].len() {
-                    if pos.y + child_y >= effective_size.height { continue }
-                    if pos.x + child_x > largest_x { largest_x = pos.x + child_x }
-                    if pos.y + child_y > largest_y { largest_y = pos.y + child_y }
-                    merged_content[pos.x + child_x][pos.y + child_y] =
-                        content[child_x][child_y].clone();
+                    let write_pos_x = pos.x + child_x;
+                    let write_pos_y = pos.y + child_y;
+                    if write_pos_y >= effective_size.height { continue }
+                    if write_pos_x > largest_x { largest_x = pos.x + child_x }
+                    if write_pos_y > largest_y { largest_y = pos.y + child_y }
+                    if write_pos_x < merged_content.len() &&
+                        write_pos_y < merged_content[write_pos_x].len() {
+                        merged_content[pos.x + child_x][pos.y + child_y] =
+                            content[child_x][child_y].clone();
+                    }
                 }
             }
             pos.x += content.len();

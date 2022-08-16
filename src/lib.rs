@@ -366,7 +366,7 @@
 //!     /my_ui.ez
 //! ```
 //!
-//! <a name="small_example"></a>
+//! <a name="minimal_example"></a>
 //! #### 1.1.4 Minimal example
 //!
 //! Now that we know the structure of an EzTerm project, we'll create the smallest working example
@@ -501,6 +501,10 @@
 //! <a name="ez_language_templates"></a>
 //! #### 1.2.2 Templates
 //!
+//! We'll now take a look at templates, because we'll often use them in tutorial examples. Don't
+//! worry about the unfamiliar properties we'll use, they will be explained in sections to come,
+//! for now just get an impression of what EzLang looks like.
+//!
 //! When you start writing your own .ez files, you may notice yourself writing the same types of
 //! widgets over and over again. To make your .ez files more readable and more ergonomic, you can
 //! use templates in these situations. Let's say for example that your interface has many
@@ -513,12 +517,12 @@
 //!         text: Label 1
 //!         fg_color: yellow
 //!         bg_color: blue
-//!         auto_scaling: true, true
+//!         auto_scale: true, true
 //!     - Label:
 //!         text: Label 2
 //!         fg_color: yellow
 //!         bg_color: blue
-//!         auto_scaling: true, true
+//!         auto_scale: true, true
 //! ```
 //! This can get quite verbose with two labels, let alone more. Instead we can define a template.
 //! A template is defined in the following format:
@@ -533,7 +537,7 @@
 //! - <MyCustomLabel@Label>:
 //!     fg_color: yellow
 //!     bg_color: blue
-//!     auto_scaling: true, true
+//!     auto_scale: true, true
 //!
 //! - Layout:
 //!     mode: box
@@ -548,11 +552,21 @@
 //! template; properties defined when using a template always overwrite the properties of the
 //! template definition:
 //! ```
-//! - MyCustomLabel:
-//!     text: Red Label
-//!     fg_color: red
+//! - <MyCustomLabel@Label>:
+//!     fg_color: yellow
+//!     bg_color: blue
+//!     auto_scale: true, true
+//!
+//! - Layout:
+//!     mode: box
+//!     orientation: vertical
+//!     - MyCustomLabel:
+//!         text: Label 1
+//!     - MyCustomLabel:
+//!         text: Label 2
+//!         fg_color: red
 //! ```
-//! The text of the above label will be red, because the fg_color defined when using a template
+//! The text of the second label will be red, because the fg_color defined when using a template
 //! overwrites the fg_color of the template definition.
 //!
 //! Templates are not just useful for reusing widgets. They can also be used for widgets used only
@@ -600,7 +614,7 @@
 //! - <CustomButton@Button>:
 //!     fg_color: yellow
 //!     bg_color: blue
-//!     auto_scaling: true, true
+//!     auto_scale: true, true
 //!
 //! - <Menu@Layout>:
 //!     mode: box
@@ -639,14 +653,19 @@
 //! example of a vertical box mode layout could be a menu (a set of buttons placed under one
 //! another):
 //! ```
+//! - <CustomButton@Button>:
+//!     fg_color: yellow
+//!     bg_color: blue
+//!     auto_scale: true, true
+//!
 //! - Layout:
 //!     mode: box
 //!     orientation: vertical
-//!     - Button:
+//!     - CustomButton:
 //!         text: Option 1
-//!     - Button:
+//!     - CustomButton:
 //!         text: Option 2
-//!     - Button:
+//!     - CustomButton:
 //!         text: Option 3
 //! ```
 //! It can often be useful to nest Box layouts in other Box layouts to divide the screen into
@@ -654,26 +673,33 @@
 //! on the right. We could divide the screen horizontally with a Box layout, and then add two
 //! vertical Box layouts (one menu for each side of the screen):
 //! ```
+//! - <CustomButton@Button>:
+//!     fg_color: yellow
+//!     bg_color: blue
+//!     auto_scale: true, true
+//!
 //! - Layout:
 //!     mode: box
 //!     orientation: horizontal
 //!     - Layout:
 //!         mode: box
 //!         orientation: vertical
-//!         - Button:
+//!         border: true
+//!         - CumstomButton:
 //!             text: Left option 1
-//!         - Button:
+//!         - CumstomButton:
 //!             text: Left option 2
-//!         - Button:
+//!         - CumstomButton:
 //!             text: Left option 3
 //!     - Layout:
 //!         mode: box
 //!         orientation: vertical
-//!         - Button:
+//!         border: true
+//!         - CumstomButton:
 //!             text: Right option 1
-//!         - Button:
+//!         - CumstomButton:
 //!             text: Right option 2
-//!         - Button:
+//!         - CumstomButton:
 //!             text: Right option 3
 //! ```
 //!
@@ -703,25 +729,31 @@
 //! let the stack layout do the work for us. We want the widgets stacked left-to-right,
 //! top-to-bottom:
 //! ```
+//! - <CustomLabel@Label>:
+//!     auto_scale: true, true
+//!     border: true
+//!
 //! - Layout:
 //!     mode: stack
 //!     orientation: lr-tb
-//!     - Label:
+//!     border: true
+//!     size_hint_x: none
+//!     width: 31
+//!     - CustomLabel:
 //!         text: Hi,
-//!         auto_scale: true, true
-//!     - Label:
+//!     - CustomLabel:
 //!         text: The size
-//!         auto_scale: true, true
-//!     - Label:
+//!     - CustomLabel:
 //!         text: Of these labels
-//!         auto_scale: true, true
-//!     - Label:
+//!     - CustomLabel:
 //!         text: Keeps increasing in length!
-//!         auto_scale: true, true
 //! ```
 //! The widgets will be stacked automatically. If you resize the window, the row and column each
 //! widget occupies may change, as the stack layout rearranges the widgets, but the orientation
-//! will always be respected. As you can see, stack layouts are an easy way to make sure your
+//! will always be respected.
+//!
+//!
+//!As you can see, stack layouts are an easy way to make sure your
 //! widgets will remain visible even when the window resizes (as long as there ís enough is enough
 //! space in general of course).
 //!
