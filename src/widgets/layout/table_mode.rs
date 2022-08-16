@@ -38,6 +38,9 @@ impl Layout{
 
         let (child_table, rows, cols) =
             self.get_table_model(&own_table_config, own_orientation);
+        if rows == 0 || cols == 0 {
+            return PixelMap::new()
+        }
 
         // Initial cell size. Can change if force_default is false, in which case it will scale to
         // size of largest child
