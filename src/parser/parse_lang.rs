@@ -15,8 +15,8 @@ use crate::widgets::layout::layout::Layout;
 include!(concat!(env!("OUT_DIR"), "/ez_file_gen.rs"));
 
 
-/// Load a file path into a root layout. Return the root widget and a new scheduler. Both will
-/// be needed to run an [App].
+/// Load a file path into a root layout. Return the root widget, state tree and a new scheduler.
+/// These will be needed to run the ui.
 pub fn load_ui<'a>() -> (Layout, StateTree, SchedulerFrontend) {
 
     let contents = ez_config(); // ez_config is generated from build.rs

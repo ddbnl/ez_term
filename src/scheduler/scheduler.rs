@@ -211,11 +211,10 @@ impl SchedulerFrontend {
     /// We will first define a popup template in the .ez file, and then spawn it in the UI.
     /// ```
     /// - <MyPopup@Layout>:
-    ///     id: my_popup
     ///     mode: float
     ///     size_hint: 0.5, 0.5
-    ///     border: true
     ///     pos_hint: center, middle
+    ///     border: true
     ///     - Label:
     ///         text: This is a test popup.
     ///         auto_scale: true, true
@@ -233,14 +232,13 @@ impl SchedulerFrontend {
     /// // We will open the popup, which gives us the path of the spawned popup
     /// scheduler.open_popup("TestPopup".to_string(), context.state_tree);
     /// // Now we will bind the dismiss button we defined to a dismiss callback
-    /// let dismiss =
-    /// move |context: EzContext| {
+    /// let dismiss = |context: EzContext| {
     ///
     ///     context.scheduler.dismiss_modal(context.state_tree);
     ///     false
     /// };
     /// scheduler.update_callback_config("dismiss_button",
-    ///                                  CallbackConfig::from_on_press(Box::new(dismiss_delay)));
+    ///                                  CallbackConfig::from_on_press(Box::new(dismiss)));
     /// // The popup will open on the next frame!
     /// ```
     pub fn open_modal(&mut self, template: &str, state_tree: &mut StateTree) {
@@ -254,8 +252,6 @@ impl SchedulerFrontend {
         for state in removed.get_all() {
             state.as_generic().clean_up_properties(self);
         }
-        self.deselect_widget();
-        self.force_redraw();
     }
 
     /// Replace the entire [CallbackConfig] of a widget with a new one. Unless you want to erase
@@ -273,8 +269,8 @@ impl SchedulerFrontend {
     ///     state.update(context.scheduler);
     ///     true
     /// };
-    /// scheduler.set_callback_config("my_button",
-    ///                               CallbackConfig::from_on_press(Box::new(dismiss_delay)));
+    /// scheduler.overwrite_callback_config("my_button",
+    ///                               CallbackConfig::from_on_press(Box::new(my_callback)));
     /// ```
     pub fn overwrite_callback_config(&mut self, for_widget: &str, callback_config: CallbackConfig) {
         self.backend.new_callback_configs.push((for_widget.to_string(), callback_config));
@@ -346,10 +342,11 @@ impl SchedulerFrontend {
     /// let (root_widget, mut state_tree, mut scheduler) = load_ui();
     ///
     /// let sql_records = get_sql_records();
+    /// let parent_id = "sql_records_layout";
+    /// let template_name = "SqlRecord";
+    ///
     /// for (i, sql_record) in sql_records.iter().enumerate() {
     ///
-    ///     let template_name = "SqlRecord";
-    ///     let parent_id = "sql_records_layout";
     ///     let new_id = format!("record_{}", i).as_str();
     ///     scheduler.create_widget(template_name, new_id, parent_id, &mut state_tree);
     ///
@@ -397,6 +394,12 @@ impl SchedulerFrontend {
 
     /// Remove a widget on the next frame. Pass the path or ID of the widget to remove.
     pub fn remove_widget(&mut self, name: &str) {
+
+        if name == "root" || name == "/root" {
+            panic!("Cannot remove the root layout")
+        } else if name == "modal" || name == "/root/modal" {
+            panic!("Cannot remove modal widget; use scheduler.dismiss_modal instead.")
+        }
         self.backend.widgets_to_remove.push(name.to_string());
     }
 
@@ -605,11 +608,12 @@ impl SchedulerFrontend {
 
     /// Schedule a widget to be updated on the next frame. Can also be called from the widget itself
     /// as ```[widget.update(scheduler)]``` (for convenience).
-    pub fn update_widget(&mut self, path: String) {
+    pub fn update_widget(&mut self, path: &str) {
         if path.starts_with("/root/modal") {
             self.backend.force_redraw = true;
             return
         }
+        let path = path.to_string();
         if !self.backend.widgets_to_update.contains(&path) {
             self.backend.widgets_to_update.push(path);
         }
@@ -646,18 +650,8 @@ impl SchedulerFrontend {
             self.backend.property_callbacks.push(name);
         }
     }
-    
-    /// Set the passed widget (can be ID or path) as selected. Automatically deselects the current
-    /// selection if any, and calls the appropriate callbacks.
-    pub fn set_selected_widget(&mut self, widget: &str, mouse_pos: Option<Coordinates>) {
-        self.backend.next_selection = Some((widget.to_string(), mouse_pos));
-    }
 
-    /// Set the passed widget (can be ID or path) as selected. Automatically deselects the current
-    /// selection if any, and calls the appropriate callbacks.
-    pub fn deselect_widget(&mut self) { self.backend.deselect = true }
-
-    /// Globally bind a keyboard key (CrossTerm [KeyCode]). These keybinds take priority over all 
+    /// Globally bind a keyboard key (CrossTerm [KeyCode]). These keybinds take priority over all
     /// others and work in all contexts.
     pub fn bind_global_key(&mut self, key: KeyCode, modifiers: Option<Vec<KeyModifiers>>,
                            callback: KeyboardCallbackFunction) {
@@ -677,6 +671,16 @@ impl SchedulerFrontend {
     pub fn clear_global_keys(&mut self) {
         self.backend.clear_global_keymap = true;
     }
+
+    /// Set the passed widget (can be ID or path) as selected. Automatically deselects the current
+    /// selection if any, and calls the appropriate callbacks.
+    pub fn set_selected_widget(&mut self, widget: &str, mouse_pos: Option<Coordinates>) {
+        self.backend.next_selection = Some((widget.to_string(), mouse_pos));
+    }
+
+    /// Set the passed widget (can be ID or path) as selected. Automatically deselects the current
+    /// selection if any, and calls the appropriate callbacks.
+    pub fn deselect_widget(&mut self) { self.backend.deselect = true }
 
     /// Gracefully exit the app.
     pub fn exit(&self) { stop(); }

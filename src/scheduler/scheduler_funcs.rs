@@ -163,7 +163,7 @@ pub fn remove_widgets(scheduler: &mut SchedulerFrontend, root_widget: &mut Layou
             let removed = state_tree.remove_node(header_path);
             removed.obj.as_generic().clean_up_properties(scheduler);
         }
-        scheduler.update_widget(parent_widget.get_path());
+        scheduler.update_widget(parent_widget.get_path().as_str());
 
         let removed_state = state_tree.remove_node(full_path.clone());
         for child in removed_state.get_all() {

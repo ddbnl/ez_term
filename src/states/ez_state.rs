@@ -544,7 +544,7 @@ pub trait GenericState {
     fn get_selected(&self) -> bool { false }
 
     fn update(&self, scheduler: &mut SchedulerFrontend)  {
-        scheduler.update_widget(self.get_path().to_string())
+        scheduler.update_widget(self.get_path())
     }
 
     fn clean_up_properties(&self, scheduler: &mut SchedulerFrontend);

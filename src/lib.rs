@@ -228,6 +228,40 @@
 //!         2. [Default callback implementations](#reference_canvas_default_callbacks)
 //!         3. [Available callbacks](#reference_canvas_available_callbacks)
 //!     12. [Scheduler](#reference_scheduler)
+//!         1. [schedule_once](#reference_scheduler_schedule_once)
+//!         2. [cancel_task](#reference_scheduler_cancel_task)
+//!         3. [schedule_recurring](#reference_scheduler_schedule_recurring)
+//!         4. [cancel_recurring_task](#reference_scheduler_cancel_recurring_task)
+//!         5. [schedule_threaded](#reference_scheduler_schedule_threaded)
+//!         6. [open_modal](#reference_scheduler_open_modal)
+//!         7. [dismiss_modal](#reference_scheduler_dismiss_modal)
+//!         8. [overwrite_callback_config](#reference_scheduler_overwrite_callback_config)
+//!         9. [update_callback_config](#reference_scheduler_update_callback_config)
+//!         10. [bind_property_callback](#reference_scheduler_bind_property_callback)
+//!         11. [bind_global_key](#reference_scheduler_bind_global_key)
+//!         12. [remove_global_key](#reference_scheduler_remove_global_key)
+//!         13. [clear_global_keys](#reference_scheduler_clear_global_keys)
+//!         14. [create_widget](#reference_scheduler_create_widget)
+//!         15. [remove_widget](#reference_scheduler_remove_widget)
+//!         16. [new_usize_property](#reference_scheduler_new_usize_property)
+//!         17. [new_f64_property](#reference_scheduler_new_f64_property)
+//!         18. [new_string_property](#reference_scheduler_new_string_property)
+//!         19. [new_bool_property](#reference_scheduler_new_bool_property)
+//!         20. [new_color_property](#reference_scheduler_new_color_property)
+//!         21. [new_layout_mode_property](#reference_scheduler_new_layout_mode_property)
+//!         22. [new_layout_orientation_property](#reference_scheduler_new_layout_orientation_property)
+//!         23. [new_horizontal_alignment_property](#reference_scheduler_new_horizontal_alignment_property)
+//!         24. [new_vertical_alignment_property](#reference_scheduler_new_vertical_alignment_property)
+//!         25. [new_horizontal_pos_hint_property](#reference_scheduler_new_horizontal_pos_hint_property)
+//!         26. [new_vertical_pos_hint_property](#reference_scheduler_new_vertical_pos_hint_property)
+//!         27. [new_size_hint_property](#reference_scheduler_new_size_hint_property)
+//!         28. [get_property](#reference_scheduler_get_property)
+//!         29. [get_property_mut](#reference_scheduler_get_property_mut)
+//!         30. [update_widget](#reference_scheduler_update_widget)
+//!         31. [force_redraw](#reference_scheduler_force_redraw)
+//!         32. [set_selected_widget](#reference_scheduler_set_selected_widget)
+//!         33. [deselect_widget](#reference_scheduler_deselect_widget)
+//!         34. [exit](#reference_scheduler_exit)
 //! 3. Examples
 //!
 //!
@@ -2701,6 +2735,7 @@
 //! // We must register our custom property!
 //! scheduler.new_usize_property("my_progress", 0);
 //!
+//! // This is our mock app, it sleeps regularly to simulate a long running function
 //! fn mock_app(mut properties: EzPropertiesMap, mut state_tree: StateTree) {
 //!
 //!    for x in 1..=5 {
@@ -2709,11 +2744,13 @@
 //!        std::thread::sleep(Duration::from_secs(1)) };
 //! }
 //!
+//! // We bind a callback to start our mock app on button press
 //! let start_button_callback = |context: EzContext| {
 //!     context.scheduler.schedule_threaded(Box::new(mock_app), None);
 //! };
 //! let callback_config = CallbackConfig::from_on_press(Box::new(start_button_callback));
 //! scheduler.update_callback_config("start_button", callback_config);
+//! run(root_widget, state_tree, scheduler)
 //!
 //! ```
 //! As you can see, we update the "my_progress" custom property in our mock app. When we do this,
@@ -2729,7 +2766,6 @@
 //! use std::time::Duration;
 //! let (root_widget, mut state_tree, mut scheduler) = load_ui();
 //!
-//! // We must register our custom property!
 //! scheduler.new_usize_property("my_progress", 0);
 //! let property = scheduler.get_property("my_progress");
 //! let property_mut = scheduler.get_property_mut("my_progress");
@@ -7488,7 +7524,7 @@
 //! <a name="reference_scheduler_schedule_once"></a>
 //! ### 2.12.1 schedule_once:
 //!
-//! Function that allows you to schedule a closure or function for single execution after a delay
+//! Method that allows you to schedule a closure or function for single execution after a delay
 //! (which can be 0).
 //! Only intended for code that returns immediately (like manipulating the UI); to run blocking
 //! app-code, use schedule threaded.
@@ -7514,8 +7550,11 @@
 //!     state.update(context.scheduler);
 //! };
 //! scheduler.schedule_once("my_task", Box::new(my_closure), Duration::from_secs(0));
+//! run(root_widget, state_tree, scheduler);
 //! ```
 //!
+//!
+//! <a name="reference_scheduler_cancel_task"></a>
 //! ### 2.12.2 cancel_task:
 //!
 //! Cancel a run-once task. This of course only works if called before the task was executed (possible
@@ -7543,11 +7582,14 @@
 //! scheduler.schedule_once("my_task", Box::new(my_closure), Duration::from_secs(0));
 //!
 //! scheduler.cancel_task("my_task");
+//! run(root_widget, state_tree, scheduler);
 //! ```
 //!
+//!
+//! <a name="reference_scheduler_schedule_recurring"></a>
 //! ### 2.12.3 schedule_recurring:
 //!
-//! Function that allows you to schedule a closure or function for recurring execution; it will be
+//! Method that allows you to schedule a closure or function for recurring execution; it will be
 //! executed on an interval as long as the function keeps returning true.
 //! Only intended for code that returns immediately (like manipulating the UI); to run blocking
 //! app-code, use schedule threaded.
@@ -7580,8 +7622,11 @@
 //!    }
 //! };
 //! scheduler.schedule_recurring("my_task", Box::new(my_closure), Duration::from_secs(1));
+//! run(root_widget, state_tree, scheduler);
 //! ```
 //!
+//!
+//! <a name="reference_scheduler_cancel_recurring"></a>
 //! ### 2.12.4 cancel_recurring_task:
 //!
 //! Cancel a recurring task. This function is always safe to call, if there's no task to cancel it
@@ -7615,10 +7660,14 @@
 //! scheduler.schedule_recurring("my_task", Box::new(my_closure), Duration::from_secs(1));
 //!
 //! scheduler.cancel_recurring_task("my_task");
+//! run(root_widget, state_tree, scheduler);
 //! ```
+//!
+//!
+//! <a name="reference_scheduler_schedule_threaded"></a>
 //! ### 2.12.5 schedule_threaded:
 //!
-//! Function that allows you to schedule a closure or function for threaded execution. This allows
+//! Method that allows you to schedule a closure or function for threaded execution. This allows
 //! you to run code that does not return immediately (like your app code). You can use the
 //! state tree from the threaded function to manipulate the UI, but the scheduler will not be
 //! available from a thread. A hashmap with custom properties is also available.
@@ -7652,14 +7701,928 @@
 //! }
 //!
 //! scheduler.schedule_threaded(Box::new(example_app), Some(Box::new(on_finish_callback)));
+//! run(root_widget, state_tree, scheduler);
 //! ```
 //!
 //!
-//!         9. [Managing widget selection](#scheduler_selection)
-//!         7. [Managing widgets programmatically](#scheduler_widgets_from_code)
-//!         5. [Creating custom properties](#scheduler_properties)
-//!         6. [Managing popups](#scheduler_modals)
-//!         8. [Updating widgets](#scheduler_updating)
+//! <a name="reference_scheduler_open_modal"></a>
+//! ### 2.12.6 open_modal:
+//!
+//! Method that allows you to open a modal (e.g. a popup). To open a modal you need to define a
+//! Layout template in an .ez file. You can then spawn an instance of the template as a modal using
+//! this method. The ID of the layout spawned as a modal will be 'modal', its full path will be
+//! '/root/modal'.
+//! For a tutorial on modals see: [Managing popups](#scheduler_modals)
+//!
+//! #### Parameters:
+//!
+//! - Layout template name: &str
+//! - State tree: &mut StateTree
+//!
+//! #### Example:
+//!
+//! We'll create a popup and open it. The popup will have some text and a dismiss button.
+//! First we need to define a Layout template in an .ez file:
+//! ```
+//! - <MyPopupTemplate@Layout>:
+//!     mode: float
+//!     size_hint: 0.5, 0.5
+//!     pos_hint: center, middle
+//!     border: true
+//!     - Label:
+//!         text: This is a test popup.
+//!         auto_scale: true, true
+//!         pos_hint: center, top
+//!     - Button:
+//!         id: dismiss_button
+//!         text: Dismiss
+//!         size_hint_x: 1
+//!         auto_scale_height: true
+//!         pos_hint: center, bottom
+//!         selection_order: 1
+//! ```
+//! Now we'll spawn the popup from code based on this template.
+//! ```
+//! use ez_term::*;
+//!
+//! let (root_widget, mut state_tree, mut scheduler) = load_ui();
+//!
+//! let dismiss = |context: EzContext| {
+//!
+//!     context.scheduler.dismiss_modal(context.state_tree);
+//!     false
+//! };
+//!
+//! scheduler.update_callback_config("dismiss_button",
+//!                                  CallbackConfig::from_on_press(Box::new(dismiss)));
+//!
+//! scheduler.open_modal("MyPopupTemplate", &mut state_tree);
+//! run(root_widget, state_tree, scheduler);
+//! ```
+//!
+//!
+//! <a name="reference_scheduler_dismiss_modal"></a>
+//! ### 2.12.7 dismiss_modal:
+//!
+//! Dismiss the open modal. Can always be called safely even if one no longer exists (though this
+//! does trigger a screen redraw so try to avoid that).
+//! For a tutorial on modals see: [Managing popups](#scheduler_modals)
+//!
+//! #### Parameters:
+//!
+//! - State tree: &mut StateTree
+//!
+//! #### Example:
+//!
+//! We'll dismiss any open modal:
+//! ```
+//! use ez_term::*;
+//!
+//! let (root_widget, mut state_tree, mut scheduler) = load_ui();
+//!
+//! scheduler.dismiss_modal(&mut state_tree);
+//! run(root_widget, state_tree, scheduler);
+//! ```
+//!
+//!
+//! <a name="reference_scheduler_overwrite_callback_config"></a>
+//! ### 2.12.8 overwrite_callback_config:
+//!
+//! Replace the entire CallbackConfig of a widget on the next frame. You can pass an empty
+//! CallbackConfig to remove all callbacks for a widget.
+//! For a tutorial on callbacks (including callback configs) see:
+//! [Managing callbacks](#scheduler_callbacks)
+//!
+//! #### Parameters:
+//!
+//! - Widget ID or path: &str
+//! - New CallbackConfig: CallbackConfig
+//!
+//! #### Example:
+//!
+//! We'll remove any existing callbacks by overwriting with an empty CallbackConfig for a button
+//! with id "my_button".
+//! ```
+//! use ez_term::*;
+//!
+//! let (root_widget, mut state_tree, mut scheduler) = load_ui();
+//!
+//! let callback_config = CallbackConfig::default();
+//! scheduler.overwrite_callback_config("my_button", callback_config);
+//! run(root_widget, state_tree, scheduler);
+//! ```
+//!
+//!
+//! <a name="reference_scheduler_update_callback_config"></a>
+//! ### 2.12.9 update_callback_config:
+//!
+//! Update the CallbackConfig of a widget on the next frame. Any callback set on the new callback
+//! config will be set on the existing one (overwriting if one already exists). Any existing
+//! callbacks that are *not* set on the new config are left intact. In other words, this allows
+//! you to set new callbacks without removing the existing ones.
+//! For a tutorial on callbacks (including callback configs) see:
+//! [Managing callbacks](#scheduler_callbacks)
+//!
+//! #### Parameters:
+//!
+//! - Widget ID or path: &str
+//! - New CallbackConfig: CallbackConfig
+//!
+//! #### Example:
+//!
+//! We'll add a callback for a button with id "my_button".
+//! ```
+//! use ez_term::*;
+//!
+//! let (root_widget, mut state_tree, mut scheduler) = load_ui();
+//!
+//! let my_callback = |context: EzContext| {
+//!     let state = context.state_tree.get_mut("my_button").as_button_mut();
+//!     state.set_disabled(true);
+//!     state.update(context.scheduler);
+//! };
+//!
+//! let callback_config = CallbackConfig::from_on_press(Box::new(my_callback));
+//! scheduler.update_callback_config("my_button", callback_config);
+//! run(root_widget, state_tree, scheduler);
+//! ```
+//!
+//!
+//! <a name="reference_scheduler_bind_property_callback"></a>
+//! ### 2.12.10 bind_property_callback:
+//!
+//! Bind a callback to a property (can be a widget property or a custom property). Whenever the
+//! property value changes, the callback is called. This method only takes a full property path
+//! (e.g. "/root/layout/my_label/width"); it is usually more convenient to get the property from
+//! the widget state, and then call "property.bind".
+//!
+//! For a tutorial on this see: [Managing callbacks](#scheduler_callbacks)
+//!
+//! #### Parameters:
+//!
+//! - property path: &str
+//! - callback function: Box<dyn FnMut(EzContext)>
+//!
+//! #### Example:
+//!
+//! Let's bind a property; we'll show how to do it from the scheduler, and how to do it from the
+//! property itself. We'll create a callback that displays the width of a label in its text:
+//! ```
+//! use ez_term::*;
+//!
+//! let (root_widget, mut state_tree, mut scheduler) = load_ui();
+//!
+//! fn my_callback(context: EzContext) {
+//!     let state = context.state_tree.get_mut("my_label").as_label_mut();
+//!     let width = state.get_size().get_width();
+//!     state.set_text(format!("My width is: {}", width));
+//! }
+//!
+//! // bind from scheduler
+//! scheduler.bind_property_callback("/root/layout/my_label/width", Box::new(my_callback));
+//!
+//! // bind from property
+//!     let state = state_tree.get_mut("my_label").as_label_mut();
+//!     state.size.width.bind(Box::new(my_callback), &mut scheduler);
+//!
+//!
+//! run(root_widget, state_tree, scheduler);
+//! ```
+//!
+//!
+//! <a name="reference_scheduler_bind_global_key"></a>
+//! ### 2.12.11 bind_global_key:
+//!
+//! Bind a callback to a custom key being pressed anywhere in the UI. Global key binds take
+//! priority over widget key binds.
+//! For a tutorial on this see: [Managing callbacks](#scheduler_callbacks)
+//!
+//! #### Parameters:
+//!
+//! - key: KeyCode
+//! - modifiers: Option<Vec<KeyModifiers>>
+//! - callback function: Box<dyn FnMut(EzContext, KeyCode, KeyModifiers)>
+//!
+//! #### Example:
+//!
+//! We'll bind the key combination "shift + A" to change a label text:
+//! ```
+//! use ez_term::*;
+//!
+//! let (root_widget, mut state_tree, mut scheduler) = load_ui();
+//!
+//! fn my_callback(context: EzContext) {
+//!     let state = context.state_tree.get_mut("my_label").as_label_mut();
+//!     state.set_text("Shift A was pressed!".to_string());
+//! }
+//!
+//! scheduler.bind_global_key(KeyCode::Char('a'), Some(vec!(KeyModifiers::SHIFT)),
+//!                           Box::new(my_callback));
+//!
+//! run(root_widget, state_tree, scheduler);
+//! ```
+//!
+//!
+//! <a name="reference_scheduler_remove_global_key"></a>
+//! ### 2.12.12 remove_global_key:
+//!
+//! Remove one specific global key bind.
+//! For a tutorial on this see: [Managing callbacks](#scheduler_callbacks)
+//!
+//! #### Parameters:
+//!
+//! - key: KeyCode
+//! - modifiers: Option<Vec<KeyModifiers>>
+//!
+//! #### Example:
+//!
+//! We'll remove the key combination "shift + A" from the global key binds:
+//! ```
+//! use ez_term::*;
+//!
+//! let (root_widget, mut state_tree, mut scheduler) = load_ui();
+//!
+//!
+//! scheduler.remove_global_key(KeyCode::Char('a'), Some(vec!(KeyModifiers::SHIFT);
+//!
+//! run(root_widget, state_tree, scheduler);
+//! ```
+//!
+//!
+//! <a name="reference_scheduler_clear_global_keys"></a>
+//! ### 2.12.13 clear_global_keys:
+//!
+//! Remove all global key binds.
+//! For a tutorial on this see: [Managing callbacks](#scheduler_callbacks)
+//!
+//! #### Parameters:
+//!
+//! This method takes no parameters.
+//!
+//! #### Example:
+//!
+//! ```
+//! use ez_term::*;
+//!
+//! let (root_widget, mut state_tree, mut scheduler) = load_ui();
+//!
+//!
+//! scheduler.clear_global_keys();
+//!
+//! run(root_widget, state_tree, scheduler);
+//! ```
+//!
+//!
+//! <a name="reference_scheduler_create_widget"></a>
+//! ### 2.12.14 create_widget:
+//!
+//! Create a widget from a template or base widget type and add it to a layout. This allows you to
+//! create widgets from code.
+//! For a tutorial on this see: [Managing widgets programmatically](#scheduler_widgets_from_code)
+//!
+//! #### Parameters:
+//!
+//! - Widget type or template: &str
+//! - ID of new widget: &str
+//! - ID or path of parent layout: &str
+//! - State tree: &mut StateTree
+//!
+//! #### Example:
+//!
+//! We'll add labels to a layout from a for loop; after creating the labels we'll alter the text of
+//! each label based on the for loop number:
+//! ```
+//! use ez_term::*;
+//!
+//! let (root_widget, mut state_tree, mut scheduler) = load_ui();
+//!
+//! let parent_id = "my_layout";
+//!
+//! for x in 1..=10 {
+//!
+//!     let new_id = format!("label_{}", x).as_str();
+//!     scheduler.create_widget("Label", new_id, parent_id, &mut state_tree);
+//!
+//!     let new_label_state = state_tree.get_mut(new_id);
+//!     new_label_state.set_text(format!("Hello world {}!", x));
+//!
+//! }
+//!
+//! run(root_widget, state_tree, scheduler);
+//! ```
+//!
+//!
+//! <a name="reference_scheduler_remove_widget"></a>
+//! ### 2.12.15 remove_widget:
+//!
+//! Remove a widget from a layout. Removing a layout will also remove all children of that layout.
+//! You cannot remove the root layout. You cannot remove a modal root, use scheduler.dismiss_modal
+//! instead.
+//! For a tutorial on this see: [Managing widgets programmatically](#scheduler_widgets_from_code)
+//!
+//! #### Parameters:
+//!
+//! - ID or path of widget to remove: &str
+//!
+//! #### Example:
+//!
+//! We'll remove labels from a layout from a for loop:
+//! ```
+//! use ez_term::*;
+//!
+//! let (root_widget, mut state_tree, mut scheduler) = load_ui();
+//!
+//! for x in 1..=10 {
+//!
+//!     let label_id = format!("label_{}", x).as_str();
+//!     scheduler.remove_widget(label_id);
+//! }
+//!
+//! run(root_widget, state_tree, scheduler);
+//! ```
+//!
+//!
+//! <a name="reference_scheduler_new_usize_property"></a>
+//! ### 2.12.16 new_usize_property:
+//!
+//! Create a custom property. You can bind this property to widget properties of the same type;
+//! then when you update the custom property, the widget will update automatically as well.
+//! The name of custom properties may not contain any '/'.
+//! For a tutorial on this see: [Creating custom properties](#scheduler_properties).
+//!
+//! #### Parameters:
+//!
+//! - Name of the new property: &str
+//! - Value of the new property: usize
+//!
+//! #### Example:
+//!
+//! We'll create a custom property and bind it to a widget in an .ez file.
+//! First the code:
+//! ```
+//! use ez_term::*;
+//!
+//! let (root_widget, mut state_tree, mut scheduler) = load_ui();
+//!
+//! scheduler.new_usize_property("my_property", 1);
+//!
+//! run(root_widget, state_tree, scheduler);
+//! ```
+//! Now the .ez file:
+//! ```
+//! - Layout:
+//!     - ProgressBar:
+//!         value: properties.my_property
+//! ```
+//!
+//!
+//! <a name="reference_scheduler_new_f64_property"></a>
+//! ### 2.12.17 new_f64_property:
+//!
+//! Create a custom property. You can bind this property to widget properties of the same type;
+//! then when you update the custom property, the widget will update automatically as well.
+//! The name of custom properties may not contain any '/'.
+//! For a tutorial on this see: [Creating custom properties](#scheduler_properties).
+//!
+//! #### Parameters:
+//!
+//! - Name of the new property: &str
+//! - Value of the new property: f64
+//!
+//! #### Example:
+//!
+//! We'll create a custom property and bind it to a widget in an .ez file.
+//! First the code:
+//! ```
+//! use ez_term::*;
+//!
+//! let (root_widget, mut state_tree, mut scheduler) = load_ui();
+//!
+//! scheduler.new_f64_property("my_property", 0.5);
+//!
+//! run(root_widget, state_tree, scheduler);
+//! ```
+//! Now the .ez file:
+//! ```
+//! - Layout:
+//!     scroll_y: true
+//!     view_start_y: properties.my_property
+//! ```
+//!
+//!
+//! <a name="reference_scheduler_new_string_property"></a>
+//! ### 2.12.18 new_string_property:
+//!
+//! Create a custom property. You can bind this property to widget properties of the same type;
+//! then when you update the custom property, the widget will update automatically as well.
+//! The name of custom properties may not contain any '/'.
+//! For a tutorial on this see: [Creating custom properties](#scheduler_properties).
+//!
+//! #### Parameters:
+//!
+//! - Name of the new property: &str
+//! - Value of the new property: String
+//!
+//! #### Example:
+//!
+//! We'll create a custom property and bind it to a widget in an .ez file.
+//! First the code:
+//! ```
+//! use ez_term::*;
+//!
+//! let (root_widget, mut state_tree, mut scheduler) = load_ui();
+//!
+//! scheduler.new_string_property("my_property", "Hello world!".to_string());
+//!
+//! run(root_widget, state_tree, scheduler);
+//! ```
+//! Now the .ez file:
+//! ```
+//! - Layout:
+//!     - Label:
+//!         text: properties.my_property
+//! ```
+//!
+//!
+//! <a name="reference_scheduler_new_bool_property"></a>
+//! ### 2.12.19 new_bool_property:
+//!
+//! Create a custom property. You can bind this property to widget properties of the same type;
+//! then when you update the custom property, the widget will update automatically as well.
+//! The name of custom properties may not contain any '/'.
+//! For a tutorial on this see: [Creating custom properties](#scheduler_properties).
+//!
+//! #### Parameters:
+//!
+//! - Name of the new property: &str
+//! - Value of the new property: bool
+//!
+//! #### Example:
+//!
+//! We'll create a custom property and bind it to a widget in an .ez file.
+//! First the code:
+//! ```
+//! use ez_term::*;
+//!
+//! let (root_widget, mut state_tree, mut scheduler) = load_ui();
+//!
+//! scheduler.new_bool_property("my_property", true);
+//!
+//! run(root_widget, state_tree, scheduler);
+//! ```
+//! Now the .ez file:
+//! ```
+//! - Layout:
+//!     - Button:
+//!         disabled: properties.my_property
+//! ```
+//!
+//! <a name="reference_scheduler_new_color_property"></a>
+//! ### 2.12.20 new_color_property:
+//!
+//! Create a custom property. You can bind this property to widget properties of the same type;
+//! then when you update the custom property, the widget will update automatically as well.
+//! The name of custom properties may not contain any '/'.
+//! For a tutorial on this see: [Creating custom properties](#scheduler_properties).
+//!
+//! #### Parameters:
+//!
+//! - Name of the new property: &str
+//! - Value of the new property: Color
+//!
+//! #### Example:
+//!
+//! We'll create a custom property and bind it to a widget in an .ez file.
+//! First the code:
+//! ```
+//! use ez_term::*;
+//!
+//! let (root_widget, mut state_tree, mut scheduler) = load_ui();
+//!
+//! scheduler.new_color_property("my_property", Color::Yellow);
+//!
+//! run(root_widget, state_tree, scheduler);
+//! ```
+//! Now the .ez file:
+//! ```
+//! - Layout:
+//!     - Label:
+//!         fg_color: properties.my_property
+//! ```
+//!
+//!
+//! <a name="reference_scheduler_new_layout_mode_property"></a>
+//! ### 2.12.21 new_layout_mode_property:
+//!
+//! Create a custom property. You can bind this property to widget properties of the same type;
+//! then when you update the custom property, the widget will update automatically as well.
+//! The name of custom properties may not contain any '/'.
+//! For a tutorial on this see: [Creating custom properties](#scheduler_properties).
+//!
+//! #### Parameters:
+//!
+//! - Name of the new property: &str
+//! - Value of the new property: LayoutMode
+//!
+//! #### Example:
+//!
+//! We'll create a custom property and bind it to a widget in an .ez file.
+//! First the code:
+//! ```
+//! use ez_term::*;
+//!
+//! let (root_widget, mut state_tree, mut scheduler) = load_ui();
+//!
+//! scheduler.new_layout_mode_property("my_property", LayoutMode::Table);
+//!
+//! run(root_widget, state_tree, scheduler);
+//! ```
+//! Now the .ez file:
+//! ```
+//! - Layout:
+//!     mode: properties.my_property
+//! ```
+//!
+//! <a name="reference_scheduler_new_layout_orientation_property"></a>
+//! ### 2.12.22 new_layout_orientation_property:
+//!
+//! Create a custom property. You can bind this property to widget properties of the same type;
+//! then when you update the custom property, the widget will update automatically as well.
+//! The name of custom properties may not contain any '/'.
+//! For a tutorial on this see: [Creating custom properties](#scheduler_properties).
+//!
+//! #### Parameters:
+//!
+//! - Name of the new property: &str
+//! - Value of the new property: LayoutOrientation
+//!
+//! #### Example:
+//!
+//! We'll create a custom property and bind it to a widget in an .ez file.
+//! First the code:
+//! ```
+//! use ez_term::*;
+//!
+//! let (root_widget, mut state_tree, mut scheduler) = load_ui();
+//!
+//! scheduler.new_string_property("my_property", LayoutOrientation::Vertical);
+//!
+//! run(root_widget, state_tree, scheduler);
+//! ```
+//! Now the .ez file:
+//! ```
+//! - Layout:
+//!     orientation: properties.my_property
+//! ```
+//!
+//! <a name="reference_scheduler_new_horizontal_alignment_property"></a>
+//! ### 2.12.23 new_horizontal_alignment_property:
+//!
+//! Create a custom property. You can bind this property to widget properties of the same type;
+//! then when you update the custom property, the widget will update automatically as well.
+//! The name of custom properties may not contain any '/'.
+//! For a tutorial on this see: [Creating custom properties](#scheduler_properties).
+//!
+//! #### Parameters:
+//!
+//! - Name of the new property: &str
+//! - Value of the new property: HorizontalAlignment
+//!
+//! #### Example:
+//!
+//! We'll create a custom property and bind it to a widget in an .ez file.
+//! First the code:
+//! ```
+//! use ez_term::*;
+//!
+//! let (root_widget, mut state_tree, mut scheduler) = load_ui();
+//!
+//! scheduler.new_horizontal_alignment_property("my_property", HorizontalAlignment::Center);
+//!
+//! run(root_widget, state_tree, scheduler);
+//! ```
+//! Now the .ez file:
+//! ```
+//! - Layout:
+//!     - Label:
+//!         halign: properties.my_property
+//! ```
+//!
+//!
+//! <a name="reference_scheduler_new_vertical_alignment_property"></a>
+//! ### 2.12.24 new_vertical_alignment_property:
+//!
+//! Create a custom property. You can bind this property to widget properties of the same type;
+//! then when you update the custom property, the widget will update automatically as well.
+//! The name of custom properties may not contain any '/'.
+//! For a tutorial on this see: [Creating custom properties](#scheduler_properties).
+//!
+//! #### Parameters:
+//!
+//! - Name of the new property: &str
+//! - Value of the new property: VerticalAlignment
+//!
+//! #### Example:
+//!
+//! We'll create a custom property and bind it to a widget in an .ez file.
+//! First the code:
+//! ```
+//! use ez_term::*;
+//!
+//! let (root_widget, mut state_tree, mut scheduler) = load_ui();
+//!
+//! scheduler.new_vertical_alignment_property("my_property", VerticalAlignment::Middle);
+//!
+//! run(root_widget, state_tree, scheduler);
+//! ```
+//! Now the .ez file:
+//! ```
+//! - Layout:
+//!     - Label:
+//!         valign: properties.my_property
+//! ```
+//!
+//!
+//! <a name="reference_scheduler_new_horizontal_pos_hint_property"></a>
+//! ### 2.12.25 new_horizontal_pos_hint_property:
+//!
+//! Create a custom property. You can bind this property to widget properties of the same type;
+//! then when you update the custom property, the widget will update automatically as well.
+//! The name of custom properties may not contain any '/'.
+//! For a tutorial on this see: [Creating custom properties](#scheduler_properties).
+//!
+//! #### Parameters:
+//!
+//! - Name of the new property: &str
+//! - Value of the new property: HorizontalPosHint
+//!
+//! #### Example:
+//!
+//! We'll create a custom property and bind it to a widget in an .ez file.
+//! First the code:
+//! ```
+//! use ez_term::*;
+//!
+//! let (root_widget, mut state_tree, mut scheduler) = load_ui();
+//!
+//! scheduler.new_horizontal_pos_hint_property("my_property",
+//!                                            Some((HorizontalAlignment::Right, 0.75)));
+//!
+//! run(root_widget, state_tree, scheduler);
+//! ```
+//! Now the .ez file:
+//! ```
+//! - Layout:
+//!     mode: float
+//!     - Label:
+//!         pos_hint_x: properties.my_property
+//! ```
+//!
+//!
+//! <a name="reference_scheduler_new_vertical_pos_hint_property"></a>
+//! ### 2.12.26 new_vertical_pos_hint_property:
+//!
+//! Create a custom property. You can bind this property to widget properties of the same type;
+//! then when you update the custom property, the widget will update automatically as well.
+//! The name of custom properties may not contain any '/'.
+//! For a tutorial on this see: [Creating custom properties](#scheduler_properties).
+//!
+//! #### Parameters:
+//!
+//! - Name of the new property: &str
+//! - Value of the new property: VerticalPosHint
+//!
+//! #### Example:
+//!
+//! We'll create a custom property and bind it to a widget in an .ez file.
+//! First the code:
+//! ```
+//! use ez_term::*;
+//!
+//! let (root_widget, mut state_tree, mut scheduler) = load_ui();
+//!
+//! scheduler.new_vertical_pos_hint_property("my_property",
+//!                                            Some((VerticalAlignment::Middle, 0.75)));
+//!
+//! run(root_widget, state_tree, scheduler);
+//! ```
+//! Now the .ez file:
+//! ```
+//! - Layout:
+//!     mode: float
+//!     - Label:
+//!         pos_hint_y: properties.my_property
+//! ```
+//!
+//!
+//! <a name="reference_scheduler_new_size_hint_property"></a>
+//! ### 2.12.27 new_size_hint_property:
+//!
+//! Create a custom property. You can bind this property to widget properties of the same type;
+//! then when you update the custom property, the widget will update automatically as well.
+//! The name of custom properties may not contain any '/'.
+//! For a tutorial on this see: [Creating custom properties](#scheduler_properties).
+//!
+//! #### Parameters:
+//!
+//! - Name of the new property: &str
+//! - Value of the new property: SizeHint
+//!
+//! #### Example:
+//!
+//! We'll create a custom property and bind it to a widget in an .ez file.
+//! First the code:
+//! ```
+//! use ez_term::*;
+//!
+//! let (root_widget, mut state_tree, mut scheduler) = load_ui();
+//!
+//! scheduler.new_size_hint_property("my_property", Some(0.75));
+//!
+//! run(root_widget, state_tree, scheduler);
+//! ```
+//! Now the .ez file:
+//! ```
+//! - Layout:
+//!     mode: float
+//!     - Label:
+//!         size_hint_x: properties.my_property
+//! ```
+//!
+//!
+//! <a name="reference_scheduler_get_property"></a>
+//! ### 2.12.28 get_property:
+//!
+//! Get a reference to a  custom property created earlier.
+//! For a tutorial on this see: [Creating custom properties](#scheduler_properties).
+//!
+//! #### Parameters:
+//!
+//! - Name of the custom property: &str
+//!
+//! #### Example:
+//!
+//! We'll retrieve a custom property:
+//! ```
+//! use ez_term::*;
+//!
+//! let (root_widget, mut state_tree, mut scheduler) = load_ui();
+//!
+//! scheduler.new_usize_property("my_property", 10);
+//! let property = scheduler.get_property("my_property");
+//!
+//! run(root_widget, state_tree, scheduler);
+//! ```
+//!
+//! <a name="reference_scheduler_get_property_mut"></a>
+//! ### 2.12.29 get_property_mut:
+//!
+//! Get a mutable reference to a  custom property created earlier.
+//! For a tutorial on this see: [Creating custom properties](#scheduler_properties).
+//!
+//! #### Parameters:
+//!
+//! - Name of the custom property: &str
+//!
+//! #### Example:
+//!
+//! We'll retrieve a custom property and modify it:
+//! ```
+//! use ez_term::*;
+//!
+//! let (root_widget, mut state_tree, mut scheduler) = load_ui();
+//!
+//! scheduler.new_usize_property("my_property", 10);
+//! let property = scheduler.get_property_mut("my_property");
+//! property.set(20);
+//!
+//! run(root_widget, state_tree, scheduler);
+//! ```
+//!
+//!
+//! <a name="reference_scheduler_update_widget"></a>
+//! ### 2.12.30 update_widget:
+//!
+//! Schedule a widget to be redrawn on the next frame. If you are working with a widget state,
+//! it is usually more convenient to call "state.update" instead of this method. This method
+//! only accepts a full widget path, not an ID.
+//! For a tutorial on this see: [Updating widgets](#scheduler_updating)
+//!
+//! #### Parameters:
+//!
+//! - Path of the widget: &str
+//!
+//! #### Example:
+//!
+//! ```
+//! use ez_term::*;
+//!
+//! let (root_widget, mut state_tree, mut scheduler) = load_ui();
+//!
+//! scheduler.update_widget("/root/my_layout/my_label");
+//!
+//! run(root_widget, state_tree, scheduler);
+//! ```
+//!
+//!
+//! <a name="reference_scheduler_force_redraw"></a>
+//! ### 2.12.31 force_redraw:
+//!
+//! Forces a global screen redraw (though only changed pixels will actually be redrawn). While this
+//! method if exposed to give you the option to use it, this is generally not recommended for
+//! performance reasons. It's preferred to call updates on changed widgets, rather than global
+//! redraws.
+//! For a tutorial on this see: [Updating widgets](#scheduler_updating)
+//!
+//! #### Parameters:
+//!
+//! This method takes no parameters.
+//!
+//! #### Example:
+//!
+//! ```
+//! use ez_term::*;
+//!
+//! let (root_widget, mut state_tree, mut scheduler) = load_ui();
+//!
+//! scheduler.force_redraw();
+//!
+//! run(root_widget, state_tree, scheduler);
+//! ```
+//!
+//!
+//! <a name="reference_scheduler_set_selected_widget"></a>
+//! ### 2.12.32 set_selected_widget:
+//!
+//! Users can select certain widget types through mouse or keyboard. This method allows selecting
+//! widgets programmatically.
+//! For a tutorial on this see: [Managing widget selection](#scheduler_selection)
+//!
+//! #### Parameters:
+//!
+//! - Widget ID or path: &str
+//! - Optional mouse coordinates for selection: Option<Coordinates>
+//!
+//! #### Example:
+//!
+//! We'll select a widget once with no mouse_pos, and once with mouse_pos:
+//! ```
+//! use ez_term::*;
+//!
+//! let (root_widget, mut state_tree, mut scheduler) = load_ui();
+//!
+//! scheduler.set_selected_widget("my_button", None);
+//! scheduler.set_selected_widget("my_button", Some(Coordinates::new(3, 1)));
+//!
+//! run(root_widget, state_tree, scheduler);
+//! ```
+//!
+//!
+//! <a name="reference_scheduler_deselect_widget"></a>
+//! ### 2.12.33 deselect_widget:
+//!
+//! Users can select certain widget types through mouse or keyboard. This method allows deselecting
+//! the current widget programmatically.
+//! For a tutorial on this see: [Managing widget selection](#scheduler_selection)
+//!
+//! #### Parameters:
+//!
+//! This method takes no parameters.
+//!
+//! #### Example:
+//!
+//! ```
+//! use ez_term::*;
+//!
+//! let (root_widget, mut state_tree, mut scheduler) = load_ui();
+//!
+//! scheduler.deselect_widget();
+//!
+//! run(root_widget, state_tree, scheduler);
+//! ```
+//!
+//!
+//! <a name="reference_scheduler_exit"></a>
+//! ### 2.12.34 exit:
+//!
+//! Exit the program gracefully. EzTerm makes several changes to the terminal to display the UI,
+//! so if you do not exit gracefully it may leave the terminal in an unusable state.
+//!
+//! #### Parameters:
+//!
+//! This method takes no parameters.
+//!
+//! #### Example:
+//!
+//! ```
+//! use ez_term::*;
+//!
+//! let (root_widget, mut state_tree, mut scheduler) = load_ui();
+//!
+//! scheduler.exit();
+//! ```
+//!
+
 
 mod run;
 mod scheduler;
