@@ -2,7 +2,7 @@
 use std::io::{Error, ErrorKind};
 use std::time::Duration;
 
-use crate::EzContext;
+use crate::Context;
 use crate::parser::load_base_properties::load_string_property;
 use crate::parser::load_common_properties::load_common_property;
 use crate::property::ez_values::EzValues;
@@ -191,7 +191,7 @@ impl Button {
         state.update(scheduler);
         let path = self.path.clone();
         let scheduled_func =
-            move | context: EzContext | {
+            move | context: Context| {
                 if !context.state_tree.contains(path.as_str()) { return }
                 let state = context.state_tree.get_mut(path.as_str())
                     .as_button_mut();

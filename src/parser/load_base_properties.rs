@@ -24,19 +24,19 @@ pub fn bind_ez_property(value: &str, scheduler: &mut SchedulerFrontend, path: St
 
     if value.starts_with("self.") {
         let new_path = value.replace("self.", &path).replace('.', "/");
-        scheduler.subscribe_to_ez_property(new_path.as_str(), update_func);
+        scheduler.subscribe_to_property(new_path.as_str(), update_func);
         true
     } else if value.starts_with("root.") {
         let new_path = value.replace(".root", "/root").replace('.', "/");
-        scheduler.subscribe_to_ez_property(new_path.as_str(), update_func);
+        scheduler.subscribe_to_property(new_path.as_str(), update_func);
         true
     } else if value.starts_with("parent.") {
         let new_path = resolve_parent_path(path, value);
-        scheduler.subscribe_to_ez_property(new_path.as_str(), update_func);
+        scheduler.subscribe_to_property(new_path.as_str(), update_func);
         true
     } else if value.starts_with("properties.") {
         let new_path = value.strip_prefix("properties.").unwrap();
-        scheduler.subscribe_to_ez_property(new_path, update_func);
+        scheduler.subscribe_to_property(new_path, update_func);
         true
     } else {
         false

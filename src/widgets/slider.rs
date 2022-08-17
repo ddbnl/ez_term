@@ -3,7 +3,7 @@ use std::cmp::min;
 use std::io::{Error, ErrorKind};
 
 use crossterm::event::{Event, KeyCode};
-use crate::EzContext;
+use crate::Context;
 use crate::parser::load_base_properties::load_usize_property;
 
 use crate::parser::load_common_properties::load_common_property;
@@ -199,7 +199,7 @@ impl EzObject for Slider {
                 let func =
                     callback_tree.get_mut(&self.get_path())
                         .obj.keymap.get_mut(key.code, key.modifiers).unwrap();
-                let context = EzContext::new(
+                let context = Context::new(
                     self.get_path(), state_tree, scheduler);
                 func(context, key.code, key.modifiers);
                 return true

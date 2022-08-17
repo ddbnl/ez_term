@@ -132,7 +132,7 @@ fn progress_example_app(mut properties: EzPropertiesMap) {
 
 // Now we bind a callback to a button that starts our example app when clicked:
 let start_app = 
-    |context: EzContext| {
+    |context: Context| {
         context.scheduler.schedule_threaded(Box::new(progress_example_app), None)
     }
 scheduler.update_callback_config("progress_button",

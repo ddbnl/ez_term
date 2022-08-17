@@ -1,4 +1,4 @@
-use crate::{CallbackConfig, EzContext, EzObject};
+use crate::{CallbackConfig, Context, EzObject};
 use crate::run::definitions::{IsizeCoordinates, PixelMap, StateTree};
 use crate::scheduler::scheduler::SchedulerFrontend;
 use crate::states::ez_state::GenericState;
@@ -188,7 +188,7 @@ impl Layout {
                 tab_header.state.colors.selection_fg_color.set(self.state.colors.selection_fg_color.value);
                 tab_header.state.colors.selection_bg_color.set(self.state.colors.selection_bg_color.value);
 
-                let tab_on_click = move |context: EzContext| {
+                let tab_on_click = move |context: Context| {
                     let state = context.state_tree
                         .get_mut(&parent_path).as_layout_mut();
                     state.set_active_tab(&tab_path.clone());

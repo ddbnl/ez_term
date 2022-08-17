@@ -7,7 +7,7 @@ use std::time::Duration;
 
 use crossterm::event::{Event, KeyCode};
 
-use crate::EzContext;
+use crate::Context;
 use crate::parser::load_base_properties::load_string_property;
 use crate::parser::load_common_properties::load_common_property;
 use crate::property::ez_values::EzValues;
@@ -339,7 +339,7 @@ fn start_cursor_blink(target_pos: Coordinates, state: &mut TextInputState,
     state.update(scheduler);
     let path = state.path.clone();
     let mut counter = 3;
-    let blink_func = move | context: EzContext | {
+    let blink_func = move | context: Context| {
         let state = context.state_tree.get_mut(&path.clone())
             .as_text_input_mut();
         if !state.get_selected() {

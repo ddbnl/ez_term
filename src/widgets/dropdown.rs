@@ -6,7 +6,7 @@ use std::io::{Error, ErrorKind};
 
 use crossterm::event::{Event, KeyCode, MouseButton, MouseEventKind};
 
-use crate::{CallbackConfig, EzContext};
+use crate::{CallbackConfig, Context};
 use crate::parser::load_base_properties::{load_bool_property, load_string_property};
 use crate::parser::load_common_properties::load_common_property;
 use crate::property::ez_values::EzValues;
@@ -403,7 +403,7 @@ impl DroppedDownMenu {
         state.update(scheduler);
         if let Some(ref mut i) =
         callback_tree.get_mut(&parent).obj.on_value_change {
-            let context = EzContext::new(parent.clone(), state_tree, scheduler);
+            let context = Context::new(parent.clone(), state_tree, scheduler);
             i(context);
         }
     }
@@ -447,7 +447,7 @@ impl DroppedDownMenu {
                 scheduler.force_redraw();
                 if let Some(ref mut i) = callback_tree
                     .get_mut(&parent).obj.on_value_change {
-                    let context = EzContext::new(parent, state_tree, scheduler);
+                    let context = Context::new(parent, state_tree, scheduler);
                     i(context);
                 }
             }

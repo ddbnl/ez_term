@@ -4,7 +4,7 @@
 use std::process::exit;
 
 use crossterm::event::{Event, KeyCode, KeyEvent, MouseButton, MouseEvent, MouseEventKind};
-use crate::{EzContext, KeyMap};
+use crate::{Context, KeyMap};
 
 use crate::run::definitions::{CallbackTree, Coordinates, StateTree};
 use crate::run::select::{get_widget_by_position, select_next, select_previous};
@@ -96,7 +96,7 @@ fn handle_key_event(key: KeyEvent, global_keymap: &mut KeyMap, state_tree: &mut 
         _ => false,
     };
     if !consumed && global_keymap.contains(key.code, key.modifiers) {
-        let context = EzContext::new("".to_string(), state_tree, scheduler);
+        let context = Context::new("".to_string(), state_tree, scheduler);
         let callback =
             global_keymap.get_mut(key.code, key.modifiers).unwrap();
         return callback(context, key.code, key.modifiers);

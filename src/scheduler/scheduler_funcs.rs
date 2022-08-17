@@ -4,10 +4,12 @@
 use std::collections::HashMap;
 use std::thread::{JoinHandle, spawn};
 use std::time::Instant;
+use crossterm::csi;
 
-use crate::{CallbackConfig, EzContext, EzObject, EzProperties, KeyMap, LayoutMode};
+use crate::{CallbackConfig, Context, EzObject, EzProperties, KeyMap, LayoutMode};
 use crate::run::definitions::{CallbackTree, StateTree};
 use crate::run::select::{deselect_widget, select_widget};
+use crate::scheduler::definitions::ThreadedContext;
 use crate::scheduler::scheduler::SchedulerFrontend;
 use crate::widgets::ez_object::EzObjects;
 use crate::widgets::layout::layout::Layout;
@@ -27,20 +29,19 @@ pub fn update_threads(scheduler: &mut SchedulerFrontend, state_tree: &mut StateT
 pub fn start_new_threads(scheduler: &mut SchedulerFrontend, state_tree: &mut StateTree) {
 
     while !scheduler.backend.threads_to_start.is_empty() {
+
         let (thread_func, on_finish) =
             scheduler.backend.threads_to_start.pop().unwrap();
-        let mut custom_properties: HashMap<String, EzProperties> = HashMap::new();
-
-        for (name, custom_property) in scheduler.backend.properties.iter()
-            .filter(|(name, (_, _))| !name.contains('/'))
-            .map(|(name, (property, _)) | (name, property)) {
-            custom_properties.insert(name.clone(), custom_property.clone());
-        }
-
-        let state_tree = state_tree.clone();
-        let handle: JoinHandle<()> = spawn(move || thread_func(custom_properties, state_tree));
+        let context = ThreadedContext::new("".to_string(),
+                                   state_tree.clone(),
+                                   scheduler._sync_to_thread());
+        let handle: JoinHandle<()> = spawn(move || thread_func(context));
         scheduler.backend.thread_handles.push((handle, on_finish))
     }
+}
+
+pub fn start_frontend_sync(main_scheduler: &mut SchedulerFrontend) {
+
 }
 
 
@@ -56,10 +57,11 @@ pub fn check_finished_threads(scheduler: &mut SchedulerFrontend, state_tree: &mu
     for i in finished {
         let (handle, on_finish) = scheduler.backend.thread_handles.remove(i);
         if let Some(mut func) = on_finish {
-            let context = EzContext::new(String::new(), state_tree, scheduler);
+            let context = Context::new(String::new(), state_tree, scheduler);
             func(context);
         }
         handle.join().unwrap();
+        scheduler._stop_sync_to_thread();
     }
 }
 
@@ -72,7 +74,7 @@ pub fn run_tasks(scheduler: &mut SchedulerFrontend, state_tree: &mut StateTree) 
     while !scheduler.backend.tasks.is_empty() {
         let mut task = scheduler.backend.tasks.pop().unwrap();
         if task.canceled { continue }
-        let context = EzContext::new(String::new(), state_tree, scheduler);
+        let context = Context::new(String::new(), state_tree, scheduler);
 
         let elapsed = task.created.elapsed();
         if elapsed >= task.delay {
@@ -86,7 +88,7 @@ pub fn run_tasks(scheduler: &mut SchedulerFrontend, state_tree: &mut StateTree) 
     let mut remaining_tasks = Vec::new();
     while !scheduler.backend.recurring_tasks.is_empty() {
         let mut task = scheduler.backend.recurring_tasks.pop().unwrap();
-        let context = EzContext::new(String::new(), state_tree, scheduler);
+        let context = Context::new(String::new(), state_tree, scheduler);
         if task.canceled { continue }
 
         if let Some(time) = task.last_execution {
@@ -213,11 +215,12 @@ pub fn update_properties(scheduler: &mut SchedulerFrontend,
     let mut to_update = Vec::new();
     let mut to_callback: Vec<String> = Vec::new();
 
-    for (name, (_, receiver))
+    for (name, _)
             in scheduler.backend.properties.iter() {
         let mut new_val = None;
         // Drain all new values if any, we only care about the latest.
-        while let Ok(new) = receiver.try_recv() {
+        while let Ok(new) = scheduler.backend.property_receivers.get(name).unwrap()
+            .try_recv() {
             new_val = Some(new);
         }
         if let Some(val) = new_val {
@@ -244,7 +247,7 @@ pub fn update_properties(scheduler: &mut SchedulerFrontend,
     for name in to_callback {
         for callback in callback_tree.get_mut(&name).obj
                 .property_callbacks.iter_mut() {
-            let context = EzContext::new(name.to_string(), state_tree, scheduler);
+            let context = Context::new(name.to_string(), state_tree, scheduler);
             callback(context);
         }
 

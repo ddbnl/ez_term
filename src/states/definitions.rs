@@ -433,7 +433,7 @@ impl PosHint {
 /// use ez_term::*;
 /// let (root_widget, mut state_tree, mut scheduler) = load_ui();
 ///
-/// let my_callback = move |context: EzContext| {
+/// let my_callback = move |context: Context| {
 ///
 ///     true
 /// };
@@ -455,7 +455,7 @@ pub struct CallbackConfig {
     /// use ez_term::*;
     /// let (root_widget, mut state_tree, mut scheduler) = load_ui();
     ///
-    /// let my_callback = move |context: EzContext, mouse_pos: Option<Coordinates>| {
+    /// let my_callback = move |context: Context, mouse_pos: Option<Coordinates>| {
     ///
     ///     true
     /// };
@@ -467,7 +467,7 @@ pub struct CallbackConfig {
     /// use ez_term::*;
     /// let (root_widget, mut state_tree, mut scheduler) = load_ui();
     ///
-    /// fn my_callback(context: EzContext, mouse_pos: Option<Coordinates>) -> bool {
+    /// fn my_callback(context: Context, mouse_pos: Option<Coordinates>) -> bool {
     ///
     ///     true
     /// };
@@ -483,7 +483,7 @@ pub struct CallbackConfig {
     /// use ez_term::*;
     /// let (root_widget, mut state_tree, mut scheduler) = load_ui();
     ///
-    /// let my_callback = move |context: EzContext| {
+    /// let my_callback = move |context: Context| {
     ///
     ///     true
     /// };
@@ -495,7 +495,7 @@ pub struct CallbackConfig {
     /// use ez_term::*;
     /// let (root_widget, mut state_tree, mut scheduler) = load_ui();
     ///
-    /// fn my_callback(context: EzContext) -> bool {
+    /// fn my_callback(context: Context) -> bool {
     ///
     ///     true
     /// };
@@ -513,7 +513,7 @@ pub struct CallbackConfig {
     /// use ez_term::*;
     /// let (root_widget, mut state_tree, mut scheduler) = load_ui();
     ///
-    /// let my_callback = move |context: EzContext| {
+    /// let my_callback = move |context: Context| {
     ///
     ///     true
     /// };
@@ -525,7 +525,7 @@ pub struct CallbackConfig {
     /// use ez_term::*;
     /// let (root_widget, mut state_tree, mut scheduler) = load_ui();
     ///
-    /// fn my_callback(context: EzContext) -> bool {
+    /// fn my_callback(context: Context) -> bool {
     ///
     ///     true
     /// };
@@ -541,7 +541,7 @@ pub struct CallbackConfig {
     /// use ez_term::*;
     /// let (root_widget, mut state_tree, mut scheduler) = load_ui();
     ///
-    /// let my_callback = move |context: EzContext| {
+    /// let my_callback = move |context: Context| {
     ///
     ///     true
     /// };
@@ -553,7 +553,7 @@ pub struct CallbackConfig {
     /// use ez_term::*;
     /// let (root_widget, mut state_tree, mut scheduler) = load_ui();
     ///
-    /// fn my_callback(context: EzContext) -> bool {
+    /// fn my_callback(context: Context) -> bool {
     ///
     ///     true
     /// };
@@ -571,7 +571,7 @@ pub struct CallbackConfig {
     /// use ez_term::*;
     /// let (root_widget, mut state_tree, mut scheduler) = load_ui();
     ///
-    /// let my_callback = move |context: EzContext, mouse_pos: Coordinates| {
+    /// let my_callback = move |context: Context, mouse_pos: Coordinates| {
     ///
     ///     true
     /// };
@@ -583,7 +583,7 @@ pub struct CallbackConfig {
     /// use ez_term::*;
     /// let (root_widget, mut state_tree, mut scheduler) = load_ui();
     ///
-    /// fn my_callback(context: EzContext, mouse_pos: Coordinates) -> bool {
+    /// fn my_callback(context: Context, mouse_pos: Coordinates) -> bool {
     ///
     ///     true
     /// };
@@ -601,7 +601,7 @@ pub struct CallbackConfig {
     /// use ez_term::*;
     /// let (root_widget, mut state_tree, mut scheduler) = load_ui();
     ///
-    /// let my_callback = move |context: EzContext, mouse_pos: Coordinates| {
+    /// let my_callback = move |context: Context, mouse_pos: Coordinates| {
     ///
     ///     true
     /// };
@@ -613,7 +613,7 @@ pub struct CallbackConfig {
     /// use ez_term::*;
     /// let (root_widget, mut state_tree, mut scheduler) = load_ui();
     ///
-    /// fn my_callback(context: EzContext, mouse_pos: Coordinates) -> bool {
+    /// fn my_callback(context: Context, mouse_pos: Coordinates) -> bool {
     ///
     ///     true
     /// };
@@ -631,7 +631,7 @@ pub struct CallbackConfig {
     /// use ez_term::*;
     /// let (root_widget, mut state_tree, mut scheduler) = load_ui();
     ///
-    /// let my_callback = move |context: EzContext, mouse_pos: Coordinates| {
+    /// let my_callback = move |context: Context, mouse_pos: Coordinates| {
     ///
     ///     true
     /// };
@@ -643,7 +643,7 @@ pub struct CallbackConfig {
     /// use ez_term::*;
     /// let (root_widget, mut state_tree, mut scheduler) = load_ui();
     ///
-    /// fn my_callback(context: EzContext, mouse_pos: Coordinates) -> bool {
+    /// fn my_callback(context: Context, mouse_pos: Coordinates) -> bool {
     ///
     ///     true
     /// };
@@ -665,7 +665,7 @@ pub struct CallbackConfig {
     /// use ez_term::*;
     /// let (root_widget, mut state_tree, mut scheduler) = load_ui();
     ///
-    /// let my_callback = move |context: EzContext, previous_mouse_pos: Option<Coordinates>,
+    /// let my_callback = move |context: Context, previous_mouse_pos: Option<Coordinates>,
     ///                         mouse_pos: Coordinates| {
     ///
     ///     true
@@ -678,7 +678,7 @@ pub struct CallbackConfig {
     /// use ez_term::*;
     /// let (root_widget, mut state_tree, mut scheduler) = load_ui();
     ///
-    /// fn my_callback(context: EzContext, previous_mouse_pos: Option<Coordinates>,
+    /// fn my_callback(context: Context, previous_mouse_pos: Option<Coordinates>,
     ///                mouse_pos: Coordinates) -> bool {
     ///
     ///     true
@@ -709,7 +709,7 @@ pub struct CallbackConfig {
     /// use ez_term::*;
     /// let (root_widget, mut state_tree, mut scheduler) = load_ui();
     ///
-    /// fn my_callback(context: EzContext) -> bool {
+    /// fn my_callback(context: Context) -> bool {
     ///
     ///     true
     /// };
@@ -739,7 +739,7 @@ pub struct CallbackConfig {
     /// use ez_term::*;
     /// let (root_widget, mut state_tree, mut scheduler) = load_ui();
     ///
-    /// fn my_callback(context: EzContext) -> bool {
+    /// fn my_callback(context: Context) -> bool {
     ///
     ///     true
     /// };
@@ -758,7 +758,7 @@ pub struct CallbackConfig {
     /// use ez_term::*;
     /// let (root_widget, mut state_tree, mut scheduler) = load_ui();
     ///
-    /// let my_callback = move |context: EzContext| {
+    /// let my_callback = move |context: Context| {
     ///
     ///     true
     /// };
@@ -770,7 +770,7 @@ pub struct CallbackConfig {
     /// use ez_term::*;
     /// let (root_widget, mut state_tree, mut scheduler) = load_ui();
     ///
-    /// fn my_callback(context: EzContext) -> bool {
+    /// fn my_callback(context: Context) -> bool {
     ///
     ///     true
     /// };
@@ -794,15 +794,15 @@ pub struct CallbackConfig {
 impl CallbackConfig {
 
     /// Create a [CallbackConfig] from a keybinding.
-    /// the callback function signature should be: (EzContext, KeyCode)
-    /// See [EzContext] for more information on the context. The KeyCode is the key that was pressed.
+    /// the callback function signature should be: (Context, KeyCode)
+    /// See [Context] for more information on the context. The KeyCode is the key that was pressed.
     pub fn bind_key(&mut self, key: KeyCode, modifiers: Option<Vec<KeyModifiers>>, func: KeyboardCallbackFunction) {
         self.keymap.bind_key(key, modifiers, func);
     }
 
     /// Create a [CallbackConfig] from an on_select callback.
-    /// the callback function signature should be: (EzContext, Option`<Coordinates`>)
-    /// See [EzContext] for more information on the context. The optional coordinates are the mouse
+    /// the callback function signature should be: (Context, Option`<Coordinates`>)
+    /// See [Context] for more information on the context. The optional coordinates are the mouse
     /// position; if it is none, the selection was not made by mouse.
     pub fn from_on_select(func: OptionalMouseCallbackFunction) -> Self {
         let mut obj = CallbackConfig::default();
@@ -811,8 +811,8 @@ impl CallbackConfig {
     }
 
     /// Create a [CallbackConfig] from an on_deselect callback.
-    /// the callback function signature should be: (EzContext)
-    /// See [EzContext] for more information on the context.
+    /// the callback function signature should be: (Context)
+    /// See [Context] for more information on the context.
     pub fn from_on_deselect(func: GenericFunction) -> Self {
         let mut obj = CallbackConfig::default();
         obj.on_deselect = Some(func);
@@ -820,8 +820,8 @@ impl CallbackConfig {
     }
 
     /// Create a [CallbackConfig] from an on_press callback.
-    /// the callback function signature should be: (EzContext)
-    /// See [EzContext] for more information on the context.
+    /// the callback function signature should be: (Context)
+    /// See [Context] for more information on the context.
     pub fn from_on_press(func: GenericFunction) -> Self {
         let mut obj = CallbackConfig::default();
         obj.on_press = Some(func);
@@ -829,8 +829,8 @@ impl CallbackConfig {
     }
 
     /// Create a [CallbackConfig] from an on_keyboard_enter callback.
-    /// the callback function signature should be: (EzContext)
-    /// See [EzContext] for more information on the context.
+    /// the callback function signature should be: (Context)
+    /// See [Context] for more information on the context.
     pub fn from_on_keyboard_enter(func: GenericFunction) -> Self {
         let mut obj = CallbackConfig::default();
         obj.on_keyboard_enter = Some(func);
@@ -838,8 +838,8 @@ impl CallbackConfig {
     }
 
     /// Create a [CallbackConfig] from an on_left_mouse_click callback.
-    /// the callback function signature should be: (EzContext, Coordinates)
-    /// See [EzContext] for more information on the context. The coordinates are the position of
+    /// the callback function signature should be: (Context, Coordinates)
+    /// See [Context] for more information on the context. The coordinates are the position of
     /// the mouse click click relative to the widget that was clicked.
     pub fn from_on_left_mouse_click(func: MouseCallbackFunction) -> Self {
         let mut obj = CallbackConfig::default();
@@ -848,8 +848,8 @@ impl CallbackConfig {
     }
 
     /// Create a [CallbackConfig] from an on_right_mouse_click callback.
-    /// the callback function signature should be: (EzContext, Coordinates)
-    /// See [EzContext] for more information on the context. The coordinates are the position of
+    /// the callback function signature should be: (Context, Coordinates)
+    /// See [Context] for more information on the context. The coordinates are the position of
     /// the mouse click click relative to the widget that was clicked.
     pub fn from_on_right_mouse_click(func: MouseCallbackFunction) -> Self {
         let mut obj = CallbackConfig::default();
@@ -858,8 +858,8 @@ impl CallbackConfig {
     }
 
     /// Create a [CallbackConfig] from an on_scroll_up callback.
-    /// the callback function signature should be: (EzContext)
-    /// See [EzContext] for more information on the context.
+    /// the callback function signature should be: (Context)
+    /// See [Context] for more information on the context.
     pub fn from_on_scroll_up(func: GenericFunction) -> Self {
         let mut obj = CallbackConfig::default();
         obj.on_scroll_up = Some(func);
@@ -867,8 +867,8 @@ impl CallbackConfig {
     }
 
     /// Create a [CallbackConfig] from an on_scroll_down callback.
-    /// the callback function signature should be: (EzContext)
-    /// See [EzContext] for more information on the context.
+    /// the callback function signature should be: (Context)
+    /// See [Context] for more information on the context.
     pub fn from_on_scroll_down(func: GenericFunction) -> Self {
         let mut obj = CallbackConfig::default();
         obj.on_scroll_down = Some(func);
@@ -876,8 +876,8 @@ impl CallbackConfig {
     }
 
     /// Create a [CallbackConfig] from an on_value_change callback.
-    /// the callback function signature should be: (EzContext)
-    /// See [EzContext] for more information on the context.
+    /// the callback function signature should be: (Context)
+    /// See [Context] for more information on the context.
     pub fn from_on_value_change(func: GenericFunction) -> Self {
         let mut obj = CallbackConfig::default();
         obj.on_value_change = Some(func);
@@ -885,8 +885,8 @@ impl CallbackConfig {
     }
 
     /// Create a [CallbackConfig] from an on_hover callback.
-    /// the callback function signature should be: (EzContext, Coordinates)
-    /// See [EzContext] for more information on the context. The coordinates are the position of
+    /// the callback function signature should be: (Context, Coordinates)
+    /// See [Context] for more information on the context. The coordinates are the position of
     /// the mouse click click relative to the widget that was clicked.
     pub fn from_on_hover(func: MouseCallbackFunction) -> Self {
         let mut obj = CallbackConfig::default();
@@ -895,8 +895,8 @@ impl CallbackConfig {
     }
 
     /// Create a [CallbackConfig] from an on_drag callback.
-    /// the callback function signature should be: (EzContext, Option`<Coordinates`>, Coordinates)
-    /// See [EzContext] for more information on the context. The optional coordinates are the
+    /// the callback function signature should be: (Context, Option`<Coordinates`>, Coordinates)
+    /// See [Context] for more information on the context. The optional coordinates are the
     /// previous drag position; if they are None, the drag just started. The second pair of
     /// coordinates are the current drag position. This allows your func to determine which way the
     /// drag is heading.

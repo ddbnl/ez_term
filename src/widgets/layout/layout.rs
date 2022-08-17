@@ -3,7 +3,7 @@
 use std::collections::HashMap;
 use std::io::{Error, ErrorKind};
 use crossterm::event::{Event, KeyCode};
-use crate::EzContext;
+use crate::Context;
 use crate::parser::load_base_properties::{load_bool_property, load_f64_property, load_layout_mode_property, load_layout_orientation_property, load_string_property, load_usize_property};
 use crate::parser::load_common_properties::load_common_property;
 use crate::widgets::ez_object::{EzObject, EzObjects};
@@ -455,7 +455,7 @@ impl EzObject for Layout {
                 let func =
                     callback_tree.get_mut(&self.path).obj.keymap
                         .get_mut(key.code, key.modifiers).unwrap();
-                let context = EzContext::new(
+                let context = Context::new(
                     self.get_path(), state_tree, scheduler);
                 let consumed = func(context, key.code, key.modifiers);
                 if consumed { return true }

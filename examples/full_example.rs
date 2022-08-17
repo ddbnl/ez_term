@@ -16,7 +16,7 @@ fn main() {
     // We will set up the menu screen buttons with closures.
     scheduler.update_callback_config("start_button",
         CallbackConfig::from_on_press(Box::new(
-            |context: EzContext| {
+            |context: Context| {
                 let root_state = context.state_tree.as_layout_mut();
                 root_state.set_active_screen("main_screen");
                 root_state.update(context.scheduler);
@@ -25,7 +25,7 @@ fn main() {
 
     scheduler.update_callback_config("quit_button",
         CallbackConfig::from_on_press(Box::new(
-                |context: EzContext| {
+                |context: Context| {
                     context.scheduler.exit();
                     true
                 } )));
@@ -45,7 +45,7 @@ fn main() {
     // Set a slider on value callback
     let progress_property =
         scheduler.new_usize_property("progress_property", 0);
-    let value_property_callback = |context: EzContext| {
+    let value_property_callback = |context: Context| {
         let val = context.state_tree.get("progress_bar")
             .as_progress_bar().get_value();
         let state = context.state_tree.get_mut("progress_label")
@@ -93,7 +93,7 @@ fn main() {
     // Creating a neon-banner callback
     let mut neon = (0, 255, 0);
     let mut switch: u8 = 0;
-    let neon_banner = move | context: EzContext | {
+    let neon_banner = move | context: Context| {
         let color = Color::from(neon);
         if switch == 0 {
             if neon.0 > 245 {
@@ -135,7 +135,7 @@ fn main() {
     scheduler.remove_widget("label_9");
 
     // We will bind a callback to a property
-    let size_callback = |context: EzContext | {
+    let size_callback = |context: Context| {
         let width = context.state_tree.get_mut("property_bind_source_label")
             .as_label_mut().get_width();
         let height = context.state_tree.get_mut("property_bind_source_label")
@@ -156,7 +156,7 @@ fn main() {
     // Bind a global key
     scheduler.bind_global_key(
         KeyCode::Char('a'), Some(vec!(KeyModifiers::SHIFT)),
-        Box::new(|context: EzContext, key: KeyCode, modifiers: KeyModifiers| {
+        Box::new(|context: Context, key: KeyCode, modifiers: KeyModifiers| {
             let state = context.state_tree.get_mut("checkbox").as_checkbox_mut();
             state.set_active(!state.get_active());
             state.update(context.scheduler);
@@ -172,7 +172,7 @@ fn main() {
 
 // As an example we will change the label next to a checkbox to say "enabled" or
 // "disabled" depending on the state of a checkbox.
-fn test_checkbox_on_value_change(context: EzContext) -> bool {
+fn test_checkbox_on_value_change(context: Context) -> bool {
 
     // First we get the widget state object of the widget that changed value, using the 'widget_path'
     // parameter as a key. The state contains the current value. Then we cast the generic widget
@@ -193,7 +193,7 @@ fn test_checkbox_on_value_change(context: EzContext) -> bool {
 
 // As an example we will change the label next to a slider to reflect its' value. We will also
 // change the color from red>yellow>green depending on the value
-fn test_slider_on_value_change(context: EzContext) -> bool {
+fn test_slider_on_value_change(context: Context) -> bool {
 
     // First we get the widget state object of the widget that changed value, using the 'widget_path'
     // parameter as a key. The state contains the current value.
@@ -220,7 +220,7 @@ fn test_slider_on_value_change(context: EzContext) -> bool {
 // As an example we will change the label next to a radio button group to display the id of the
 // selected radio button. We will also change the label to be the color of the radio button that
 // became active.
-fn test_radio_button_on_value_change(context: EzContext) -> bool {
+fn test_radio_button_on_value_change(context: Context) -> bool {
 
     // First we get the EzObjects enum of the widget that changed value, using the 'widget_path'
     // parameter as a key. Then we cast it into a radio button object. We will use this object to
@@ -242,7 +242,7 @@ fn test_radio_button_on_value_change(context: EzContext) -> bool {
 }
 
 // As an example we will change the label next to a dropdown display the active dropdown choice.
-fn test_dropdown_on_value_change(context: EzContext) -> bool {
+fn test_dropdown_on_value_change(context: Context) -> bool {
 
     // First we get the widget state object of the widget that changed value, using the 'widget_path'
     // parameter as a key. The state contains the current value. Then we cast the generic widget
@@ -259,7 +259,7 @@ fn test_dropdown_on_value_change(context: EzContext) -> bool {
 
 // As an example we will change the label below a text input to add 'confirmed' to its' text after
 // an enter on the text input. We will also deselect the widget.
-fn test_text_input_on_keyboard_enter(context: EzContext) -> bool {
+fn test_text_input_on_keyboard_enter(context: Context) -> bool {
 
     // First we get the widget state object of the widget that changed value, using the 'widget_path'
     // parameter as a key. The state contains the current value. Then we cast the generic widget
@@ -280,7 +280,7 @@ fn test_text_input_on_keyboard_enter(context: EzContext) -> bool {
 
 
 // As an example we will change a label after a button is pressed.
-fn test_on_button_press(context: EzContext) -> bool {
+fn test_on_button_press(context: Context) -> bool {
 
     // We will retrieve a label widget and change the 'text' field of its' state. This will
     // cause the text to change on the next frame.
@@ -297,7 +297,7 @@ fn test_on_button_press(context: EzContext) -> bool {
 
 
 // As an example we will change a label after a button is pressed.
-fn test_popup_button_on_press(context: EzContext) -> bool {
+fn test_popup_button_on_press(context: Context) -> bool {
 
     // We will open a popup in this callback. We open a popup by defining a template in the
     // Ez file, and then using the template name with the [common::open_popup] function to
@@ -309,11 +309,11 @@ fn test_popup_button_on_press(context: EzContext) -> bool {
     // actually dismisses the popup. The second closure simply schedules the first one to run with
     // a delay. We will bind the delaying function to the dismiss button.
     let dismiss =
-        move |context: EzContext| {
+        move |context: Context| {
             context.scheduler.dismiss_modal(context.state_tree);
         };
     let dismiss_delay =
-        move |context: EzContext| {
+        move |context: Context| {
             context.scheduler.schedule_once("dismiss_delay_task", Box::new(dismiss),
                                             Duration::from_millis(50));
             true
@@ -327,7 +327,7 @@ fn test_popup_button_on_press(context: EzContext) -> bool {
 
 
 // As an example we will change a label after a button is pressed.
-fn progress_bar_button(context: EzContext) -> bool {
+fn progress_bar_button(context: Context) -> bool {
 
     // We disable the progress bar button first so it cannot be pressed twice.
     let state = context.state_tree.get_mut(&context.widget_path)
@@ -335,7 +335,7 @@ fn progress_bar_button(context: EzContext) -> bool {
     state.set_disabled(true);
     state.update(context.scheduler);
     context.scheduler.schedule_threaded(Box::new(progress_example_app),
-        Some(Box::new(move |context: EzContext| {
+        Some(Box::new(move |context: Context| {
             let state = context.state_tree.get_mut("progress_button")
                 .as_generic_mut();
             state.set_disabled(false);
@@ -345,10 +345,10 @@ fn progress_bar_button(context: EzContext) -> bool {
 }
 
 
-fn progress_example_app(mut properties: EzPropertiesMap, mut state_tree: StateTree) {
+fn progress_example_app(mut context: ThreadedContext) {
 
     for x in 1..=5 {
-        let my_progress = properties.get_mut("my_progress").unwrap();
+        let my_progress = context.scheduler.get_property_mut("my_progress");
         my_progress.as_usize_mut().set(x*20);
         std::thread::sleep(Duration::from_secs(1)) };
 }

@@ -5,7 +5,7 @@ use std::io::Error;
 
 use crossterm::event::Event;
 
-use crate::EzContext;
+use crate::Context;
 use crate::run::definitions::{CallbackTree, Coordinates, PixelMap, StateTree};
 use crate::run::tree::ViewTree;
 use crate::scheduler::scheduler::SchedulerFrontend;
@@ -315,7 +315,7 @@ pub trait EzObject {
                 let func =
                     callback_tree.get_mut(&self.get_path()).obj
                     .keymap.get_mut(key.code, key.modifiers).unwrap();
-                let context = EzContext::new(
+                let context = Context::new(
                     self.get_path(), state_tree, scheduler);
                 func(context, key.code, key.modifiers);
                 return true
@@ -345,7 +345,7 @@ pub trait EzObject {
 
         if let Some(ref mut i) = callback_tree
             .get_mut(&self.get_path()).obj.on_keyboard_enter {
-            return i(EzContext::new(self.get_path(), state_tree, scheduler));
+            return i(Context::new(self.get_path(), state_tree, scheduler));
         };
         false
     }
@@ -371,7 +371,7 @@ pub trait EzObject {
 
         if let Some(ref mut i) = callback_tree
             .get_mut(&self.get_path()).obj.on_left_mouse_click {
-            return i(EzContext::new(self.get_path(), state_tree, scheduler),
+            return i(Context::new(self.get_path(), state_tree, scheduler),
                      mouse_pos);
         };
         false
@@ -393,7 +393,7 @@ pub trait EzObject {
 
         if let Some(ref mut i) = callback_tree
             .get_mut(&self.get_path()).obj.on_press {
-            return i(EzContext::new(self.get_path(), state_tree, scheduler));
+            return i(Context::new(self.get_path(), state_tree, scheduler));
         };
         false
     }
@@ -415,7 +415,7 @@ pub trait EzObject {
 
         if let Some(ref mut i) = callback_tree
             .get_mut(&self.get_path()).obj.on_right_mouse_click {
-            return i(EzContext::new(self.get_path(), state_tree, scheduler),
+            return i(Context::new(self.get_path(), state_tree, scheduler),
                      mouse_pos);
         };
         false
@@ -439,7 +439,7 @@ pub trait EzObject {
 
         if let Some(ref mut i) = callback_tree
             .get_mut(&self.get_path()).obj.on_hover {
-            return i(EzContext::new(self.get_path(), state_tree, scheduler),
+            return i(Context::new(self.get_path(), state_tree, scheduler),
                      mouse_pos);
         };
         false
@@ -463,7 +463,7 @@ pub trait EzObject {
 
         if let Some(ref mut i) = callback_tree
             .get_mut(&self.get_path()).obj.on_drag {
-            return i(EzContext::new(self.get_path(), state_tree, scheduler),
+            return i(Context::new(self.get_path(), state_tree, scheduler),
                      previous_pos, mouse_pos);
         };
         false
@@ -485,7 +485,7 @@ pub trait EzObject {
 
         if let Some(ref mut i) = callback_tree
             .get_mut(&self.get_path()).obj.on_scroll_up {
-            return i(EzContext::new(self.get_path(), state_tree, scheduler));
+            return i(Context::new(self.get_path(), state_tree, scheduler));
         };
         false
     }
@@ -506,7 +506,7 @@ pub trait EzObject {
 
         if let Some(ref mut i) = callback_tree
             .get_mut(&self.get_path()).obj.on_scroll_down {
-            return i(EzContext::new(self.get_path(), state_tree, scheduler));
+            return i(Context::new(self.get_path(), state_tree, scheduler));
         };
         false
     }
@@ -527,7 +527,7 @@ pub trait EzObject {
 
         if let Some(ref mut i) = callback_tree
             .get_mut(&self.get_path()).obj.on_value_change {
-            return i(EzContext::new(self.get_path(), state_tree, scheduler));
+            return i(Context::new(self.get_path(), state_tree, scheduler));
         };
         false
     }
@@ -548,7 +548,7 @@ pub trait EzObject {
 
         if let Some(ref mut i) = callback_tree
             .get_mut(&self.get_path()).obj.on_select {
-            return i(EzContext::new(self.get_path(), state_tree, scheduler),
+            return i(Context::new(self.get_path(), state_tree, scheduler),
                      mouse_pos);
         };
         false
@@ -570,7 +570,7 @@ pub trait EzObject {
 
         if let Some(ref mut i) = callback_tree
             .get_mut(&self.get_path()).obj.on_deselect {
-            return i(EzContext::new(self.get_path(), state_tree, scheduler));
+            return i(Context::new(self.get_path(), state_tree, scheduler));
         };
         false
     }

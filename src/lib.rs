@@ -919,9 +919,9 @@
 //!
 //! It is possible to change the active tab from code. Although callbacks will be discussed in a
 //! later chapter, we'll look at an example just for reference:
-//! ```
+//!```
 //! use ez_term::*;
-//! fn change_tab_callback(context: EzContext) {
+//! fn change_tab_callback(context: Context) {
 //!     let state = context.state_tree.get_mut("my_tab_layout").as_layout_mut();
 //!     state.set_active_tab("tab_two");
 //!     state.update(context.scheduler);
@@ -984,7 +984,7 @@
 //!             text: Go to screen 1
 //! ```
 //! **Rust code**
-//! ```
+//!```
 //! use ez_term::*;
 //! // We load the UI from the .ez files
 //! let (root_layout, mut state_tree, mut scheduler) = load_ui();
@@ -1000,13 +1000,13 @@
 //! run(root_layout, state_tree, scheduler);
 //!
 //! // We define the callback functions. We could also use closures if we wanted to.
-//! fn to_screen_one_callback(context: EzContext) {
+//! fn to_screen_one_callback(context: Context) {
 //!     let state = context.state_tree.get_mut("my_screen_layout").as_layout_mut();
 //!     state.set_active_screen("screen_1");
 //!     state.update(context.scheduler);
 //! }
 //!
-//! fn to_screen_two_callback(context: EzContext) {
+//! fn to_screen_two_callback(context: Context) {
 //!     let state = context.state_tree.get_mut("my_screen_layout").as_layout_mut();
 //!     state.set_active_screen("screen_2");
 //!     state.update(context.scheduler);
@@ -1701,7 +1701,7 @@
 //! our label from a callback it would look like this:
 //! ```
 //! use ez_term::*;
-//! fn my_callback(context: EzContext) -> bool {
+//! fn my_callback(context: Context) -> bool {
 //!
 //!     let label_state = context.state_tree.get_mut("my_label").as_label_mut();
 //!     label_state.set_text("new text".to_string());
@@ -1735,7 +1735,7 @@
 //! parameter:
 //! ```
 //! use ez_term::*;
-//! fn my_callback(context: EzContext) -> bool {
+//! fn my_callback(context: Context) -> bool {
 //!
 //!     context.scheduler.set_selected_widget("my_widget", None);
 //!     true
@@ -1744,7 +1744,7 @@
 //! The same is true from inside a scheduled task:
 //! ```
 //! use ez_term::*;
-//! fn my_task(context: EzContext) {
+//! fn my_task(context: Context) {
 //!
 //!     context.scheduler.set_selected_widget("my_widget", None);
 //! }
@@ -1779,9 +1779,9 @@
 //!
 //! Callbacks can be created from a closure or from a function. We will see examples of both below.
 //!
-//! All callbacks take a "context: EzContext" parameter. The EzContext object contains the
+//! All callbacks take a "context: Context" parameter. The Context object contains the
 //! StateTree object (context.state_tree) and the Scheduler object (context.scheduler). We can use
-//! these to manage the UI, as is being explained in this chapter. The EzContext also contains the
+//! these to manage the UI, as is being explained in this chapter. The Context also contains the
 //! path of the widget for which the callback was called (context.widget_path). Some callbacks have
 //! more parameters (for example, mouse callbacks have a mouse_pos parameter), but we will discuss
 //! these separately for each callback when relevant.
@@ -1808,14 +1808,14 @@
 //! **Callback from closure**
 //! ```
 //! use ez_term::*;
-//! let my_callback = |context: EzContext| {
+//! let my_callback = |context: Context| {
 //!     true
 //! };
 //! ```
 //! **Callback from function**
 //! ```
 //! use ez_term::*;
-//! fn my_callback(context: EzContext) -> bool {
+//! fn my_callback(context: Context) -> bool {
 //!     true
 //! };
 //! ```
@@ -1839,7 +1839,7 @@
 //! use ez_term::*;
 //! let (root_widget, mut state_tree, mut scheduler) = load_ui();
 //!
-//! let my_callback = |context: EzContext| {
+//! let my_callback = |context: Context| {
 //!
 //!     let label_state = context.state_tree.get_mut("my_label").as_label_mut();
 //!     label_state.set_text("Button was clicked!".to_string());
@@ -1861,7 +1861,7 @@
 //! updating it:
 //! ```
 //! use ez_term::*;
-//! fn my_callback(context: EzContext) -> bool {
+//! fn my_callback(context: Context) -> bool {
 //!
 //!     let label_state = context.state_tree.get_mut("my_label").as_label_mut();
 //!     label_state.set_text("Button was clicked!".to_string());
@@ -1884,7 +1884,7 @@
 //! let (root_widget, mut state_tree, mut scheduler) = load_ui();
 //!
 //! let mut counter: usize = 0;
-//! let my_callback = move |context: EzContext| {
+//! let my_callback = move |context: Context| {
 //!
 //!     counter += 1;
 //!     let label_state = context.state_tree.get_mut("my_label").as_label_mut();
@@ -1926,7 +1926,7 @@
 //! use ez_term::*;
 //! let (root_widget, mut state_tree, mut scheduler) = load_ui();
 //!
-//! let my_callback = move |context: EzContext| {
+//! let my_callback = move |context: Context| {
 //!
 //!     true
 //! };
@@ -1938,7 +1938,7 @@
 //! use ez_term::*;
 //! let (root_widget, mut state_tree, mut scheduler) = load_ui();
 //!
-//! fn my_callback(context: EzContext) -> bool {
+//! fn my_callback(context: Context) -> bool {
 //!
 //!     true
 //! };
@@ -1963,7 +1963,7 @@
 //! use ez_term::*;
 //! let (root_widget, mut state_tree, mut scheduler) = load_ui();
 //!
-//! let my_callback = move |context: EzContext, mouse_pos: Coordinates| {
+//! let my_callback = move |context: Context, mouse_pos: Coordinates| {
 //!
 //!     true
 //! };
@@ -1975,7 +1975,7 @@
 //! use ez_term::*;
 //! let (root_widget, mut state_tree, mut scheduler) = load_ui();
 //!
-//! fn my_callback(context: EzContext, mouse_pos: Coordinates) -> bool {
+//! fn my_callback(context: Context, mouse_pos: Coordinates) -> bool {
 //!
 //!     true
 //! };
@@ -1994,7 +1994,7 @@
 //! use ez_term::*;
 //! let (root_widget, mut state_tree, mut scheduler) = load_ui();
 //!
-//! let my_callback = move |context: EzContext| {
+//! let my_callback = move |context: Context| {
 //!
 //!     true
 //! };
@@ -2006,7 +2006,7 @@
 //! use ez_term::*;
 //! let (root_widget, mut state_tree, mut scheduler) = load_ui();
 //!
-//! fn my_callback(context: EzContext) -> bool {
+//! fn my_callback(context: Context) -> bool {
 //!
 //!     true
 //! };
@@ -2032,7 +2032,7 @@
 //! use ez_term::*;
 //! let (root_widget, mut state_tree, mut scheduler) = load_ui();
 //!
-//! let my_callback = move |context: EzContext, mouse_pos: Option<Coordinates>| {
+//! let my_callback = move |context: Context, mouse_pos: Option<Coordinates>| {
 //!
 //!     true
 //! };
@@ -2044,7 +2044,7 @@
 //! use ez_term::*;
 //! let (root_widget, mut state_tree, mut scheduler) = load_ui();
 //!
-//! fn my_callback(context: EzContext, mouse_pos: Option<Coordinates>) -> bool {
+//! fn my_callback(context: Context, mouse_pos: Option<Coordinates>) -> bool {
 //!
 //!     true
 //! };
@@ -2061,7 +2061,7 @@
 //! use ez_term::*;
 //! let (root_widget, mut state_tree, mut scheduler) = load_ui();
 //!
-//! let my_callback = move |context: EzContext| {
+//! let my_callback = move |context: Context| {
 //!
 //!     true
 //! };
@@ -2073,7 +2073,7 @@
 //! use ez_term::*;
 //! let (root_widget, mut state_tree, mut scheduler) = load_ui();
 //!
-//! fn my_callback(context: EzContext) -> bool {
+//! fn my_callback(context: Context) -> bool {
 //!
 //!     true
 //! };
@@ -2098,7 +2098,7 @@
 //! use ez_term::*;
 //! let (root_widget, mut state_tree, mut scheduler) = load_ui();
 //!
-//! let my_callback = move |context: EzContext, mouse_pos: Coordinates| {
+//! let my_callback = move |context: Context, mouse_pos: Coordinates| {
 //!
 //!     true
 //! };
@@ -2110,7 +2110,7 @@
 //! use ez_term::*;
 //! let (root_widget, mut state_tree, mut scheduler) = load_ui();
 //!
-//! fn my_callback(context: EzContext, mouse_pos: Coordinates) -> bool {
+//! fn my_callback(context: Context, mouse_pos: Coordinates) -> bool {
 //!
 //!     true
 //! };
@@ -2134,7 +2134,7 @@
 //! use ez_term::*;
 //! let (root_widget, mut state_tree, mut scheduler) = load_ui();
 //!
-//! let my_callback = move |context: EzContext, mouse_pos: Coordinates| {
+//! let my_callback = move |context: Context, mouse_pos: Coordinates| {
 //!
 //!     true
 //! };
@@ -2146,7 +2146,7 @@
 //! use ez_term::*;
 //! let (root_widget, mut state_tree, mut scheduler) = load_ui();
 //!
-//! fn my_callback(context: EzContext, mouse_pos: Coordinates) -> bool {
+//! fn my_callback(context: Context, mouse_pos: Coordinates) -> bool {
 //!
 //!     true
 //! };
@@ -2172,7 +2172,7 @@
 //! use ez_term::*;
 //! let (root_widget, mut state_tree, mut scheduler) = load_ui();
 //!
-//! let my_callback = move |context: EzContext, previous_mouse_pos: Option<Coordinates>,
+//! let my_callback = move |context: Context, previous_mouse_pos: Option<Coordinates>,
 //!                         mouse_pos: Coordinates| {
 //!
 //!     true
@@ -2185,7 +2185,7 @@
 //! use ez_term::*;
 //! let (root_widget, mut state_tree, mut scheduler) = load_ui();
 //!
-//! fn my_callback(context: EzContext, previous_mouse_pos: Option<Coordinates>,
+//! fn my_callback(context: Context, previous_mouse_pos: Option<Coordinates>,
 //!                mouse_pos: Coordinates) -> bool {
 //!
 //!     true
@@ -2206,7 +2206,7 @@
 //! use ez_term::*;
 //! let (root_widget, mut state_tree, mut scheduler) = load_ui();
 //!
-//! let my_callback = move |context: EzContext| {
+//! let my_callback = move |context: Context| {
 //!
 //!     true
 //! };
@@ -2218,7 +2218,7 @@
 //! use ez_term::*;
 //! let (root_widget, mut state_tree, mut scheduler) = load_ui();
 //!
-//! fn my_callback(context: EzContext) -> bool {
+//! fn my_callback(context: Context) -> bool {
 //!
 //!     true
 //! };
@@ -2238,7 +2238,7 @@
 //! use ez_term::*;
 //! let (root_widget, mut state_tree, mut scheduler) = load_ui();
 //!
-//! let my_callback = move |context: EzContext| {
+//! let my_callback = move |context: Context| {
 //!
 //!     true
 //! };
@@ -2250,7 +2250,7 @@
 //! use ez_term::*;
 //! let (root_widget, mut state_tree, mut scheduler) = load_ui();
 //!
-//! fn my_callback(context: EzContext) -> bool {
+//! fn my_callback(context: Context) -> bool {
 //!
 //!     true
 //! };
@@ -2271,7 +2271,7 @@
 //! use ez_term::*;
 //! let (root_widget, mut state_tree, mut scheduler) = load_ui();
 //!
-//! let my_callback = move |context: EzContext| {
+//! let my_callback = move |context: Context| {
 //!
 //!     true
 //! };
@@ -2283,7 +2283,7 @@
 //! use ez_term::*;
 //! let (root_widget, mut state_tree, mut scheduler) = load_ui();
 //!
-//! fn my_callback(context: EzContext) -> bool {
+//! fn my_callback(context: Context) -> bool {
 //!
 //!     true
 //! };
@@ -2308,7 +2308,7 @@
 //! use ez_term::*;
 //! let (root_widget, mut state_tree, mut scheduler) = load_ui();
 //!
-//! let my_callback = move |context: EzContext, keycode: KeyCode| {
+//! let my_callback = move |context: Context, keycode: KeyCode| {
 //!
 //!     true
 //! };
@@ -2337,7 +2337,7 @@
 //! use ez_term::*;
 //! let (root_widget, mut state_tree, mut scheduler) = load_ui();
 //!
-//! fn my_callback(context: EzContext, keycode: KeyCode) -> bool {
+//! fn my_callback(context: Context, keycode: KeyCode) -> bool {
 //!
 //!     true
 //! };
@@ -2362,7 +2362,7 @@
 //! use ez_term::*;
 //! let (root_widget, mut state_tree, mut scheduler) = load_ui();
 //!
-//! fn my_callback(context: EzContext, keycode: KeyCode) -> bool {
+//! fn my_callback(context: Context, keycode: KeyCode) -> bool {
 //!
 //!     let checkbox_state = context.state_tree.get_mut("my_checkbox").as_checkbox_mut();
 //!     checkbox_state.set_active(!checkbox_state.get_active());
@@ -2413,7 +2413,7 @@
 //! use ez_term::*;
 //! let (root_widget, mut state_tree, mut scheduler) = load_ui();
 //!
-//! let my_callback = |context: EzContext| {
+//! let my_callback = |context: Context| {
 //!
 //!     true
 //! };
@@ -2426,7 +2426,7 @@
 //! use ez_term::*;
 //! let (root_widget, mut state_tree, mut scheduler) = load_ui();
 //!
-//! fn my_callback(context: EzContext) -> bool {
+//! fn my_callback(context: Context) -> bool {
 //!
 //!     true
 //! };
@@ -2465,7 +2465,7 @@
 //! use ez_term::*;
 //! let (root_widget, mut state_tree, mut scheduler) = load_ui();
 //!
-//! let my_task = |context: EzContext| {
+//! let my_task = |context: Context| {
 //!
 //!     let state = state_tree.get("my_label").as_label_mut();
 //!     state.set_text("10 seconds have passed!".to_string());
@@ -2481,7 +2481,7 @@
 //! use ez_term::*;
 //! let (root_widget, mut state_tree, mut scheduler) = load_ui();
 //!
-//! fn my_task(context: EzContext) {
+//! fn my_task(context: Context) {
 //!
 //!     let state = state_tree.get_by_id("my_label").as_label_mut();
 //!     state.set_text("10 seconds have passed!".to_string());
@@ -2499,14 +2499,14 @@
 //! use ez_term::*;
 //! let (root_widget, mut state_tree, mut scheduler) = load_ui();
 //!
-//! let my_task = |context: EzContext| {
+//! let my_task = |context: Context| {
 //!
 //!     let state = state_tree.get("my_label").as_label_mut();
 //!     state.set_text("Button was pressed 10 seconds ago!".to_string());
 //!     state.update(context.scheduler);
 //! };
 //!
-//! let my_callback = |context: EzContext| {
+//! let my_callback = |context: Context| {
 //!
 //!     scheduler.schedule_once("my_task", Box::new(my_task), Duration::from_secs(10));
 //!     true
@@ -2542,7 +2542,7 @@
 //! let (root_widget, mut state_tree, mut scheduler) = load_ui();
 //!
 //! let mut counter: usize = 1;
-//! let my_task = move |context: EzContext| {
+//! let my_task = move |context: Context| {
 //!
 //!     let state = context.state_tree.get_mut("my_label").as_label_mut();
 //!     state.set_text(format!("Counting {}", counter));
@@ -2568,7 +2568,7 @@
 //! let (root_widget, mut state_tree, mut scheduler) = load_ui();
 //!
 //! let mut counter: usize = 1;
-//! let my_task = move |context: EzContext| {
+//! let my_task = move |context: Context| {
 //!
 //!     let state = context.state_tree.get_mut("my_label").as_label_mut();
 //!     state.set_text(format!("Counting {}", counter));
@@ -2580,7 +2580,7 @@
 //!         false
 //!     };
 //! };
-//! let my_callback = |context: EzContext| {
+//! let my_callback = |context: Context| {
 //!
 //!     scheduler.schedule_recurring("my_task", Box::new(my_task), Duration::from_secs(1));
 //!     true
@@ -2602,7 +2602,7 @@
 //!
 //! To run custom code that will not return immediately (i.e. your app that you are building the UI
 //! for), you must used threaded execution to avoid blocking the UI in the main thread. In a
-//! threaded scheduled task you do not have the full EzContext available that you're used to by now
+//! threaded scheduled task you do not have the full Context available that you're used to by now
 //! because (due to Rusts strict thread-safety) you cannot access the scheduler from a thread. You
 //! will have the StateTree and your custom properties available, so you can still manipulate the UI
 //! from your thread.
@@ -2632,7 +2632,7 @@
 //!        std::thread::sleep(Duration::from_secs(1)) };
 //! }
 //!
-//! let on_finish = |context: EzContext| {
+//! let on_finish = |context: Context| {
 //!
 //!        let state = context.state_tree.get_mut("progress_label").as_label_mut();
 //!        state.set_text("Finished!".to_string());
@@ -2777,7 +2777,7 @@
 //! }
 //!
 //! // We bind a callback to start our mock app on button press
-//! let start_button_callback = |context: EzContext| {
+//! let start_button_callback = |context: Context| {
 //!     context.scheduler.schedule_threaded(Box::new(mock_app), None);
 //! };
 //! let callback_config = CallbackConfig::from_on_press(Box::new(start_button_callback));
@@ -2878,11 +2878,11 @@
 //! use ez_term::*;
 //! let (root_widget, mut state_tree, mut scheduler) = load_ui();
 //!
-//! let dismiss_popup_callback = |context: EzContext| {
+//! let dismiss_popup_callback = |context: Context| {
 //!     context.scheduler.dismiss_modal(context.state_tree);
 //! };
 //!
-//! let create_popup_callback = |context: EzContext| {
+//! let create_popup_callback = |context: Context| {
 //!     context.scheduler.open_modal("MyPopup", context.state_tree);
 //!     let callback_config = CallbackConfig::from_on_press(Box::new(create_popup_callback));
 //!     scheduler.update_callback_config("dismiss_button", callback_config);
@@ -2994,7 +2994,7 @@
 //! want to call the 'update' method from the widget state; for example if we're in a callback:
 //! ```
 //! use ez_term::*;
-//! fn my_callback(context: EzContext) {
+//! fn my_callback(context: Context) {
 //!     let label_state = context.state_tree.get_mut("my_label").to_label_mut();
 //!     label_state.set_text("new_text".to_string());
 //!     label_state.update(context.scheduler);
@@ -7565,7 +7565,7 @@
 //! #### Parameters:
 //!
 //! - Scheduled task name: String
-//! - Function: Box<FnMut(EzContext)>
+//! - Function: Box<FnMut(Context)>
 //! - Delay: std::Duration;
 //!
 //! #### Example:
@@ -7576,7 +7576,7 @@
 //! use ez_term::*;
 //! let (root_widget, mut state_tree, mut scheduler) = load_ui();
 //!
-//! let my_closure = |context: EzContext| {
+//! let my_closure = |context: Context| {
 //!     let state = context.state_tree.get_mut("my_label").as_label_mut();
 //!     state.set_text("New text!".to_string());
 //!     state.update(context.scheduler);
@@ -7606,7 +7606,7 @@
 //! use ez_term::*;
 //! let (root_widget, mut state_tree, mut scheduler) = load_ui();
 //!
-//! let my_closure = |context: EzContext| {
+//! let my_closure = |context: Context| {
 //!     let state = context.state_tree.get_mut("my_label").as_label_mut();
 //!     state.set_text("New text!".to_string());
 //!     state.update(context.scheduler);
@@ -7630,7 +7630,7 @@
 //! #### Parameters:
 //!
 //! - Scheduled task name: String
-//! - Function: Box<FnMut(EzContext) -> bool>
+//! - Function: Box<FnMut(Context) -> bool>
 //! - Interval: std::Duration;
 //!
 //! #### Example:
@@ -7643,7 +7643,7 @@
 //! let (root_widget, mut state_tree, mut scheduler) = load_ui();
 //!
 //! let counter: usize = 0;
-//! let my_closure = move |context: EzContext| {
+//! let my_closure = move |context: Context| {
 //!     let state = context.state_tree.get_mut("my_label").as_label_mut();
 //!     state.set_text(format!("Time passed {}", counter));
 //!     state.update(context.scheduler);
@@ -7679,7 +7679,7 @@
 //! let (root_widget, mut state_tree, mut scheduler) = load_ui();
 //!
 //! let counter: usize = 0;
-//! let my_closure = move |context: EzContext| {
+//! let my_closure = move |context: Context| {
 //!     let state = context.state_tree.get_mut("my_label").as_label_mut();
 //!     state.set_text(format!("Time passed {}", counter));
 //!     state.update(context.scheduler);
@@ -7708,7 +7708,7 @@
 //! #### Parameters:
 //!
 //! - Threaded function: Box<dyn FnOnce(HashMap<String, EzProperty>, StateTree) + Send>
-//! - On_finish callback function: Option<Box<FnMut(EzContext)>>>
+//! - On_finish callback function: Option<Box<FnMut(Context)>>>
 //!
 //! #### Example:
 //!
@@ -7727,7 +7727,7 @@
 //!     };
 //! }
 //!
-//! fn on_finish_callback(context: EzContext) {
+//! fn on_finish_callback(context: Context) {
 //!     let state = state_tree.get_mut("my_label").as_label_mut();
 //!     state.set_text("Finished!".to_string());
 //! }
@@ -7779,7 +7779,7 @@
 //!
 //! let (root_widget, mut state_tree, mut scheduler) = load_ui();
 //!
-//! let dismiss = |context: EzContext| {
+//! let dismiss = |context: Context| {
 //!
 //!     context.scheduler.dismiss_modal(context.state_tree);
 //!     false
@@ -7868,7 +7868,7 @@
 //!
 //! let (root_widget, mut state_tree, mut scheduler) = load_ui();
 //!
-//! let my_callback = |context: EzContext| {
+//! let my_callback = |context: Context| {
 //!     let state = context.state_tree.get_mut("my_button").as_button_mut();
 //!     state.set_disabled(true);
 //!     state.update(context.scheduler);
@@ -7893,7 +7893,7 @@
 //! #### Parameters:
 //!
 //! - property path: &str
-//! - callback function: Box<dyn FnMut(EzContext)>
+//! - callback function: Box<dyn FnMut(Context)>
 //!
 //! #### Example:
 //!
@@ -7904,7 +7904,7 @@
 //!
 //! let (root_widget, mut state_tree, mut scheduler) = load_ui();
 //!
-//! fn my_callback(context: EzContext) {
+//! fn my_callback(context: Context) {
 //!     let state = context.state_tree.get_mut("my_label").as_label_mut();
 //!     let width = state.get_size().get_width();
 //!     state.set_text(format!("My width is: {}", width));
@@ -7933,7 +7933,7 @@
 //!
 //! - key: KeyCode
 //! - modifiers: Option<Vec<KeyModifiers>>
-//! - callback function: Box<dyn FnMut(EzContext, KeyCode, KeyModifiers)>
+//! - callback function: Box<dyn FnMut(Context, KeyCode, KeyModifiers)>
 //!
 //! #### Example:
 //!
@@ -7943,7 +7943,7 @@
 //!
 //! let (root_widget, mut state_tree, mut scheduler) = load_ui();
 //!
-//! fn my_callback(context: EzContext) {
+//! fn my_callback(context: Context) {
 //!     let state = context.state_tree.get_mut("my_label").as_label_mut();
 //!     state.set_text("Shift A was pressed!".to_string());
 //! }
@@ -8671,7 +8671,7 @@ pub use crate::run::definitions::Coordinates;
 pub use crossterm::event::{KeyCode, KeyModifiers};
 pub use crossterm::style::Color;
 
-pub use crate::scheduler::definitions::{EzContext, EzPropertiesMap};
+pub use crate::scheduler::definitions::{Context, ThreadedContext, EzPropertiesMap};
 pub use crate::run::definitions::{StateTree, PixelMap, Pixel};
 pub use crate::scheduler::scheduler::SchedulerFrontend;
 
