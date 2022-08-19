@@ -1,12 +1,10 @@
 //! # Scheduler funcs
 //! 
 //! This module contains supporting functions for the [Scheduler] struct.
-use std::collections::HashMap;
 use std::thread::{JoinHandle, spawn};
 use std::time::Instant;
-use crossterm::csi;
 
-use crate::{CallbackConfig, Context, EzObject, EzProperties, KeyMap, LayoutMode};
+use crate::{CallbackConfig, Context, EzObject, KeyMap, LayoutMode};
 use crate::run::definitions::{CallbackTree, StateTree};
 use crate::run::select::{deselect_widget, select_widget};
 use crate::scheduler::definitions::ThreadedContext;
@@ -38,10 +36,6 @@ pub fn start_new_threads(scheduler: &mut SchedulerFrontend, state_tree: &mut Sta
         let handle: JoinHandle<()> = spawn(move || thread_func(context));
         scheduler.backend.thread_handles.push((handle, on_finish))
     }
-}
-
-pub fn start_frontend_sync(main_scheduler: &mut SchedulerFrontend) {
-
 }
 
 
@@ -215,32 +209,45 @@ pub fn update_properties(scheduler: &mut SchedulerFrontend,
     let mut to_update = Vec::new();
     let mut to_callback: Vec<String> = Vec::new();
 
-    for (name, _)
-            in scheduler.backend.properties.iter() {
+    let keys = if scheduler.is_syncing() {
+        let properties: Vec<String> = scheduler.backend.properties.keys().cloned().collect();
+        properties
+    } else {
+        let mut subscribers: Vec<String> = scheduler.backend.property_subscribers.keys().cloned().collect();
+        let callbacks: Vec<String> = scheduler.backend.property_subscribers.keys().cloned().collect();
+        subscribers.extend(callbacks);
+        subscribers
+    };
+
+    for name in keys {
+        let (widget_path, property_name) =
+            if scheduler.is_syncing() && name.starts_with("/root") {
+                let (path, id) = name.rsplit_once('/').unwrap();
+                if !state_tree.contains(path) { continue }
+                (Some(path), Some(id))
+            } else {
+                (None, None)
+            };
         let mut new_val = None;
         // Drain all new values if any, we only care about the latest.
-        while let Ok(new) = scheduler.backend.property_receivers.get(name).unwrap()
-            .try_recv() {
+        while let Ok(new) = scheduler.backend.property_receivers.get(&name).unwrap_or_else(
+            || panic!("Could not get property receiver for {}", name)).try_recv() {
             new_val = Some(new);
         }
         if let Some(val) = new_val {
-            if scheduler.backend.property_subscribers.contains_key(name) {
+            if scheduler.backend.property_subscribers.contains_key(&name) {
                 for update_func in scheduler.backend
-                        .property_subscribers.get_mut(name).unwrap() {
+                        .property_subscribers.get_mut(&name).unwrap() {
                     to_update.push(update_func(state_tree, val.clone()));
                 }
             }
-            if scheduler.backend.property_callbacks.contains(name) {
+            if scheduler.backend.property_callbacks.contains(&name) {
                 to_callback.push(name.clone());
             }
-            if name.starts_with("/root") { // custom properties do not start with /root
-                let (widget_path, property_name) =
-                    name.rsplit_once('/').unwrap();
+            if widget_path.is_some() {
                 let state =
-                    state_tree.get_mut(widget_path).as_generic_mut();
-                if state.update_property(property_name, val) {
-                    to_update.push(state.get_path().clone());
-                }
+                    state_tree.get_mut(widget_path.unwrap()).as_generic_mut();
+                state.update_property(property_name.unwrap(), val);
             }
         }
     }
@@ -304,6 +311,7 @@ pub fn handle_next_selection(scheduler: &mut SchedulerFrontend, state_tree: &mut
     scheduler.backend.deselect = false;
 
     if let Some((selection, mouse_pos)) = scheduler.backend.next_selection.clone() {
+        let selection = state_tree.get(&selection).as_generic().get_path().clone();
         if selection != current_selection {
             if !current_selection.is_empty() {
                 deselect_widget(&current_selection, state_tree, root_widget, callback_tree,

@@ -14,7 +14,6 @@ use crate::states::definitions::{HorizontalAlignment, HorizontalPosHint, LayoutM
 
 
 /// A struct wrapping a property of a widget state.
-///
 /// A widget has a state, which has properties (such as size, position, color, etc.). This struct
 /// wraps around those properties to allow binding one property to another. If property A is bound
 /// to property B, then whenever property B gets a new value, that value is set for property A as
@@ -34,7 +33,7 @@ pub struct EzProperty<T> {
     /// will be send over this channel. At runtime the [Scheduler] will own the receiver of this
     /// channel; if any other properties are subscribed to this property, new values received by
     /// the scheduler will be synced to the subscribers.
-    tx: Sender <EzValues>,
+    tx: Sender<EzValues>,
 }
 impl<T> EzProperty<T> where EzValues: From<T> {
 

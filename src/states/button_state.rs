@@ -4,7 +4,7 @@ use crate::run::definitions::IsizeCoordinates;
 use crate::scheduler::scheduler::SchedulerFrontend;
 use crate::scheduler::scheduler_funcs::clean_up_property;
 use crate::states::definitions::{AutoScale, BorderConfig, ColorConfig, HorizontalAlignment, InfiniteSize, Padding, PosHint, SizeHint, StateCoordinates, StateSize, VerticalAlignment};
-use crate::states::ez_state::GenericState;
+use crate::states::ez_state::{EzState, GenericState};
 
 
 /// [State] implementation for [Button].
@@ -69,33 +69,33 @@ impl ButtonState {
     
     pub fn new(path: String, scheduler: &mut SchedulerFrontend) -> Self {
 
-       ButtonState {
-           path: path.clone(),
-           position: StateCoordinates::new(0, 0, path.clone(), scheduler),
-           absolute_position: IsizeCoordinates::default(),
-           size: StateSize::new(0, 0, path.clone(), scheduler),
-           infinite_size: InfiniteSize::default(),
-           size_hint: SizeHint::new(Some(1.0), Some(1.0), path.clone(), scheduler),
-           pos_hint: PosHint::new(None, None, path.clone(), scheduler),
-           auto_scale: AutoScale::new(false, false, path.clone(), scheduler),
-           padding: Padding::new(0, 0, 0, 0, path.clone(), scheduler),
-           halign: scheduler.new_horizontal_alignment_property(
-                format!("{}/halign", path).as_str(), HorizontalAlignment::Left),
-           valign: scheduler.new_vertical_alignment_property(
-                format!("{}/valign", path).as_str(), VerticalAlignment::Top),
-           text: scheduler.new_string_property(format!("{}/text", path).as_str(),
-                                               String::new()),
-           disabled: scheduler.new_bool_property(
-                format!("{}/disabled", path).as_str(),false),
-           selected: false,
-           selection_order: scheduler.new_usize_property(
-                format!("{}/selection_order", path).as_str(), 0),
-           flashing: false,
-           border_config: BorderConfig::new(true, path.clone(), scheduler),
-           colors: ColorConfig::new(path, scheduler),
-       }
+        ButtonState {
+            path: path.clone(),
+            position: StateCoordinates::new(0, 0, path.clone(), scheduler),
+            absolute_position: IsizeCoordinates::default(),
+            size: StateSize::new(0, 0, path.clone(), scheduler),
+            infinite_size: InfiniteSize::default(),
+            size_hint: SizeHint::new(Some(1.0), Some(1.0), path.clone(), scheduler),
+            pos_hint: PosHint::new(None, None, path.clone(), scheduler),
+            auto_scale: AutoScale::new(false, false, path.clone(), scheduler),
+            padding: Padding::new(0, 0, 0, 0, path.clone(), scheduler),
+            halign: scheduler.new_horizontal_alignment_property(
+                 format!("{}/halign", path).as_str(), HorizontalAlignment::Left),
+            valign: scheduler.new_vertical_alignment_property(
+                 format!("{}/valign", path).as_str(), VerticalAlignment::Top),
+            text: scheduler.new_string_property(format!("{}/text", path).as_str(),
+                                                String::new()),
+            disabled: scheduler.new_bool_property(
+                 format!("{}/disabled", path).as_str(),false),
+            selected: false,
+            selection_order: scheduler.new_usize_property(
+                 format!("{}/selection_order", path).as_str(), 0),
+            flashing: false,
+            border_config: BorderConfig::new(true, path.clone(), scheduler),
+            colors: ColorConfig::new(path, scheduler),
+        }
     }
-    }
+}
 impl GenericState for ButtonState {
 
     fn get_path(&self) -> &String { &self.path }
@@ -143,6 +143,47 @@ impl GenericState for ButtonState {
             "text" => self.text.set_from_ez_value(value),
             _ => panic!("Invalid property name for button state: {}", name),
         }
+    }
+
+    fn copy_state_values(&mut self, other: EzState) {
+
+        let other = other.as_button();
+        self.position.x.value = other.position.x.value;
+        self.position.y.value = other.position.y.value;
+        self.size.height.value = other.size.height.value;
+        self.size.width.value = other.size.width.value;
+        self.size_hint.size_hint_x.value = other.size_hint.size_hint_x.value;
+        self.size_hint.size_hint_y.value = other.size_hint.size_hint_y.value;
+        self.pos_hint.pos_hint_x.value = other.pos_hint.pos_hint_x.value;
+        self.pos_hint.pos_hint_y.value = other.pos_hint.pos_hint_y.value;
+        self.auto_scale.auto_scale_width.value = other.auto_scale.auto_scale_width.value;
+        self.auto_scale.auto_scale_height.value = other.auto_scale.auto_scale_height.value;
+        self.padding.padding_top.value = other.padding.padding_top.value;
+        self.padding.padding_bottom.value = other.padding.padding_bottom.value;
+        self.padding.padding_left.value = other.padding.padding_left.value;
+        self.padding.padding_right.value = other.padding.padding_right.value;
+        self.padding.padding_right.value = other.padding.padding_right.value;
+        self.halign.value = other.halign.value;
+        self.valign.value = other.valign.value;
+        self.disabled.value = other.disabled.value;
+        self.selection_order.value = other.selection_order.value;
+        self.border_config.border.value = other.border_config.border.value;
+        self.border_config.horizontal_symbol.value = other.border_config.horizontal_symbol.value.clone();
+        self.border_config.vertical_symbol.value = other.border_config.vertical_symbol.value.clone();
+        self.border_config.top_left_symbol.value = other.border_config.top_left_symbol.value.clone();
+        self.border_config.top_right_symbol.value = other.border_config.top_right_symbol.value.clone();
+        self.border_config.bottom_left_symbol.value = other.border_config.bottom_left_symbol.value.clone();
+        self.border_config.bottom_right_symbol.value = other.border_config.bottom_right_symbol.value.clone();
+        self.colors.fg_color.value = other.colors.fg_color.value;
+        self.colors.bg_color.value = other.colors.bg_color.value;
+        self.colors.selection_fg_color.value = other.colors.selection_fg_color.value;
+        self.colors.selection_bg_color.value = other.colors.selection_bg_color.value;
+        self.colors.disabled_fg_color.value = other.colors.disabled_fg_color.value;
+        self.colors.disabled_bg_color.value = other.colors.disabled_bg_color.value;
+        self.colors.border_fg_color.value = other.colors.border_fg_color.value;
+        self.colors.border_bg_color.value = other.colors.border_bg_color.value;
+        self.colors.cursor_color.value = other.colors.cursor_color.value;
+        self.text.value = other.text.value.clone();
     }
 
     fn get_size_hint(&self) -> &SizeHint { &self.size_hint }

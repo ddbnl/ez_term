@@ -44,6 +44,30 @@ impl<T> Tree<T> {
         Tree { id: name, obj: node, objects: HashMap::new(), id_cache: HashMap::new(), }
     }
 
+    /// Append another tree to this tree.
+    pub fn extend(&mut self, path: String, node: Tree<T>) {
+
+        let steps: Vec<&str> = path.split('/').collect();
+        let mut steps = steps[1..].to_vec();
+        if steps[0] == "root" {
+            steps.remove(0);
+        }
+        self._extend(steps, node);
+    }
+
+    fn _extend(&mut self, mut steps: Vec<&str>, tree: Tree<T>) {
+
+        self.id_cache.extend(tree.id_cache.clone());
+        self.id_cache.insert(steps.last().unwrap().to_string(),
+                             steps.iter().map(|x| x.to_string()).collect());
+        if steps.len() == 1 {
+            let id = steps.pop().unwrap();
+            self.objects.insert(id.to_string(), tree);
+        } else {
+            self.objects.get_mut(steps.remove(0)).unwrap()._extend(steps, tree);
+        }
+    }
+
     /// Add a node to the state tree. There's generally no reason to use this as an
     /// end-user.
     pub fn add_node(&mut self, path: String, node: T) {

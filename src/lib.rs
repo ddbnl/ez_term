@@ -2599,16 +2599,29 @@
 //! <a name="scheduler_tasks_threaded"></a>
 //! #### 1.3.4.3 Threaded execution
 //!
-//!
 //! To run custom code that will not return immediately (i.e. your app that you are building the UI
-//! for), you must used threaded execution to avoid blocking the UI in the main thread. In a
-//! threaded scheduled task you do not have the full Context available that you're used to by now
-//! because (due to Rusts strict thread-safety) you cannot access the scheduler from a thread. You
-//! will have the StateTree and your custom properties available, so you can still manipulate the UI
-//! from your thread.
+//! for), you must used threaded execution to avoid blocking the UI in the main thread.
+//!
+//! Working with the UI from a thread is nearly identical to working with the UI from a normal task
+//! or callback. The small difference is that in a normal callback you have a "Context" object
+//! available, giving you access to the scheduler (context.scheduler) and state tree
+//! (context.state_tree). This is the case in threads as well, but now you have a "ThreadedContext"
+//! object instead. Where in a normal Context you have a "&mut Scheduler" and "&mut StateTree",
+//! in a "ThreadedContext" you have a full "Scheduler" and a full "StateTree" (because we can't use
+//! the mutable references in threads). So where in a normal callback you would write
+//! "context.scheduler", you now write "&mut context.scheduler", and where you write
+//! "context.state_tree", you will now write "&mut context.state_tree". Any changes you make in a
+//! threaded state tree will be synced to the main thread automatically. Any methods you call on the
+//! scheduler will be passed to the main thread for you as well. Changes to the state tree from the
+//! main thread are not synced to threads automatically for performance reasons (often you don't
+//! need them), so you can call 'context.scheduler.sync_state_tree()' from a thread to sync the
+//! state tree, or 'context.scheduler.sync_properties()' to sync custom properties.
+//!
 //! When scheduling a threaded task, the first parameter is the function you want to execute, and
 //! the second parameter will be an optional on_finish function or closure. The on_finish will be
-//! executed when the thread terminates.
+//! executed when the thread terminates. We'll now look at examples of scheduling threaded functions,
+//! and two ways to work with the UI from a thread (first with the state tree, then with a
+//! custom property):
 //!
 //! <a name="scheduler_tasks_state"></a>
 //! ##### 1.3.4.3.1 Using StateTree
@@ -2624,11 +2637,11 @@
 //! use std::time::Duration;
 //! let (root_widget, mut state_tree, mut scheduler) = load_ui();
 //!
-//! fn mock_app(mut properties: EzPropertiesMap, mut state_tree: StateTree) {
+//! fn mock_app(mut context: ThreadedContext) {
 //!
 //!    for x in 1..=5 {
-//!        state_tree.get_mut("progress_bar").as_progress_bar_mut().set_value(x*20);
-//!        state_tree.get_mut("progress_label").as_label_mut().set_text(format!("{}%", x*20));
+//!        context.state_tree.get_mut("progress_bar").as_progress_bar_mut().set_value(x*20);
+//!        context.state_tree.get_mut("progress_label").as_label_mut().set_text(format!("{}%", x*20));
 //!        std::thread::sleep(Duration::from_secs(1)) };
 //! }
 //!
@@ -2676,7 +2689,7 @@
 //! We can bind a usize property to label.text because every type of property can be converted to a
 //! String. For any other property than String, the property types must match.
 //! We now need to make sure that the custom property actually exists at run time, and we need to
-//! change our  mock_app function to make use of it:
+//! change our mock_app function to make use of it:
 //! ```
 //! use ez_term::*;
 //! use std::time::Duration;
@@ -2685,10 +2698,10 @@
 //! // We must register our custom property!
 //! scheduler.new_usize_property("my_progress", 0);
 //!
-//! fn mock_app(mut properties: EzPropertiesMap, mut state_tree: StateTree) {
+//! fn mock_app(mut context: ThreadedContext) {
 //!
 //!    for x in 1..=5 {
-//!        let my_progress = properties.get_mut("my_progress").unwrap();
+//!        let my_progress = context.scheduler.get_property_mut("my_progress").unwrap();
 //!        my_progress.as_usize_mut().set(x*20);
 //!        std::thread::sleep(Duration::from_secs(1)) };
 //! }
@@ -2768,10 +2781,10 @@
 //! scheduler.new_usize_property("my_progress", 0);
 //!
 //! // This is our mock app, it sleeps regularly to simulate a long running function
-//! fn mock_app(mut properties: EzPropertiesMap, mut state_tree: StateTree) {
+//! fn mock_app(mut context: ThreadedContext) {
 //!
 //!    for x in 1..=5 {
-//!        let my_progress = properties.get_mut("my_progress").unwrap();
+//!        let my_progress = context.scheduler.get_property("my_progress").unwrap();
 //!        my_progress.as_usize_mut().set(x*20);
 //!        std::thread::sleep(Duration::from_secs(1)) };
 //! }
@@ -2911,15 +2924,20 @@
 //! create widgets dynamically. Maybe you are retrieving records from a database and need to display
 //! them. They will be retrieved at runtime and so cannot be known in advance (and even if they could,
 //! it would be too much work to put them all in the .ez files). In cases like this you could create
-//! widgets from code. Once you've called the scheduler.create_widget method (example below), the
-//! widgets will be added to the UI on the next frame. The states of the new widgets however are
-//! available as soon as you've called scheduler.create_widget. This is important, because it gives
-//! you the chance to make changes to the widget state from code right away.
+//! widgets from code.
+//!
+//! Creating a widget from code is a 3-step process:
+//! 1. Call 'prepare_create_widget' to get the new widget object and widget state(s);
+//! 2. Optionally modify the widget states;
+//! 3. Call 'create_widget' to create the widgets.
+//!
+//! Once you've called the scheduler.create_widget method (example below), the
+//! widgets will be added to the UI on the next frame.
 //!
 //! You can spawn any kind of layout or widget from code, including templates. In fact, creating
-//! them from templates is usually the best way to do it. Let's use the SQL record example we used
+//! widgets from templates is usually the best way to do it. Let's use the SQL record example we used
 //! above: we will create a layout template that can display an entire SQL record. Then we'll
-//! iterate over the SQL records from code and create widgets for them. We'll also create a UI that
+//! iterate over SQL records from code and create widgets for them. We'll also create a UI that
 //! can display the sql record widgets. First the .ez file:
 //! ```
 //! - Layout:
@@ -2958,19 +2976,27 @@
 //!     let template_name = "SqlRecord";
 //!     let parent_id = "sql_records_layout";
 //!     let new_id = format!("record_{}", i).as_str();
-//!     scheduler.create_widget(template_name, new_id, parent_id, &mut state_tree);
 //!
-//!     let new_record_widget = state_tree.get_mut(new_id);
-//!     new_record_widget.get("record_id").as_label_mut().set_text(sql_record.id);
-//!     new_record_widget.get("record_name").as_label_mut().set_text(sql_record.name);
-//!     new_record_widget.get("record_date").as_label_mut().set_text(sql_record.date);
+//!     let (new_widget, new_states) =
+//!             scheduler.prepare_create_widget(template_name, new_id, parent_id, &mut state_tree);
+//!
+//!     new_states.get("record_id").as_label_mut().set_text(sql_record.id);
+//!     new_states.get("record_name").as_label_mut().set_text(sql_record.name);
+//!     new_states.get("record_date").as_label_mut().set_text(sql_record.date);
+//!
+//!     scheduler.create_widget(new_widget, new_states, &mut state_tree);
 //!
 //! }
 //! run(root_widget, state_tree, scheduler);
 //! ```
-//! Note that after we create the sql record widget its state is immediately available for us. We use
-//! this to our advantage by setting the text of the Label subwidgets of each record. In this way we
-//! can dynamically create widgets at runtime.
+//! We saw the process in action above: get the new widget object and states, alter the states,
+//! then create the widget. When calling 'prepare_create_widget' we need a template or widget name
+//! (like 'Layout', 'Label' or 'MyTemplate'), an ID (the new widget will receive this ID) and a
+//! parent ID (the new widget will be added to this parent layout). In return we get the new
+//! widget object and a state tree which contains the state(s) of the new widget. This gives you
+//! a change to programmatically alter the states before the widget is created (in our example,
+//! loading the SQL results into the labels). We then use the widget object and widget states to
+//! actually create the widget.
 //!
 //! <a name="scheduler_programmatic_remove"></a>
 //! #### 1.3.7.1 Removing widgets from code

@@ -140,7 +140,7 @@ impl LayoutState {
             selected_tab_header: String::new(),
             fill: scheduler.new_bool_property(format!("{}/fill", path).as_str(),false),
             filler_symbol: scheduler.new_string_property(
-                format!("{}/filler_symbol", path).as_str(), String::new()),
+                format!("{}/filler_symbol", path).as_str(), " ".to_string()),
             scrolling_config: ScrollingConfig::new(false, false, 0.0, 0.0,
                                                    path.clone(), scheduler),
             border_config: BorderConfig::new(false, path.clone(), scheduler),
@@ -205,8 +205,8 @@ impl GenericState for LayoutState {
             "active_bg_color" => self.colors.active_bg_color.set_from_ez_value(value),
             "border_fg_color" => self.colors.border_fg_color.set_from_ez_value(value),
             "border_bg_color" => self.colors.border_bg_color.set_from_ez_value(value),
-            "orientation" => self.orientation.set_from_ez_value(value),
             "mode" => self.mode.set_from_ez_value(value),
+            "orientation" => self.orientation.set_from_ez_value(value),
             "active_screen" => self.active_screen.set_from_ez_value(value),
             "active_tab" => self.active_tab.set_from_ez_value(value),
             "tab_name" => self.tab_name.set_from_ez_value(value),
@@ -226,6 +226,65 @@ impl GenericState for LayoutState {
             _ => panic!("Invalid property name for layout state: {}", name),
         }
     }
+
+    fn copy_state_values(&mut self, other: EzState) {
+
+        let other = other.as_layout();
+        self.position.x.value = other.position.x.value;
+        self.position.y.value = other.position.y.value;
+        self.size.height.value = other.size.height.value;
+        self.size.width.value = other.size.width.value;
+        self.size_hint.size_hint_x.value = other.size_hint.size_hint_x.value;
+        self.size_hint.size_hint_y.value = other.size_hint.size_hint_y.value;
+        self.pos_hint.pos_hint_x.value = other.pos_hint.pos_hint_x.value;
+        self.pos_hint.pos_hint_y.value = other.pos_hint.pos_hint_y.value;
+        self.auto_scale.auto_scale_width.value = other.auto_scale.auto_scale_width.value;
+        self.auto_scale.auto_scale_height.value = other.auto_scale.auto_scale_height.value;
+        self.padding.padding_top.value = other.padding.padding_top.value;
+        self.padding.padding_bottom.value = other.padding.padding_bottom.value;
+        self.padding.padding_left.value = other.padding.padding_left.value;
+        self.padding.padding_right.value = other.padding.padding_right.value;
+        self.padding.padding_right.value = other.padding.padding_right.value;
+        self.halign.value = other.halign.value;
+        self.valign.value = other.valign.value;
+        self.disabled.value = other.disabled.value;
+        self.selection_order.value = other.selection_order.value;
+        self.border_config.border.value = other.border_config.border.value;
+        self.border_config.horizontal_symbol.value = other.border_config.horizontal_symbol.value.clone();
+        self.border_config.vertical_symbol.value = other.border_config.vertical_symbol.value.clone();
+        self.border_config.top_left_symbol.value = other.border_config.top_left_symbol.value.clone();
+        self.border_config.top_right_symbol.value = other.border_config.top_right_symbol.value.clone();
+        self.border_config.bottom_left_symbol.value = other.border_config.bottom_left_symbol.value.clone();
+        self.border_config.bottom_right_symbol.value = other.border_config.bottom_right_symbol.value.clone();
+        self.colors.fg_color.value = other.colors.fg_color.value;
+        self.colors.bg_color.value = other.colors.bg_color.value;
+        self.colors.selection_fg_color.value = other.colors.selection_fg_color.value;
+        self.colors.selection_bg_color.value = other.colors.selection_bg_color.value;
+        self.colors.disabled_fg_color.value = other.colors.disabled_fg_color.value;
+        self.colors.disabled_bg_color.value = other.colors.disabled_bg_color.value;
+        self.colors.border_fg_color.value = other.colors.border_fg_color.value;
+        self.colors.border_bg_color.value = other.colors.border_bg_color.value;
+        self.colors.cursor_color.value = other.colors.cursor_color.value;
+        self.mode.value = other.mode.value.clone();
+        self.orientation.value = other.orientation.value.clone();
+        self.active_tab.value = other.active_tab.value.clone();
+        self.active_screen.value = other.active_screen.value.clone();
+        self.tab_name.value = other.tab_name.value.clone();
+        self.can_drag.value = other.can_drag.value;
+        self.fill.value = other.fill.value;
+        self.filler_symbol.value = other.filler_symbol.value.clone();
+        self.scrolling_config.scroll_x.value = other.scrolling_config.scroll_x.value;
+        self.scrolling_config.scroll_y.value = other.scrolling_config.scroll_y.value;
+        self.scrolling_config.view_start_x.value = other.scrolling_config.view_start_x.value;
+        self.scrolling_config.view_start_y.value = other.scrolling_config.view_start_y.value;
+        self.table_config.rows.value = other.table_config.rows.value;
+        self.table_config.cols.value = other.table_config.cols.value;
+        self.table_config.row_default_height.value = other.table_config.row_default_height.value;
+        self.table_config.col_default_width.value = other.table_config.col_default_width.value;
+        self.table_config.force_default_row_height.value = other.table_config.force_default_row_height.value;
+        self.table_config.force_default_col_width.value = other.table_config.force_default_col_width.value;
+    }
+
     fn get_size_hint(&self) -> &SizeHint { &self.size_hint }
 
     fn get_size_hint_mut(&mut self) -> &mut SizeHint { &mut self.size_hint }

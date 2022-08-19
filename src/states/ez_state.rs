@@ -546,7 +546,10 @@ pub trait GenericState {
     fn update(&self, scheduler: &mut SchedulerFrontend)  {
         scheduler.update_widget(self.get_path())
     }
-
+    
+    /// Copy values from another state to this state. Used to copy from templates.
+    fn copy_state_values(&mut self, other: EzState);
+    
     fn clean_up_properties(&self, scheduler: &mut SchedulerFrontend);
 }
 

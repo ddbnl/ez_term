@@ -15,7 +15,7 @@ use crate::scheduler::scheduler::SchedulerFrontend;
 use crate::states::definitions::{AutoScale, HorizontalAlignment, InfiniteSize, Padding, PosHint, SizeHint, StateCoordinates, StateSize, VerticalAlignment};
 use crate::states::dropdown_state::{DropdownState, DroppedDownMenuState};
 use crate::states::ez_state::{EzState, GenericState};
-use crate::widgets::ez_object::{self, EzObject};
+use crate::widgets::ez_object::{self, EzObject, EzObjects};
 use crate::widgets::helper_functions::{add_border, add_padding};
 
 
@@ -242,6 +242,15 @@ impl EzObject for Dropdown {
         scheduler.set_selected_widget(&self.path, Some(mouse_pos));
         true
     }
+
+    fn get_clone(&self, scheduler: &mut SchedulerFrontend) -> EzObjects {
+
+        let mut clone = self.clone();
+        let mut new_state = DropdownState::new(self.path.clone(), scheduler);
+        new_state.copy_state_values(self.get_state());
+        clone.state = new_state;
+        EzObjects::Dropdown(clone)
+    }
 }
 
 impl Dropdown {
@@ -380,6 +389,16 @@ impl EzObject for DroppedDownMenu {
             _ => ()
         }
         false
+    }
+
+
+    fn get_clone(&self, scheduler: &mut SchedulerFrontend) -> EzObjects {
+
+        let mut clone = self.clone();
+        let mut new_state = DroppedDownMenuState::new(self.path.clone(), scheduler);
+        new_state.copy_state_values(self.get_state());
+        clone.state = new_state;
+        EzObjects::DroppedDownMenu(clone)
     }
 }
 

@@ -12,7 +12,7 @@ use crate::run::definitions::{CallbackTree, Coordinates, Pixel, PixelMap, StateT
 use crate::scheduler::scheduler::SchedulerFrontend;
 use crate::states::ez_state::{EzState, GenericState};
 use crate::states::slider_state::SliderState;
-use crate::widgets::ez_object::EzObject;
+use crate::widgets::ez_object::{EzObject, EzObjects};
 use crate::widgets::helper_functions::add_padding;
 
 
@@ -244,6 +244,15 @@ impl EzObject for Slider {
         self.on_value_change_callback(state_tree, callback_tree, scheduler);
         self.on_drag_callback(state_tree, callback_tree, scheduler, previous_pos, mouse_pos);
         true
+    }
+
+    fn get_clone(&self, scheduler: &mut SchedulerFrontend) -> EzObjects {
+
+        let mut clone = self.clone();
+        let mut new_state = SliderState::new(self.path.clone(), scheduler);
+        new_state.copy_state_values(self.get_state());
+        clone.state = new_state;
+        EzObjects::Slider(clone)
     }
 }
 impl Slider {

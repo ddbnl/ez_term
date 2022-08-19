@@ -12,7 +12,7 @@ use crate::run::definitions::{CallbackTree, Coordinates, Pixel, PixelMap, StateT
 use crate::scheduler::scheduler::SchedulerFrontend;
 use crate::states::ez_state::{EzState, GenericState};
 use crate::states::radio_button_state::RadioButtonState;
-use crate::widgets::ez_object::EzObject;
+use crate::widgets::ez_object::{EzObject, EzObjects};
 use crate::widgets::helper_functions::{add_border, add_padding};
 
 
@@ -198,6 +198,15 @@ impl EzObject for RadioButton {
         if consumed { return consumed}
         scheduler.set_selected_widget(&self.path, Some(mouse_pos));
         true
+    }
+
+    fn get_clone(&self, scheduler: &mut SchedulerFrontend) -> EzObjects {
+
+        let mut clone = self.clone();
+        let mut new_state = RadioButtonState::new(self.path.clone(), scheduler);
+        new_state.copy_state_values(self.get_state());
+        clone.state = new_state;
+        EzObjects::RadioButton(clone)
     }
 }
 impl RadioButton {

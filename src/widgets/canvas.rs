@@ -14,7 +14,7 @@ use crate::run::definitions::{Pixel, PixelMap, StateTree};
 use crate::scheduler::scheduler::SchedulerFrontend;
 use crate::states::canvas_state::CanvasState;
 use crate::states::ez_state::{EzState, GenericState};
-use crate::widgets::ez_object::EzObject;
+use crate::widgets::ez_object::{EzObject, EzObjects};
 use crate::widgets::helper_functions::{add_border, add_padding};
 
 
@@ -164,6 +164,15 @@ impl EzObject for Canvas {
             contents, state.get_padding(), parent_colors.get_bg_color(),
             parent_colors.get_fg_color());
         contents
+    }
+
+    fn get_clone(&self, scheduler: &mut SchedulerFrontend) -> EzObjects {
+
+        let mut clone = self.clone();
+        let mut new_state = CanvasState::new(self.path.clone(), scheduler);
+        new_state.copy_state_values(self.get_state());
+        clone.state = new_state;
+        EzObjects::Canvas(clone)
     }
 }
 impl Canvas {

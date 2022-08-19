@@ -15,7 +15,7 @@ use crate::run::definitions::{CallbackTree, Coordinates, Pixel, PixelMap, StateT
 use crate::scheduler::scheduler::SchedulerFrontend;
 use crate::states::ez_state::{EzState, GenericState};
 use crate::states::text_input_state::TextInputState;
-use crate::widgets::ez_object::EzObject;
+use crate::widgets::ez_object::{EzObject, EzObjects};
 use crate::widgets::helper_functions::{add_border, add_padding};
 
 
@@ -253,6 +253,15 @@ impl EzObject for TextInput {
                                self.get_path());
         }
         true
+    }
+
+    fn get_clone(&self, scheduler: &mut SchedulerFrontend) -> EzObjects {
+
+        let mut clone = self.clone();
+        let mut new_state = TextInputState::new(self.path.clone(), scheduler);
+        new_state.copy_state_values(self.get_state());
+        clone.state = new_state;
+        EzObjects::TextInput(clone)
     }
 }
 

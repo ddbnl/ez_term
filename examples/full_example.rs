@@ -125,11 +125,13 @@ fn main() {
     // Programmatically create some labels
     for i in 0..10 {
         let new_id = format!("label_{}", i);
-        scheduler.create_widget(
-            "ScalingLabel", new_id.as_str(),
-            "generation_box", &mut state_tree);
-        state_tree.get_mut(new_id.as_str()).as_label_mut()
+        let (new_widget, mut new_states) = scheduler.prepare_create_widget(
+            "ScalingLabel", new_id.as_str(), "generation_box", &mut state_tree);
+
+        new_states.get_mut(new_id.as_str()).as_label_mut()
             .set_text(format!("Generated label {}", i));
+
+        scheduler.create_widget(new_widget, new_states, &mut state_tree);
     }
     // Remove on widget programmatically.
     scheduler.remove_widget("label_9");
@@ -156,7 +158,7 @@ fn main() {
     // Bind a global key
     scheduler.bind_global_key(
         KeyCode::Char('a'), Some(vec!(KeyModifiers::SHIFT)),
-        Box::new(|context: Context, key: KeyCode, modifiers: KeyModifiers| {
+        Box::new(|context: Context, _key: KeyCode, _modifiers: KeyModifiers| {
             let state = context.state_tree.get_mut("checkbox").as_checkbox_mut();
             state.set_active(!state.get_active());
             state.update(context.scheduler);
@@ -334,6 +336,8 @@ fn progress_bar_button(context: Context) -> bool {
         .as_generic_mut();
     state.set_disabled(true);
     state.update(context.scheduler);
+    let state = context.state_tree.get_mut("progress_bar").as_progress_bar_mut();
+    state.set_value(0);
     context.scheduler.schedule_threaded(Box::new(progress_example_app),
         Some(Box::new(move |context: Context| {
             let state = context.state_tree.get_mut("progress_button")
@@ -348,7 +352,19 @@ fn progress_bar_button(context: Context) -> bool {
 fn progress_example_app(mut context: ThreadedContext) {
 
     for x in 1..=5 {
-        let my_progress = context.scheduler.get_property_mut("my_progress");
-        my_progress.as_usize_mut().set(x*20);
+        //let my_progress = context.scheduler.get_property_mut("my_progress");
+        //my_progress.as_usize_mut().set(x*20);
+        let state = context.state_tree.get_mut("progress_bar").as_progress_bar_mut();
+        let val = state.get_value();
+
+
+        let state = context.state_tree.get_mut("progress_label").as_label_mut();
+        state.set_text(format!("{}%", val + 20));
+        state.update(&mut context.scheduler);
+        let state = context.state_tree.get_mut("progress_bar").as_progress_bar_mut();
+        state.set_value(val + 20);
+        state.update(&mut context.scheduler);
+
+
         std::thread::sleep(Duration::from_secs(1)) };
 }

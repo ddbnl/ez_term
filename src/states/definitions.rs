@@ -1406,7 +1406,7 @@ impl ColorConfig {
         let disabled_foreground = scheduler.new_color_property(
             format!("{}/disabled_fg_color", name).as_str(), Color::White);
         let disabled_background = scheduler.new_color_property(
-            format!("{}disabled_bg_color", name).as_str(), Color::Black);
+            format!("{}/disabled_bg_color", name).as_str(), Color::Black);
 
         let active_foreground = scheduler.new_color_property(
             format!("{}/active_fg_color", name).as_str(), Color::White);

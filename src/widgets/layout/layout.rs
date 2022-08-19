@@ -686,6 +686,18 @@ impl EzObject for Layout {
         state.update(scheduler);
         true
     }
+
+    fn get_clone(&self, scheduler: &mut SchedulerFrontend) -> EzObjects {
+
+        let children: Vec<EzObjects> = self.children.iter()
+            .map(|x| x.as_ez_object().get_clone(scheduler)).collect();
+        let mut clone = self.clone();
+        let mut new_state = LayoutState::new(self.path.clone(), scheduler);
+        new_state.copy_state_values(self.get_state());
+        clone.state = new_state;
+        clone.children = children;
+        EzObjects::Layout(clone)
+    }
 }
 
 impl Layout {

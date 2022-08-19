@@ -10,17 +10,18 @@ use crossterm::event::{KeyCode, KeyModifiers};
 
 use crossterm::style::Color;
 
-use crate::{CallbackConfig, Context, EzPropertiesMap, SizeHint};
+use crate::{CallbackConfig, EzPropertiesMap};
 use crate::parser::ez_definition::Templates;
-use crate::parser::parse_lang::parse_level;
 use crate::property::ez_properties::EzProperties;
 use crate::property::ez_property::EzProperty;
 use crate::property::ez_values::EzValues;
 use crate::run::definitions::{Coordinates, StateTree};
 use crate::run::run::{open_and_register_modal, stop};
-use crate::scheduler::definitions::{EzPropertyUpdater, EzThread, GenericFunction, GenericRecurringTask, GenericTask,
+use crate::scheduler::definitions::{EzPropertyUpdater, EzThread, GenericFunction,
+                                    GenericRecurringTask, GenericTask,
                                     KeyboardCallbackFunction};
-use crate::states::definitions::{create_keymap_modifiers, HorizontalAlignment, HorizontalPosHint, LayoutMode, LayoutOrientation, Padding, VerticalAlignment, VerticalPosHint};
+use crate::states::definitions::{create_keymap_modifiers, HorizontalAlignment, HorizontalPosHint,
+                                 LayoutMode, LayoutOrientation, VerticalAlignment, VerticalPosHint};
 use crate::states::ez_state::EzState;
 use crate::widgets::ez_object::EzObjects;
 
@@ -48,6 +49,15 @@ pub struct SchedulerFrontend {
     /// Whether this is a synced frontend (i.e. running in a thread)
     synced: bool,
 
+    schedule_once_sender: Option<Sender<(String, GenericTask, Duration)>>,
+    schedule_once_receiver: Option<Receiver<(String, GenericTask, Duration)>>,
+
+    schedule_recurring_sender: Option<Sender<(String, GenericRecurringTask, Duration)>>,
+    schedule_recurring_receiver: Option<Receiver<(String, GenericRecurringTask, Duration)>>,
+
+    schedule_threaded_sender: Option<Sender<(EzThread, Option<GenericTask>)>>,
+    schedule_threaded_receiver: Option<Receiver<(EzThread, Option<GenericTask>)>>,
+
     cancel_task_sender: Option<Sender<String>>,
     cancel_task_receiver: Option<Receiver<String>>,
 
@@ -57,8 +67,8 @@ pub struct SchedulerFrontend {
     open_modal_sender: Option<Sender<String>>,
     open_modal_receiver: Option<Receiver<String>>,
 
-    dismiss_modal_sender: Option<Sender<(bool)>>,
-    dismiss_modal_receiver: Option<Receiver<(bool)>>,
+    dismiss_modal_sender: Option<Sender<bool>>,
+    dismiss_modal_receiver: Option<Receiver<bool>>,
 
     overwrite_callback_config_sender: Option<Sender<(String, CallbackConfig)>>,
     overwrite_callback_config_receiver: Option<Receiver<(String, CallbackConfig)>>,
@@ -66,8 +76,12 @@ pub struct SchedulerFrontend {
     update_callback_config_sender: Option<Sender<(String, CallbackConfig)>>,
     update_callback_config_receiver: Option<Receiver<(String, CallbackConfig)>>,
 
-    create_widget_sender: Option<Sender<(String, String, String)>>,
-    create_widget_receiver: Option<Receiver<(String, String, String)>>,
+    create_widget_sender: Option<Sender<(EzObjects, StateTree)>>,
+    create_widget_receiver: Option<Receiver<(EzObjects, StateTree)>>,
+    new_properties_sender: Option<Sender<HashMap<String, EzProperties>>>,
+    new_properties_receiver: Option<Receiver<HashMap<String, EzProperties>>>,
+    new_receivers_sender: Option<Sender<HashMap<String, Receiver<EzValues>>>>,
+    new_receivers_receiver: Option<Receiver<HashMap<String, Receiver<EzValues>>>>,
 
     remove_widget_sender: Option<Sender<String>>,
     remove_widget_receiver: Option<Receiver<String>>,
@@ -141,14 +155,12 @@ pub struct SchedulerFrontend {
     exit_receiver: Option<Receiver<bool>>,
 
     ask_sync_state_tree_sender: Option<Sender<bool>>,
-    ask_sync_state_tree_receiver: Option<Receiver<bool>>,
-    sync_state_tree_sender: Option<Sender<StateTree>>,
     sync_state_tree_receiver: Option<Receiver<StateTree>>,
+    sync_state_tree_main: Vec<(Receiver<bool>, Sender<StateTree>)>,
 
     ask_sync_properties_sender: Option<Sender<bool>>,
-    ask_sync_properties_receiver: Option<Receiver<bool>>,
-    sync_properties_sender: Option<Sender<EzPropertiesMap>>,
     sync_properties_receiver: Option<Receiver<EzPropertiesMap>>,
+    sync_properties_main: Vec<(Receiver<bool>, Sender<EzPropertiesMap>)>,
 }
 
 
@@ -190,7 +202,7 @@ impl SchedulerFrontend {
             let task = Task::new(name.to_string(), func, after);
             self.backend.tasks.push(task);
         } else {
-            panic!("Cannot schedule tasks from a thread");
+            self.schedule_once_sender.as_ref().unwrap().send((name.to_string(), func, after)).unwrap();
         }
     }
 
@@ -261,7 +273,8 @@ impl SchedulerFrontend {
             let task = RecurringTask::new(name.to_string(), func, interval);
             self.backend.recurring_tasks.push(task);
         } else {
-            panic!("Cannot schedule tasks from a thread");
+            self.schedule_recurring_sender.as_ref().unwrap()
+                .send((name.to_string(), func, interval)).unwrap();
         }
     }
 
@@ -332,7 +345,8 @@ impl SchedulerFrontend {
         if !self.synced {
             self.backend.threads_to_start.push((threaded_func, on_finish));
         } else {
-            panic!("Cannot schedule tasks from a thread");
+            self.schedule_threaded_sender.as_ref().unwrap()
+                .send((threaded_func, on_finish)).unwrap();
         }
     }
 
@@ -377,8 +391,6 @@ impl SchedulerFrontend {
             open_and_register_modal(template.to_string(), state_tree, self);
         } else {
             self.open_modal_sender.as_ref().unwrap().send(template.to_string()).unwrap();
-            let mut new_state_tree = self.sync_state_tree();
-            swap(state_tree, &mut new_state_tree);
         }
     }
 
@@ -455,6 +467,40 @@ impl SchedulerFrontend {
 
     }
 
+    pub fn prepare_create_widget(&mut self, widget_type: &str, id: &str, parent: &str,
+                                 state_tree: &mut StateTree) -> (EzObjects, StateTree) {
+
+        let path = if !parent.contains('/') { // parent is an ID, resolve it
+            state_tree.get(parent).as_generic().get_path().clone()
+        } else {
+            parent.to_string()
+        };
+        let new_path = format!("{}/{}", path, id);
+        let base_type;
+        let new_widget;
+        if self.backend.templates.contains_key(widget_type) {
+            new_widget = self.backend.templates.get_mut(widget_type).unwrap()
+                .clone().parse(self, path.to_string(), 0,
+                               Some(vec!(format!("id: {}", id))));
+        } else {
+            base_type = widget_type.to_string();
+            let new_state = EzState::from_string(&base_type,
+                                                 new_path.to_string(),
+                                                 self);
+            new_widget = EzObjects::from_string(
+                &base_type, new_path.to_string(), id.to_string(),
+                self, new_state);
+        };
+        let mut new_states =
+            StateTree::new(id.to_string(), new_widget.as_ez_object().get_state());
+        if let EzObjects::Layout(ref i) = new_widget {
+            for child in i.get_widgets_recursive() {
+                new_states.add_node(child.as_ez_object().get_path(),
+                                    child.as_ez_object().get_state());
+            }
+        }
+        (new_widget, new_states)
+    }
     /// Create a new widget from code. After calling this method, the widget will appear on the
     /// next frame. The state of the new widget will be available in the state tree immediately
     /// after calling this method. The parameters are:
@@ -513,42 +559,34 @@ impl SchedulerFrontend {
     /// }
     /// run(root_widget, state_tree, scheduler);
     /// ```
-    pub fn create_widget(&mut self, widget_type: &str, id: &str, parent: &str,
+    pub fn create_widget(&mut self, new_widget: EzObjects, new_states: StateTree,
                          state_tree: &mut StateTree)  {
 
+        let path = new_states.obj.as_generic().get_path().clone();
         if !self.synced {
-            let path = if !parent.contains('/') { // parent is an ID, resolve it
-                state_tree.get(parent).as_generic().get_path().clone()
-            } else {
-                parent.to_string()
-            };
-            let new_path = format!("{}/{}", path, id);
-            let base_type;
-            let new_widget;
-            if self.backend.templates.contains_key(widget_type) {
-                new_widget = self.backend.templates.get_mut(widget_type).unwrap()
-                    .clone().parse(self, path.to_string(), 0,
-                                   Some(vec!(format!("id: {}", id))));
-                state_tree.add_node(new_path, new_widget.as_ez_object().get_state());
-                if let EzObjects::Layout(ref i) = new_widget {
-                    for child in i.get_widgets_recursive() {
-                        state_tree.add_node(child.as_ez_object().get_path(),
-                                            child.as_ez_object().get_state());
-                    }
-                }
-            } else {
-                base_type = widget_type.to_string();
-                let new_state = EzState::from_string(&base_type, new_path.to_string(),
-                                                     self);
-                new_widget = EzObjects::from_string(
-                    &base_type, new_path.to_string(), id.to_string(), self, new_state);
-            };
+            state_tree.extend(path, new_states);
             self.backend.widgets_to_create.push(new_widget);
-        } else {
-            self.create_widget_sender.as_ref().unwrap()
-                .send((widget_type.to_string(), id.to_string(), parent.to_string())).unwrap();
-        }
+            if let Some(ref recv) = self.new_properties_receiver {
+                if let Ok(i) = recv.try_recv() {
+                    self.backend.properties.extend(i);
+                }
+            }
+            if let Some(ref recv) = self.new_receivers_receiver {
+                if let Ok(i) = recv.try_recv() {
+                    self.backend.property_receivers.extend(i);
+                }
+            }
 
+        } else {
+            let mut receivers = HashMap::new();
+            swap(&mut receivers, &mut self.backend.property_receivers);
+            state_tree.extend(path, new_states.clone());
+            self.create_widget_sender.as_ref().unwrap()
+                .send((new_widget, new_states)).unwrap();
+            self.new_receivers_sender.as_ref().unwrap().send(receivers).unwrap();
+            self.new_properties_sender.as_ref().unwrap()
+                .send(self.backend.properties.clone()).unwrap();
+        }
     }
 
     /// Remove a widget on the next frame. Pass the path or ID of the widget to remove.
@@ -573,19 +611,12 @@ impl SchedulerFrontend {
     /// to this property will update automatically.
     pub fn new_usize_property(&mut self, name: &str, value: usize) -> EzProperty<usize> {
 
-        if !self.synced {
-            let (property, receiver) =
-                EzProperty::new(name.to_string(), value);
-            self.backend.properties.insert(
-                name.to_string(), EzProperties::Usize(property.clone()));
-            self.backend.property_receivers.insert(name.to_string(), receiver);
-            property
-        } else {
-            self.new_usize_property_sender.as_ref().unwrap()
-                .send((name.to_string(), value)).unwrap();
-            self.sync_properties();
-            self.get_property(name).as_usize().clone()
-        }
+        let (property, receiver) =
+            EzProperty::new(name.to_string(), value);
+        self.backend.properties.insert(
+            name.to_string(), EzProperties::Usize(property.clone()));
+        self.backend.property_receivers.insert(name.to_string(), receiver);
+        property
     }
 
     /// Register a new property and return it. After a property has been registered it's possible
@@ -595,19 +626,12 @@ impl SchedulerFrontend {
     /// to this property will update automatically.
     pub fn new_f64_property(&mut self, name: &str, value: f64) -> EzProperty<f64> {
 
-        if !self.synced {
-            let (property, receiver) =
-                EzProperty::new(name.to_string(), value);
-            self.backend.properties.insert(
-                name.to_string(), EzProperties::F64(property.clone()));
-            self.backend.property_receivers.insert(name.to_string(), receiver);
-            property
-        } else {
-            self.new_f64_property_sender.as_ref().unwrap()
-                .send((name.to_string(), value)).unwrap();
-            self.sync_properties();
-            self.get_property(name).as_f64().clone()
-        }
+        let (property, receiver) =
+            EzProperty::new(name.to_string(), value);
+        self.backend.properties.insert(
+            name.to_string(), EzProperties::F64(property.clone()));
+        self.backend.property_receivers.insert(name.to_string(), receiver);
+        property
     }
 
     /// Register a new property and return it. After a property has been registered it's possible
@@ -617,18 +641,12 @@ impl SchedulerFrontend {
     /// to this property will update automatically.
     pub fn new_string_property(&mut self, name: &str, value: String) -> EzProperty<String> {
 
-        if !self.synced {
-            let (property, receiver) =
-                EzProperty::new(name.to_string(), value);
-            self.backend.properties.insert(
-                name.to_string(), EzProperties::String(property.clone()));
-            self.backend.property_receivers.insert(name.to_string(), receiver);
-            property
-        } else {
-            self.new_string_property_sender.as_ref().unwrap().send((name.to_string(), value)).unwrap();
-            self.sync_properties();
-            self.get_property(name).as_string().clone()
-        }
+        let (property, receiver) =
+            EzProperty::new(name.to_string(), value);
+        self.backend.properties.insert(
+            name.to_string(), EzProperties::String(property.clone()));
+        self.backend.property_receivers.insert(name.to_string(), receiver);
+        property
     }
 
     /// Register a new property and return it. After a property has been registered it's possible
@@ -638,18 +656,12 @@ impl SchedulerFrontend {
     /// to this property will update automatically.
     pub fn new_bool_property(&mut self, name: &str, value: bool) -> EzProperty<bool> {
 
-        if !self.synced {
-            let (property, receiver) =
-                EzProperty::new(name.to_string(), value);
-            self.backend.properties.insert(
-                name.to_string(), EzProperties::Bool(property.clone()));
-            self.backend.property_receivers.insert(name.to_string(), receiver);
-            property
-        } else {
-            self.new_bool_property_sender.as_ref().unwrap().send((name.to_string(), value)).unwrap();
-            self.sync_properties();
-            self.get_property(name).as_bool().clone()
-        }
+        let (property, receiver) =
+            EzProperty::new(name.to_string(), value);
+        self.backend.properties.insert(
+            name.to_string(), EzProperties::Bool(property.clone()));
+        self.backend.property_receivers.insert(name.to_string(), receiver);
+        property
     }
 
     /// Register a new property and return it. After a property has been registered it's possible
@@ -659,18 +671,12 @@ impl SchedulerFrontend {
     /// to this property will update automatically.
     pub fn new_color_property(&mut self, name: &str, value: Color) -> EzProperty<Color> {
 
-        if !self.synced {
-            let (property, receiver) =
-                EzProperty::new(name.to_string(), value);
-            self.backend.properties.insert(
-                name.to_string(), EzProperties::Color(property.clone()));
-            self.backend.property_receivers.insert(name.to_string(), receiver);
-            property
-        } else {
-            self.new_color_property_sender.as_ref().unwrap().send((name.to_string(), value)).unwrap();
-            self.sync_properties();
-            self.get_property(name).as_color().clone()
-        }
+        let (property, receiver) =
+            EzProperty::new(name.to_string(), value);
+        self.backend.properties.insert(
+            name.to_string(), EzProperties::Color(property.clone()));
+        self.backend.property_receivers.insert(name.to_string(), receiver);
+        property
     }
 
     /// Register a new property and return it. After a property has been registered it's possible
@@ -681,19 +687,12 @@ impl SchedulerFrontend {
     pub fn new_layout_mode_property(&mut self, name: &str, value: LayoutMode)
                                            -> EzProperty<LayoutMode> {
 
-        if !self.synced {
-            let (property, receiver) =
-                EzProperty::new(name.to_string(), value);
-            self.backend.properties.insert(
-                name.to_string(), EzProperties::LayoutMode(property.clone()));
-            self.backend.property_receivers.insert(name.to_string(), receiver);
-            property
-        } else {
-            self.new_layout_mode_property_sender.as_ref().unwrap()
-                .send((name.to_string(), value)).unwrap();
-            self.sync_properties();
-            self.get_property(name).as_layout_mode().clone()
-        }
+        let (property, receiver) =
+            EzProperty::new(name.to_string(), value);
+        self.backend.properties.insert(
+            name.to_string(), EzProperties::LayoutMode(property.clone()));
+        self.backend.property_receivers.insert(name.to_string(), receiver);
+        property
     }
 
     /// Register a new property and return it. After a property has been registered it's possible
@@ -704,19 +703,12 @@ impl SchedulerFrontend {
     pub fn new_layout_orientation_property(&mut self, name: &str, value: LayoutOrientation)
                                     -> EzProperty<LayoutOrientation> {
 
-        if !self.synced {
-            let (property, receiver) =
-                EzProperty::new(name.to_string(), value);
-            self.backend.properties.insert(
-                name.to_string(), EzProperties::LayoutOrientation(property.clone()));
-            self.backend.property_receivers.insert(name.to_string(), receiver);
-            property
-        } else {
-            self.new_layout_orientation_property_sender.as_ref().unwrap()
-                .send((name.to_string(), value)).unwrap();
-            self.sync_properties();
-            self.get_property(name).as_layout_orientation().clone()
-        }
+        let (property, receiver) =
+            EzProperty::new(name.to_string(), value);
+        self.backend.properties.insert(
+            name.to_string(), EzProperties::LayoutOrientation(property.clone()));
+        self.backend.property_receivers.insert(name.to_string(), receiver);
+        property
     }
 
     /// Register a new property and return it. After a property has been registered it's possible
@@ -727,19 +719,12 @@ impl SchedulerFrontend {
     pub fn new_vertical_alignment_property(&mut self, name: &str, value: VerticalAlignment)
         -> EzProperty<VerticalAlignment> {
 
-        if !self.synced {
-            let (property, receiver) =
-                EzProperty::new(name.to_string(), value);
-            self.backend.properties.insert(
-                name.to_string(), EzProperties::VerticalAlignment(property.clone()));
-            self.backend.property_receivers.insert(name.to_string(), receiver);
-            property
-        } else {
-            self.new_vertical_alignment_property_sender.as_ref().unwrap()
-                .send((name.to_string(), value)).unwrap();
-            self.sync_properties();
-            self.get_property(name).as_vertical_alignment().clone()
-        }
+        let (property, receiver) =
+            EzProperty::new(name.to_string(), value);
+        self.backend.properties.insert(
+            name.to_string(), EzProperties::VerticalAlignment(property.clone()));
+        self.backend.property_receivers.insert(name.to_string(), receiver);
+        property
     }
 
     /// Register a new property and return it. After a property has been registered it's possible
@@ -750,19 +735,12 @@ impl SchedulerFrontend {
     pub fn new_horizontal_alignment_property(&mut self, name: &str, value: HorizontalAlignment)
         -> EzProperty<HorizontalAlignment> {
 
-        if !self.synced {
-            let (property, receiver) =
-                EzProperty::new(name.to_string(), value);
-            self.backend.properties.insert(
-                name.to_string(), EzProperties::HorizontalAlignment(property.clone()));
-            self.backend.property_receivers.insert(name.to_string(), receiver);
-            property
-        } else {
-            self.new_horizontal_alignment_property_sender.as_ref().unwrap()
-                .send((name.to_string(), value)).unwrap();
-            self.sync_properties();
-            self.get_property(name).as_horizontal_alignment().clone()
-        }
+        let (property, receiver) =
+            EzProperty::new(name.to_string(), value);
+        self.backend.properties.insert(
+            name.to_string(), EzProperties::HorizontalAlignment(property.clone()));
+        self.backend.property_receivers.insert(name.to_string(), receiver);
+        property
     }
 
     /// Register a new property and return it. After a property has been registered it's possible
@@ -773,19 +751,12 @@ impl SchedulerFrontend {
     pub fn new_horizontal_pos_hint_property(
         &mut self, name: &str, value: HorizontalPosHint) -> EzProperty<HorizontalPosHint> {
 
-        if !self.synced {
-            let (property, receiver) =
-                EzProperty::new(name.to_string(), value);
-            self.backend.properties.insert(
-                name.to_string(), EzProperties::HorizontalPosHint(property.clone()));
-            self.backend.property_receivers.insert(name.to_string(), receiver);
-            property
-        } else {
-            self.new_horizontal_pos_hint_property_sender.as_ref().unwrap()
-                .send((name.to_string(), value)).unwrap();
-            self.sync_properties();
-            self.get_property(name).as_horizontal_pos_hint().clone()
-        }
+        let (property, receiver) =
+            EzProperty::new(name.to_string(), value);
+        self.backend.properties.insert(
+            name.to_string(), EzProperties::HorizontalPosHint(property.clone()));
+        self.backend.property_receivers.insert(name.to_string(), receiver);
+        property
     }
 
     /// Register a new property and return it. After a property has been registered it's possible
@@ -796,19 +767,12 @@ impl SchedulerFrontend {
     pub fn new_vertical_pos_hint_property(
         &mut self, name: &str, value: VerticalPosHint) -> EzProperty<VerticalPosHint> {
 
-        if !self.synced {
-            let (property, receiver) =
-                EzProperty::new(name.to_string(), value);
-            self.backend.properties.insert(
-                name.to_string(), EzProperties::VerticalPosHint(property.clone()));
-            self.backend.property_receivers.insert(name.to_string(), receiver);
-            property
-        } else {
-            self.new_vertical_pos_hint_property_sender.as_ref().unwrap()
-                .send((name.to_string(), value)).unwrap();
-            self.sync_properties();
-            self.get_property(name).as_vertical_pos_hint().clone()
-        }
+        let (property, receiver) =
+            EzProperty::new(name.to_string(), value);
+        self.backend.properties.insert(
+            name.to_string(), EzProperties::VerticalPosHint(property.clone()));
+        self.backend.property_receivers.insert(name.to_string(), receiver);
+        property
     }
 
     /// Register a new property and return it. After a property has been registered it's possible
@@ -819,18 +783,12 @@ impl SchedulerFrontend {
     pub fn new_size_hint_property(&mut self, name: &str, value: Option<f64>)
         -> EzProperty<Option<f64>> {
 
-        if !self.synced {
-            let (property, receiver) =
-                EzProperty::new(name.to_string(), value);
-            self.backend.properties.insert(
-                name.to_string(), EzProperties::SizeHint(property.clone()));
-            self.backend.property_receivers.insert(name.to_string(), receiver);
-            property
-        } else {
-            self.new_size_hint_property_sender.as_ref().unwrap().send((name.to_string(), value)).unwrap();
-            self.sync_properties();
-            self.get_property(name).as_size_hint().clone()
-        }
+        let (property, receiver) =
+            EzProperty::new(name.to_string(), value);
+        self.backend.properties.insert(
+            name.to_string(), EzProperties::SizeHint(property.clone()));
+        self.backend.property_receivers.insert(name.to_string(), receiver);
+        property
     }
 
     /// Retrieve a property. Should be used to retrieve custom properties; access widget properties
@@ -998,41 +956,60 @@ impl SchedulerFrontend {
         }
     }
 
+    pub fn is_syncing(&self) -> bool {
+        self.syncing != 0
+    }
+
     fn check_sync_state_tree(&self, state_tree: &mut StateTree) {
 
-        let mut received = None;
-        loop {
-            match self.sync_state_tree_receiver.as_ref().unwrap().try_recv() {
-                Ok(i) => { received = Some(i) },
-                Err(_) => { break }
+        for (ask_receiver, reply_sender) in self.sync_state_tree_main.iter() {
+            let mut received = None;
+            loop {
+                match ask_receiver.try_recv() {
+                    Ok(i) => { received = Some(i) },
+                    Err(_) => { break }
+                }
             }
-        }
-        if received.is_some() {
-            self.sync_state_tree_sender.as_ref().unwrap().send(state_tree.clone()).unwrap();
+            if received.is_some() {
+                reply_sender.send(state_tree.clone()).unwrap();
+            }
         }
     }
 
     fn check_sync_properties(&self) {
 
-        let mut received = None;
-        loop {
-            match self.sync_properties_receiver.as_ref().unwrap().try_recv() {
-                Ok(i) => { received = Some(i) },
-                Err(_) => { break }
+        for (ask_receiver, reply_sender) in self.sync_properties_main.iter() {
+            let mut received = None;
+            loop {
+                match ask_receiver.try_recv() {
+                    Ok(i) => { received = Some(i) },
+                    Err(_) => { break }
+                }
             }
-        }
-        if received.is_some() {
-            self.sync_properties_sender.as_ref().unwrap().send(self.backend.properties.clone()).unwrap();
+            if received.is_some() {
+                reply_sender.send(self.backend.properties.clone()).unwrap();
+            }
         }
     }
 
-    fn sync_state_tree(&mut self) -> StateTree {
+    /// Sync state tree from the main thread. The state tree cannot be shared across threads;
+    /// therefore each thread has its own state tree. Changes made from a thread will be synced
+    /// to the main thread, however changes made in the main thread will not be synced to the
+    /// other thread(s). Often it is not important to have an up to date state tree in your thread,
+    /// but if it is necessary at any point, call this method first.
+    pub fn sync_state_tree(&mut self) -> StateTree {
 
         self.ask_sync_state_tree_sender.as_ref().unwrap().send(true).unwrap();
         self.sync_state_tree_receiver.as_ref().unwrap().recv().unwrap()
 
     }
-    fn sync_properties(&mut self) {
+
+    /// Sync (custom) properties from the main thread. The properties cannot be shared across threads;
+    /// therefore each thread has its own properties. Changes made from a thread will be synced
+    /// to the main thread, however changes made in the main thread will not be synced to the
+    /// other thread(s). Often it is not important to have up to date properties in your thread,
+    /// but if it is necessary at any point, call this method first.
+    pub fn sync_properties(&mut self) {
 
         self.ask_sync_properties_sender.as_ref().unwrap().send(true).unwrap();
         self.backend.properties =
@@ -1040,14 +1017,20 @@ impl SchedulerFrontend {
                 .recv().unwrap();
     }
 
-    fn check_method_channels(&mut self, state_tree: &mut StateTree) {
+    pub fn _check_method_channels(&mut self, state_tree: &mut StateTree) {
         if self.syncing == 0 { return }
 
-        while let Ok(name) = self.cancel_task_receiver.as_ref().unwrap().try_recv() {
-                self.cancel_task(name.as_str());
+        while let Ok((name, func, after)) = self.schedule_once_receiver.as_ref().unwrap().try_recv() {
+            self.schedule_once(&name, func, after);
+        }
+        while let Ok((name, func, interval)) = self.schedule_recurring_receiver.as_ref().unwrap().try_recv() {
+            self.schedule_recurring(&name, func, interval);
+        }
+        while let Ok((func, on_finish)) = self.schedule_threaded_receiver.as_ref().unwrap().try_recv() {
+            self.schedule_threaded(func, on_finish);
         }
         while let Ok(name) = self.cancel_task_receiver.as_ref().unwrap().try_recv() {
-            self.cancel_task(name.as_str());
+                self.cancel_task(name.as_str());
         }
         while let Ok(name) = self.cancel_recurring_receiver.as_ref().unwrap().try_recv() {
             self.cancel_recurring_task(name.as_str());
@@ -1066,10 +1049,10 @@ impl SchedulerFrontend {
                 = self.update_callback_config_receiver.as_ref().unwrap().try_recv() {
             self.update_callback_config(for_widget.as_str(), callback_config);
         }
-        while let Ok((widget_type, id, parent)) =
+        while let Ok((new_widget, new_states)) =
                 self.create_widget_receiver.as_ref().unwrap().try_recv() {
-            self.create_widget(widget_type.as_str(), id.as_str(),
-                               parent.as_str(), state_tree);
+
+            self.create_widget(new_widget, new_states, state_tree);
         }
         while let Ok(name) = self.remove_widget_receiver.as_ref().unwrap().try_recv() {
             self.remove_widget(name.as_str());
@@ -1157,6 +1140,8 @@ impl SchedulerFrontend {
         while let Ok(_) = self.exit_receiver.as_ref().unwrap().try_recv() {
             self.exit();
         }
+        self.check_sync_properties();
+        self.check_sync_state_tree(state_tree);
     }
 
     /// Method to stop a synced scheduler. No need to use this as an end-user; schedule_threaded
@@ -1171,16 +1156,37 @@ impl SchedulerFrontend {
 
         let mut synced_frontend = SchedulerFrontend::default();
         self.syncing += 1;
-
         synced_frontend.synced = true;
+
+        if self.schedule_once_receiver.is_none() {
+            let (sender, receiver) = channel();
+            self.schedule_once_receiver = Some(receiver);
+            self.schedule_once_sender = Some(sender.clone());
+        }
+        synced_frontend.schedule_once_sender = self.schedule_once_sender.clone();
+
+        if self.schedule_recurring_receiver.is_none() {
+            let (sender, receiver) = channel();
+            self.schedule_recurring_receiver = Some(receiver);
+            self.schedule_recurring_sender = Some(sender.clone());
+        }
+        synced_frontend.schedule_recurring_sender = self.schedule_recurring_sender.clone();
+
+        if self.schedule_threaded_receiver.is_none() {
+            let (sender, receiver) = channel();
+            self.schedule_threaded_receiver = Some(receiver);
+            self.schedule_threaded_sender = Some(sender.clone());
+        }
+        synced_frontend.schedule_threaded_sender = self.schedule_threaded_sender.clone();
+
         if self.cancel_task_receiver.is_none() {
             let (sender, receiver) = channel();
             self.cancel_task_receiver = Some(receiver);
             self.cancel_task_sender = Some(sender.clone());
-            synced_frontend.cancel_task_sender = Some(sender.clone());
         }
+        synced_frontend.cancel_task_sender = self.cancel_task_sender.clone();
 
-        if self.create_widget_receiver.is_none() {
+        if self.cancel_recurring_receiver.is_none() {
             let (sender, receiver) = channel();
             self.cancel_recurring_receiver = Some(receiver);
             self.cancel_recurring_sender = Some(sender.clone());
@@ -1221,6 +1227,20 @@ impl SchedulerFrontend {
             self.create_widget_sender = Some(sender.clone());
         }
         synced_frontend.create_widget_sender = self.create_widget_sender.clone();
+
+        if self.new_properties_receiver.is_none() {
+            let (sender, receiver) = channel();
+            self.new_properties_receiver = Some(receiver);
+            self.new_properties_sender = Some(sender);
+        }
+        synced_frontend.new_properties_sender = self.new_properties_sender.clone();
+
+        if self.new_receivers_receiver.is_none() {
+            let (sender, receiver) = channel();
+            self.new_receivers_receiver = Some(receiver);
+            self.new_receivers_sender = Some(sender);
+        }
+        synced_frontend.new_receivers_sender = self.new_receivers_sender.clone();
 
         if self.remove_widget_receiver.is_none() {
             let (sender, receiver) = channel();
@@ -1383,36 +1403,20 @@ impl SchedulerFrontend {
         }
         synced_frontend.exit_sender = self.exit_sender.clone();
 
-        if self.ask_sync_state_tree_receiver.is_none() {
-            let (sender, receiver) = channel();
-            self.ask_sync_state_tree_receiver = Some(receiver);
-            self.ask_sync_state_tree_sender = Some(sender.clone());
-        }
-        synced_frontend.ask_sync_state_tree_sender = self.ask_sync_state_tree_sender.clone();
+        let (ask_sender, ask_receiver) = channel();
+        let (reply_sender, reply_receiver) = channel();
+        self.sync_state_tree_main.push((ask_receiver, reply_sender));
+        synced_frontend.ask_sync_state_tree_sender = Some(ask_sender);
+        synced_frontend.sync_state_tree_receiver = Some(reply_receiver);
 
-        if self.sync_state_tree_sender.is_none() {
-            let (sender, receiver) = channel();
-            self.sync_state_tree_receiver = Some(receiver);
-            self.sync_state_tree_sender = Some(sender.clone());
-        }
-        synced_frontend.sync_state_tree_sender = self.sync_state_tree_sender.clone();
+        let (ask_sender, ask_receiver) = channel();
+        let (reply_sender, reply_receiver) = channel();
+        self.sync_properties_main.push((ask_receiver, reply_sender));
+        synced_frontend.ask_sync_properties_sender = Some(ask_sender);
+        synced_frontend.sync_properties_receiver = Some(reply_receiver);
 
-        if self.ask_sync_properties_receiver.is_none() {
-            let (sender, receiver) = channel();
-            self.ask_sync_properties_receiver = Some(receiver);
-            self.ask_sync_properties_sender = Some(sender.clone());
-        }
-        synced_frontend.ask_sync_properties_sender = self.ask_sync_properties_sender.clone();
-
-        if self.sync_properties_sender.is_none() {
-            let (sender, receiver) = channel();
-            synced_frontend.sync_properties_receiver = Some(receiver);
-            self.sync_properties_sender = Some(sender.clone());
-        }
-        synced_frontend.sync_properties_sender = self.sync_properties_sender.clone();
-
-        synced_frontend.sy();
-
+        synced_frontend.backend.properties = self.backend.properties.clone();
+        synced_frontend.backend.templates = self.backend.templates.clone();
         synced_frontend
     }
 }

@@ -11,7 +11,7 @@ use crate::scheduler::scheduler::SchedulerFrontend;
 use crate::states::button_state::ButtonState;
 use crate::states::definitions::{HorizontalAlignment, VerticalAlignment};
 use crate::states::ez_state::{EzState, GenericState};
-use crate::widgets::ez_object::EzObject;
+use crate::widgets::ez_object::{EzObject, EzObjects};
 use crate::widgets::helper_functions::{add_border, add_padding, align_content_horizontally, align_content_vertically, wrap_text};
 
 
@@ -172,6 +172,14 @@ impl EzObject for Button {
         true
     }
 
+    fn get_clone(&self, scheduler: &mut SchedulerFrontend) -> EzObjects {
+
+        let mut clone = self.clone();
+        let mut new_state = ButtonState::new(self.path.clone(), scheduler);
+        new_state.copy_state_values(self.get_state());
+        clone.state = new_state;
+        EzObjects::Button(clone)
+    }
 }
 impl Button {
 
@@ -201,4 +209,5 @@ impl Button {
         scheduler.schedule_once(self.get_path().as_str(), Box::new(scheduled_func),
                                 Duration::from_millis(50));
     }
+
 }

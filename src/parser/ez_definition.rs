@@ -13,7 +13,7 @@ use crossterm::terminal::size;
 
 use crate::parser::parse_lang;
 use crate::scheduler::scheduler::SchedulerFrontend;
-use crate::states::ez_state::GenericState;
+use crate::states::ez_state::{GenericState};
 use crate::widgets::{
     ez_object::EzObjects,
     button::Button,
@@ -155,6 +155,7 @@ impl EzWidgetDefinition {
             template.is_root = self.is_root;
             let object = template.parse(scheduler, parent_path, order,
                                         Some(config));
+            let object = object.as_ez_object().get_clone(scheduler);
             Ok(object)
         // If this is a base widget definition initialize a widget of that type from the config of
         // this widget definition.

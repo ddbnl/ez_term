@@ -574,4 +574,6 @@ pub trait EzObject {
         };
         false
     }
+
+    fn get_clone(&self, scheduler: &mut SchedulerFrontend) -> EzObjects;
 }
