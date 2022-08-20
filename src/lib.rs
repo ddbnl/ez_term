@@ -140,8 +140,8 @@
 //!             16. [filler_bg_color](#reference_layout_properties_filler_bg_color)
 //!             17. [scroll_x](#reference_layout_properties_scroll_x)
 //!             18. [scroll_y](#reference_layout_properties_scroll_y)
-//!             19. [view_start_x](#reference_layout_properties_view_start_x)
-//!             20. [view_start_y](#reference_layout_properties_view_start_y)
+//!             19. [scroll_start_x](#reference_layout_properties_scroll_start_x)
+//!             20. [scroll_start_y](#reference_layout_properties_scroll_start_y)
 //!             21. [rows](#reference_layout_properties_rows)
 //!             22. [cols](#reference_layout_properties_cols)
 //!             23. [col_default_width](#reference_layout_properties_col_default_width)
@@ -1047,6 +1047,77 @@
 //!     - Label:
 //!         auto_scale_height: true
 //!         from_file: lorem_ipsum.txt
+//! ```
+//!
+//! <a name="ez_language_views"></a>
+//! ##### 1.2.3.7 Views
+//!
+//! Layout view is also not a dedicated mode, but worth mentioning. It is a property that can be
+//! used with box, float, stack and table layouts. It allows you to set a view size, and only that amount
+//! of child widgets will be displayed at a time. So if you have for example a table layout that
+//! has to display a database with hundreds of records, you could set the view size to 25 to limit
+//! the amount of widgets displayed at one time. The view_size property determines how many children
+//! are displayed, and the view_page property determines where we are in the view. The first page is
+//! '1' (0 is not allowed). If the view_page value exceeds the max number of pages it will not panic,
+//! but automatically be set to the max value (so you don't have to worry about it).
+//!
+//! Let's look at an example. We'll create a parent layout with views enabled in an .ez file.
+//! Then we'll generate a lot of widgets in that layout programmatically. We'll also give the parent
+//! layout two buttons so the user can navigate through the views.
+//!
+//! First the .ez file:
+//! ```
+//! Layout:
+//!     mode: box
+//!     orientation: vertical
+//!     Layout:
+//!         id: view_layout
+//!         mode: box
+//!         orientation: vertical
+//!         view_size: 10
+//!         view_page: 1
+//!     Layout:
+//!         mode: box
+//!         orientation: horizontal
+//!         auto_scale: true, true
+//!         Button:
+//!             id: back_button
+//!             text: <
+//!             auto_scale: true, true
+//!         Button:
+//!             id: forward_button
+//!             text: >
+//!             auto_scale: true, true
+//! ```
+//! We now have a view layout and navigation buttons. Let's look at the code:
+//! ```
+//! use ez_term::*;
+//!
+//! let (root_widget, mut state_tree, mut scheduler) = load_ui();
+//!
+//! let navigate_back_callback = |context: Context| {
+//!     let state = context.state_tree.get_mut("view_layout").as_layout_mut();
+//!     let current_page = state.get_view_page();
+//!     if current_page > 1 {
+//!         state.set_view_page( current_page - 1);
+//!         state.update(context.scheduler);
+//!     }
+//!     true
+//! };
+//! let callback_config = CallbackConfig::from_on_press(Box::new(navigate_back_callback));
+//! scheduler.update_callback_config("back_button", callback_config);
+//!
+//! let navigate_forward_callback = |context: Context| {
+//!     let state = context.state_tree.get_mut("view_layout").as_layout_mut();
+//!     let current_page = state.get_view_page();
+//!     state.set_view_page( current_page + 1);
+//!     state.update(context.scheduler);
+//!     true
+//! };
+//! let callback_config = CallbackConfig::from_on_press(Box::new(navigate_forward_callback));
+//! scheduler.update_callback_config("forward_button", callback_config);
+//!
+//! run(root_widget, state_tree, scheduler);
 //! ```
 //!
 //! <a name="widget_overview"></a>
@@ -5758,6 +5829,84 @@
 //! run(root_widget, state_tree, scheduler);
 //! ```
 //!
+//! <a name="reference_layout_properties_view_size"></a>
+//! ##### view_size
+//!
+//! Only works when the layout mode is box, float, stack or table. Determines the max amount of children
+//! displayed at one time. Default is 0, which displays all children. If set to a value higher than
+//! 0, the children displayed are determined by the 'view_page' property (see below).
+//! If this layout has e.g. 30 children, view size is set to 10, and view_page is 2, then
+//! children 10-20 are displayed.
+//!
+//! **Property type:**
+//!
+//! usize
+//!
+//! **Possible values:**
+//!
+//! Any usize.
+//!
+//! **Default value:**
+//!
+//! 0 (display all children).
+//!
+//! **Usage examples:**
+//!
+//! In EzLang files:
+//! ```
+//! - Layout:
+//!     view_size: 10
+//! ```
+//!
+//! In code:
+//! ```
+//! use ez_term::*;
+//! let (root_widget, mut state_tree, mut scheduler) = load_ui();
+//! let state = state_tree.get_mut("my_layout").as_layout_mut();
+//!
+//! state.set_view_size(1);
+//!
+//! run(root_widget, state_tree, scheduler);
+//! ```
+//!
+//! <a name="reference_layout_properties_view_size"></a>
+//! ##### view_page
+//!
+//! Only works when the layout mode is box, float, stack or table, and view_size is set to a value higher
+//! than 0. Determines which children are displayed. If this layout has e.g. 30 children, view size
+//! is set to 10, and view_page is 2, then children 10-20 are displayed.
+//!
+//! **Property type:**
+//!
+//! usize
+//!
+//! **Possible values:**
+//!
+//! Any usize higher than 0.
+//!
+//! **Default value:**
+//!
+//! 1 (first page).
+//!
+//! **Usage examples:**
+//!
+//! In EzLang files:
+//! ```
+//! - Layout:
+//!     view_page: 10
+//! ```
+//!
+//! In code:
+//! ```
+//! use ez_term::*;
+//! let (root_widget, mut state_tree, mut scheduler) = load_ui();
+//! let state = state_tree.get_mut("my_layout").as_layout_mut();
+//!
+//! state.set_view_page(2);
+//!
+//! run(root_widget, state_tree, scheduler);
+//! ```
+//!
 //! <a name="reference_layout_properties_scroll_x"></a>
 //! ##### scroll_x
 //!
@@ -5840,11 +5989,11 @@
 //! run(root_widget, state_tree, scheduler);
 //! ```
 //!
-//! <a name="reference_layout_properties_view_start_x"></a>
-//! ##### view_start_x
+//! <a name="reference_layout_properties_scroll_start_x"></a>
+//! ##### scroll_start_x
 //!
 //! Only works when the layout is scrolling horizontally. Determines the view of the scroll by a
-//! value between 0 and 1. If the total content is 100 pixels wide, then a view_start_x of 0.5 will
+//! value between 0 and 1. If the total content is 100 pixels wide, then a scroll_start_x of 0.5 will
 //! show content starting from pixel 50. A value of 0 means the beginning of the content, a value
 //! of 1 means show the tail end of the content. Use with EzLang to optionally set a custom initial
 //! view for the scrollbar. Use in code to programmatically control the scrollbar.
@@ -5866,7 +6015,7 @@
 //! In EzLang files:
 //! ```
 //! - Layout:
-//!     view_start_x: 1.0
+//!     scroll_start_x: 1.0
 //! ```
 //!
 //! In code:
@@ -5877,16 +6026,16 @@
 //!
 //! // Scrolling properties are wrapping into a ScrollingConfig object, which we have to retrieve
 //! // first:
-//! state.get_scrolling_config_mut().set_view_start_x(1.0);
+//! state.get_scrolling_config_mut().set_scroll_start_x(1.0);
 //!
 //! run(root_widget, state_tree, scheduler);
 //! ```
 //!
-//! <a name="reference_layout_properties_view_start_y"></a>
-//! ##### view_start_y
+//! <a name="reference_layout_properties_scroll_start_y"></a>
+//! ##### scroll_start_y
 //!
 //! Only works when the layout is scrolling vertically. Determines the view of the scroll by a
-//! value between 0 and 1. If the total content is 100 pixels high, then a view_start_y of 0.5 will
+//! value between 0 and 1. If the total content is 100 pixels high, then a scroll_start_y of 0.5 will
 //! show content starting from pixel 50. A value of 0 means the beginning of the content, a value
 //! of 1 means show the tail end of the content. Use with EzLang to optionally set a custom initial
 //! view for the scrollbar. Use in code to programmatically control the scrollbar.
@@ -5908,7 +6057,7 @@
 //! In EzLang files:
 //! ```
 //! - Layout:
-//!     view_start_y: 1.0
+//!     scroll_start_y: 1.0
 //! ```
 //!
 //! In code:
@@ -5919,7 +6068,7 @@
 //!
 //! // Scrolling properties are wrapping into a ScrollingConfig object, which we have to retrieve
 //! // first:
-//! state.get_scrolling_config_mut().set_view_start_y(1.0);
+//! state.get_scrolling_config_mut().set_scroll_start_y(1.0);
 //!
 //! run(root_widget, state_tree, scheduler);
 //! ```
@@ -8164,7 +8313,7 @@
 //! ```
 //! - Layout:
 //!     scroll_y: true
-//!     view_start_y: properties.my_property
+//!     scroll_start_y: properties.my_property
 //! ```
 //!
 //!

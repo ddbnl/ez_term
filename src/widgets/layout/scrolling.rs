@@ -15,8 +15,8 @@ impl Layout {
         let scroll_chunk = (state.get_effective_size().height as f64 /
             state.get_scrolling_config().get_original_height() as f64) * 0.75;
         let new_view_start =
-            f64::min(1.0, state.get_scrolling_config().get_view_start_y() + scroll_chunk);
-        state.get_scrolling_config_mut().set_view_start_y(new_view_start);
+            f64::min(1.0, state.get_scrolling_config().get_scroll_start_y() + scroll_chunk);
+        state.get_scrolling_config_mut().set_scroll_start_y(new_view_start);
         state.update(scheduler);
         self.propagate_absolute_positions(state_tree);
     }
@@ -28,10 +28,10 @@ impl Layout {
         if !state.get_scrolling_config().get_scroll_y() { return }
         let scroll_chunk = (state.get_effective_size().height as f64 /
             state.get_scrolling_config().get_original_height() as f64) * 0.75;
-        let new_view_start = if state.get_scrolling_config().get_view_start_y() > scroll_chunk {
-            state.get_scrolling_config().get_view_start_y() - scroll_chunk
+        let new_view_start = if state.get_scrolling_config().get_scroll_start_y() > scroll_chunk {
+            state.get_scrolling_config().get_scroll_start_y() - scroll_chunk
         } else { 0.0 };
-        state.get_scrolling_config_mut().set_view_start_y(new_view_start);
+        state.get_scrolling_config_mut().set_scroll_start_y(new_view_start);
         state.update(scheduler);
         self.propagate_absolute_positions(state_tree);
     }
@@ -44,8 +44,8 @@ impl Layout {
         let scroll_chunk = state.get_effective_size().width as f64 /
             state.get_scrolling_config().get_original_width() as f64;
         let new_view_start =
-            f64::min(1.0, state.get_scrolling_config().get_view_start_x() + scroll_chunk);
-        state.get_scrolling_config_mut().set_view_start_x(new_view_start);
+            f64::min(1.0, state.get_scrolling_config().get_scroll_start_x() + scroll_chunk);
+        state.get_scrolling_config_mut().set_scroll_start_x(new_view_start);
         state.update(scheduler);
         self.propagate_absolute_positions(state_tree);
     }
@@ -58,10 +58,10 @@ impl Layout {
         
         let scroll_chunk = state.get_effective_size().width as f64 /
             state.get_scrolling_config().get_original_width() as f64;
-        let new_view_start = if state.get_scrolling_config().get_view_start_x() > scroll_chunk {
-            state.get_scrolling_config().get_view_start_x() - scroll_chunk
+        let new_view_start = if state.get_scrolling_config().get_scroll_start_x() > scroll_chunk {
+            state.get_scrolling_config().get_scroll_start_x() - scroll_chunk
         } else { 0.0 };
-        state.get_scrolling_config_mut().set_view_start_x(new_view_start);
+        state.get_scrolling_config_mut().set_scroll_start_x(new_view_start);
         state.update(scheduler);
         self.propagate_absolute_positions(state_tree);
     }
@@ -80,7 +80,7 @@ impl Layout {
         state.get_scrolling_config_mut().set_original_width(contents.len());
         state.get_scrolling_config_mut().set_is_scrolling_x(true);
         let view_start = state.get_scrolling_config()
-            .get_absolute_view_start_x(state.get_effective_size().width);
+            .get_absolute_scroll_start_x(state.get_effective_size().width);
         let view_end =
             if contents.len() - view_start > state.get_effective_size().width {
                 view_start + state.get_effective_size().width
@@ -106,7 +106,7 @@ impl Layout {
         state.get_scrolling_config_mut().set_original_height(largest);
         state.get_scrolling_config_mut().set_is_scrolling_y(true);
         let view_start = state.get_scrolling_config()
-            .get_absolute_view_start_y(state.get_effective_size().height);
+            .get_absolute_scroll_start_y(state.get_effective_size().height);
         let view_end =
             if largest - view_start > state.get_effective_size().height {
                 view_start + state.get_effective_size().height

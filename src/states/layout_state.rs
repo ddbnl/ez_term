@@ -87,6 +87,12 @@ pub struct LayoutState {
     /// See [ScrollingConfig]
     pub scrolling_config: ScrollingConfig,
 
+    /// Amount of widgets that can be shown at a time. 0 == all.
+    pub view_size: EzProperty<usize>,
+
+    /// Current page of view, used if view_size > 0.
+    pub view_page: EzProperty<usize>,
+
     /// Whether this layout can be dragged around if it is a modal
     pub can_drag: EzProperty<bool>,
 
@@ -141,6 +147,10 @@ impl LayoutState {
             fill: scheduler.new_bool_property(format!("{}/fill", path).as_str(),false),
             filler_symbol: scheduler.new_string_property(
                 format!("{}/filler_symbol", path).as_str(), " ".to_string()),
+            view_size: scheduler.new_usize_property(
+                format!("{}/view_size", path).as_str(), 0),
+            view_page: scheduler.new_usize_property(
+                format!("{}/view_page", path).as_str(), 1),
             scrolling_config: ScrollingConfig::new(false, false, 0.0, 0.0,
                                                    path.clone(), scheduler),
             border_config: BorderConfig::new(false, path.clone(), scheduler),
@@ -213,10 +223,12 @@ impl GenericState for LayoutState {
             "can_drag" => self.can_drag.set_from_ez_value(value),
             "fill" => self.fill.set_from_ez_value(value),
             "filler_symbol" => self.filler_symbol.set_from_ez_value(value),
+            "view_size" => self.view_size.set_from_ez_value(value),
+            "view_page" => self.view_page.set_from_ez_value(value),
             "scroll_x" => self.scrolling_config.scroll_x.set_from_ez_value(value),
             "scroll_y" => self.scrolling_config.scroll_y.set_from_ez_value(value),
-            "view_start_x" => self.scrolling_config.view_start_x.set_from_ez_value(value),
-            "view_start_y" => self.scrolling_config.view_start_y.set_from_ez_value(value),
+            "scroll_start_x" => self.scrolling_config.scroll_start_x.set_from_ez_value(value),
+            "scroll_start_y" => self.scrolling_config.scroll_start_y.set_from_ez_value(value),
             "rows" => self.table_config.rows.set_from_ez_value(value),
             "cols" => self.table_config.cols.set_from_ez_value(value),
             "col_default_width" => self.table_config.col_default_width.set_from_ez_value(value),
@@ -225,64 +237,6 @@ impl GenericState for LayoutState {
             "force_default_row_height" => self.table_config.force_default_row_height.set_from_ez_value(value),
             _ => panic!("Invalid property name for layout state: {}", name),
         }
-    }
-
-    fn copy_state_values(&mut self, other: EzState) {
-
-        let other = other.as_layout();
-        self.position.x.value = other.position.x.value;
-        self.position.y.value = other.position.y.value;
-        self.size.height.value = other.size.height.value;
-        self.size.width.value = other.size.width.value;
-        self.size_hint.size_hint_x.value = other.size_hint.size_hint_x.value;
-        self.size_hint.size_hint_y.value = other.size_hint.size_hint_y.value;
-        self.pos_hint.pos_hint_x.value = other.pos_hint.pos_hint_x.value;
-        self.pos_hint.pos_hint_y.value = other.pos_hint.pos_hint_y.value;
-        self.auto_scale.auto_scale_width.value = other.auto_scale.auto_scale_width.value;
-        self.auto_scale.auto_scale_height.value = other.auto_scale.auto_scale_height.value;
-        self.padding.padding_top.value = other.padding.padding_top.value;
-        self.padding.padding_bottom.value = other.padding.padding_bottom.value;
-        self.padding.padding_left.value = other.padding.padding_left.value;
-        self.padding.padding_right.value = other.padding.padding_right.value;
-        self.padding.padding_right.value = other.padding.padding_right.value;
-        self.halign.value = other.halign.value;
-        self.valign.value = other.valign.value;
-        self.disabled.value = other.disabled.value;
-        self.selection_order.value = other.selection_order.value;
-        self.border_config.border.value = other.border_config.border.value;
-        self.border_config.horizontal_symbol.value = other.border_config.horizontal_symbol.value.clone();
-        self.border_config.vertical_symbol.value = other.border_config.vertical_symbol.value.clone();
-        self.border_config.top_left_symbol.value = other.border_config.top_left_symbol.value.clone();
-        self.border_config.top_right_symbol.value = other.border_config.top_right_symbol.value.clone();
-        self.border_config.bottom_left_symbol.value = other.border_config.bottom_left_symbol.value.clone();
-        self.border_config.bottom_right_symbol.value = other.border_config.bottom_right_symbol.value.clone();
-        self.colors.fg_color.value = other.colors.fg_color.value;
-        self.colors.bg_color.value = other.colors.bg_color.value;
-        self.colors.selection_fg_color.value = other.colors.selection_fg_color.value;
-        self.colors.selection_bg_color.value = other.colors.selection_bg_color.value;
-        self.colors.disabled_fg_color.value = other.colors.disabled_fg_color.value;
-        self.colors.disabled_bg_color.value = other.colors.disabled_bg_color.value;
-        self.colors.border_fg_color.value = other.colors.border_fg_color.value;
-        self.colors.border_bg_color.value = other.colors.border_bg_color.value;
-        self.colors.cursor_color.value = other.colors.cursor_color.value;
-        self.mode.value = other.mode.value.clone();
-        self.orientation.value = other.orientation.value.clone();
-        self.active_tab.value = other.active_tab.value.clone();
-        self.active_screen.value = other.active_screen.value.clone();
-        self.tab_name.value = other.tab_name.value.clone();
-        self.can_drag.value = other.can_drag.value;
-        self.fill.value = other.fill.value;
-        self.filler_symbol.value = other.filler_symbol.value.clone();
-        self.scrolling_config.scroll_x.value = other.scrolling_config.scroll_x.value;
-        self.scrolling_config.scroll_y.value = other.scrolling_config.scroll_y.value;
-        self.scrolling_config.view_start_x.value = other.scrolling_config.view_start_x.value;
-        self.scrolling_config.view_start_y.value = other.scrolling_config.view_start_y.value;
-        self.table_config.rows.value = other.table_config.rows.value;
-        self.table_config.cols.value = other.table_config.cols.value;
-        self.table_config.row_default_height.value = other.table_config.row_default_height.value;
-        self.table_config.col_default_width.value = other.table_config.col_default_width.value;
-        self.table_config.force_default_row_height.value = other.table_config.force_default_row_height.value;
-        self.table_config.force_default_col_width.value = other.table_config.force_default_col_width.value;
     }
 
     fn get_size_hint(&self) -> &SizeHint { &self.size_hint }
@@ -393,6 +347,66 @@ impl GenericState for LayoutState {
 
     fn get_selected(&self) -> bool { self.selected }
 
+    fn copy_state_values(&mut self, other: EzState) {
+
+        let other = other.as_layout();
+        self.position.x.value = other.position.x.value;
+        self.position.y.value = other.position.y.value;
+        self.size.height.value = other.size.height.value;
+        self.size.width.value = other.size.width.value;
+        self.size_hint.size_hint_x.value = other.size_hint.size_hint_x.value;
+        self.size_hint.size_hint_y.value = other.size_hint.size_hint_y.value;
+        self.pos_hint.pos_hint_x.value = other.pos_hint.pos_hint_x.value;
+        self.pos_hint.pos_hint_y.value = other.pos_hint.pos_hint_y.value;
+        self.auto_scale.auto_scale_width.value = other.auto_scale.auto_scale_width.value;
+        self.auto_scale.auto_scale_height.value = other.auto_scale.auto_scale_height.value;
+        self.padding.padding_top.value = other.padding.padding_top.value;
+        self.padding.padding_bottom.value = other.padding.padding_bottom.value;
+        self.padding.padding_left.value = other.padding.padding_left.value;
+        self.padding.padding_right.value = other.padding.padding_right.value;
+        self.padding.padding_right.value = other.padding.padding_right.value;
+        self.halign.value = other.halign.value;
+        self.valign.value = other.valign.value;
+        self.disabled.value = other.disabled.value;
+        self.selection_order.value = other.selection_order.value;
+        self.border_config.border.value = other.border_config.border.value;
+        self.border_config.horizontal_symbol.value = other.border_config.horizontal_symbol.value.clone();
+        self.border_config.vertical_symbol.value = other.border_config.vertical_symbol.value.clone();
+        self.border_config.top_left_symbol.value = other.border_config.top_left_symbol.value.clone();
+        self.border_config.top_right_symbol.value = other.border_config.top_right_symbol.value.clone();
+        self.border_config.bottom_left_symbol.value = other.border_config.bottom_left_symbol.value.clone();
+        self.border_config.bottom_right_symbol.value = other.border_config.bottom_right_symbol.value.clone();
+        self.colors.fg_color.value = other.colors.fg_color.value;
+        self.colors.bg_color.value = other.colors.bg_color.value;
+        self.colors.selection_fg_color.value = other.colors.selection_fg_color.value;
+        self.colors.selection_bg_color.value = other.colors.selection_bg_color.value;
+        self.colors.disabled_fg_color.value = other.colors.disabled_fg_color.value;
+        self.colors.disabled_bg_color.value = other.colors.disabled_bg_color.value;
+        self.colors.border_fg_color.value = other.colors.border_fg_color.value;
+        self.colors.border_bg_color.value = other.colors.border_bg_color.value;
+        self.colors.cursor_color.value = other.colors.cursor_color.value;
+        self.mode.value = other.mode.value.clone();
+        self.orientation.value = other.orientation.value.clone();
+        self.active_tab.value = other.active_tab.value.clone();
+        self.active_screen.value = other.active_screen.value.clone();
+        self.tab_name.value = other.tab_name.value.clone();
+        self.can_drag.value = other.can_drag.value;
+        self.fill.value = other.fill.value;
+        self.filler_symbol.value = other.filler_symbol.value.clone();
+        self.view_size.value = other.view_size.value;
+        self.view_page.value = other.view_page.value;
+        self.scrolling_config.scroll_x.value = other.scrolling_config.scroll_x.value;
+        self.scrolling_config.scroll_y.value = other.scrolling_config.scroll_y.value;
+        self.scrolling_config.scroll_start_x.value = other.scrolling_config.scroll_start_x.value;
+        self.scrolling_config.scroll_start_y.value = other.scrolling_config.scroll_start_y.value;
+        self.table_config.rows.value = other.table_config.rows.value;
+        self.table_config.cols.value = other.table_config.cols.value;
+        self.table_config.row_default_height.value = other.table_config.row_default_height.value;
+        self.table_config.col_default_width.value = other.table_config.col_default_width.value;
+        self.table_config.force_default_row_height.value = other.table_config.force_default_row_height.value;
+        self.table_config.force_default_col_width.value = other.table_config.force_default_col_width.value;
+    }
+
     fn clean_up_properties(&self, scheduler: &mut SchedulerFrontend) {
 
         self.position.clean_up_properties(scheduler);
@@ -408,6 +422,8 @@ impl GenericState for LayoutState {
         clean_up_property(scheduler, &self.active_screen.name);
         clean_up_property(scheduler, &self.active_tab.name);
         clean_up_property(scheduler, &self.tab_name.name);
+        clean_up_property(scheduler, &self.view_size.name);
+        clean_up_property(scheduler, &self.view_page.name);
         clean_up_property(scheduler, &self.fill.name);
         clean_up_property(scheduler, &self.filler_symbol.name);
         clean_up_property(scheduler, &self.disabled.name);
@@ -540,6 +556,14 @@ impl LayoutState {
         scheduler.deselect_widget();
         scheduler.force_redraw();
     }
+
+    pub fn set_view_size(&mut self, start: usize) { self.view_size.set(start); }
+
+    pub fn get_view_size(&self) -> usize { self.view_size.value }
+
+    pub fn set_view_page(&mut self, page: usize) { self.view_page.set(page); }
+
+    pub fn get_view_page(&self) -> usize { self.view_page.value }
 
     pub fn set_can_drag(&mut self, can_drag: bool) { self.can_drag.set(can_drag); }
 

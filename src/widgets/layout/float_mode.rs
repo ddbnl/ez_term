@@ -10,6 +10,7 @@ impl Layout {
     /// childs' [width] and [height].
     pub fn get_float_mode_contents(&self, mut content: PixelMap, state_tree: &mut StateTree)
                                -> PixelMap {
+        
         let own_state = state_tree.get(&self.get_path()).as_layout();
         let own_height = own_state.get_effective_size().height;
         let own_width = own_state.get_effective_size().width;
@@ -32,7 +33,7 @@ impl Layout {
                 content.last_mut().unwrap().push(filler.clone());
             }
         }
-        for child in self.get_children() {
+        for child in self.get_children_in_view(state_tree) {
             if content.is_empty() { return content }  // No space left in widget
 
             let generic_child = child.as_ez_object();

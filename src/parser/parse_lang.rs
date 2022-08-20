@@ -132,12 +132,16 @@ pub fn parse_level(config_lines: Vec<String>, indentation_offset: usize, line_of
             // A new widget definition. Get it's type and ID
             let type_name = line.strip_prefix('-').unwrap().trim()
                 .strip_suffix(':')
-                .unwrap_or_else(|| panic!("Error at line {}: {}. Widget definition should be \
+                .unwrap_or_else(|| panic!("Error at line {}: \"{}\". Widget definition should be \
                 followed by a \":\"", i + line_offset + 1, line)).to_string();
 
             if type_name.starts_with('<') {  // This is a template
                 let (type_name, proto_type) = type_name.strip_prefix('<').unwrap()
-                    .strip_suffix('>').unwrap().split_once('@').unwrap();
+                    .strip_suffix('>').unwrap_or_else(
+                        || panic!("Error at line {} in file {}: \"{}\". Expected '>' to close layout template.",
+                            i + line_offset + 1, file, line)).split_once('@').unwrap_or_else(
+                    || panic!("Error at line {} in file {}: \"{}\". Expected '@' to separate template name from \
+                    type name.", i + line_offset + 1, file, line));
                 let def = EzWidgetDefinition::new(
                     proto_type.to_string(), file.clone(),
                     indentation_offset + 4, i + 1 + line_offset);
@@ -156,8 +160,8 @@ pub fn parse_level(config_lines: Vec<String>, indentation_offset: usize, line_of
         } else {
             // Line was not a new widget definition, so it must be config/content of the current one
             let new_line = line.strip_prefix("    ").unwrap_or_else(
-                || panic!("Error at line {}: {}. Could not strip indentation.",
-                           i + line_offset + 1, line));
+                || panic!("Error at line {} in file {}: \"{}\". Could not strip indentation.",
+                           i + line_offset + 1, file, line));
             if let Some(name) = &parsing_template {
                 templates.get_mut(name).unwrap().content.push(new_line.to_string());
             } else {

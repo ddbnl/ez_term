@@ -77,7 +77,7 @@ impl Layout {
                                     -> Vec<PixelMap> {
 
         let mut content_list = Vec::new();
-        for child in self.get_children() {
+        for child in self.get_children_in_view(state_tree) {
             let generic_child = child.as_ez_object();
             let state = state_tree
                 .get_mut(&generic_child.get_path().clone()).as_generic_mut();

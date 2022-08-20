@@ -1045,7 +1045,7 @@ pub fn create_keymap_modifiers(modifiers: Option<Vec<KeyModifiers>>) -> KeyModif
 
 
 /// Composite object containing all properties related to scrolling. As an end-user, you should
-/// only set enable_x, enable_y, view_start_x and/or view_start_y. The other properties are set
+/// only set enable_x, enable_y, scroll_start_x and/or scroll_start_y. The other properties are set
 /// automatically when constructing the layout.
 #[derive(PartialEq, Clone, Debug)]
 pub struct ScrollingConfig {
@@ -1056,11 +1056,11 @@ pub struct ScrollingConfig {
     /// Bool representing whether the y axis should be able to scroll
     pub scroll_y: EzProperty<bool>,
 
-    /// Start of the view on the x axis, content is shown from here until view_start_x + width
-    pub view_start_x: EzProperty<f64>,
+    /// Start of the view on the x axis, content is shown from here until scroll_start_x + width
+    pub scroll_start_x: EzProperty<f64>,
 
-    /// Start of the view on the y axis, content is shown from here until view_start_y + height
-    pub view_start_y: EzProperty<f64>,
+    /// Start of the view on the y axis, content is shown from here until scroll_start_y + height
+    pub scroll_start_y: EzProperty<f64>,
 
     /// Bool representing whether the owning object is actually scrolling, as it is possible for
     /// scrolling to be enabled but not active (i.e. content already fits within object)
@@ -1078,7 +1078,7 @@ pub struct ScrollingConfig {
 }
 impl ScrollingConfig {
 
-    pub fn new(scroll_x: bool, scroll_y: bool, view_start_x: f64, view_start_y: f64,
+    pub fn new(scroll_x: bool, scroll_y: bool, scroll_start_x: f64, scroll_start_y: f64,
                name: String, scheduler: &mut SchedulerFrontend) -> Self {
 
         let x_property =
@@ -1087,17 +1087,17 @@ impl ScrollingConfig {
         let y_property =
             scheduler.new_bool_property(format!("{}/scroll_y", name).as_str(),
                                         scroll_y);
-        let view_start_x_property =
-            scheduler.new_f64_property(format!("{}/view_start_x", name).as_str(),
-                                        view_start_x);
-        let view_start_y_property =
-            scheduler.new_f64_property(format!("{}/view_start_y", name).as_str(),
-                                        view_start_y);
+        let scroll_start_x_property =
+            scheduler.new_f64_property(format!("{}/scroll_start_x", name).as_str(),
+                                        scroll_start_x);
+        let scroll_start_y_property =
+            scheduler.new_f64_property(format!("{}/scroll_start_y", name).as_str(),
+                                        scroll_start_y);
         ScrollingConfig {
             scroll_x: x_property,
             scroll_y: y_property,
-            view_start_x: view_start_x_property,
-            view_start_y: view_start_y_property,
+            scroll_start_x: scroll_start_x_property,
+            scroll_start_y: scroll_start_y_property,
             is_scrolling_x: false,
             is_scrolling_y: false,
             original_height: 0,
@@ -1121,20 +1121,20 @@ impl ScrollingConfig {
         self.scroll_y.value
     }
 
-    pub fn set_view_start_x(&mut self, view_start: f64) {
-        self.view_start_x.set(view_start);
+    pub fn set_scroll_start_x(&mut self, view_start: f64) {
+        self.scroll_start_x.set(view_start);
     }
 
-    pub fn get_view_start_x(&self) -> f64 {
-        self.view_start_x.value
+    pub fn get_scroll_start_x(&self) -> f64 {
+        self.scroll_start_x.value
     }
 
-    pub fn set_view_start_y(&mut self, view_start: f64) {
-        self.view_start_y.set(view_start);
+    pub fn set_scroll_start_y(&mut self, view_start: f64) {
+        self.scroll_start_y.set(view_start);
     }
 
-    pub fn get_view_start_y(&self) -> f64 {
-        self.view_start_y.value
+    pub fn get_scroll_start_y(&self) -> f64 {
+        self.scroll_start_y.value
     }
 
     pub fn set_original_height(&mut self, height: usize) {
@@ -1169,22 +1169,22 @@ impl ScrollingConfig {
         self.is_scrolling_y
     }
 
-    pub fn get_max_view_start_x(&self, effective_widget_width: usize) -> usize {
+    pub fn get_max_scroll_start_x(&self, effective_widget_width: usize) -> usize {
         self.get_original_width() - effective_widget_width
     }
 
-    pub fn get_absolute_view_start_x(&self, effective_widget_width: usize) -> usize {
-        (self.get_max_view_start_x(effective_widget_width) as f64 *
-            self.get_view_start_x()).round() as usize
+    pub fn get_absolute_scroll_start_x(&self, effective_widget_width: usize) -> usize {
+        (self.get_max_scroll_start_x(effective_widget_width) as f64 *
+            self.get_scroll_start_x()).round() as usize
     }
 
-    pub fn get_max_view_start_y(&self, effective_widget_height: usize) -> usize {
+    pub fn get_max_scroll_start_y(&self, effective_widget_height: usize) -> usize {
         self.get_original_height() - effective_widget_height
     }
 
-    pub fn get_absolute_view_start_y(&self, effective_widget_height: usize) -> usize {
-        (self.get_max_view_start_y(effective_widget_height) as f64 *
-            self.get_view_start_y()).round() as usize
+    pub fn get_absolute_scroll_start_y(&self, effective_widget_height: usize) -> usize {
+        (self.get_max_scroll_start_y(effective_widget_height) as f64 *
+            self.get_scroll_start_y()).round() as usize
     }
 
     pub fn clean_up_properties(&self, scheduler: &mut SchedulerFrontend) {

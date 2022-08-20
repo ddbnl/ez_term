@@ -136,6 +136,43 @@ fn main() {
     // Remove on widget programmatically.
     scheduler.remove_widget("label_9");
 
+    // Create some widgets to test views
+
+    // Programmatically create some labels
+    for i in 0..40 {
+        let new_id = format!("label_{}", i);
+        let (new_widget, mut new_states) = scheduler.prepare_create_widget(
+            "ScalingLabel", new_id.as_str(), "view_layout", &mut state_tree);
+
+        new_states.get_mut(new_id.as_str()).as_label_mut()
+            .set_text(format!("Generated label {}", i));
+
+        scheduler.create_widget(new_widget, new_states, &mut state_tree);
+    }
+    let navigate_back_callback = |context: Context| {
+        let state = context.state_tree.get_mut("view_layout").as_layout_mut();
+        let current_page = state.get_view_page();
+        if current_page > 1 {
+            state.set_view_page( current_page - 1);
+            state.update(context.scheduler);
+        }
+        true
+    };
+    let callback_config =
+        CallbackConfig::from_on_press(Box::new(navigate_back_callback));
+    scheduler.update_callback_config("views_nav_left", callback_config);
+
+    let navigate_forward_callback = |context: Context| {
+        let state = context.state_tree.get_mut("view_layout").as_layout_mut();
+        let current_page = state.get_view_page();
+        state.set_view_page( current_page + 1);
+        state.update(context.scheduler);
+        true
+    };
+    let callback_config =
+        CallbackConfig::from_on_press(Box::new(navigate_forward_callback));
+    scheduler.update_callback_config("views_nav_right", callback_config);
+
     // We will bind a callback to a property
     let size_callback = |context: Context| {
         let width = context.state_tree.get_mut("property_bind_source_label")
@@ -351,9 +388,7 @@ fn progress_bar_button(context: Context) -> bool {
 
 fn progress_example_app(mut context: ThreadedContext) {
 
-    for x in 1..=5 {
-        //let my_progress = context.scheduler.get_property_mut("my_progress");
-        //my_progress.as_usize_mut().set(x*20);
+    for _ in 1..=5 {
         let state = context.state_tree.get_mut("progress_bar").as_progress_bar_mut();
         let val = state.get_value();
 

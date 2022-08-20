@@ -47,7 +47,7 @@ impl Layout{
 
         let mut position = Coordinates::new(0, 0);
         let mut content_list = Vec::new();
-        for child in self.get_children() {
+        for child in self.get_children_in_view(state_tree) {
 
             let generic_child = child.as_ez_object();
             let state = state_tree
@@ -139,7 +139,7 @@ impl Layout{
 
         let mut position = Coordinates::new(0, 0);
         let mut content_list = Vec::new();
-        for child in self.get_children() {
+        for child in self.get_children_in_view(state_tree) {
 
             let generic_child = child.as_ez_object();
             let child_state =
@@ -157,9 +157,9 @@ impl Layout{
             // as we use [size.get_infinite_height()]
             let height_left =
                 if !own_scrolling.get_scroll_y() && !own_infinite_size.height &&
-                    own_effective_size.height >= position.y &&
+                    own_effective_size.height >= position.y + 1 &&
                     !child_state.get_infinite_size().height
-                {own_effective_size.height - position.y } else { 0 };
+                {own_effective_size.height - position.y + 1 } else { 0 };
             // If autoscaling is enabled set child size to max width. It is then expected to scale
             // itself according to its' content
             if child_state.get_auto_scale().get_auto_scale_width() {

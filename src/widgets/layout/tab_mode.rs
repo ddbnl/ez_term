@@ -94,7 +94,7 @@ impl Layout {
             if let EzObjects::Layout(i) = child {
                 if i.get_path() != active_tab { continue }
                 let child_state = state_tree
-                    .get_mut(&child.as_ez_object().get_path()).as_layout_mut();
+                    .get_mut(&i.get_path()).as_layout_mut();
                 child_state.set_effective_height(
                     if own_effective_size.height >= 3 {
                         own_effective_size.height - 3 -
@@ -209,11 +209,20 @@ impl Layout {
             button_content = button_content[..own_effective_size.width].to_vec();
         }
         while button_content.len() < own_effective_size.width {
-            let row =  vec!(fill_pixel.clone(), fill_pixel.clone(), fill_pixel.clone());
-            button_content.push(row);
+            let col =  vec!(fill_pixel.clone(), fill_pixel.clone(), fill_pixel.clone());
+            button_content.push(col);
         }
 
         let state = state_tree.get_mut(&self.path).as_layout_mut();
+        if tab_content.len() > state.get_effective_size().width {
+            tab_content = tab_content[0..state.get_effective_size().width].to_vec()
+        }
+        let max_size =
+            state.get_effective_size().height - if state.get_effective_size().height > 3 {3} else {0};
+        if tab_content.iter().map(|x| x.len()).max().unwrap_or(0)
+            > max_size {
+            tab_content = tab_content.iter().map(|x| x[0..max_size].to_vec()).collect();
+        }
         self.merge_vertical_contents(
             button_content,
             tab_content,

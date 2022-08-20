@@ -10,226 +10,125 @@
     tab_border_fg_color: dark_cyan
     active_fg_color: yellow
     active_tab: tables_tab
-    - Layout:
+    - ScrollingTab:
         id: scrolling_tab
-        tab_name: Scrolling
-        mode: box
-        orientation: horizontal
-        scroll_y: true
-        selection_order: 55
-        selection_fg_color: red
-        - Label:
-            size_hint_y: none
-            from_file: ./examples/FullExample/dummy.txt
-    - Layout:
+    - TablesTab:
         id: tables_tab
-        tab_name: Tables
-        mode: box
-        orientation: vertical
-        scroll_y: true
-        - Layout:
-            mode: box
-            orientation: vertical
-            auto_scale: true, true
-            halign: center
-            - Label:
-                text: Left-right, top-bottom
-                halign: center
-                auto_scale: true, true
-            - TableShowcase:
-                orientation: lr-tb
-        - Layout:
-            mode: box
-            orientation: vertical
-            auto_scale: true, true
-            halign: center
-            - Label:
-                text: Left-right, bottom-top
-                halign: center
-                auto_scale: true, true
-            - TableShowcase:
-                orientation: lr-bt
-        - Layout:
-            mode: box
-            orientation: vertical
-            auto_scale: true, true
-            halign: center
-            - Label:
-                text: Right-left, top-bottom
-                halign: center
-                auto_scale: true, true
-            - TableShowcase:
-                orientation: rl-tb
-        - Layout:
-            mode: box
-            orientation: vertical
-            auto_scale: true, true
-            halign: center
-            - Label:
-                text: Right-left, bottom-top
-                halign: center
-                auto_scale: true, true
-            - TableShowcase:
-                orientation: rl-bt
-        - Layout:
-            mode: box
-            orientation: vertical
-            auto_scale: true, true
-            halign: center
-            - Label:
-                text: Top-bottom, left-right
-                halign: center
-                auto_scale: true, true
-            - TableShowcase:
-                orientation: tb-lr
-        - Layout:
-            mode: box
-            orientation: vertical
-            auto_scale: true, true
-            halign: center
-            - Label:
-                text: Top-bottom, right-left
-                halign: center
-                auto_scale: true, true
-            - TableShowcase:
-                orientation: tb-rl
-        - Layout:
-            mode: box
-            orientation: vertical
-            auto_scale: true, true
-            halign: center
-            - Label:
-                text: Bottom-top, left-right
-                halign: center
-                auto_scale: true, true
-            - TableShowcase:
-                orientation: bt-lr
-        - Layout:
-            mode: box
-            orientation: vertical
-            auto_scale: true, true
-            halign: center
-            - Label:
-                text: Bottom-top, right-left
-                halign: center
-                auto_scale: true, true
-            - TableShowcase:
-                orientation: bt-rl
-    - Layout:
+    - StacksTab:
         id: stacks_tab
-        tab_name: Stacks
-        mode: box
-        orientation: vertical
-        scroll_y: true
-        - Layout:
-            mode: box
-            orientation: vertical
-            auto_scale: true, true
-            halign: center
-            - Label:
-                text: Left-right, top-bottom
-                halign: center
-                auto_scale: true, true
-            - StackShowcase:
-                orientation: lr-tb
-        - Layout:
-            mode: box
-            orientation: vertical
-            auto_scale: true, true
-            halign: center
-            - Label:
-                text: Right-left, top-bottom
-                halign: center
-                auto_scale: true, true
-            - StackShowcase:
-                orientation: rl-tb
-        - Layout:
-            mode: box
-            orientation: vertical
-            auto_scale: true, true
-            halign: center
-            - Label:
-                text: Left-right, bottom-top
-                halign: center
-                auto_scale: true, true
-            - StackShowcase:
-                orientation: lr-bt
-        - Layout:
-            mode: box
-            orientation: vertical
-            auto_scale: true, true
-            halign: center
-            - Label:
-                text: Left-right, top-bottom
-                halign: center
-                auto_scale: true, true
-            - StackShowcase:
-                orientation: rl-bt
-        - Layout:
-            mode: box
-            orientation: vertical
-            auto_scale: true, true
-            halign: center
-            - Label:
-                text: Top-bottom, left-right
-                halign: center
-                auto_scale: true, true
-            - StackShowcase:
-                orientation: tb-lr
-        - Layout:
-            mode: box
-            orientation: vertical
-            auto_scale: true, true
-            halign: center
-            - Label:
-                text: Top-bottom, right-left
-                halign: center
-                auto_scale: true, true
-            - StackShowcase:
-                orientation: tb-rl
-        - Layout:
-            mode: box
-            orientation: vertical
-            auto_scale: true, true
-            halign: center
-            - Label:
-                text: Bottom-top, left-right
-                halign: center
-                auto_scale: true, true
-            - StackShowcase:
-                orientation: bt-lr
-        - Layout:
-            mode: box
-            orientation: vertical
-            auto_scale: true, true
-            halign: center
-            - Label:
-                text: Bottom-top, right-left
-                halign: center
-                auto_scale: true, true
-            - StackShowcase:
-                orientation: bt-rl
-    - Layout:
+    - GenerationTab:
         id: generation_box
-        tab_name: Generation
-        mode: box
-        orientation: vertical
-        - Label:
-            text: The labels below are programmatically added to the layout:
-            auto_scale_height: true
-            padding_bottom: 1
-    - Layout:
-        id: Property binds
-        mode: box
-        orientation: vertical
-        - Label:
-            id: property_bind_source_label
-            text: We will bind a callback to the height and width property of this label. The callback will print the new size to the label underneath it.
-            auto_scale_height: true
-        - Label:
-            id: property_bind_show_label
-            auto_scale_height: true
+    - PropertyBindsTab:
+        id: property_binds_tab
+    - ViewsTab:
+        id: views_tab
 
+
+
+- <ScrollingTab@Layout>:
+    tab_name: Scrolling
+    mode: box
+    orientation: horizontal
+    scroll_y: true
+    selection_order: 55
+    selection_fg_color: red
+    - Label:
+        size_hint_y: none
+        from_file: ./examples/FullExample/dummy.txt
+
+- <TablesTab@Layout>:
+    tab_name: Tables
+    mode: box
+    orientation: vertical
+    scroll_y: true
+    - Layout:
+        mode: box
+        orientation: vertical
+        auto_scale: true, true
+        halign: center
+        - Label:
+            text: Left-right, top-bottom
+            halign: center
+            auto_scale: true, true
+        - TableShowcase:
+            orientation: lr-tb
+    - Layout:
+        mode: box
+        orientation: vertical
+        auto_scale: true, true
+        halign: center
+        - Label:
+            text: Left-right, bottom-top
+            halign: center
+            auto_scale: true, true
+        - TableShowcase:
+            orientation: lr-bt
+    - Layout:
+        mode: box
+        orientation: vertical
+        auto_scale: true, true
+        halign: center
+        - Label:
+            text: Right-left, top-bottom
+            halign: center
+            auto_scale: true, true
+        - TableShowcase:
+            orientation: rl-tb
+    - Layout:
+        mode: box
+        orientation: vertical
+        auto_scale: true, true
+        halign: center
+        - Label:
+            text: Right-left, bottom-top
+            halign: center
+            auto_scale: true, true
+        - TableShowcase:
+            orientation: rl-bt
+    - Layout:
+        mode: box
+        orientation: vertical
+        auto_scale: true, true
+        halign: center
+        - Label:
+            text: Top-bottom, left-right
+            halign: center
+            auto_scale: true, true
+        - TableShowcase:
+            orientation: tb-lr
+    - Layout:
+        mode: box
+        orientation: vertical
+        auto_scale: true, true
+        halign: center
+        - Label:
+            text: Top-bottom, right-left
+            halign: center
+            auto_scale: true, true
+        - TableShowcase:
+            orientation: tb-rl
+    - Layout:
+        mode: box
+        orientation: vertical
+        auto_scale: true, true
+        halign: center
+        - Label:
+            text: Bottom-top, left-right
+            halign: center
+            auto_scale: true, true
+        - TableShowcase:
+            orientation: bt-lr
+    - Layout:
+        mode: box
+        orientation: vertical
+        auto_scale: true, true
+        halign: center
+        - Label:
+            text: Bottom-top, right-left
+            halign: center
+            auto_scale: true, true
+        - TableShowcase:
+            orientation: bt-rl
 
 
 - <TableCell@Label>:
@@ -265,7 +164,99 @@
     - TableCell:
         text: 9
 
-
+- <StacksTab@Layout>:
+    tab_name: Stacks
+    mode: box
+    orientation: vertical
+    scroll_y: true
+    - Layout:
+        mode: box
+        orientation: vertical
+        auto_scale: true, true
+        halign: center
+        - Label:
+            text: Left-right, top-bottom
+            halign: center
+            auto_scale: true, true
+        - StackShowcase:
+            orientation: lr-tb
+    - Layout:
+        mode: box
+        orientation: vertical
+        auto_scale: true, true
+        halign: center
+        - Label:
+            text: Right-left, top-bottom
+            halign: center
+            auto_scale: true, true
+        - StackShowcase:
+            orientation: rl-tb
+    - Layout:
+        mode: box
+        orientation: vertical
+        auto_scale: true, true
+        halign: center
+        - Label:
+            text: Left-right, bottom-top
+            halign: center
+            auto_scale: true, true
+        - StackShowcase:
+            orientation: lr-bt
+    - Layout:
+        mode: box
+        orientation: vertical
+        auto_scale: true, true
+        halign: center
+        - Label:
+            text: Left-right, top-bottom
+            halign: center
+            auto_scale: true, true
+        - StackShowcase:
+            orientation: rl-bt
+    - Layout:
+        mode: box
+        orientation: vertical
+        auto_scale: true, true
+        halign: center
+        - Label:
+            text: Top-bottom, left-right
+            halign: center
+            auto_scale: true, true
+        - StackShowcase:
+            orientation: tb-lr
+    - Layout:
+        mode: box
+        orientation: vertical
+        auto_scale: true, true
+        halign: center
+        - Label:
+            text: Top-bottom, right-left
+            halign: center
+            auto_scale: true, true
+        - StackShowcase:
+            orientation: tb-rl
+    - Layout:
+        mode: box
+        orientation: vertical
+        auto_scale: true, true
+        halign: center
+        - Label:
+            text: Bottom-top, left-right
+            halign: center
+            auto_scale: true, true
+        - StackShowcase:
+            orientation: bt-lr
+    - Layout:
+        mode: box
+        orientation: vertical
+        auto_scale: true, true
+        halign: center
+        - Label:
+            text: Bottom-top, right-left
+            halign: center
+            auto_scale: true, true
+        - StackShowcase:
+            orientation: bt-rl
 
 - <StackLabel@Label>:
     text: Stack test
@@ -289,4 +280,55 @@
     - StackLabel:
         text: 5
 
+- <GenerationTab@Layout>:
+    tab_name: Generation
+    mode: box
+    orientation: vertical
+    - Label:
+        text: The labels below are programmatically added to the layout:
+        auto_scale_height: true
+        padding_bottom: 1
 
+
+- <PropertyBindsTab@Layout>:
+    tab_name: Property binds
+    mode: box
+    orientation: vertical
+    - Label:
+        id: property_bind_source_label
+        text: We will bind a callback to the height and width property of this label. The callback will print the new size to the label underneath it.
+        auto_scale_height: true
+    - Label:
+        id: property_bind_show_label
+        auto_scale_height: true
+
+
+- <ViewsTab@Layout>:
+    tab_name: Views
+    mode: box
+    orientation: vertical
+    view_size: 10
+    - Layout:
+        mode: box
+        orientation: vertical
+        - Label:
+            text: The below layout has views enabled. We can only see 10 widgets at a time. Use the arrows to move through the views.
+            auto_scale_height: true
+        - Layout:
+            id: view_layout
+            mode: box
+            orientation: vertical
+            view_size: 10
+            view_page: 2
+            auto_scale_height: true
+        - Layout:
+            id: view_nav
+            mode: box
+            - Button:
+                id: views_nav_left
+                text: <
+                auto_scale: true, true
+            - Button:
+                id: views_nav_right
+                text: >
+                auto_scale: true, true

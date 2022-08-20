@@ -37,7 +37,7 @@ impl Layout{
         let own_filler_symbol = state.get_filler_symbol();
 
         let (child_table, rows, cols) =
-            self.get_table_model(&own_table_config, own_orientation);
+            self.get_table_model(&own_table_config, own_orientation, state_tree);
         if rows == 0 || cols == 0 {
             return PixelMap::new()
         }
@@ -70,8 +70,10 @@ impl Layout{
     }
 
     /// Calculate the amount of needed rows and columns based on the number of children
-    fn get_rows_and_cols(&self, table_config: &TableConfig) -> (usize, usize){
+    fn get_rows_and_cols(&self, table_config: &TableConfig, state_tree: &mut StateTree)
+        -> (usize, usize){
 
+        let children = self.get_children_in_view(state_tree);
         let (rows, cols);
         if table_config.get_rows() > 0 && table_config.get_cols() > 0 {
             rows = table_config.get_rows();
@@ -79,12 +81,12 @@ impl Layout{
         }
         else if table_config.get_rows() > 0 {
             rows = table_config.get_rows();
-            cols =  (self.children.len() / rows) as usize +
-                if self.children.len() % rows != 0 { 1 } else { 0 };
+            cols =  (children.len() / rows) as usize +
+                if children.len() % rows != 0 { 1 } else { 0 };
         } else {
             cols = table_config.get_cols();
-            rows =  (self.children.len() / cols) as usize +
-                if self.children.len() % cols != 0 { 1 } else { 0 };
+            rows =  (children.len() / cols) as usize +
+                if children.len() % cols != 0 { 1 } else { 0 };
         }
         (rows, cols)
     }
@@ -94,16 +96,17 @@ impl Layout{
     /// 2 1 0
     /// 5 4 3
     /// 8 7 6
-    fn get_table_model(&self, table_config: &TableConfig, orientation: LayoutOrientation)
-                       -> (Vec<Vec<usize>>, usize, usize) {
+    fn get_table_model(&self, table_config: &TableConfig, orientation: LayoutOrientation,
+                       state_tree: &mut StateTree) -> (Vec<Vec<usize>>, usize, usize) {
 
-        let (rows, cols) = self.get_rows_and_cols(table_config);
+        let (rows, cols) = self.get_rows_and_cols(table_config, state_tree);
+        let children = self.get_children_in_view(state_tree);
         let mut children_table = vec![vec![0; rows]; cols];
 
         match orientation {
             LayoutOrientation::LeftRightTopBottom => {
                 let (mut x, mut y) = (0, 0);
-                for i in 0..self.children.len() {
+                for i in 0..children.len() {
                     if x == cols {
                         x = 0;
                         y += 1;
@@ -114,7 +117,7 @@ impl Layout{
             }
             LayoutOrientation::LeftRightBottomTop => {
                 let (mut x, mut y) = (0, rows-1);
-                for i in 0..self.children.len() {
+                for i in 0..children.len() {
                     if x == cols {
                         x = 0;
                         y -= 1;
@@ -125,9 +128,9 @@ impl Layout{
             }
             LayoutOrientation::RightLeftTopBottom => {
                 let (mut x, mut y) = (cols-1, 0);
-                for i in 0..self.children.len() {
+                for i in 0..children.len() {
                     children_table[x][y] = i;
-                    if i == self.children.len() - 1 { break }
+                    if i == children.len() - 1 { break }
                     if x == 0 {
                         x = cols-1;
                         y += 1;
@@ -138,9 +141,9 @@ impl Layout{
             }
             LayoutOrientation::RightLeftBottomTop => {
                 let (mut x, mut y) = (cols-1, rows-1);
-                for i in 0..self.children.len() {
+                for i in 0..children.len() {
                     children_table[x][y] = i;
-                    if i == self.children.len() - 1 { break }
+                    if i == children.len() - 1 { break }
                     if x == 0 {
                         x = cols-1;
                         y -= 1;
@@ -151,7 +154,7 @@ impl Layout{
             }
             LayoutOrientation::TopBottomLeftRight => {
                 let (mut x, mut y) = (0, 0);
-                for i in 0..self.children.len() {
+                for i in 0..children.len() {
                     if y == rows {
                         y = 0;
                         x += 1;
@@ -162,7 +165,7 @@ impl Layout{
             }
             LayoutOrientation::TopBottomRightLeft => {
                 let (mut x, mut y) = (cols-1, 0);
-                for i in 0..self.children.len() {
+                for i in 0..children.len() {
                     if y == rows {
                         y = 0;
                         x -= 1;
@@ -173,9 +176,9 @@ impl Layout{
             }
             LayoutOrientation::BottomTopLeftRight => {
                 let (mut x, mut y) = (0, rows-1);
-                for i in 0..self.children.len() {
+                for i in 0..children.len() {
                     children_table[x][y] = i;
-                    if i == self.children.len() - 1 { break }
+                    if i == children.len() - 1 { break }
                     if y == 0 {
                         y = rows-1;
                         x += 1;
@@ -186,9 +189,9 @@ impl Layout{
             }
             LayoutOrientation::BottomTopRightLeft => {
                 let (mut x, mut y) = (cols-1, rows-1);
-                for i in 0..self.children.len() {
+                for i in 0..children.len() {
                     children_table[x][y] = i;
-                    if i == self.children.len() - 1 { break }
+                    if i == children.len() - 1 { break }
                     if y == 0 {
                         y = rows-1;
                         x -= 1;
@@ -263,11 +266,11 @@ impl Layout{
 
     /// Get the content of each child, so we can draw it in a table after.
     fn get_table_mode_child_content(&self, state_tree: &mut StateTree, infinite_size: &InfiniteSize,
-                                    scrolling_config: &ScrollingConfig, effective_size: &Size)
+                                    scrolling_config: &ScrollingConfig, effective_size: &Size,)
                                     -> Vec<PixelMap> {
 
         let mut content_list = Vec::new();
-        for child in self.get_children() {
+        for child in self.get_children_in_view(state_tree) {
 
             let generic_child = child.as_ez_object();
             let state = state_tree
@@ -332,12 +335,13 @@ impl Layout{
                  total_height); total_width);
 
         let mut write_pos = Coordinates::new(0, 0);
+        let children = self.get_children_in_view(state_tree);
         for x in 0..cols {
             write_pos.y = 0;
             for y in 0..rows {
                 if x >= child_table.len() || y >= child_table[x].len() { continue }
                 let state = state_tree.get_mut(
-                    &self.children.get(child_table[x][y]).unwrap().as_ez_object()
+                    &children.get(child_table[x][y]).unwrap().as_ez_object()
                         .get_path()).as_generic_mut();
                 let child_content =
                     std::mem::take(&mut content_list[child_table[x][y]]);

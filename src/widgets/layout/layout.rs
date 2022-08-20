@@ -1,5 +1,6 @@
 //! # layout
 //! Module implementing the layout struct.
+use std::cmp::min;
 use std::collections::HashMap;
 use std::io::{Error, ErrorKind};
 use crossterm::event::{Event, KeyCode};
@@ -196,31 +197,61 @@ impl Layout {
         Ok(())
     }
 
-    fn load_scrolling_view_start_x_property(&mut self, parameter_value: &str,
+    fn load_scrolling_scroll_start_x_property(&mut self, parameter_value: &str,
                                              scheduler: &mut SchedulerFrontend) -> Result<(), Error> {
 
         let path = self.path.clone();
-        self.state.get_scrolling_config_mut().set_view_start_x(load_f64_property(
+        self.state.get_scrolling_config_mut().set_scroll_start_x(load_f64_property(
             parameter_value.trim(), scheduler, path.clone(),
             Box::new(move |state_tree: &mut StateTree, val: EzValues| {
                 let state = state_tree.get_mut(&path)
                     .as_layout_mut();
-                state.get_scrolling_config_mut().set_view_start_x(val.as_f64().to_owned());
+                state.get_scrolling_config_mut().set_scroll_start_x(val.as_f64().to_owned());
                 path.clone()
             }))?);
         Ok(())
     }
 
-    fn load_scrolling_view_start_y_property(&mut self, parameter_value: &str,
+    fn load_scrolling_scroll_start_y_property(&mut self, parameter_value: &str,
                                             scheduler: &mut SchedulerFrontend) -> Result<(), Error> {
 
         let path = self.path.clone();
-        self.state.get_scrolling_config_mut().set_view_start_y(load_f64_property(
+        self.state.get_scrolling_config_mut().set_scroll_start_y(load_f64_property(
             parameter_value.trim(), scheduler, path.clone(),
             Box::new(move |state_tree: &mut StateTree, val: EzValues| {
                 let state = state_tree.get_mut(&path)
                     .as_layout_mut();
-                state.get_scrolling_config_mut().set_view_start_y(val.as_f64().to_owned());
+                state.get_scrolling_config_mut().set_scroll_start_y(val.as_f64().to_owned());
+                path.clone()
+            }))?);
+        Ok(())
+    }
+
+    fn load_view_size_property(&mut self, parameter_value: &str,
+                                scheduler: &mut SchedulerFrontend) -> Result<(), Error> {
+
+        let path = self.path.clone();
+        self.state.set_view_size(load_usize_property(
+            parameter_value.trim(), scheduler, path.clone(),
+            Box::new(move |state_tree: &mut StateTree, val: EzValues| {
+                let state = state_tree.get_mut(&path)
+                    .as_layout_mut();
+                state.set_view_size(val.as_usize().to_owned());
+                path.clone()
+            }))?);
+        Ok(())
+    }
+
+    fn load_view_page_property(&mut self, parameter_value: &str,
+                               scheduler: &mut SchedulerFrontend) -> Result<(), Error> {
+
+        let path = self.path.clone();
+        self.state.set_view_page(load_usize_property(
+            parameter_value.trim(), scheduler, path.clone(),
+            Box::new(move |state_tree: &mut StateTree, val: EzValues| {
+                let state = state_tree.get_mut(&path)
+                    .as_layout_mut();
+                state.set_view_page(val.as_usize().to_owned());
                 path.clone()
             }))?);
         Ok(())
@@ -352,6 +383,10 @@ impl EzObject for Layout {
                 self.load_tab_name_property(parameter_value.trim(), scheduler)?,
             "active_screen" =>
                 self.load_active_screen_property(parameter_value.trim(), scheduler)?,
+            "view_size" =>
+                self.load_view_size_property(parameter_value.trim(), scheduler)?,
+            "view_page" =>
+                self.load_view_page_property(parameter_value.trim(), scheduler)?,
             "scroll" => {
                 let (x, y) = match parameter_value.split_once(',') {
                     Some((i, j)) => (i, j),
@@ -379,9 +414,9 @@ impl EzObject for Layout {
                 parameter_value.trim(), scheduler)?,
             "scroll_y" => self.load_scrolling_enable_y_property(
                 parameter_value.trim(), scheduler)?,
-            "scroll_start_x" => self.load_scrolling_view_start_x_property(
+            "scroll_start_x" => self.load_scrolling_scroll_start_x_property(
                 parameter_value.trim(), scheduler)?,
-            "scroll_start_y" => self.load_scrolling_view_start_y_property(
+            "scroll_start_y" => self.load_scrolling_scroll_start_y_property(
                 parameter_value.trim(), scheduler)?,
             "can_drag" =>
                 self.load_can_drag_property(parameter_value.trim(), scheduler)?,
@@ -526,7 +561,7 @@ impl EzObject for Layout {
                 state.get_scrolling_config().get_original_width(),
                 state.get_effective_size().width,
                 state.get_scrolling_config()
-                    .get_absolute_view_start_x(state.get_effective_size().width));
+                    .get_absolute_scroll_start_x(state.get_effective_size().width));
 
             if mouse_pos.x < scrollbar_pos {
                 self.handle_scroll_left(state_tree, scheduler);
@@ -546,7 +581,7 @@ impl EzObject for Layout {
                 state.get_scrolling_config().get_original_height(),
                 state.get_effective_size().height,
                 state.get_scrolling_config()
-                    .get_absolute_view_start_y(state.get_effective_size().height));
+                    .get_absolute_scroll_start_y(state.get_effective_size().height));
 
             if mouse_pos.y < scrollbar_pos {
                 self.handle_scroll_up(state_tree, scheduler);
@@ -713,12 +748,12 @@ impl Layout {
     fn handle_scroll_drag_x(&self, state: &mut LayoutState, previous_pos: Option<Coordinates>,
                             mouse_pos: Coordinates) -> bool {
 
-        let view_start_x = state.get_scrolling_config()
-            .get_absolute_view_start_x(state.get_effective_size().width);
+        let scroll_start_x = state.get_scrolling_config()
+            .get_absolute_scroll_start_x(state.get_effective_size().width);
         let (scrollbar_size, scrollbar_pos) =
             self.get_horizontal_scrollbar_parameters(
                 state.get_scrolling_config().get_original_width(),
-                state.get_effective_size().width, view_start_x);
+                state.get_effective_size().width, scroll_start_x);
 
         if previous_pos.is_none() {
             return if mouse_pos.x >= scrollbar_pos && mouse_pos.x <= scrollbar_pos + scrollbar_size {
@@ -732,30 +767,30 @@ impl Layout {
             .abs_diff(previous_pos.unwrap().x as isize);
         let absolute_scroll = 1.0 / ((absolute_diff * state.get_effective_size().width) as f64);
         if previous_pos.unwrap().x > mouse_pos.x && absolute_scroll >
-            state.get_scrolling_config().get_view_start_x() {
-            state.get_scrolling_config_mut().set_view_start_x(0.0);
+            state.get_scrolling_config().get_scroll_start_x() {
+            state.get_scrolling_config_mut().set_scroll_start_x(0.0);
         } else if previous_pos.unwrap().x < mouse_pos.x &&
-            state.get_scrolling_config().get_view_start_x() + absolute_scroll > 1.0 {
-            state.get_scrolling_config_mut().set_view_start_x(1.0)
+            state.get_scrolling_config().get_scroll_start_x() + absolute_scroll > 1.0 {
+            state.get_scrolling_config_mut().set_scroll_start_x(1.0)
         } else {
             let new_view_start= if previous_pos.unwrap().x > mouse_pos.x {
-                state.get_scrolling_config().get_view_start_x() - absolute_scroll
+                state.get_scrolling_config().get_scroll_start_x() - absolute_scroll
             } else {
-                state.get_scrolling_config().get_view_start_x() + absolute_scroll
+                state.get_scrolling_config().get_scroll_start_x() + absolute_scroll
             };
-            state.get_scrolling_config_mut().set_view_start_x(new_view_start);
+            state.get_scrolling_config_mut().set_scroll_start_x(new_view_start);
         }
         true
     }
     fn handle_scroll_drag_y(&self, state: &mut LayoutState, previous_pos: Option<Coordinates>,
                             mouse_pos: Coordinates) -> bool {
 
-        let view_start_y = state.get_scrolling_config()
-            .get_absolute_view_start_y(state.get_effective_size().height);
+        let scroll_start_y = state.get_scrolling_config()
+            .get_absolute_scroll_start_y(state.get_effective_size().height);
         let (scrollbar_size, scrollbar_pos) =
             self.get_vertical_scrollbar_parameters(
                 state.get_scrolling_config().get_original_height(),
-                state.get_effective_size().height,view_start_y);
+                state.get_effective_size().height,scroll_start_y);
 
         if previous_pos.is_none() {
             return if mouse_pos.y >= scrollbar_pos && mouse_pos.y <= scrollbar_pos + scrollbar_size {
@@ -769,18 +804,18 @@ impl Layout {
             .abs_diff(previous_pos.unwrap().y as isize);
         let absolute_scroll = 1.0 / ((absolute_diff * state.get_effective_size().height) as f64);
         if previous_pos.unwrap().y > mouse_pos.y && absolute_scroll >
-            state.get_scrolling_config().get_view_start_x() {
-            state.get_scrolling_config_mut().set_view_start_y(0.0);
+            state.get_scrolling_config().get_scroll_start_x() {
+            state.get_scrolling_config_mut().set_scroll_start_y(0.0);
         } else if previous_pos.unwrap().y < mouse_pos.y &&
-            state.get_scrolling_config().get_view_start_y() + absolute_scroll > 1.0 {
-            state.get_scrolling_config_mut().set_view_start_y(1.0)
+            state.get_scrolling_config().get_scroll_start_y() + absolute_scroll > 1.0 {
+            state.get_scrolling_config_mut().set_scroll_start_y(1.0)
         } else {
             let new_view_start = if previous_pos.unwrap().y > mouse_pos.y {
-                state.get_scrolling_config().get_view_start_y() - absolute_scroll
+                state.get_scrolling_config().get_scroll_start_y() - absolute_scroll
             } else {
-                state.get_scrolling_config().get_view_start_y() + absolute_scroll
+                state.get_scrolling_config().get_scroll_start_y() + absolute_scroll
             };
-            state.get_scrolling_config_mut().set_view_start_y(new_view_start);
+            state.get_scrolling_config_mut().set_scroll_start_y(new_view_start);
         }
         true
     }
@@ -907,5 +942,23 @@ impl Layout {
             }
         }
         contents
+    }
+
+    /// Get layout children that are in view based on view_size and view_page properties.
+    pub fn get_children_in_view(&self, state_tree: &mut StateTree) -> &[EzObjects] {
+
+        let state = state_tree.get_mut(&self.path).as_layout_mut();
+        if state.get_view_size() == 0 { return &self.children }
+        if state.get_view_page() == 0 { state.set_view_page(1) }
+
+        let max_pages = (self.children.len() / state.get_view_size())
+            + if self.children.len() % state.get_view_size() > 0 {1} else {0};
+        if state.get_view_page() > max_pages { state.set_view_page(max_pages) }
+
+        let child_start = state.get_view_size() * (state.get_view_page() - 1);
+        let child_end = min(child_start + state.get_view_size(), self.children.len());
+
+        &self.children[child_start..child_end]
+
     }
 }
