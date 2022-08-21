@@ -203,6 +203,8 @@ impl TableConfig {
 pub struct StateSize {
     pub width: EzProperty<usize>,
     pub height: EzProperty<usize>,
+    pub fixed_width: bool,
+    pub fixed_height: bool,
 }
 impl StateSize {
 
@@ -215,14 +217,24 @@ impl StateSize {
         StateSize {
             width: width_property,
             height: height_property,
+            fixed_width: false,
+            fixed_height: false,
         }
     }
 
-    pub fn set_width(&mut self, width: usize) { self.width.set(width); }
+    pub fn set_width(&mut self, width: usize) {
+
+        if self.fixed_width { return }
+        self.width.set(width);
+    }
 
     pub fn get_width(&self) -> usize { self.width.value }
 
-    pub fn set_height(&mut self, height: usize) { self.height.set(height); }
+    pub fn set_height(&mut self, height: usize) {
+
+        if self.fixed_height { return }
+        self.height.set(height);
+    }
 
     pub fn get_height(&self) -> usize { self.height.value }
 

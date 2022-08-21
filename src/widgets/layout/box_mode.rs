@@ -157,9 +157,9 @@ impl Layout{
             // as we use [size.get_infinite_height()]
             let height_left =
                 if !own_scrolling.get_scroll_y() && !own_infinite_size.height &&
-                    own_effective_size.height >= position.y + 1 &&
+                    own_effective_size.height >= position.y &&
                     !child_state.get_infinite_size().height
-                {own_effective_size.height - position.y + 1 } else { 0 };
+                {own_effective_size.height - position.y  } else { 0 };
             // If autoscaling is enabled set child size to max width. It is then expected to scale
             // itself according to its' content
             if child_state.get_auto_scale().get_auto_scale_width() {

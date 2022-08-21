@@ -41,10 +41,12 @@ pub fn resolve_property(value: &str, path: String) -> Option<String> {
 /// collection of EzProperties currently active (which allows users to access their custom
 /// properties) or a reference to a widget id in the current context, e.g. "parent.my_label" to
 /// reference and ID in the parent layout.
-pub fn bind_ez_property(value: &str, scheduler: &mut SchedulerFrontend, path: String) -> bool {
+pub fn bind_ez_property(value: &str, scheduler: &mut SchedulerFrontend, subscriber_path: String,
+                        subscriber_property: String) -> bool {
 
-    if let Some(bind_path) = resolve_property(value, path.clone()) {
-        scheduler.subscribe_to_property(bind_path.as_str(), path);
+    if let Some(bind_path) = resolve_property(value, subscriber_path.clone()) {
+        scheduler.subscribe_to_property(
+            bind_path.as_str(),format!("{}/{}", subscriber_path, subscriber_property));
         true
     } else {
         false
@@ -79,7 +81,8 @@ pub fn load_usize_property(value: &str, scheduler: &mut SchedulerFrontend, path:
         state.update_property(property_name, EzValues::Usize(0));
         Ok(())
     } else if let Some(i) = resolve_property(value, path.clone()) {
-        bind_ez_property(&i, scheduler, path);
+        bind_ez_property(&i, scheduler, path,
+                         property_name.to_string());
         state.update_property(property_name, EzValues::Usize(0));
         Ok(())
     } else {
@@ -160,7 +163,8 @@ pub fn wrap_usize_property(value: String, path: String, property_name: String,
 pub fn load_f64_property(value: &str, scheduler: &mut SchedulerFrontend, path: String,
                          property_name: &str, state: &mut dyn GenericState) -> Result<(), Error> {
 
-    return if bind_ez_property(value, scheduler, path) {
+    return if bind_ez_property(value, scheduler, path,
+                               property_name.to_string()) {
         state.update_property(property_name, EzValues::F64(0.0));
         Ok(())
     } else {
@@ -181,7 +185,7 @@ pub fn load_bool_property(value: &str, scheduler: &mut SchedulerFrontend, path: 
                           property_name: &str, state: &mut dyn GenericState)
     -> Result<(), Error> {
 
-    if bind_ez_property(value, scheduler, path) {
+    if bind_ez_property(value, scheduler, path, property_name.to_string()) {
         state.update_property(property_name, EzValues::Bool(false));
         Ok(())
     } else {
@@ -197,7 +201,7 @@ pub fn load_bool_property(value: &str, scheduler: &mut SchedulerFrontend, path: 
 pub fn load_string_property(value: &str, scheduler: &mut SchedulerFrontend, path: String,
                             property_name: &str, state: &mut dyn GenericState) -> Result<(), Error> {
 
-    if bind_ez_property(value, scheduler, path) {
+    if bind_ez_property(value, scheduler, path, property_name.to_string()) {
         state.update_property(property_name, EzValues::String(String::new()));
         Ok(())
     } else {
@@ -212,7 +216,7 @@ pub fn load_string_property(value: &str, scheduler: &mut SchedulerFrontend, path
 pub fn load_color_property(value: &str, scheduler: &mut SchedulerFrontend, path: String,
                            property_name: &str, state: &mut dyn GenericState) -> Result<(), Error> {
 
-    if bind_ez_property(value, scheduler, path) {
+    if bind_ez_property(value, scheduler, path, property_name.to_string()) {
         state.update_property(property_name, EzValues::Color(Color::Black));
         Ok(())
     } else {
@@ -230,7 +234,7 @@ pub fn load_layout_mode_property(value: &str, scheduler: &mut SchedulerFrontend,
                                  property_name: &str, state: &mut dyn GenericState)
     -> Result<(), Error> {
 
-    if bind_ez_property(value, scheduler, path) {
+    if bind_ez_property(value, scheduler, path, property_name.to_string()) {
         state.update_property(property_name, EzValues::LayoutMode(LayoutMode::Box));
         Ok(())
     } else {
@@ -247,7 +251,7 @@ pub fn load_layout_mode_property(value: &str, scheduler: &mut SchedulerFrontend,
 pub fn load_layout_orientation_property(value: &str, scheduler: &mut SchedulerFrontend, path: String,
                                         property_name: &str, state: &mut dyn GenericState) -> Result<(), Error> {
 
-    if bind_ez_property(value, scheduler, path) {
+    if bind_ez_property(value, scheduler, path, property_name.to_string()) {
         state.update_property(property_name,
                               EzValues::LayoutOrientation(LayoutOrientation::Horizontal));
         Ok(())
@@ -265,7 +269,7 @@ pub fn load_layout_orientation_property(value: &str, scheduler: &mut SchedulerFr
 pub fn load_valign_property(value: &str, scheduler: &mut SchedulerFrontend, path: String,
                             property_name: &str, state: &mut dyn GenericState) -> Result<(), Error> {
 
-    if bind_ez_property(value, scheduler, path) {
+    if bind_ez_property(value, scheduler, path, property_name.to_string()) {
         state.update_property(property_name,
                               EzValues::VerticalAlignment(VerticalAlignment::Top));
         Ok(())
@@ -283,7 +287,7 @@ pub fn load_valign_property(value: &str, scheduler: &mut SchedulerFrontend, path
 pub fn load_halign_property(value: &str, scheduler: &mut SchedulerFrontend, path: String,
                             property_name: &str, state: &mut dyn GenericState) -> Result<(), Error> {
 
-    if bind_ez_property(value, scheduler, path) {
+    if bind_ez_property(value, scheduler, path, property_name.to_string()) {
         state.update_property(property_name,
                               EzValues::HorizontalAlignment(HorizontalAlignment::Left));
         Ok(())
@@ -300,7 +304,7 @@ pub fn load_halign_property(value: &str, scheduler: &mut SchedulerFrontend, path
 pub fn load_horizontal_pos_hint_property(value: &str, scheduler: &mut SchedulerFrontend, path: String,
                                          property_name: &str, state: &mut dyn GenericState) -> Result<(), Error> {
 
-    if bind_ez_property(value, scheduler, path) {
+    if bind_ez_property(value, scheduler, path, property_name.to_string()) {
         state.update_property(property_name,EzValues::HorizontalPosHint(None));
         Ok(())
     } else {
@@ -316,7 +320,7 @@ pub fn load_horizontal_pos_hint_property(value: &str, scheduler: &mut SchedulerF
 pub fn load_vertical_pos_hint_property(value: &str, scheduler: &mut SchedulerFrontend, path: String,
                                        property_name: &str, state: &mut dyn GenericState) -> Result<(), Error> {
 
-    if bind_ez_property(value, scheduler, path) {
+    if bind_ez_property(value, scheduler, path, property_name.to_string()) {
         state.update_property(property_name,EzValues::VerticalPosHint(None));
         Ok(())
     } else {
@@ -331,7 +335,8 @@ pub fn load_vertical_pos_hint_property(value: &str, scheduler: &mut SchedulerFro
 /// initialized with Some(1.0) or parsed from the user defined string from the .ez file.
 pub fn load_size_hint_property(value: &str, scheduler: &mut SchedulerFrontend, path: String,
                                property_name: &str, state: &mut dyn GenericState) -> Result<(), Error> {
-    if bind_ez_property(value, scheduler, path) {
+
+    if bind_ez_property(value, scheduler, path, property_name.to_string()) {
         state.update_property(property_name,
                               EzValues::SizeHint(Some(1.0)));
         Ok(())

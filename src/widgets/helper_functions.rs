@@ -12,13 +12,13 @@ pub fn resize_with_size_hint(state: &mut EzState, parent_width: usize, parent_he
     let mut_state = state.as_generic_mut();
     if let Some(size_hint_x) = mut_state.get_size_hint().get_size_hint_x() {
         let raw_child_size = parent_width as f64 * size_hint_x;
-        let child_size = raw_child_size.round() as usize;
+        let child_size = raw_child_size.floor() as usize;
         mut_state.get_size_mut().set_width(child_size);
     }
 
     if let Some(size_hint_y) = mut_state.get_size_hint().get_size_hint_y() {
         let raw_child_size = parent_height as f64 * size_hint_y;
-        let child_size = raw_child_size.round() as usize;
+        let child_size = raw_child_size.floor() as usize;
         mut_state.get_size_mut().set_height(child_size);
     }
 }

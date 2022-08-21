@@ -18,7 +18,7 @@ pub fn load_common_property(property_name: &str, property_value: String,
     -> Result<bool, Error> {
 
     let path = obj.get_path();
-    let state = obj.get_state_mut();
+    let state= obj.get_state_mut();
     let property_name = property_name.trim();
     match property_name {
         "id" => obj.set_id(property_value.trim()),
@@ -60,17 +60,25 @@ pub fn load_common_property(property_name: &str, property_value: String,
                 None => return Err(
                     Error::new(ErrorKind::InvalidData,
                                format!("Could not size parameter: \"{}\". \
-                               It must be in the form \"pos: 5, 10\"", property_value)))
+                               It must be in the form \"size: 5, 10\"", property_value)))
             };
             load_base_properties::load_usize_property(
                 width.trim(), scheduler, path.clone(), "width", state)?;
+            state.get_size_mut().fixed_width = true;
             load_base_properties::load_usize_property(
                 height.trim(), scheduler, path, "height", state)?;
+            state.get_size_mut().fixed_height = true;
         },
-        "width" => load_base_properties::load_usize_property(
-            property_value.trim(), scheduler, path, property_name, state)?,
-        "height" => load_base_properties::load_usize_property(
-            property_value.trim(), scheduler, path, property_name, state)?,
+        "width" => {
+            load_base_properties::load_usize_property(
+                property_value.trim(), scheduler, path, property_name, state)?;
+            state.get_size_mut().fixed_width = true;
+        },
+        "height" => {
+            load_base_properties::load_usize_property(
+                property_value.trim(), scheduler, path, property_name, state)?;
+            state.get_size_mut().fixed_height = true;
+        },
         "pos_hint" => {
             let (x_str, y_str) = property_value.split_once(',').unwrap();
             load_base_properties::load_horizontal_pos_hint_property(

@@ -2,6 +2,7 @@
 use crossterm::style::Color;
 
 use crate::property::ez_property::EzProperty;
+use crate::property::ez_values::EzValues;
 use crate::states::definitions::{HorizontalAlignment, HorizontalPosHint, LayoutMode, LayoutOrientation, VerticalAlignment, VerticalPosHint};
 
 
@@ -58,6 +59,35 @@ pub enum EzProperties {
     SizeHint(EzProperty<Option<f64>>),
 }
 impl EzProperties {
+
+    pub fn get_generic_value(&self) -> EzValues {
+        if let EzProperties::Usize(i) =
+            self { EzValues::Usize(i.value) }
+        else if let EzProperties::F64(i) =
+          self { EzValues::F64(i.value) }
+        else if let EzProperties::Bool(i) =
+          self { EzValues::Bool(i.value) }
+        else if let EzProperties::String(i) =
+            self { EzValues::String(i.value.clone()) }
+        else if let EzProperties::Color(i) =
+            self { EzValues::Color(i.value) }
+        else if let EzProperties::LayoutMode(i) =
+            self { EzValues::LayoutMode(i.value.clone()) }
+        else if let EzProperties::LayoutOrientation(i) =
+            self { EzValues::LayoutOrientation(i.value.clone()) }
+        else if let EzProperties::VerticalAlignment(i) =
+            self { EzValues::VerticalAlignment(i.value) }
+        else if let EzProperties::HorizontalAlignment(i) =
+            self { EzValues::HorizontalAlignment(i.value) }
+        else if let EzProperties::HorizontalPosHint(i) =
+            self { EzValues::HorizontalPosHint(i.value) }
+        else if let EzProperties::VerticalPosHint(i) =
+            self { EzValues::VerticalPosHint(i.value) }
+        else if let EzProperties::SizeHint(i) = self {
+            EzValues::SizeHint(i.value) }
+        else { panic!("Unimplemented variant")}
+
+    }
 
     /// Get a [EzProperty<usize>] ref from this enum. You must be sure this is a usize property
     /// or it will panic.

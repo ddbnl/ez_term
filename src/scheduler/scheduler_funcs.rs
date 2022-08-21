@@ -241,6 +241,10 @@ pub fn update_properties(scheduler: &mut SchedulerFrontend,
                         .get_mut(subscriber).unwrap_or_else(
                         || panic!("Could not get property updater for {}", subscriber))
                         (state_tree, val.clone());
+                    if subscriber.contains('/') {
+                        to_update.push(
+                            subscriber.rsplit_once('/').unwrap().0.to_string())
+                    }
                 }
             }
             if scheduler.backend.property_callbacks.contains(&name) {
@@ -263,6 +267,26 @@ pub fn update_properties(scheduler: &mut SchedulerFrontend,
     }
 
     scheduler.backend.widgets_to_update.extend(to_update);
+}
+
+/// Execute update func for each property subscribed to another.
+pub fn trigger_update_funcs(scheduler: &mut SchedulerFrontend, state_tree: &mut StateTree) {
+
+    for (property, subscribers) in
+    scheduler.backend.property_subscribers.iter() {
+        let val = if property.contains('/') {
+            let (widget, property_name) = property.rsplit_once('/').unwrap();
+            state_tree.get(widget).as_generic().get_property(property_name)
+        } else {
+            scheduler.get_property(property).get_generic_value()
+        };
+        for subscriber in subscribers {
+            let updater =
+                scheduler.backend.property_updaters.get_mut(subscriber).unwrap_or_else(
+                    || panic!("Could not get property updater for {}", subscriber));
+            updater(state_tree, val.clone());
+        }
+    }
 }
 
 /// Take new property callbacks and add them to the existing callback config in the callback tree
