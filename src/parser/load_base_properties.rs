@@ -75,13 +75,14 @@ fn resolve_parent_path(mut path: String, mut value: &str) -> String {
 /// or parsed from the user defined string from the .ez file.
 pub fn load_usize_property(value: &str, scheduler: &mut SchedulerFrontend, path: String,
                            property_name: &str, state: &mut dyn GenericState) -> Result<(), Error> {
+
     return if value.find(|x| ['+', '-', '/', '*'].contains(&x)).is_some() {
         wrap_usize_property(value.to_string(), path, property_name.to_string(),
                             scheduler);
         state.update_property(property_name, EzValues::Usize(0));
         Ok(())
     } else if let Some(i) = resolve_property(value, path.clone()) {
-        bind_ez_property(&i, scheduler, path,
+        bind_ez_property(value, scheduler, path,
                          property_name.to_string());
         state.update_property(property_name, EzValues::Usize(0));
         Ok(())

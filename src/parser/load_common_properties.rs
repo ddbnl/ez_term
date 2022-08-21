@@ -22,10 +22,16 @@ pub fn load_common_property(property_name: &str, property_value: String,
     let property_name = property_name.trim();
     match property_name {
         "id" => obj.set_id(property_value.trim()),
-        "x" => load_base_properties::load_usize_property(
-            property_value.trim(), scheduler, path, property_name, state)?,
-        "y" => load_base_properties::load_usize_property(
-            property_value.trim(), scheduler, path, property_name, state)?,
+        "x" => {
+            load_base_properties::load_usize_property(
+                property_value.trim(), scheduler, path, property_name, state)?;
+            state.get_position_mut().x.locked = property_value.trim().parse::<usize>().is_ok();
+        },
+        "y" => {
+            load_base_properties::load_usize_property(
+                property_value.trim(), scheduler, path, property_name, state)?;
+            state.get_position_mut().y.locked = property_value.trim().parse::<usize>().is_ok();
+        },
         "pos" => {
             let (x,y) = match property_value.trim().split_once(',') {
                 Some((i, j)) => (i, j),
@@ -35,8 +41,10 @@ pub fn load_common_property(property_name: &str, property_value: String,
             };
             load_base_properties::load_usize_property(
                 x.trim(), scheduler, path.clone(), "x", state)?;
+            state.get_position_mut().x.locked = x.trim().parse::<usize>().is_ok();
             load_base_properties::load_usize_property(
                 y.trim(), scheduler, path, "y", state)?;
+            state.get_position_mut().y.locked = y.trim().parse::<usize>().is_ok();
         },
         "size_hint" => {
             let (x,y) = match property_value.trim().split_once(',') {
@@ -64,20 +72,20 @@ pub fn load_common_property(property_name: &str, property_value: String,
             };
             load_base_properties::load_usize_property(
                 width.trim(), scheduler, path.clone(), "width", state)?;
-            state.get_size_mut().fixed_width = true;
+            state.get_size_mut().width.locked = width.trim().parse::<usize>().is_ok();
             load_base_properties::load_usize_property(
                 height.trim(), scheduler, path, "height", state)?;
-            state.get_size_mut().fixed_height = true;
+            state.get_size_mut().height.locked = height.trim().parse::<usize>().is_ok();
         },
         "width" => {
             load_base_properties::load_usize_property(
                 property_value.trim(), scheduler, path, property_name, state)?;
-            state.get_size_mut().fixed_width = true;
+            state.get_size_mut().width.locked = property_value.trim().parse::<usize>().is_ok();
         },
         "height" => {
             load_base_properties::load_usize_property(
                 property_value.trim(), scheduler, path, property_name, state)?;
-            state.get_size_mut().fixed_height = true;
+            state.get_size_mut().height.locked = property_value.trim().parse::<usize>().is_ok();
         },
         "pos_hint" => {
             let (x_str, y_str) = property_value.split_once(',').unwrap();

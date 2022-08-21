@@ -29,6 +29,10 @@ pub struct EzProperty<T> {
     /// Current value of the property.
     pub value: T,
 
+    /// Value is locked and cannot changed. Used e.g. when user manually sets a property such as
+    /// height.
+    pub locked: bool,
+
     /// Sender for the channel belonging to this property. When a new value is set, the new value
     /// will be send over this channel. At runtime the [Scheduler] will own the receiver of this
     /// channel; if any other properties are subscribed to this property, new values received by
@@ -45,7 +49,8 @@ impl<T> EzProperty<T> where EzValues: From<T> {
         let property = EzProperty {
             name,
             value,
-            tx
+            tx,
+            locked: false,
         };
         (property, rx)
     }
@@ -60,6 +65,7 @@ impl<T> EzProperty<T> where EzValues: From<T> {
     /// they will automatically be updated as well.
     pub fn set(&mut self, new: T) -> bool where T: PartialEq + Clone {
 
+        if self.locked { return false }
         if new != self.value {
             self.value = new.clone();
             self.tx.send(EzValues::from(new)).unwrap_or_else(
@@ -69,6 +75,11 @@ impl<T> EzProperty<T> where EzValues: From<T> {
         } else {
             false
         }
+    }
+
+    pub fn copy_from(&mut self, other: &EzProperty<T>) where T: PartialEq + Clone {
+        self.set(other.value.clone());
+        self.locked = other.locked;
     }
 
     /// Bind a custom callback to this property which will be called when the value changes
