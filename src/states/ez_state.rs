@@ -236,8 +236,12 @@ pub trait GenericState {
     fn get_path(&self) -> &String;
     
     fn get_id(&self) -> String { self.get_path().rsplit_once('/').unwrap().1.to_string() }
-    
+
+    /// Get a property by string (of name)
+    fn get_property(&self, name: &str) -> EzValues;
+
     fn update_property(&mut self, name: &str, value: EzValues) -> bool;
+
     /// Set to None for passing an absolute width, or to a value between 0 and 1 to
     /// automatically scale width based on parent width
     fn set_size_hint_x(&mut self, size_hint: Option<f64>) {

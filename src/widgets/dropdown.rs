@@ -7,9 +7,8 @@ use std::io::{Error, ErrorKind};
 use crossterm::event::{Event, KeyCode, MouseButton, MouseEventKind};
 
 use crate::{CallbackConfig, Context};
-use crate::parser::load_base_properties::{load_bool_property, load_string_property};
+use crate::parser::load_base_properties;
 use crate::parser::load_common_properties::load_common_property;
-use crate::property::ez_values::EzValues;
 use crate::run::definitions::{CallbackTree, Coordinates, Pixel, PixelMap, StateTree};
 use crate::scheduler::scheduler::SchedulerFrontend;
 use crate::states::definitions::{AutoScale, HorizontalAlignment, InfiniteSize, Padding, PosHint, SizeHint, StateCoordinates, StateSize, VerticalAlignment};
@@ -51,36 +50,6 @@ impl Dropdown {
             state: state.as_dropdown().to_owned(),
         }
     }
-
-    fn load_allow_none_property(&mut self, parameter_value: &str, scheduler: &mut SchedulerFrontend)
-        -> Result<(), Error>{
-
-        let path = self.path.clone();
-        self.state.set_allow_none(load_bool_property(
-            parameter_value.trim(), scheduler, path.clone(),
-            Box::new(move |state_tree: &mut StateTree, val: EzValues| {
-                let state = state_tree.get_mut(&path)
-                    .as_dropdown_mut();
-                state.set_allow_none(val.as_bool());
-                path.clone()
-            }))?);
-        Ok(())
-    }
-
-    fn load_choice_property(&mut self, parameter_value: &str, scheduler: &mut SchedulerFrontend)
-        -> Result<(), Error> {
-
-        let path = self.path.clone();
-        self.state.set_choice(&load_string_property(
-            parameter_value.trim(), scheduler, path.clone(),
-            Box::new(move |state_tree: &mut StateTree, val: EzValues| {
-                let state = state_tree.get_mut(&path)
-                    .as_dropdown_mut();
-                state.set_choice(val.as_string().as_str());
-                path.clone()
-            }))?);
-        Ok(())
-    }
 }
 
 impl EzObject for Dropdown {
@@ -92,13 +61,16 @@ impl EzObject for Dropdown {
             &parameter_name, parameter_value.clone(),self, scheduler)?;
         if consumed { return Ok(()) }
         match parameter_name.as_str() {
-            "allow_none" => self.load_allow_none_property(parameter_value.trim(),
-                                                          scheduler)?,
+            "allow_none" => load_base_properties::load_bool_property(
+                parameter_value.trim(), scheduler, self.path.clone(),
+                &parameter_name, self.get_state_mut())?,
             "options" => {
                 self.state.set_options(parameter_value.split(',')
                     .map(|x| x.trim().to_string()).collect());
             },
-            "choice" => self.load_choice_property(parameter_value.trim(), scheduler)?,
+            "choice" => load_base_properties::load_string_property(
+                parameter_value.trim(), scheduler, self.path.clone(),
+                &parameter_name, self.get_state_mut())?,
             _ => return Err(
                 Error::new(ErrorKind::InvalidData,
                            format!("Invalid parameter name for dropdown: {}", parameter_name)))

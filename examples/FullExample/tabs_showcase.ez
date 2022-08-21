@@ -312,6 +312,7 @@
         mode: box
         orientation: vertical
         - Label:
+            id: view_description_label
             text: The below layout has views enabled. We can only see 10 widgets at a time. Use the arrows to move through the views.
             auto_scale_height: true
         - Layout:
@@ -320,10 +321,12 @@
             orientation: vertical
             view_size: 10
             view_page: 2
-            auto_scale_height: true
+            size_hint_y: none
+            height: parent.height - parent.view_description_label.height - parent.view_nav.height
         - Layout:
             id: view_nav
             mode: box
+            auto_scale_height: true
             - Button:
                 id: views_nav_left
                 text: <

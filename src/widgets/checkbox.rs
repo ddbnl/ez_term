@@ -2,9 +2,8 @@
 //! Widget which is either on or off and implements an on_value_change callback.
 use std::io::{Error, ErrorKind};
 
-use crate::parser::load_base_properties::{load_bool_property, load_string_property};
+use crate::parser::load_base_properties;
 use crate::parser::load_common_properties::load_common_property;
-use crate::property::ez_values::EzValues;
 use crate::run::definitions::{CallbackTree, Coordinates, Pixel, PixelMap, StateTree};
 use crate::scheduler::scheduler::SchedulerFrontend;
 use crate::states::checkbox_state::CheckboxState;
@@ -44,49 +43,6 @@ impl Checkbox {
             state: state.as_checkbox().to_owned(),
         }
     }
-
-
-    fn load_active_property(&mut self, parameter_value: &str, scheduler: &mut SchedulerFrontend)
-        -> Result<(), Error>{
-
-        let path = self.path.clone();
-        self.state.set_active(load_bool_property(
-            parameter_value.trim(), scheduler, path.clone(),
-            Box::new(move |state_tree: &mut StateTree, val: EzValues| {
-                let state = state_tree.get_mut(&path).as_checkbox_mut();
-                state.set_active(val.as_bool().to_owned());
-                path.clone()
-            }))?);
-        Ok(())
-    }
-
-    fn load_active_symbol_property(&mut self, parameter_value: &str, scheduler: &mut SchedulerFrontend)
-        -> Result<(), Error>{
-
-        let path = self.path.clone();
-        self.state.set_active_symbol(&load_string_property(
-            parameter_value.trim(), scheduler, path.clone(),
-            Box::new(move |state_tree: &mut StateTree, val: EzValues| {
-                let state = state_tree.get_mut(&path).as_checkbox_mut();
-                state.set_active_symbol(val.as_string().as_str());
-                path.clone()
-            }))?);
-        Ok(())
-    }
-
-    fn load_inactive_symbol_property(&mut self, parameter_value: &str, scheduler: &mut SchedulerFrontend)
-                                   -> Result<(), Error>{
-
-        let path = self.path.clone();
-        self.state.set_inactive_symbol(&load_string_property(
-            parameter_value.trim(), scheduler, path.clone(),
-            Box::new(move |state_tree: &mut StateTree, val: EzValues| {
-                let state = state_tree.get_mut(&path).as_checkbox_mut();
-                state.set_inactive_symbol(val.as_string().as_str());
-                path.clone()
-            }))?);
-        Ok(())
-    }
 }
 
 
@@ -99,11 +55,15 @@ impl EzObject for Checkbox {
             &parameter_name, parameter_value.clone(),self, scheduler)?;
         if consumed { return Ok(())}
         match parameter_name.as_str() {
-            "active" => self.load_active_property(parameter_value.trim(), scheduler)?,
-            "active_symbol" => self.load_active_symbol_property(
-                &parameter_value.chars().last().unwrap().to_string(), scheduler)?,
-            "inactive_symbol" => self.load_inactive_symbol_property(
-                &parameter_value.chars().last().unwrap().to_string(), scheduler)?,
+            "active" => load_base_properties::load_bool_property(
+                parameter_value.trim(), scheduler, self.path.clone(),
+                &parameter_name, self.get_state_mut())?,
+            "active_symbol" => load_base_properties::load_string_property(
+                parameter_value.trim(), scheduler, self.path.clone(),
+                &parameter_name, self.get_state_mut())?,
+            "inactive_symbol" => load_base_properties::load_string_property(
+                parameter_value.trim(), scheduler, self.path.clone(),
+                &parameter_name, self.get_state_mut())?,
             _ => return Err(
                 Error::new(ErrorKind::InvalidData,
                            format!("Invalid parameter name for checkbox: {}", parameter_name)))

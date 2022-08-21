@@ -235,10 +235,12 @@ pub fn update_properties(scheduler: &mut SchedulerFrontend,
             new_val = Some(new);
         }
         if let Some(val) = new_val {
-            if scheduler.backend.property_subscribers.contains_key(&name) {
-                for update_func in scheduler.backend
-                        .property_subscribers.get_mut(&name).unwrap() {
-                    to_update.push(update_func(state_tree, val.clone()));
+            if let Some(i)  = scheduler.backend.property_subscribers.get(&name) {
+                for subscriber in i {
+                    scheduler.backend.property_updaters
+                        .get_mut(subscriber).unwrap_or_else(
+                        || panic!("Could not get property updater for {}", subscriber))
+                        (state_tree, val.clone());
                 }
             }
             if scheduler.backend.property_callbacks.contains(&name) {

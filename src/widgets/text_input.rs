@@ -8,9 +8,8 @@ use std::time::Duration;
 use crossterm::event::{Event, KeyCode};
 
 use crate::Context;
-use crate::parser::load_base_properties::load_string_property;
+use crate::parser::load_base_properties;
 use crate::parser::load_common_properties::load_common_property;
-use crate::property::ez_values::EzValues;
 use crate::run::definitions::{CallbackTree, Coordinates, Pixel, PixelMap, StateTree};
 use crate::scheduler::scheduler::SchedulerFrontend;
 use crate::states::ez_state::{EzState, GenericState};
@@ -62,27 +61,12 @@ impl EzObject for TextInput {
             &parameter_name, parameter_value.clone(),self, scheduler)?;
         if consumed { return Ok(()) }
         match parameter_name.as_str() {
-            "max_length" => {
-                let length = match parameter_value.trim().parse() {
-                    Ok(i) => i,
-                    Err(_) => return Err(
-                        Error::new(ErrorKind::InvalidData,
-                                   format!("Invalid value for max_length: \"{}\". Required \
-                                   format is \"max_length: 10\"", parameter_value)))
-                };
-                self.state.set_max_length(length);
-            },
-            "text" => {
-                let path = self.path.clone();
-                self.state.set_text(load_string_property(
-                    parameter_value.trim(), scheduler, path.clone(),
-                    Box::new(move |state_tree: &mut StateTree, val: EzValues| {
-                        let state = state_tree.get_mut(&path)
-                            .as_text_input_mut();
-                        state.set_text(val.as_string().clone());
-                        path.clone()
-                    }))?)
-            }
+            "max_length" => load_base_properties::load_usize_property(
+                parameter_value.trim(), scheduler, self.path.clone(),
+                &parameter_name, self.get_state_mut())?,
+            "text" => load_base_properties::load_string_property(
+                parameter_value.trim(), scheduler, self.path.clone(),
+                &parameter_name, self.get_state_mut())?,
             _ => return Err(
                 Error::new(ErrorKind::InvalidData,
                            format!("Invalid parameter name for text input: {}",

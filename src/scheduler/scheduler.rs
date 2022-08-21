@@ -122,8 +122,8 @@ pub struct SchedulerFrontend {
     new_size_hint_property_sender: Option<Sender<(String, Option<f64>)>>,
     new_size_hint_property_receiver: Option<Receiver<(String, Option<f64>)>>,
 
-    subscribe_to_property_sender: Option<Sender<(String, EzPropertyUpdater)>>,
-    subscribe_to_property_receiver: Option<Receiver<(String, EzPropertyUpdater)>>,
+    subscribe_to_property_sender: Option<Sender<(String, String)>>,
+    subscribe_to_property_receiver: Option<Receiver<(String, String)>>,
 
     update_widget_sender: Option<Sender<String>>,
     update_widget_receiver: Option<Receiver<String>>,
@@ -604,6 +604,22 @@ impl SchedulerFrontend {
         }
     }
 
+    fn get_update_func(&mut self, name: &str) {
+
+        if name.contains('/') {
+            let (widget, property_name) = name.rsplit_once('/').unwrap();
+            let (widget, property_name) = (widget.to_string(), property_name.to_string());
+            let updater =
+                move | state_tree: &mut StateTree, val: EzValues | {
+                    state_tree.get_mut(&widget).as_generic_mut()
+                        .update_property(&property_name, val);
+                };
+            if !self.backend.property_updaters.contains_key(name) {
+                self.backend.property_updaters.insert(name.to_string(), Box::new(updater));
+            }
+        }
+    }
+
     /// Register a new property and return it. After a property has been registered it's possible
     /// for widget properties to subscribe to it, meaning their values will be kept in sync. If
     /// you want to bind a value in your app to a widget property, use this func to get a property
@@ -616,6 +632,7 @@ impl SchedulerFrontend {
         self.backend.properties.insert(
             name.to_string(), EzProperties::Usize(property.clone()));
         self.backend.property_receivers.insert(name.to_string(), receiver);
+        self.get_update_func(name);
         property
     }
 
@@ -631,6 +648,7 @@ impl SchedulerFrontend {
         self.backend.properties.insert(
             name.to_string(), EzProperties::F64(property.clone()));
         self.backend.property_receivers.insert(name.to_string(), receiver);
+        self.get_update_func(name);
         property
     }
 
@@ -646,6 +664,7 @@ impl SchedulerFrontend {
         self.backend.properties.insert(
             name.to_string(), EzProperties::String(property.clone()));
         self.backend.property_receivers.insert(name.to_string(), receiver);
+        self.get_update_func(name);
         property
     }
 
@@ -661,6 +680,7 @@ impl SchedulerFrontend {
         self.backend.properties.insert(
             name.to_string(), EzProperties::Bool(property.clone()));
         self.backend.property_receivers.insert(name.to_string(), receiver);
+        self.get_update_func(name);
         property
     }
 
@@ -676,6 +696,7 @@ impl SchedulerFrontend {
         self.backend.properties.insert(
             name.to_string(), EzProperties::Color(property.clone()));
         self.backend.property_receivers.insert(name.to_string(), receiver);
+        self.get_update_func(name);
         property
     }
 
@@ -692,6 +713,7 @@ impl SchedulerFrontend {
         self.backend.properties.insert(
             name.to_string(), EzProperties::LayoutMode(property.clone()));
         self.backend.property_receivers.insert(name.to_string(), receiver);
+        self.get_update_func(name);
         property
     }
 
@@ -708,6 +730,7 @@ impl SchedulerFrontend {
         self.backend.properties.insert(
             name.to_string(), EzProperties::LayoutOrientation(property.clone()));
         self.backend.property_receivers.insert(name.to_string(), receiver);
+        self.get_update_func(name);
         property
     }
 
@@ -724,6 +747,7 @@ impl SchedulerFrontend {
         self.backend.properties.insert(
             name.to_string(), EzProperties::VerticalAlignment(property.clone()));
         self.backend.property_receivers.insert(name.to_string(), receiver);
+        self.get_update_func(name);
         property
     }
 
@@ -740,6 +764,7 @@ impl SchedulerFrontend {
         self.backend.properties.insert(
             name.to_string(), EzProperties::HorizontalAlignment(property.clone()));
         self.backend.property_receivers.insert(name.to_string(), receiver);
+        self.get_update_func(name);
         property
     }
 
@@ -756,6 +781,7 @@ impl SchedulerFrontend {
         self.backend.properties.insert(
             name.to_string(), EzProperties::HorizontalPosHint(property.clone()));
         self.backend.property_receivers.insert(name.to_string(), receiver);
+        self.get_update_func(name);
         property
     }
 
@@ -772,6 +798,7 @@ impl SchedulerFrontend {
         self.backend.properties.insert(
             name.to_string(), EzProperties::VerticalPosHint(property.clone()));
         self.backend.property_receivers.insert(name.to_string(), receiver);
+        self.get_update_func(name);
         property
     }
 
@@ -788,6 +815,7 @@ impl SchedulerFrontend {
         self.backend.properties.insert(
             name.to_string(), EzProperties::SizeHint(property.clone()));
         self.backend.property_receivers.insert(name.to_string(), receiver);
+        self.get_update_func(name);
         property
     }
 
@@ -812,16 +840,16 @@ impl SchedulerFrontend {
     /// property it is subscribed to on the next frame. An update func is required which will be
     /// called when the property subscribed to changes. The update func receives the new value and
     /// is responsible for setting the appropriate field on the subscriber.
-    pub fn subscribe_to_property(&mut self, name: &str, update_func: EzPropertyUpdater) {
+    pub fn subscribe_to_property(&mut self, name: &str, subscriber: String) {
 
         if !self.synced {
             if !self.backend.property_subscribers.contains_key(name) {
                 self.backend.property_subscribers.insert(name.to_string(), Vec::new());
             }
-            self.backend.property_subscribers.get_mut(name).unwrap().push(update_func);
+            self.backend.property_subscribers.get_mut(name).unwrap().push(subscriber);
         } else {
             self.subscribe_to_property_sender.as_ref().unwrap()
-                .send((name.to_string(), update_func)).unwrap();
+                .send((name.to_string(), subscriber)).unwrap();
         }
     }
 
@@ -1479,11 +1507,13 @@ pub struct Scheduler {
     /// New values are received on this receiver and then synced to any subscribed properties.
     pub property_receivers: HashMap<String, Receiver<EzValues>>,
 
+    pub property_updaters: HashMap<String, EzPropertyUpdater>,
+
     /// A <Widget path, update_callback> HashMap, used to get the updater callback EzProperty.
-    /// When a property subsribes to another, it must provide an updater callback. When the value
+    /// When a property subscribes to another, it must provide an updater callback. When the value
     /// changes, the callback will be called with the new value, and is responsible for syncing the
     /// subscribing property to the new value.
-    pub property_subscribers: HashMap<String, Vec<EzPropertyUpdater>>,
+    pub property_subscribers: HashMap<String, Vec<String>>,
 
     /// A <Widget path, user_callback> HashMap, used to store callbacks the user has registered to
     /// the changing of a value of an [EzProperty]. When the value changes, the callback is called.

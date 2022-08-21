@@ -1,6 +1,6 @@
-use crate::{EzProperty};
+use crate::EzProperty;
 use crate::property::ez_values::EzValues;
-use crate::run::definitions::{IsizeCoordinates};
+use crate::run::definitions::IsizeCoordinates;
 use crate::scheduler::scheduler::SchedulerFrontend;
 use crate::scheduler::scheduler_funcs::clean_up_property;
 use crate::states::definitions::{AutoScale, BorderConfig, ColorConfig, HorizontalAlignment, InfiniteSize,
@@ -100,7 +100,53 @@ impl DropdownState {
 }
 
 impl GenericState for DropdownState {
+
     fn get_path(&self) -> &String { &self.path }
+
+    fn get_property(&self, name: &str) -> EzValues {
+
+        match name {
+            "x" => EzValues::Usize(self.position.x.value),
+            "y" => EzValues::Usize(self.position.y.value),
+            "height" => EzValues::Usize(self.size.height.value),
+            "width" => EzValues::Usize(self.size.width.value),
+            "size_hint_x" => EzValues::SizeHint(self.size_hint.size_hint_x.value),
+            "size_hint_y" => EzValues::SizeHint(self.size_hint.size_hint_y.value),
+            "pos_hint_x" => EzValues::HorizontalPosHint(self.pos_hint.pos_hint_x.value),
+            "pos_hint_y" => EzValues::VerticalPosHint(self.pos_hint.pos_hint_y.value),
+            "auto_scale_width" => EzValues::Bool(self.auto_scale.auto_scale_width.value),
+            "auto_scale_height" => EzValues::Bool(self.auto_scale.auto_scale_height.value),
+            "padding_top" => EzValues::Usize(self.padding.padding_top.value),
+            "padding_bottom" => EzValues::Usize(self.padding.padding_bottom.value),
+            "padding_left" => EzValues::Usize(self.padding.padding_left.value),
+            "padding_right" => EzValues::Usize(self.padding.padding_right.value),
+            "halign" => EzValues::HorizontalAlignment(self.halign.value),
+            "valign" => EzValues::VerticalAlignment(self.valign.value),
+            "disabled" => EzValues::Bool(self.disabled.value),
+            "selection_order" => EzValues::Usize(self.selection_order.value),
+            "border" => EzValues::Bool(self.border_config.border.value),
+            "horizontal_symbol" => EzValues::String(self.border_config.horizontal_symbol.value.to_string()),
+            "vertical_symbol" => EzValues::String(self.border_config.vertical_symbol.value.to_string()),
+            "top_left_symbol" => EzValues::String(self.border_config.top_left_symbol.value.to_string()),
+            "top_right_symbol" => EzValues::String(self.border_config.top_right_symbol.value.to_string()),
+            "bottom_left_symbol" => EzValues::String(self.border_config.bottom_left_symbol.value.to_string()),
+            "bottom_right_symbol" => EzValues::String(self.border_config.bottom_right_symbol.value.to_string()),
+            "fg_color" => EzValues::Color(self.colors.fg_color.value),
+            "bg_color" => EzValues::Color(self.colors.bg_color.value),
+            "selection_fg_color" => EzValues::Color(self.colors.selection_fg_color.value),
+            "selection_bg_color" => EzValues::Color(self.colors.selection_bg_color.value),
+            "disabled_fg_color" => EzValues::Color(self.colors.disabled_fg_color.value),
+            "disabled_bg_color" => EzValues::Color(self.colors.disabled_bg_color.value),
+            "active_fg_color" => EzValues::Color(self.colors.active_fg_color.value),
+            "active_bg_color" => EzValues::Color(self.colors.active_bg_color.value),
+            "border_fg_color" => EzValues::Color(self.colors.border_fg_color.value),
+            "border_bg_color" => EzValues::Color(self.colors.border_bg_color.value),
+            "choice" => EzValues::String(self.choice.value.to_string()),
+            "allow_none" => EzValues::Bool(self.allow_none.value),
+            _ => panic!("Invalid property name for button state: {}", name),
+        }
+    }
+
     fn update_property(&mut self, name: &str, value: EzValues) -> bool {
         match name {
             "x" => self.position.x.set_from_ez_value(value),
@@ -391,6 +437,8 @@ impl DroppedDownMenuState {
 impl GenericState for DroppedDownMenuState {
 
     fn get_path(&self) -> &String { &self.path }
+
+    fn get_property(&self, name: &str) -> EzValues { todo!() }
 
     fn update_property(&mut self, _name: &str, _value: EzValues) -> bool { false }
 

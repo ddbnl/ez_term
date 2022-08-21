@@ -3,16 +3,16 @@ use std::io::{Error, ErrorKind};
 use std::time::Duration;
 
 use crate::Context;
-use crate::parser::load_base_properties::load_string_property;
+use crate::parser::load_base_properties;
 use crate::parser::load_common_properties::load_common_property;
-use crate::property::ez_values::EzValues;
 use crate::run::definitions::{CallbackTree, Coordinates, Pixel, PixelMap, StateTree};
 use crate::scheduler::scheduler::SchedulerFrontend;
 use crate::states::button_state::ButtonState;
 use crate::states::definitions::{HorizontalAlignment, VerticalAlignment};
 use crate::states::ez_state::{EzState, GenericState};
 use crate::widgets::ez_object::{EzObject, EzObjects};
-use crate::widgets::helper_functions::{add_border, add_padding, align_content_horizontally, align_content_vertically, wrap_text};
+use crate::widgets::helper_functions::{add_border, add_padding, align_content_horizontally,
+                                       align_content_vertically, wrap_text};
 
 
 #[derive(Clone, Debug)]
@@ -45,21 +45,6 @@ impl Button {
             state: state.as_button().to_owned(),
         }
     }
-
-    pub fn load_text_property(&mut self, parameter_value: &str, scheduler: &mut SchedulerFrontend)
-        -> Result<(), Error> {
-
-        let path = self.path.clone();
-        self.state.set_text(load_string_property(
-            parameter_value.trim(), scheduler, self.path.clone(),
-            Box::new(move |state_tree: &mut StateTree, val: EzValues| {
-                let state = state_tree.get_mut(&path)
-                    .as_button_mut();
-                state.set_text(val.as_string().clone());
-                path.clone()
-            }))?);
-        Ok(())
-    }
 }
 
 
@@ -73,7 +58,9 @@ impl EzObject for Button {
             scheduler)?;
         if consumed { return Ok(()) }
         match parameter_name.as_str() {
-            "text" => self.load_text_property(parameter_value.trim(), scheduler)?,
+            "text" => load_base_properties::load_string_property(
+                parameter_value.trim(), scheduler, self.path.clone(),
+                &parameter_name, self.get_state_mut())?,
             _ => return Err(
                 Error::new(ErrorKind::InvalidData,
                            format!("Invalid parameter name for button: {}", parameter_name)))

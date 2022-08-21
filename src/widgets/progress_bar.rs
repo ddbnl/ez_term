@@ -1,9 +1,8 @@
 //! A widget that displays text non-interactively.
 use std::io::{Error, ErrorKind};
 
-use crate::parser::load_base_properties::load_usize_property;
+use crate::parser::load_base_properties;
 use crate::parser::load_common_properties::load_common_property;
-use crate::property::ez_values::EzValues;
 use crate::run::definitions::{Pixel, PixelMap, StateTree};
 use crate::scheduler::scheduler::SchedulerFrontend;
 use crate::states::ez_state::{EzState, GenericState};
@@ -41,33 +40,6 @@ impl ProgressBar {
             state: state.as_progress_bar().to_owned(),
         }
     }
-
-    fn load_max_property(&mut self, parameter_value: &str, scheduler: &mut SchedulerFrontend)
-                           -> Result<(), Error> {
-        let path = self.path.clone();
-        self.state.set_max(load_usize_property(
-            parameter_value.trim(), scheduler,self.path.clone(),
-            Box::new(move |state_tree: &mut StateTree, val: EzValues| {
-                    let state = state_tree.get_mut(&path)
-                        .as_progress_bar_mut();
-                    state.set_max(val.as_usize());
-                    path.clone()
-                }))?);
-        Ok(())
-    }
-    fn load_value_property(&mut self, parameter_value: &str, scheduler: &mut SchedulerFrontend)
-                            -> Result<(), Error> {
-        let path = self.path.clone();
-        self.state.set_value(load_usize_property(
-                parameter_value.trim(), scheduler,self.path.clone(),
-                Box::new(move |state_tree: &mut StateTree, val: EzValues| {
-                    let state = state_tree.get_mut(&path)
-                        .as_progress_bar_mut();
-                    state.set_value(val.as_usize());
-                    path.clone()
-                }))?);
-        Ok(())
-    }
 }
 
 
@@ -79,8 +51,12 @@ impl EzObject for ProgressBar {
             &parameter_name, parameter_value.clone(), self, scheduler)?;
         if consumed { return Ok(())}
         match parameter_name.as_str() {
-            "value" => self.load_value_property(parameter_value.trim(), scheduler)?,
-            "max" => self.load_max_property(parameter_value.trim(), scheduler)?,
+            "value" => load_base_properties::load_usize_property(
+                parameter_value.trim(), scheduler, self.path.clone(),
+                &parameter_name, self.get_state_mut())?,
+            "max" => load_base_properties::load_usize_property(
+                parameter_value.trim(), scheduler, self.path.clone(),
+                &parameter_name, self.get_state_mut())?,
             _ => return Err(
                 Error::new(ErrorKind::InvalidData,
                            format!("Invalid parameter name for progress bar: {}",

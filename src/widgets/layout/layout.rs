@@ -5,14 +5,13 @@ use std::collections::HashMap;
 use std::io::{Error, ErrorKind};
 use crossterm::event::{Event, KeyCode};
 use crate::Context;
-use crate::parser::load_base_properties::{load_bool_property, load_f64_property, load_layout_mode_property, load_layout_orientation_property, load_string_property, load_usize_property};
+use crate::parser::load_base_properties;
 use crate::parser::load_common_properties::load_common_property;
 use crate::widgets::ez_object::{EzObject, EzObjects};
 use crate::states::layout_state::LayoutState;
 use crate::states::ez_state::{EzState, GenericState};
 use crate::scheduler::scheduler::SchedulerFrontend;
 use crate::states::definitions::{LayoutMode};
-use crate::property::ez_values::EzValues;
 use crate::run::definitions::{CallbackTree, Coordinates, IsizeCoordinates, Pixel, PixelMap, StateTree};
 use crate::widgets::helper_functions::{add_border, add_padding, reposition_with_pos_hint,
                                        resize_with_size_hint};
@@ -61,306 +60,6 @@ impl Layout {
             state: state.as_layout().to_owned(),
         }
     }
-
-    fn load_layout_mode_property(&mut self, parameter_value: &str, scheduler: &mut SchedulerFrontend)
-                                -> Result<(), Error> {
-
-        let path = self.path.clone();
-        self.state.set_mode(load_layout_mode_property(
-            parameter_value.trim(), scheduler, path.clone(),
-            Box::new(move |state_tree: &mut StateTree, val: EzValues| {
-                let state = state_tree.get_mut(&path)
-                    .as_layout_mut();
-                state.set_mode(val.as_layout_mode().to_owned());
-                path.clone()
-            }))?);
-        Ok(())
-    }
-
-    fn load_layout_orientation_property(&mut self, parameter_value: &str, scheduler: &mut SchedulerFrontend)
-                                 -> Result<(), Error> {
-
-        let path = self.path.clone();
-        self.state.set_orientation(load_layout_orientation_property(
-            parameter_value.trim(), scheduler, path.clone(),
-            Box::new(move |state_tree: &mut StateTree, val: EzValues| {
-                let state = state_tree.get_mut(&path)
-                    .as_layout_mut();
-                state.set_orientation(val.as_layout_orientation().to_owned());
-                path.clone()
-            }))?);
-        Ok(())
-    }
-
-    fn load_active_tab_property(&mut self, parameter_value: &str, scheduler: &mut SchedulerFrontend)
-                                -> Result<(), Error> {
-
-        let path = self.path.clone();
-        self.state.set_active_tab(&load_string_property(
-            parameter_value.trim(), scheduler, path.clone(),
-            Box::new(move |state_tree: &mut StateTree, val: EzValues| {
-                let state = state_tree.get_mut(&path)
-                    .as_layout_mut();
-                state.set_active_tab(&val.as_string());
-                path.clone()
-            }))?);
-        Ok(())
-    }
-
-    fn load_tab_name_property(&mut self, parameter_value: &str, scheduler: &mut SchedulerFrontend)
-                                -> Result<(), Error> {
-
-        let path = self.path.clone();
-        self.state.set_tab_name(&load_string_property(
-            parameter_value.trim(), scheduler, path.clone(),
-            Box::new(move |state_tree: &mut StateTree, val: EzValues| {
-                let state = state_tree.get_mut(&path)
-                    .as_layout_mut();
-                state.set_tab_name(&val.as_string());
-                path.clone()
-            }))?);
-        Ok(())
-    }
-
-    fn load_active_screen_property(&mut self, parameter_value: &str, scheduler: &mut SchedulerFrontend)
-                                   -> Result<(), Error> {
-
-        let path = self.path.clone();
-        self.state.set_active_screen(&load_string_property(
-            parameter_value.trim(), scheduler, path.clone(),
-            Box::new(move |state_tree: &mut StateTree, val: EzValues| {
-                let state = state_tree.get_mut(&path)
-                    .as_layout_mut();
-                state.set_active_screen(&val.as_string());
-                path.clone()
-            }))?);
-        Ok(())
-    }
-
-    fn load_fill_property(&mut self, parameter_value: &str, scheduler: &mut SchedulerFrontend)
-        -> Result<(), Error> {
-
-        let path = self.path.clone();
-        self.state.set_fill(load_bool_property(
-            parameter_value.trim(), scheduler, path.clone(),
-            Box::new(move |state_tree: &mut StateTree, val: EzValues| {
-                let state = state_tree.get_mut(&path)
-                    .as_layout_mut();
-                state.set_fill(val.as_bool().to_owned());
-                path.clone()
-            }))?);
-        Ok(())
-    }
-
-    fn load_filler_symbol_property(&mut self, parameter_value: &str, scheduler: &mut SchedulerFrontend)
-        -> Result<(), Error> {
-
-        let path = self.path.clone();
-        self.state.set_filler_symbol(load_string_property(
-            parameter_value.trim(), scheduler, path.clone(),
-            Box::new(move |state_tree: &mut StateTree, val: EzValues| {
-                let state = state_tree.get_mut(&path)
-                    .as_layout_mut();
-                state.set_filler_symbol(val.as_string().to_owned());
-                path.clone()
-            }))?);
-        Ok(())
-    }
-
-    fn load_scrolling_enable_x_property(&mut self, parameter_value: &str,
-                                        scheduler: &mut SchedulerFrontend) -> Result<(), Error> {
-
-        let path = self.path.clone();
-        self.state.get_scrolling_config_mut().set_scroll_x(load_bool_property(
-            parameter_value.trim(), scheduler, path.clone(),
-            Box::new(move |state_tree: &mut StateTree, val: EzValues| {
-                let state = state_tree.get_mut(&path)
-                    .as_layout_mut();
-                state.get_scrolling_config_mut().set_scroll_x(val.as_bool().to_owned());
-                path.clone()
-            }))?);
-        Ok(())
-    }
-
-    fn load_scrolling_enable_y_property(&mut self, parameter_value: &str,
-                                        scheduler: &mut SchedulerFrontend) -> Result<(), Error> {
-
-        let path = self.path.clone();
-        self.state.get_scrolling_config_mut().set_scroll_y(load_bool_property(
-            parameter_value.trim(), scheduler, path.clone(),
-            Box::new(move |state_tree: &mut StateTree, val: EzValues| {
-                let state = state_tree.get_mut(&path)
-                    .as_layout_mut();
-                state.get_scrolling_config_mut().set_scroll_y(val.as_bool().to_owned());
-                path.clone()
-            }))?);
-        Ok(())
-    }
-
-    fn load_scrolling_scroll_start_x_property(&mut self, parameter_value: &str,
-                                             scheduler: &mut SchedulerFrontend) -> Result<(), Error> {
-
-        let path = self.path.clone();
-        self.state.get_scrolling_config_mut().set_scroll_start_x(load_f64_property(
-            parameter_value.trim(), scheduler, path.clone(),
-            Box::new(move |state_tree: &mut StateTree, val: EzValues| {
-                let state = state_tree.get_mut(&path)
-                    .as_layout_mut();
-                state.get_scrolling_config_mut().set_scroll_start_x(val.as_f64().to_owned());
-                path.clone()
-            }))?);
-        Ok(())
-    }
-
-    fn load_scrolling_scroll_start_y_property(&mut self, parameter_value: &str,
-                                            scheduler: &mut SchedulerFrontend) -> Result<(), Error> {
-
-        let path = self.path.clone();
-        self.state.get_scrolling_config_mut().set_scroll_start_y(load_f64_property(
-            parameter_value.trim(), scheduler, path.clone(),
-            Box::new(move |state_tree: &mut StateTree, val: EzValues| {
-                let state = state_tree.get_mut(&path)
-                    .as_layout_mut();
-                state.get_scrolling_config_mut().set_scroll_start_y(val.as_f64().to_owned());
-                path.clone()
-            }))?);
-        Ok(())
-    }
-
-    fn load_view_size_property(&mut self, parameter_value: &str,
-                                scheduler: &mut SchedulerFrontend) -> Result<(), Error> {
-
-        let path = self.path.clone();
-        self.state.set_view_size(load_usize_property(
-            parameter_value.trim(), scheduler, path.clone(),
-            Box::new(move |state_tree: &mut StateTree, val: EzValues| {
-                let state = state_tree.get_mut(&path)
-                    .as_layout_mut();
-                state.set_view_size(val.as_usize().to_owned());
-                path.clone()
-            }))?);
-        Ok(())
-    }
-
-    fn load_view_page_property(&mut self, parameter_value: &str,
-                               scheduler: &mut SchedulerFrontend) -> Result<(), Error> {
-
-        let path = self.path.clone();
-        self.state.set_view_page(load_usize_property(
-            parameter_value.trim(), scheduler, path.clone(),
-            Box::new(move |state_tree: &mut StateTree, val: EzValues| {
-                let state = state_tree.get_mut(&path)
-                    .as_layout_mut();
-                state.set_view_page(val.as_usize().to_owned());
-                path.clone()
-            }))?);
-        Ok(())
-    }
-
-    fn load_table_rows_property(&mut self, parameter_value: &str,
-                                      scheduler: &mut SchedulerFrontend) -> Result<(), Error> {
-
-        let path = self.path.clone();
-        self.state.get_table_config_mut().set_rows(load_usize_property(
-            parameter_value.trim(), scheduler, path.clone(),
-            Box::new(move |state_tree: &mut StateTree, val: EzValues| {
-                let state = state_tree.get_mut(&path)
-                    .as_layout_mut();
-                state.get_table_config_mut().set_rows(val.as_usize().to_owned());
-                path.clone()
-            }))?);
-        Ok(())
-    }
-
-    fn load_table_columns_property(&mut self, parameter_value: &str,
-                                   scheduler: &mut SchedulerFrontend) -> Result<(), Error> {
-
-        let path = self.path.clone();
-        self.state.get_table_config_mut().set_cols(load_usize_property(
-            parameter_value.trim(), scheduler, path.clone(),
-            Box::new(move |state_tree: &mut StateTree, val: EzValues| {
-                let state = state_tree.get_mut(&path)
-                    .as_layout_mut();
-                state.get_table_config_mut().set_cols(val.as_usize().to_owned());
-                path.clone()
-            }))?);
-        Ok(())
-    }
-
-    fn load_table_default_height_property(&mut self, parameter_value: &str,
-                                          scheduler: &mut SchedulerFrontend) -> Result<(), Error> {
-
-        let path = self.path.clone();
-        self.state.get_table_config_mut().set_row_default_height(load_usize_property(
-            parameter_value.trim(), scheduler, path.clone(),
-            Box::new(move |state_tree: &mut StateTree, val: EzValues| {
-                let state = state_tree.get_mut(&path)
-                    .as_layout_mut();
-                state.get_table_config_mut().set_row_default_height(val.as_usize().to_owned());
-                path.clone()
-            }))?);
-        Ok(())
-    }
-
-    fn load_table_default_width_property(&mut self, parameter_value: &str,
-                                         scheduler: &mut SchedulerFrontend) -> Result<(), Error> {
-
-        let path = self.path.clone();
-        self.state.get_table_config_mut().set_col_default_width(load_usize_property(
-            parameter_value.trim(), scheduler, path.clone(),
-            Box::new(move |state_tree: &mut StateTree, val: EzValues| {
-                let state = state_tree.get_mut(&path)
-                    .as_layout_mut();
-                state.get_table_config_mut().set_col_default_width(val.as_usize().to_owned());
-                path.clone()
-            }))?);
-        Ok(())
-    }
-
-    fn load_table_force_default_height_property(&mut self, parameter_value: &str,
-                                              scheduler: &mut SchedulerFrontend) -> Result<(), Error> {
-
-        let path = self.path.clone();
-        self.state.get_table_config_mut().set_force_default_row_height(load_bool_property(
-            parameter_value.trim(), scheduler, path.clone(),
-            Box::new(move |state_tree: &mut StateTree, val: EzValues| {
-                let state = state_tree.get_mut(&path)
-                    .as_layout_mut();
-                state.get_table_config_mut().set_force_default_row_height(val.as_bool().to_owned());
-                path.clone()
-            }))?);
-        Ok(())
-    }
-
-    fn load_table_force_default_width_property(&mut self, parameter_value: &str,
-                                                scheduler: &mut SchedulerFrontend) -> Result<(), Error> {
-
-        let path = self.path.clone();
-        self.state.get_table_config_mut().set_force_default_col_width(load_bool_property(
-            parameter_value.trim(), scheduler, path.clone(),
-            Box::new(move |state_tree: &mut StateTree, val: EzValues| {
-                let state = state_tree.get_mut(&path)
-                    .as_layout_mut();
-                state.get_table_config_mut().set_force_default_col_width(val.as_bool().to_owned());
-                path.clone()
-            }))?);
-        Ok(())
-    }
-
-    fn load_can_drag_property(&mut self, parameter_value: &str, scheduler: &mut SchedulerFrontend)
-                              -> Result<(), Error> {
-
-        let path = self.path.clone();
-        self.state.set_can_drag(load_bool_property(
-            parameter_value.trim(), scheduler, path.clone(),
-            Box::new(move |state_tree: &mut StateTree, val: EzValues| {
-                let state = state_tree.get_mut(&path)
-                    .as_layout_mut();
-                state.set_can_drag(val.as_bool().to_owned());
-                path.clone()
-            }))?);
-        Ok(())
-    }
 }
 
 
@@ -373,20 +72,27 @@ impl EzObject for Layout {
             &parameter_name, parameter_value.clone(),self, scheduler)?;
         if consumed { return Ok(()) }
         match parameter_name.as_str() {
-            "mode" =>
-                self.load_layout_mode_property(parameter_value.trim(), scheduler)?,
-            "orientation" =>
-                self.load_layout_orientation_property(parameter_value.trim(), scheduler)?,
-            "active_tab" =>
-                self.load_active_tab_property(parameter_value.trim(), scheduler)?,
-            "tab_name" =>
-                self.load_tab_name_property(parameter_value.trim(), scheduler)?,
-            "active_screen" =>
-                self.load_active_screen_property(parameter_value.trim(), scheduler)?,
-            "view_size" =>
-                self.load_view_size_property(parameter_value.trim(), scheduler)?,
-            "view_page" =>
-                self.load_view_page_property(parameter_value.trim(), scheduler)?,
+            "mode" => load_base_properties::load_layout_mode_property(
+                parameter_value.trim(), scheduler, self.path.clone(),
+                &parameter_name, self.get_state_mut())?,
+            "orientation" => load_base_properties::load_layout_orientation_property(
+                parameter_value.trim(), scheduler, self.path.clone(),
+                &parameter_name, self.get_state_mut())?,
+            "active_tab" => load_base_properties::load_string_property(
+                parameter_value.trim(), scheduler, self.path.clone(),
+                &parameter_name, self.get_state_mut())?,
+            "tab_name" => load_base_properties::load_string_property(
+                parameter_value.trim(), scheduler, self.path.clone(),
+                &parameter_name, self.get_state_mut())?,
+            "active_screen" => load_base_properties::load_string_property(
+                parameter_value.trim(), scheduler, self.path.clone(),
+                &parameter_name, self.get_state_mut())?,
+            "view_size" => load_base_properties::load_usize_property(
+                parameter_value.trim(), scheduler, self.path.clone(),
+                &parameter_name, self.get_state_mut())?,
+            "view_page" => load_base_properties::load_usize_property(
+                parameter_value.trim(), scheduler, self.path.clone(),
+                &parameter_name, self.get_state_mut())?,
             "scroll" => {
                 let (x, y) = match parameter_value.split_once(',') {
                     Some((i, j)) => (i, j),
@@ -395,34 +101,52 @@ impl EzObject for Layout {
                                    format!("Invalid value for scroll: \"{}\". Required format \
                                    is \"scroll: true, false\"", parameter_value)))
                 };
-                self.load_scrolling_enable_x_property(x.trim(), scheduler)?;
-                self.load_scrolling_enable_y_property(y.trim(), scheduler)?;
+                load_base_properties::load_bool_property(
+                    x.trim(), scheduler, self.path.clone(),
+                    "scroll_x", self.get_state_mut())?;
+                load_base_properties::load_bool_property(
+                    y.trim(), scheduler, self.path.clone(),
+                    "scroll_y", self.get_state_mut())?;
             }
-            "rows" => self.load_table_rows_property(
-                parameter_value.trim(), scheduler)?,
-            "cols" => self.load_table_columns_property(
-                parameter_value.trim(), scheduler)?,
-            "row_default_height" => self.load_table_default_height_property(
-                parameter_value.trim(), scheduler)?,
-            "col_default_width" => self.load_table_default_width_property(
-                parameter_value.trim(), scheduler)?,
-            "force_default_row_height" => self.load_table_force_default_height_property(
-                parameter_value.trim(), scheduler)?,
-            "force_default_col_width" => self.load_table_force_default_width_property(
-                parameter_value.trim(), scheduler)?,
-            "scroll_x" => self.load_scrolling_enable_x_property(
-                parameter_value.trim(), scheduler)?,
-            "scroll_y" => self.load_scrolling_enable_y_property(
-                parameter_value.trim(), scheduler)?,
-            "scroll_start_x" => self.load_scrolling_scroll_start_x_property(
-                parameter_value.trim(), scheduler)?,
-            "scroll_start_y" => self.load_scrolling_scroll_start_y_property(
-                parameter_value.trim(), scheduler)?,
-            "can_drag" =>
-                self.load_can_drag_property(parameter_value.trim(), scheduler)?,
-            "fill" => self.load_fill_property(parameter_value.trim(), scheduler)?,
-            "filler_symbol" =>
-                self.load_filler_symbol_property(parameter_value.trim(), scheduler)?,
+            "rows" => load_base_properties::load_usize_property(
+                parameter_value.trim(), scheduler, self.path.clone(),
+                &parameter_name, self.get_state_mut())?,
+            "cols" => load_base_properties::load_usize_property(
+                parameter_value.trim(), scheduler, self.path.clone(),
+                &parameter_name, self.get_state_mut())?,
+            "row_default_height" => load_base_properties::load_usize_property(
+                parameter_value.trim(), scheduler, self.path.clone(),
+                &parameter_name, self.get_state_mut())?,
+            "col_default_width" => load_base_properties::load_usize_property(
+                parameter_value.trim(), scheduler, self.path.clone(),
+                &parameter_name, self.get_state_mut())?,
+            "force_default_row_height" => load_base_properties::load_bool_property(
+                parameter_value.trim(), scheduler, self.path.clone(),
+                &parameter_name, self.get_state_mut())?,
+            "force_default_col_width" => load_base_properties::load_bool_property(
+                parameter_value.trim(), scheduler, self.path.clone(),
+                &parameter_name, self.get_state_mut())?,
+            "scroll_x" => load_base_properties::load_bool_property(
+                parameter_value.trim(), scheduler, self.path.clone(),
+                &parameter_name, self.get_state_mut())?,
+            "scroll_y" => load_base_properties::load_bool_property(
+                parameter_value.trim(), scheduler, self.path.clone(),
+                &parameter_name, self.get_state_mut())?,
+            "scroll_start_x" => load_base_properties::load_f64_property(
+                parameter_value.trim(), scheduler, self.path.clone(),
+                &parameter_name, self.get_state_mut())?,
+            "scroll_start_y" => load_base_properties::load_f64_property(
+                parameter_value.trim(), scheduler, self.path.clone(),
+                &parameter_name, self.get_state_mut())?,
+            "can_drag" => load_base_properties::load_bool_property(
+                parameter_value.trim(), scheduler, self.path.clone(),
+                &parameter_name, self.get_state_mut())?,
+            "fill" => load_base_properties::load_bool_property(
+                parameter_value.trim(), scheduler, self.path.clone(),
+                &parameter_name, self.get_state_mut())?,
+            "filler_symbol" => load_base_properties::load_string_property(
+                parameter_value.trim(), scheduler, self.path.clone(),
+                &parameter_name, self.get_state_mut())?,
             _ => return Err(
                 Error::new(ErrorKind::InvalidData,
                            format!("Invalid parameter name for layout {}",

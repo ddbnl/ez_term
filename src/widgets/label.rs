@@ -3,9 +3,8 @@ use std::fs::File;
 use std::io::Error;
 use std::io::prelude::*;
 
-use crate::parser::load_base_properties::load_string_property;
+use crate::parser::load_base_properties;
 use crate::parser::load_common_properties::load_common_property;
-use crate::property::ez_values::EzValues;
 use crate::run::definitions::{Pixel, PixelMap, StateTree};
 use crate::scheduler::scheduler::SchedulerFrontend;
 use crate::states::ez_state::{EzState, GenericState};
@@ -43,36 +42,6 @@ impl Label {
             state: state.as_label().to_owned(),
         }
     }
-
-    fn load_from_file_property(&mut self, parameter_value: &str, scheduler: &mut SchedulerFrontend)
-                               -> Result<(), Error> {
-
-        let path = self.path.clone();
-        self.state.set_from_file(&load_string_property(
-            parameter_value.trim(), scheduler, path.clone(),
-            Box::new(move |state_tree: &mut StateTree, val: EzValues| {
-                let state = state_tree.get_mut(&path)
-                    .as_label_mut();
-                state.set_from_file(val.as_string().as_str());
-                path.clone()
-            }))?);
-        Ok(())
-    }
-
-    fn load_text_property(&mut self, parameter_value: &str, scheduler: &mut SchedulerFrontend)
-                               -> Result<(), Error> {
-
-        let path = self.path.clone();
-        self.state.set_text(load_string_property(
-            parameter_value.trim(), scheduler, path.clone(),
-            Box::new(move |state_tree: &mut StateTree, val: EzValues| {
-                let state = state_tree.get_mut(&path)
-                    .as_label_mut();
-                state.set_text(val.as_string().to_string());
-                path.clone()
-            }))?);
-        Ok(())
-    }
 }
 
 
@@ -85,9 +54,12 @@ impl EzObject for Label {
             &parameter_name, parameter_value.clone(),self, scheduler)?;
         if consumed { return Ok(()) }
         match parameter_name.as_str() {
-            "from_file" =>
-                self.load_from_file_property(parameter_value.trim(), scheduler)?,
-            "text" => self.load_text_property(parameter_value.trim(), scheduler)?,
+            "from_file" => load_base_properties::load_string_property(
+                parameter_value.trim(), scheduler, self.path.clone(),
+                &parameter_name, self.get_state_mut())?,
+            "text" => load_base_properties::load_string_property(
+                parameter_value.trim(), scheduler, self.path.clone(),
+                &parameter_name, self.get_state_mut())?,
             _ => panic!("Invalid parameter name for label: {}", parameter_name)
         }
         Ok(())

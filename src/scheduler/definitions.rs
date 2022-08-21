@@ -52,7 +52,7 @@ pub type GenericRecurringTask = Box<dyn FnMut(Context) -> bool + Send>;
 /// Closure that updates an Ez property. An Ez property can subscribe to another of the same type,
 /// and it will automatically keep values in sync. When subscribed to a value, when that value
 /// changes, an [EzPropertyUpdates] func will be called to do the actual sync.
-pub type EzPropertyUpdater = Box<dyn FnMut(&mut StateTree, EzValues) -> String + Send>;
+pub type EzPropertyUpdater = Box<dyn FnMut(&mut StateTree, EzValues) + Send>;
 
 
 /// Func that can be spawned as a background thread. Receives a dict of all [EzProperties].
