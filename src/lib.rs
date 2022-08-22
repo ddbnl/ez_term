@@ -898,10 +898,12 @@
 //! - Layout:
 //!     mode: tab
 //!     active_tab: tab_one
-//!     tab_header_fg_color: yellow
-//!     tab_header_bg_color: red
-//!     tab_header_border_fg_color: yellow
+//!     tab_header_fg_color: white
+//!     tab_header_bg_color: black
+//!     tab_header_border_fg_color: white
 //!     tab_header_border_bg_color: black
+//!     tab_header_active_fg_color: yellow
+//!     tab_header_active_bg_color: black
 //!     border: true
 //!     - Layout:
 //!         id: tab_one
@@ -923,13 +925,18 @@
 //!         mode: box
 //!         border: true
 //!         - Label:
-//!             text: Hello tab three!!
+//!             text: Hello tab three!
 //! ```
 //! Note that the active_tab property is optional, by default the first tab is active. Users can
-//! then switch tabs using the tab header buttons that are created automatically. Keep in mind that
-//! these buttons are three pixels high, so the effective height of your layout will be three
-//! pixels smaller. We also used the tab_header_fg_color and tab_header_bg_color properties to change the colors
-//! of the tab headers, and the tab_header_border_fg_color and tab_header_border_bg_color to color the tab header
+//! then switch tabs using the tab header buttons that are created automatically. This example also
+//! showed all tab related color properties, but because all default foreground colors are white
+//! and all default background colors are black, most could have been left out in this example.
+//!
+//! Keep in mind that tab header buttons are three pixels high, so the effective height of your
+//! layout will be three pixels smaller. We also used the 'tab_header_fg_color' and
+//! 'tab_header_bg_color' properties to change the colors of the tab headers, and the
+//! 'tab_header_border_fg_color' and 'tab_header_border_bg_color' to color the inactive tab headers,
+//! and 'tab_header_active_fg_color' and 'tab_header_active_bg_color' to color the active tab.
 //! borders.
 //!
 //! It is possible to change the active tab from code. Although callbacks will be discussed in a
@@ -976,9 +983,7 @@
 //! **EzLang**
 //! ```
 //! - Layout:
-//!     id: my_screen_layout
 //!     mode: screen
-//!     active_screen: screen_1
 //!     - Layout:
 //!         id: screen_1
 //!         mode: box
@@ -999,32 +1004,36 @@
 //!             text: Go to screen 1
 //! ```
 //! **Rust code**
-//!```
+//! ```
 //! use ez_term::*;
+//!
+//! fn main() {
+//!
 //! // We load the UI from the .ez files
 //! let (root_layout, mut state_tree, mut scheduler) = load_ui();
 //!
 //! // We update the callbacks for the buttons, using the functions defined below
 //! scheduler.update_callback_config("to_screen_2_btn",
-//!                                 CallbackConfig::from_on_press(Box::new(to_screen_two_callback)));
-//!
+//!                                  CallbackConfig::from_on_press(Box::new(to_screen_two_callback)));
 //! scheduler.update_callback_config("to_screen_1_btn",
-//!                                 CallbackConfig::from_on_press(Box::new(to_screen_one_callback)));
-//!
+//!                                  CallbackConfig::from_on_press(Box::new(to_screen_one_callback)));
 //! // We run the UI
 //! run(root_layout, state_tree, scheduler);
-//!
-//! // We define the callback functions. We could also use closures if we wanted to.
-//! fn to_screen_one_callback(context: Context) {
-//!     let state = context.state_tree.get_mut("my_screen_layout").as_layout_mut();
-//!     state.set_active_screen("screen_1");
-//!     state.update(context.scheduler);
 //! }
 //!
-//! fn to_screen_two_callback(context: Context) {
-//!     let state = context.state_tree.get_mut("my_screen_layout").as_layout_mut();
+//! // We define the callback functions. We could also use closures if we wanted to.
+//! fn to_screen_one_callback(context: Context) -> bool {
+//!     let state = context.state_tree.get_mut("root").as_layout_mut();
+//!     state.set_active_screen("screen_1");
+//!     state.update(context.scheduler);
+//!     true
+//! }
+//!
+//! fn to_screen_two_callback(context: Context) -> bool {
+//!     let state = context.state_tree.get_mut("root").as_layout_mut();
 //!     state.set_active_screen("screen_2");
 //!     state.update(context.scheduler);
+//!     true
 //! }
 //! ```
 //! This example used a button callback, but it could of course be any kind of callback or
@@ -1037,7 +1046,11 @@
 //! Box, Stack, Table and Float layouts. If vertical scrolling is enabled and the content height
 //! is bigger than the layout height, a vertical scrolling bar will be created automatically. The
 //! same is true if horizontal scrolling is enabled and the width of the content is larger than the
-//! width of the layout. Scrolling can be enabled with the following properties:
+//! width of the layout. Ther user can scroll by hovering the layout and using the scroll wheel,
+//! clicking the scrollbar, dragging the scrollbar, or selecting the layout and pressing left/right
+//! arrow or page-up/page-down (for horizontal- and vertical scrolling respectively).
+//!
+//! Scrolling can be enabled with the following properties:
 //! ```
 //! - Layout:
 //!     scroll_x: true
@@ -1058,11 +1071,13 @@
 //! ```
 //! - Layout:
 //!     mode: box
-//!     scrolling_y: true
+//!     scroll_y: true
 //!     - Label:
 //!         auto_scale_height: true
-//!         from_file: lorem_ipsum.txt
+//!         from_file: ./examples/lorem_ipsum.txt
 //! ```
+//! Note we enable auto_scale_height for the label. We want the label to be as big as it needs to be
+//! to display all the text. No matter how large it will grow, we can view the content by scrolling.
 //!
 //! <a name="ez_language_views"></a>
 //! ##### 1.2.3.8 Views
@@ -6568,7 +6583,9 @@
 //! <a name="reference_label_properties_from_file"></a>
 //! #### from_file
 //!
-//! Label will display text loaded from this file path. Overwrites the text property if set.
+//! Label will display text loaded from this file path. Overwrites the text property if set. The
+//! file content will be merged into your binary, so you do not need to ship the text file with
+//! your binary.
 //!
 //! **Property type:**
 //!
@@ -7791,7 +7808,8 @@
 //! #### from_file
 //!
 //! File path to a text file from which to load visual context. Empty string means don't load from
-//! file.
+//! file. The file content will be merged into your binary, so you do not need to ship the text
+//! file with your binary.
 //!
 //! **Property type:**
 //!

@@ -4,6 +4,7 @@
 use std::fs::File;
 use std::io::{Error, ErrorKind};
 use std::io::prelude::*;
+use std::collections::HashMap;  // For ez_file_gen.rs
 
 use unicode_segmentation::UnicodeSegmentation;
 use crate::parser::load_base_properties;
@@ -15,6 +16,7 @@ use crate::states::canvas_state::CanvasState;
 use crate::states::ez_state::{EzState, GenericState};
 use crate::widgets::ez_object::{EzObject, EzObjects};
 use crate::widgets::helper_functions::{add_border, add_padding};
+include!(concat!(env!("OUT_DIR"), "/ez_file_gen.rs"));
 
 
 #[derive(Clone, Debug)]
@@ -89,13 +91,10 @@ impl EzObject for Canvas {
             .get_mut(&self.get_path()).as_canvas_mut();
         let mut contents;
         if !state.get_from_file().is_empty() {
-            let mut file = File::open(state.get_from_file())
-                .expect(format!("Unable to open file for canvas widget: {}",
-                                state.get_from_file()).as_str());
-            let mut file_content = String::new();
-            file.read_to_string(&mut file_content).expect(
-                format!("Unable to read file for canvas widget: {}", state.get_from_file())
-                    .as_str());
+            let includes = ez_includes();
+            let file_content = includes.get(&state.get_from_file()).unwrap_or_else(
+                || panic!("Unable to open file for canvas widget: {}",
+                        state.get_from_file())).clone();
             let mut lines: Vec<String> = file_content.lines()
                 .map(|x| x.graphemes(true).rev().collect())
                 .collect();

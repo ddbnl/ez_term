@@ -14,17 +14,44 @@ fn main() {
     let ez_folder = get_ez_folder();
     println!("cargo:rerun-if-changed={}", ez_folder);
 
-    let files = load_ez_folder(ez_folder.as_str());
+    let mut config_files = load_ez_folder(ez_folder.as_str());
+    let mut include_files: HashMap<String, String> = HashMap::new();
+    for (_, content) in config_files.iter() {
+        for line in content.lines() {
+            if line.contains("from_file:") {
+                let path = line.split_once("from_file:").unwrap().1.trim();
+                let mut file_string = String::new();
+                let mut file = File::open(path)
+                    .unwrap_or_else(|_| panic!("Unable to open file {}", path));
+                file.read_to_string(&mut file_string)
+                    .unwrap_or_else(|_| panic!("Unable to read file {}", path));
+                include_files.insert(path.to_string(), file_string);
+            }
+        }
+
+    }
     let mut gen = "\
 pub fn ez_config() -> HashMap<String, String> {
     let mut files = HashMap::new();\n".to_string();
-    for (path, content) in files {
+    for (path, content) in config_files {
+        gen = format!("{}\n\
+    files.insert(r\"{}\".to_string(), \"{}\".to_string());", gen, path, content);
+    }
+    gen = format!("{}\
+    files\n\
+    }}\n", gen);
+
+    gen = format!("{}\
+pub fn ez_includes() -> HashMap<String, String> {{
+    let mut files = HashMap::new();\n", gen);
+    for (path, content) in include_files {
         gen = format!("{}\n\
     files.insert(r\"{}\".to_string(), \"{}\".to_string());", gen, path, content);
     }
     gen = format!("{}\
     files\n\
     }}", gen);
+
     fs::write(&dest_path, gen).unwrap();
 }
 

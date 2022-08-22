@@ -2,6 +2,7 @@
 use std::fs::File;
 use std::io::Error;
 use std::io::prelude::*;
+use std::collections::HashMap;  // For ez_file_gen.rs
 
 use crate::parser::load_base_properties;
 use crate::parser::load_common_properties::load_common_property;
@@ -11,6 +12,7 @@ use crate::states::ez_state::{EzState, GenericState};
 use crate::states::label_state::LabelState;
 use crate::widgets::ez_object::{EzObject, EzObjects};
 use crate::widgets::helper_functions::{add_border, add_padding, wrap_text};
+include!(concat!(env!("OUT_DIR"), "/ez_file_gen.rs"));
 
 
 #[derive(Clone, Debug)]
@@ -84,12 +86,9 @@ impl EzObject for Label {
         let mut text;
         // Load text from file
         if !state.get_from_file().is_empty() {
-            let mut file = File::open(state.get_from_file())
-                .expect(format!(
-                    "Unable to open file {} for label", state.get_from_file()).as_str());
-            text = String::new();
-            file.read_to_string(&mut text).expect(format!(
-                "Unable to read file {} for label", state.get_from_file()).as_str());
+            let includes = ez_includes();
+            text = includes.get(&state.get_from_file()).unwrap_or_else(
+                || panic!("Unable to open file for canvas: {}", state.get_from_file())).clone();
         // or take text from widget state
         } else {
             text = state.get_text();
