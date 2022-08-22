@@ -1363,10 +1363,10 @@ pub struct ColorConfig {
     pub disabled_bg_color: EzProperty<Color>,
 
     /// The [Pixel.foreground_color] to use for this widgets' content is active
-    pub active_fg_color: EzProperty<Color>,
+    pub tab_header_active_fg_color: EzProperty<Color>,
 
     /// The [Pixel.background_color] to use for this widgets' content is active
-    pub active_bg_color: EzProperty<Color>,
+    pub tab_header_active_bg_color: EzProperty<Color>,
 
     /// The [Pixel.foreground_color] to use for this widgets' content when flashed
     pub flash_fg_color: EzProperty<Color>,
@@ -1375,16 +1375,16 @@ pub struct ColorConfig {
     pub flash_bg_color: EzProperty<Color>,
 
     /// The [Pixel.foreground_color] to use for tab headers
-    pub tab_fg_color: EzProperty<Color>,
+    pub tab_header_fg_color: EzProperty<Color>,
 
     /// The [Pixel.background_color] to use for tab headers
-    pub tab_bg_color: EzProperty<Color>,
+    pub tab_header_bg_color: EzProperty<Color>,
 
     /// The [Pixel.foreground_color] to use for tab header border pixels
-    pub tab_border_fg_color: EzProperty<Color>,
+    pub tab_header_border_fg_color: EzProperty<Color>,
 
     /// The [Pixel.background_color] to use for tab header border pixels
-    pub tab_border_bg_color: EzProperty<Color>,
+    pub tab_header_border_bg_color: EzProperty<Color>,
 
     /// The [Pixel.foreground_color] to use for filler pixels if [fill] is true
     pub filler_fg_color: EzProperty<Color>,
@@ -1421,9 +1421,9 @@ impl ColorConfig {
             format!("{}/disabled_bg_color", name).as_str(), Color::Black);
 
         let active_foreground = scheduler.new_color_property(
-            format!("{}/active_fg_color", name).as_str(), Color::White);
+            format!("{}/tab_header_active_fg_color", name).as_str(), Color::White);
         let active_background = scheduler.new_color_property(
-            format!("{}/active_bg_color", name).as_str(), Color::Black);
+            format!("{}/tab_header_active_bg_color", name).as_str(), Color::Black);
 
         let flash_foreground = scheduler.new_color_property(
             format!("{}/flash_fg_color", name).as_str(), Color::White);
@@ -1436,14 +1436,14 @@ impl ColorConfig {
             format!("{}/filler_bg_color", name).as_str(), Color::Black);
 
         let tab_foreground = scheduler.new_color_property(
-            format!("{}/tab_fg_color", name).as_str(), Color::White);
+            format!("{}/tab_header_fg_color", name).as_str(), Color::White);
         let tab_background = scheduler.new_color_property(
-            format!("{}/tab_bg_color", name).as_str(), Color::Black);
+            format!("{}/tab_header_bg_color", name).as_str(), Color::Black);
 
         let tab_border_foreground = scheduler.new_color_property(
-            format!("{}/tab_border_fg_color", name).as_str(), Color::White);
+            format!("{}/tab_header_border_fg_color", name).as_str(), Color::White);
         let tab_border_background = scheduler.new_color_property(
-            format!("{}/tab_border_bg_color", name).as_str(), Color::Black);
+            format!("{}/tab_header_border_bg_color", name).as_str(), Color::Black);
 
         let border_foreground = scheduler.new_color_property(
             format!("{}/border_fg_color", name).as_str(), Color::White);
@@ -1460,14 +1460,14 @@ impl ColorConfig {
             selection_bg_color: selection_background,
             disabled_fg_color: disabled_foreground,
             disabled_bg_color: disabled_background,
-            active_fg_color: active_foreground,
-            active_bg_color: active_background,
+            tab_header_active_fg_color: active_foreground,
+            tab_header_active_bg_color: active_background,
             flash_fg_color: flash_foreground,
             flash_bg_color: flash_background,
-            tab_fg_color: tab_foreground,
-            tab_bg_color: tab_background,
-            tab_border_fg_color: tab_border_foreground,
-            tab_border_bg_color: tab_border_background,
+            tab_header_fg_color: tab_foreground,
+            tab_header_bg_color: tab_background,
+            tab_header_border_fg_color: tab_border_foreground,
+            tab_header_border_bg_color: tab_border_background,
             filler_fg_color: filler_foreground,
             filler_bg_color: filler_background,
             border_fg_color: border_foreground,
@@ -1524,20 +1524,20 @@ impl ColorConfig {
         self.disabled_bg_color.value
     }
 
-    pub fn set_active_fg_color(&mut self, color: Color) {
-        self.active_fg_color.set(color);
+    pub fn set_tab_header_active_fg_color(&mut self, color: Color) {
+        self.tab_header_active_fg_color.set(color);
     }
 
-    pub fn get_active_fg_color(&self) -> Color {
-        self.active_fg_color.value
+    pub fn get_tab_header_active_fg_color(&self) -> Color {
+        self.tab_header_active_fg_color.value
     }
 
-    pub fn set_active_bg_color(&mut self, color: Color) {
-        self.active_bg_color.set(color);
+    pub fn set_tab_header_active_bg_color(&mut self, color: Color) {
+        self.tab_header_active_bg_color.set(color);
     }
 
-    pub fn get_active_bg_color(&self) -> Color {
-        self.active_bg_color.value
+    pub fn get_tab_header_active_bg_color(&self) -> Color {
+        self.tab_header_active_bg_color.value
     }
 
     pub fn set_flash_fg_color(&mut self, color: Color) {
@@ -1556,36 +1556,36 @@ impl ColorConfig {
         self.flash_bg_color.value
     }
 
-    pub fn set_tab_fg_color(&mut self, color: Color) {
-        self.tab_fg_color.set(color);
+    pub fn set_tab_header_fg_color(&mut self, color: Color) {
+        self.tab_header_fg_color.set(color);
     }
 
-    pub fn get_tab_fg_color(&self) -> Color {
-        self.tab_fg_color.value
+    pub fn get_tab_header_fg_color(&self) -> Color {
+        self.tab_header_fg_color.value
     }
 
-    pub fn set_tab_bg_color(&mut self, color: Color) {
-        self.tab_bg_color.set(color);
+    pub fn set_tab_header_bg_color(&mut self, color: Color) {
+        self.tab_header_bg_color.set(color);
     }
 
-    pub fn get_tab_bg_color(&self) -> Color {
-        self.tab_bg_color.value
+    pub fn get_tab_header_bg_color(&self) -> Color {
+        self.tab_header_bg_color.value
     }
 
-    pub fn set_tab_border_fg_color(&mut self, color: Color) {
-        self.tab_border_fg_color.set(color);
+    pub fn set_tab_header_border_fg_color(&mut self, color: Color) {
+        self.tab_header_border_fg_color.set(color);
     }
 
-    pub fn get_tab_border_fg_color(&self) -> Color {
-        self.tab_border_fg_color.value
+    pub fn get_tab_header_border_fg_color(&self) -> Color {
+        self.tab_header_border_fg_color.value
     }
 
-    pub fn set_tab_border_bg_color(&mut self, color: Color) {
-        self.tab_border_bg_color.set(color);
+    pub fn set_tab_header_border_bg_color(&mut self, color: Color) {
+        self.tab_header_border_bg_color.set(color);
     }
 
-    pub fn get_tab_border_bg_color(&self) -> Color {
-        self.tab_border_bg_color.value
+    pub fn get_tab_header_border_bg_color(&self) -> Color {
+        self.tab_header_border_bg_color.value
     }
 
     pub fn set_filler_fg_color(&mut self, color: Color) {
@@ -1635,12 +1635,12 @@ impl ColorConfig {
         clean_up_property(scheduler, &self.selection_bg_color.name);
         clean_up_property(scheduler, &self.disabled_fg_color.name);
         clean_up_property(scheduler, &self.disabled_bg_color.name);
-        clean_up_property(scheduler, &self.active_fg_color.name);
-        clean_up_property(scheduler, &self.active_bg_color.name);
+        clean_up_property(scheduler, &self.tab_header_active_fg_color.name);
+        clean_up_property(scheduler, &self.tab_header_active_bg_color.name);
         clean_up_property(scheduler, &self.flash_fg_color.name);
         clean_up_property(scheduler, &self.flash_bg_color.name);
-        clean_up_property(scheduler, &self.tab_fg_color.name);
-        clean_up_property(scheduler, &self.tab_bg_color.name);
+        clean_up_property(scheduler, &self.tab_header_fg_color.name);
+        clean_up_property(scheduler, &self.tab_header_bg_color.name);
         clean_up_property(scheduler, &self.filler_fg_color.name);
         clean_up_property(scheduler, &self.filler_bg_color.name);
         clean_up_property(scheduler, &self.border_fg_color.name);

@@ -16,7 +16,6 @@ use crate::scheduler::scheduler::{SchedulerFrontend};
 use crate::states::definitions::{HorizontalAlignment, LayoutMode, LayoutOrientation,
                                  VerticalAlignment};
 use crate::{GenericState, StateTree};
-use crate::parser::parse_properties::parse_layout_orientation_property;
 
 
 pub fn resolve_property(value: &str, path: String) -> Option<String> {
@@ -81,7 +80,7 @@ pub fn load_usize_property(value: &str, scheduler: &mut SchedulerFrontend, path:
                             scheduler);
         state.update_property(property_name, EzValues::Usize(0));
         Ok(())
-    } else if let Some(i) = resolve_property(value, path.clone()) {
+    } else if let Some(_) = resolve_property(value, path.clone()) {
         bind_ez_property(value, scheduler, path,
                          property_name.to_string());
         state.update_property(property_name, EzValues::Usize(0));
@@ -99,12 +98,14 @@ pub fn load_usize_property(value: &str, scheduler: &mut SchedulerFrontend, path:
 }
 
 
+/// In EzLang it's possible to use math (e.g. widget1.height - widget2.height + 5). This function
+/// wraps a usize update method in a new update method that performs this math.
 pub fn wrap_usize_property(value: String, path: String, property_name: String,
                            scheduler: &mut SchedulerFrontend) {
 
 
     let mut value = value.clone();
-    let mut parts: Vec<String> = value.split(|x| ['+', '-', '/', '*'].contains(&x))
+    let parts: Vec<String> = value.split(|x| ['+', '-', '/', '*'].contains(&x))
         .map(|x|x.to_string()).collect();
     let mut values = Vec::new();
     let mut to_bind = Vec::new();
@@ -143,7 +144,7 @@ pub fn wrap_usize_property(value: String, path: String, property_name: String,
     let mut update_func =
         scheduler.backend.property_updaters.remove(&property_path).unwrap();
 
-    let wrapper = move |state_tree: &mut StateTree, val: EzValues| {
+    let wrapper = move |state_tree: &mut StateTree, _val: EzValues| {
         let mut ctx = meval::Context::new(); // built-ins
         for (name, getter) in values_c.iter() {
             ctx.var(name.trim(), getter(state_tree) as f64);

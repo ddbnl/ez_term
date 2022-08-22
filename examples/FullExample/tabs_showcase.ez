@@ -5,10 +5,10 @@
     border: True
     border_fg_color: dark_cyan
     selection_order: 50
-    tab_fg_color: yellow
-    tab_bg_color: red
-    tab_border_fg_color: dark_cyan
-    active_fg_color: yellow
+    tab_header_fg_color: yellow
+    tab_header_bg_color: red
+    tab_header_border_fg_color: dark_cyan
+    tab_header_active_fg_color: yellow
     active_tab: tables_tab
     - ScrollingTab:
         id: scrolling_tab

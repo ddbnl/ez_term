@@ -95,13 +95,13 @@ impl Layout {
                 if i.get_path() != active_tab { continue }
                 let child_state = state_tree
                     .get_mut(&i.get_path()).as_layout_mut();
-                child_state.set_effective_height(
-                    if own_effective_size.height >= 3 {
+                child_state.set_height(
+                    if own_effective_size.height > 3 {
                         own_effective_size.height - 3 -
                             if child_state.get_scrolling_config().get_scroll_x() {1} else {0}}
                     else {0}
                 );
-                child_state.set_effective_width(
+                child_state.set_width(
                     if own_effective_size.width >= 1 {
                         own_effective_size.width -
                             if child_state.get_scrolling_config().get_scroll_y() {1} else {0}
@@ -130,20 +130,20 @@ impl Layout {
                     });
                 child_state.get_color_config_mut().set_fg_color(
                     if active_tab == tab_path {
-                        own_colors.get_active_fg_color()
+                        own_colors.get_tab_header_active_fg_color()
                     } else if selection == i.id {
                         own_colors.get_selection_fg_color()
                     } else {
-                        own_colors.get_tab_fg_color()
+                        own_colors.get_tab_header_fg_color()
                 });
                 child_state.get_color_config_mut().set_bg_color(
                     if active_tab == tab_path {
-                        own_colors.get_active_bg_color()
+                        own_colors.get_tab_header_active_bg_color()
                     }
                     else if selection == i.id {
                         own_colors.get_selection_bg_color()
                     } else {
-                        own_colors.get_tab_bg_color()
+                        own_colors.get_tab_header_bg_color()
                     });
 
                 child_state.set_auto_scale_width(true);

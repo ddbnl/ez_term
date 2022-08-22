@@ -32,18 +32,24 @@
 //!             5. [Tab Mode](#ez_language_tab)
 //!             6. [Screen Mode](#ez_language_screen)
 //!             7. [Scrolling](#ez_language_scrolling)
+//!             8. [Views](#ez_language_views)
 //!         4. [Widget overview](#widget_overview)
 //!         5. [Sizing](#sizing)
 //!             1. [Relative sizing: size hints](#sizing_relative)
 //!             2. [Auto-scaling](#sizing_scaling)
-//!             3. [Absolute size](#sizing_absolute)
+//!             3. [Absolute size - Manual](#sizing_absolute)
+//!             4. [Absolute size - Math](#sizing_math)
 //!         6. [Positioning](#)
 //!             1. [Automatic positioning: layout modes](#positioning_automatic)
 //!             2. [Relative positioning: position hints](#positioning_relative)
-//!             3. [Absolute positions](#positioning_absolute)
+//!             3. [Absolute positioning - Manual](#positioning_absolute)
+//!             3. [Absolute positioning - Maths](#positioning_maths)
 //!             4. [Adjusting position: aligning and padding](#positioning_adjusting)
 //!         7. [Keyboard selection](#keyboard_selection)
 //!         8. [Binding properties](#binding_properties)
+//!             1. [Referring to other properties](#binding_properties_referring)
+//!             2. [Property type overview](#binding_properties_overview)
+//!             3. [Using maths on properties](#binding_properties_maths)
 //!     3. [Scheduler](#scheduler)
 //!         1. [Widget states and the State Tree](#scheduler_states)
 //!         2. [Using the scheduler object](#scheduler_object)
@@ -127,12 +133,12 @@
 //!             3. [active_screen](#reference_layout_properties_active_screen)
 //!             4. [active_tab](#reference_layout_properties_active_tab)
 //!             5. [tab_name](#reference_layout_properties_tab_name)
-//!             6. [tab_fg_color](#reference_layout_properties_tab_fg_color)
-//!             7. [tab_bg_color](#reference_layout_properties_tab_bg_color)
-//!             8. [tab_border_fg_color](#reference_layout_properties_tab_border_fg_color)
-//!             9. [tab_border_bg_color](#reference_layout_properties_tab_border_bg_color)
-//!             10. [active_fg_color](#reference_layout_properties_active_fg_color)
-//!             11. [active_bg_color](#reference_layout_properties_active_bg_color)
+//!             6. [tab_header_fg_color](#reference_layout_properties_tab_header_fg_color)
+//!             7. [tab_header_bg_color](#reference_layout_properties_tab_header_bg_color)
+//!             8. [tab_header_border_fg_color](#reference_layout_properties_tab_header_border_fg_color)
+//!             9. [tab_header_border_bg_color](#reference_layout_properties_tab_header_border_bg_color)
+//!             10. [tab_header_active_fg_color](#reference_layout_properties_tab_header_active_fg_color)
+//!             11. [tab_header_active_bg_color](#reference_layout_properties_tab_header_active_bg_color)
 //!             12. [can_drag](#reference_layout_properties_can_drag)
 //!             13. [fill](#reference_layout_properties_fill)
 //!             14. [filler_symbol](#reference_layout_properties_filler_symbol)
@@ -882,39 +888,48 @@
 //! scale with the terminal.
 //!
 //! <a name="ez_language_tab"></a>
-//! ##### 1.2.3.4 Tab mode
+//! ##### 1.2.3.5 Tab mode
 //!
 //! Tab mode creates tabs for you based on child layouts. This means that in tab mode, you can only
-//! add other layouts, not individual widgets. A tab button will automatically be created for each
-//! child layout, using the tab_name property of the child layout as a tab name. If the tab_name
-//! property is not set, the child ID is used. Here is an example with two tabs:
+//! add other layouts, not individual widgets. A tab header button will automatically be created for
+//! each child layout, using the tab_name property of the child layout as a tab name. If the tab_name
+//! property is not set, the child ID is used. Here is an example with three tabs:
 //! ```
 //! - Layout:
-//!     id: my_tab_layout
 //!     mode: tab
-//!     active_tab: Tab one
-//!     tab_fg_color: yellow
-//!     tab_bg_color: red
-//!     tab_border_fg_color: yellow
-//!     tab_border_bg_color: red
+//!     active_tab: tab_one
+//!     tab_header_fg_color: yellow
+//!     tab_header_bg_color: red
+//!     tab_header_border_fg_color: yellow
+//!     tab_header_border_bg_color: black
+//!     border: true
 //!     - Layout:
 //!         id: tab_one
 //!         tab_name: Tab one
 //!         mode: box
+//!         border: true
 //!         - Label:
 //!             text: Hello tab one!
 //!     - Layout:
 //!         id: tab_two
 //!         tab_name: Tab two
 //!         mode: box
+//!         border: true
 //!         - Label:
 //!             text: Hello tab two!
+//!     - Layout:
+//!         id: tab_three
+//!         tab_name: Tab three
+//!         mode: box
+//!         border: true
+//!         - Label:
+//!             text: Hello tab three!!
 //! ```
 //! Note that the active_tab property is optional, by default the first tab is active. Users can
 //! then switch tabs using the tab header buttons that are created automatically. Keep in mind that
 //! these buttons are three pixels high, so the effective height of your layout will be three
-//! pixels smaller. We also used the tab_fg_color and tab_bg_color properties to change the colors
-//! of the tab headers, and the tab_border_fg_color and tab_border_bg_color to color the tab header
+//! pixels smaller. We also used the tab_header_fg_color and tab_header_bg_color properties to change the colors
+//! of the tab headers, and the tab_header_border_fg_color and tab_header_border_bg_color to color the tab header
 //! borders.
 //!
 //! It is possible to change the active tab from code. Although callbacks will be discussed in a
@@ -929,7 +944,7 @@
 //! ```
 //!
 //! <a name="ez_language_screen"></a>
-//! ##### 1.2.3.5 Screen mode
+//! ##### 1.2.3.6 Screen mode
 //!
 //! Screen mode creates screens for you based on child layouts. This means that in screen mode,
 //! you can only add other layouts, not individual widgets. Furthermore, only the root layout is
@@ -1016,7 +1031,7 @@
 //! scheduled task.
 //!
 //! <a name="ez_language_scrolling"></a>
-//! ##### 1.2.3.6 Scrolling
+//! ##### 1.2.3.7 Scrolling
 //!
 //! Scrolling is *not* a dedicated layout mode. Instead, it is a property that can be enabled for
 //! Box, Stack, Table and Float layouts. If vertical scrolling is enabled and the content height
@@ -1050,7 +1065,7 @@
 //! ```
 //!
 //! <a name="ez_language_views"></a>
-//! ##### 1.2.3.7 Views
+//! ##### 1.2.3.8 Views
 //!
 //! Layout view is also not a dedicated mode, but worth mentioning. It is a property that can be
 //! used with box, float, stack and table layouts. It allows you to set a view size, and only that amount
@@ -1223,7 +1238,7 @@
 //! - Absolute size.
 //!
 //! <a name="sizing_relative"></a>
-//! ##### 1.2.3.1 Relative sizing: size hints
+//! ##### 1.2.5.1 Relative sizing: size hints
 //!
 //! Size hints can be used to size a widget relative to its parent layout. This is the default way
 //! widgets are sized across the framework; this is important to keep in mind! Size hints are
@@ -1266,7 +1281,7 @@
 //! ```
 //!
 //! <a name="sizing_scaling"></a>
-//! ##### 1.2.3.2 Auto scaling
+//! ##### 1.2.5.2 Auto scaling
 //!
 //! All widgets support auto-scaling; when enabled, they will automatically size themselves to their
 //! contents. Auto-scaling is turned off by default, and overwrites size_hint if enabled.
@@ -1322,7 +1337,7 @@
 //! The Label is now growing vertically.
 //!
 //! <a name="sizing_absolute"></a>
-//! ##### 1.2.3.3 Absolute size:
+//! ##### 1.2.5.3 Absolute size - Manual:
 //!
 //! It is possible to set an absolute size for widgets manually. Keep in mind that size_hint will
 //! overwrite any manual sizes, so it has to be turned off in those cases. Let's say you want a
@@ -1347,6 +1362,65 @@
 //! ```
 //! The button will now be fixed to height 3, but its width will scale to the width of the parent
 //! layout (because the default is "size_hint: 1, 1").
+//!
+//! <a name="sizing_maths"></a>
+//! ##### 1.2.5.4 Absolute size - Maths:
+//!
+//! When setting size manually it is possible to refer to other widgets' properties and even
+//! perform maths on them (e.g. "widget1.height = widget2.height - widget3.height"). First, here is
+//! an example of simply binding the height of one widget to another:
+//!
+//! ```
+//! - <MyLabel@Label>:
+//!     text: My text
+//!     size_hint: none, none
+//!     border: true
+//!
+//! - Layout:
+//!     mode: box
+//!     - MyLabel:
+//!         id: label_1
+//!         size: 10, 3
+//!     - MyLabel:
+//!         width: 10
+//!         height: parent.label_1.height
+//!
+//! ```
+//!
+//! Now let's use maths to make the label the height of the parent layout minus the size of the
+//! other label:
+//! ```
+//! - <MyLabel@Label>:
+//!     text: My text
+//!     size_hint: none, none
+//!     border: true
+//!
+//! - Layout:
+//!     mode: box
+//!     - MyLabel:
+//!         id: label_1
+//!         size: 10, 3
+//!     - MyLabel:
+//!         width: 10
+//!         height: parent.height - parent.label_1.height
+//! ```
+//! Now the label height will always be the remaining height in the layout. It is possible to use
+//! any arithmetic operator, as well as regular numbers:
+//! ```
+//! - <MyLabel@Label>:
+//!     text: My text
+//!     size_hint: none, none
+//!     border: true
+//!
+//! - Layout:
+//!     mode: box
+//!     - MyLabel:
+//!         id: label_1
+//!         size: 10, 3
+//!     - MyLabel:
+//!         width: 10
+//!         height: ((parent.height - parent.label_1.height) / 2) - 10
+//! ```
 //!
 //! <a name="positioning"></a>
 //! #### 1.2.6 Positioning:
@@ -1416,7 +1490,7 @@
 //! ```
 //!
 //! <a name="positioning_absolute"></a>
-//! ##### 1.2.6.2 Absolute positioning: manual positions
+//! ##### 1.2.6.3 Absolute positioning: Manual
 //!
 //! Manual positions can only be used with widgets in a layout in float mode. The properties "x" and
 //! "y" can be used to control one or both positions. It's also possible to use the "pos"
@@ -1430,8 +1504,52 @@
 //!         pos: 10, 10
 //! ```
 //!
+//! <a name="positioning_maths"></a>
+//! ##### 1.2.6.4 Absolute positioning - Maths:
+//!
+//! When setting position manually it is possible to refer to other widgets' properties and even
+//! perform maths on them (e.g. "widget1.x = widget2.x - widget3.x"). First, here is
+//! an example of simply binding the y of one widget to another:
+//!
+//! ```
+//! - <MyLabel@Label>:
+//!     text: My text
+//!     auto_scale: true, true
+//!     border: true
+//!
+//! - Layout:
+//!     mode: float
+//!     - MyLabel:
+//!         id: label_1
+//!         pos: 5, 5
+//!     - MyLabel:
+//!         x: 10
+//!         y: parent.label_1.x
+//!
+//! ```
+//!
+//! Now let's use maths to make the label y position a fixed amount below the other label y:
+//! ```
+//! - <MyLabel@Label>:
+//!     text: My text
+//!     auto_scale: true, true
+//!     border: true
+//!
+//! - Layout:
+//!     mode: float
+//!     - MyLabel:
+//!         id: label_1
+//!         pos: 5, 5
+//!     - MyLabel:
+//!         x: parent.label_1.x
+//!         y: parent.label_1.y + 5
+//!
+//! ```
+//! You can use as many numbers or references to other properties as you want in these formulas. The
+//! only restriction is that the other properties should also be usize.
+//!
 //! <a name="positioning_adjusting"></a>
-//! ##### 1.2.6.3 Adjusting position: padding and aligning
+//! ##### 1.2.6.5 Adjusting position: padding and aligning
 //!
 //! It is not possible to control position in layout modes other that float. In the fixed layout
 //! modes it is still possible to adjust position. This can be done with padding and aligning.
@@ -1580,6 +1698,9 @@
 //!
 //! <a name="binding_properties"></a>
 //! #### 1.2.8 Binding properties:
+
+//! <a name="binding_properties_referring"></a>
+//! ##### 1.2.8.1 Referring to other properties:
 //!
 //! It is possible to bind one property to another in EzLang, as long as the properties are of the
 //! same type (you can find the type of each property in [Reference]). The exception is the String
@@ -1648,6 +1769,8 @@
 //!         auto_scale_height: parent.longer_label.auto_scale_height
 //! ```
 //!
+//! <a name="binding_properties_overview"></a>
+//! ##### 1.2.8.2 Property type overview:
 //! Here is an overview of the property types used by EzTerm (the type of each property can be
 //! found in [reference]):
 //!
@@ -1663,6 +1786,34 @@
 //! - VerticalPosHint
 //! - HorizontalPosHint
 //! - SizeHint
+//!
+//!
+//! <a name="binding_properties_maths"></a>
+//! ##### 1.2.8.3 Using maths on properties:
+//!
+//! When referring to usize properties (such as size and position for example) it is possible to
+//! use maths with multiple numbers and properties (refer to properties using the syntax
+//! we saw in the previous chapters). Whenever any of the properties referred to change, the
+//! formula will be reevaluated. Let's look at an example of setting the height of a widget to the
+//! height of the parent minus the height of the other widget:
+//!
+//! ```
+//! - <MyLabel@Label>:
+//!     text: My text
+//!     size_hint: none, none
+//!     border: true
+//!
+//! - Layout:
+//!     mode: box
+//!     orientation: vertical
+//!     - MyLabel:
+//!         id: label_1
+//!         size: 10, 3
+//!     - MyLabel:
+//!         width: 10
+//!         height: parent.height - parent.label_1.height
+//!
+//! ```
 //!
 //! <a name="scheduler"></a>
 //! ### 1.3 Scheduler:
@@ -5201,8 +5352,8 @@
 //! run(root_widget, state_tree, scheduler);
 //! ```
 //!
-//! <a name="reference_layout_properties_tab_fg_color"></a>
-//! ##### tab_fg_color
+//! <a name="reference_layout_properties_tab_header_fg_color"></a>
+//! ##### tab_header_fg_color
 //!
 //! Only works when the layout is in tab mode. Sets the fg_color of the tab header button. In other
 //! words, the color of the text on the tab header.
@@ -5242,12 +5393,12 @@
 //! ```
 //! - Layout:
 //!     mode: tab
-//!     tab_fg_color: red
+//!     tab_header_fg_color: red
 //! ```
 //! ```
 //! - Layout:
 //!     mode: tab
-//!     tab_fg_color: 255, 0, 0
+//!     tab_header_fg_color: 255, 0, 0
 //! ```
 //!
 //! In code:
@@ -5259,14 +5410,14 @@
 //!
 //! // Table properties are wrapping into a TableConfig object, which we have to retrieve
 //! // first:
-//! state.get_color_config_mut().set_tab_fg_color(Color::Red);
-//! state.get_color_config_mut().set_tab_fg_color(Color::from((255, 0, 0)));
+//! state.get_color_config_mut().set_tab_header_fg_color(Color::Red);
+//! state.get_color_config_mut().set_tab_header_fg_color(Color::from((255, 0, 0)));
 //!
 //! run(root_widget, state_tree, scheduler);
 //! ```
 //!
-//! <a name="reference_layout_properties_tab_bg_color"></a>
-//! ##### tab_bg_color
+//! <a name="reference_layout_properties_tab_header_bg_color"></a>
+//! ##### tab_header_bg_color
 //!
 //! Only works when the layout is in tab mode. Sets the background color of the tab header button.
 //!
@@ -5305,12 +5456,12 @@
 //! ```
 //! - Layout:
 //!     mode: tab
-//!     tab_bg_color: blue
+//!     tab_header_bg_color: blue
 //! ```
 //! ```
 //! - Layout:
 //!     mode: tab
-//!     tab_bg_color: 0, 0, 255
+//!     tab_header_bg_color: 0, 0, 255
 //! ```
 //!
 //! In code:
@@ -5322,14 +5473,14 @@
 //!
 //! // Table properties are wrapping into a TableConfig object, which we have to retrieve
 //! // first:
-//! state.get_color_config_mut().set_tab_bg_color(Color::Blue);
-//! state.get_color_config_mut().set_tab_bg_color(Color::from((0, 0, 255)));
+//! state.get_color_config_mut().set_tab_header_bg_color(Color::Blue);
+//! state.get_color_config_mut().set_tab_header_bg_color(Color::from((0, 0, 255)));
 //!
 //! run(root_widget, state_tree, scheduler);
 //! ```
 //!
-//! <a name="reference_layout_properties_tab_border_fg_color"></a>
-//! ##### tab_border_fg_color
+//! <a name="reference_layout_properties_tab_header_border_fg_color"></a>
+//! ##### tab_header_border_fg_color
 //!
 //! Only works when the layout is in tab mode. Sets the foreground color of the tab header button
 //! borders.
@@ -5369,12 +5520,12 @@
 //! ```
 //! - Layout:
 //!     mode: tab
-//!     tab_border_fg_color: blue
+//!     tab_header_border_fg_color: blue
 //! ```
 //! ```
 //! - Layout:
 //!     mode: tab
-//!     tab_border_fg_color: 0, 0, 255
+//!     tab_header_border_fg_color: 0, 0, 255
 //! ```
 //!
 //! In code:
@@ -5386,14 +5537,14 @@
 //!
 //! // Table properties are wrapping into a TableConfig object, which we have to retrieve
 //! // first:
-//! state.get_color_config_mut().set_tab_fg_color(Color::Blue);
-//! state.get_color_config_mut().set_tab_fg_color(Color::from((0, 0, 255)));
+//! state.get_color_config_mut().set_tab_header_fg_color(Color::Blue);
+//! state.get_color_config_mut().set_tab_header_fg_color(Color::from((0, 0, 255)));
 //!
 //! run(root_widget, state_tree, scheduler);
 //! ```
 //!
-//! <a name="reference_layout_properties_tab_border_bg_color"></a>
-//! ##### tab_border_bg_color
+//! <a name="reference_layout_properties_tab_header_border_bg_color"></a>
+//! ##### tab_header_border_bg_color
 //!
 //! Only works when the layout is in tab mode. Sets the background color of the tab header button
 //! borders.
@@ -5433,12 +5584,12 @@
 //! ```
 //! - Layout:
 //!     mode: tab
-//!     tab_border_bg_color: blue
+//!     tab_header_border_bg_color: blue
 //! ```
 //! ```
 //! - Layout:
 //!     mode: tab
-//!     tab_border_bg_color: 0, 0, 255
+//!     tab_header_border_bg_color: 0, 0, 255
 //! ```
 //!
 //! In code:
@@ -5450,14 +5601,14 @@
 //!
 //! // Table properties are wrapping into a TableConfig object, which we have to retrieve
 //! // first:
-//! state.get_color_config_mut().set_tab_bg_color(Color::Blue);
-//! state.get_color_config_mut().set_tab_bg_color(Color::from((0, 0, 255)));
+//! state.get_color_config_mut().set_tab_header_bg_color(Color::Blue);
+//! state.get_color_config_mut().set_tab_header_bg_color(Color::from((0, 0, 255)));
 //!
 //! run(root_widget, state_tree, scheduler);
 //! ```
 //!
-//! <a name="reference_layout_properties_active_fg_color"></a>
-//! ##### active_fg_color
+//! <a name="reference_layout_properties_tab_header_active_fg_color"></a>
+//! ##### tab_header_active_fg_color
 //!
 //! Foreground color used for the tab header button that is active (meaning the associated tab is
 //! currently displayed).
@@ -5497,12 +5648,12 @@
 //! ```
 //! - Layout:
 //!     - Label:
-//!         active_fg_color: red
+//!         tab_header_active_fg_color: red
 //! ```
 //! ```
 //! - Layout:
 //!     - Label:
-//!         active_fg_color: 255, 0, 0
+//!         tab_header_active_fg_color: 255, 0, 0
 //! ```
 //!
 //! In code:
@@ -5514,14 +5665,14 @@
 //!
 //! // Table properties are wrapping into a TableConfig object, which we have to retrieve
 //! // first:
-//! state.get_color_config_mut().set_active_fg_color(Color::Red);
-//! state.get_color_config_mut().set_active_fg_color(Color::from((255, 0, 0)));
+//! state.get_color_config_mut().set_tab_header_active_fg_color(Color::Red);
+//! state.get_color_config_mut().set_tab_header_active_fg_color(Color::from((255, 0, 0)));
 //!
 //! run(root_widget, state_tree, scheduler);
 //! ```
 //!
-//! <a name="reference_layout_properties_active_bg_color"></a>
-//! ##### active_bg_color
+//! <a name="reference_layout_properties_tab_header_active_bg_color"></a>
+//! ##### tab_header_active_bg_color
 //!
 //! Background color used for the tab header button that is active (meaning the associated tab is
 //! currently displayed).
@@ -5561,12 +5712,12 @@
 //! ```
 //! - Layout:
 //!     - Label:
-//!         active_bg_color: red
+//!         tab_header_active_bg_color: red
 //! ```
 //! ```
 //! - Layout:
 //!     - Label:
-//!         active_bg_color: 255, 0, 0
+//!         tab_header_active_bg_color: 255, 0, 0
 //! ```
 //!
 //! In code:
@@ -5578,8 +5729,8 @@
 //!
 //! // Table properties are wrapping into a TableConfig object, which we have to retrieve
 //! // first:
-//! state.get_color_config_mut().set_active_bg_color(Color::Red);
-//! state.get_color_config_mut().set_active_bg_color(Color::from((255, 0, 0)));
+//! state.get_color_config_mut().set_tab_header_active_bg_color(Color::Red);
+//! state.get_color_config_mut().set_tab_header_active_bg_color(Color::from((255, 0, 0)));
 //!
 //! run(root_widget, state_tree, scheduler);
 //! ```

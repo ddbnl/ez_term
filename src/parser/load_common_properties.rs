@@ -173,9 +173,9 @@ pub fn load_common_property(property_name: &str, property_value: String,
             property_value.trim(), scheduler, path.clone(), property_name, state)?,
         "disabled_bg_color" => load_base_properties::load_color_property(
             property_value.trim(), scheduler, path.clone(), property_name, state)?,
-        "active_fg_color" => load_base_properties::load_color_property(
+        "tab_header_active_fg_color" => load_base_properties::load_color_property(
             property_value.trim(), scheduler, path.clone(), property_name, state)?,
-        "active_bg_color" => load_base_properties::load_color_property(
+        "tab_header_active_bg_color" => load_base_properties::load_color_property(
             property_value.trim(), scheduler, path.clone(), property_name, state)?,
         "selection_fg_color" => load_base_properties::load_color_property(
             property_value.trim(), scheduler, path.clone(), property_name, state)?,
@@ -185,13 +185,13 @@ pub fn load_common_property(property_name: &str, property_value: String,
             property_value.trim(), scheduler, path.clone(), property_name, state)?,
         "flash_bg_color" => load_base_properties::load_color_property(
             property_value.trim(), scheduler, path.clone(), property_name, state)?,
-        "tab_fg_color" => load_base_properties::load_color_property(
+        "tab_header_fg_color" => load_base_properties::load_color_property(
             property_value.trim(), scheduler, path.clone(), property_name, state)?,
-        "tab_bg_color" => load_base_properties::load_color_property(
+        "tab_header_bg_color" => load_base_properties::load_color_property(
             property_value.trim(), scheduler, path.clone(), property_name, state)?,
-        "tab_border_fg_color" => load_base_properties::load_color_property(
+        "tab_header_border_fg_color" => load_base_properties::load_color_property(
             property_value.trim(), scheduler, path.clone(), property_name, state)?,
-        "tab_border_bg_color" => load_base_properties::load_color_property(
+        "tab_header_border_bg_color" => load_base_properties::load_color_property(
             property_value.trim(), scheduler, path.clone(), property_name, state)?,
         "filler_fg_color" => load_base_properties::load_color_property(
             property_value.trim(), scheduler, path.clone(), property_name, state)?,

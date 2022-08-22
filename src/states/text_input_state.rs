@@ -157,8 +157,6 @@ impl GenericState for TextInputState {
             "selection_bg_color" => EzValues::Color(self.colors.selection_bg_color.value),
             "disabled_fg_color" => EzValues::Color(self.colors.disabled_fg_color.value),
             "disabled_bg_color" => EzValues::Color(self.colors.disabled_bg_color.value),
-            "active_fg_color" => EzValues::Color(self.colors.active_fg_color.value),
-            "active_bg_color" => EzValues::Color(self.colors.active_bg_color.value),
             "border_fg_color" => EzValues::Color(self.colors.border_fg_color.value),
             "border_bg_color" => EzValues::Color(self.colors.border_bg_color.value),
             "cursor_color" => EzValues::Color(self.colors.cursor_color.value),

@@ -179,12 +179,12 @@ impl Layout {
                 tab_header.state.set_size_hint_x(None);
                 tab_header.state.set_size_hint_y(None);
                 tab_header.state.set_text(tab_name.clone());
-                tab_header.state.colors.fg_color.set(self.state.colors.tab_fg_color.value);
-                tab_header.state.colors.bg_color.set(self.state.colors.tab_bg_color.value);
-                tab_header.state.colors.disabled_fg_color.set(self.state.colors.active_fg_color.value);
-                tab_header.state.colors.disabled_bg_color.set(self.state.colors.active_bg_color.value);
-                tab_header.state.colors.border_fg_color.set(self.state.colors.tab_border_fg_color.value);
-                tab_header.state.colors.border_bg_color.set(self.state.colors.tab_border_bg_color.value);
+                tab_header.state.colors.fg_color.set(self.state.colors.tab_header_fg_color.value);
+                tab_header.state.colors.bg_color.set(self.state.colors.tab_header_bg_color.value);
+                tab_header.state.colors.disabled_fg_color.set(self.state.colors.tab_header_active_fg_color.value);
+                tab_header.state.colors.disabled_bg_color.set(self.state.colors.tab_header_active_bg_color.value);
+                tab_header.state.colors.border_fg_color.set(self.state.colors.tab_header_border_fg_color.value);
+                tab_header.state.colors.border_bg_color.set(self.state.colors.tab_header_border_bg_color.value);
                 tab_header.state.colors.selection_fg_color.set(self.state.colors.selection_fg_color.value);
                 tab_header.state.colors.selection_bg_color.set(self.state.colors.selection_bg_color.value);
 
