@@ -6585,7 +6585,8 @@
 //!
 //! Label will display text loaded from this file path. Overwrites the text property if set. The
 //! file content will be merged into your binary, so you do not need to ship the text file with
-//! your binary.
+//! your binary. The file path you use must be relative to the folder specified in your
+//! EZ_FOLDER environment variable.
 //!
 //! **Property type:**
 //!
@@ -7809,7 +7810,8 @@
 //!
 //! File path to a text file from which to load visual context. Empty string means don't load from
 //! file. The file content will be merged into your binary, so you do not need to ship the text
-//! file with your binary.
+//! file with your binary. The file path you use must be relative to the folder specified in your
+//! EZ_FOLDER environment variable.
 //!
 //! **Property type:**
 //!

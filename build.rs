@@ -20,11 +20,14 @@ fn main() {
         for line in content.lines() {
             if line.contains("from_file:") {
                 let path = line.split_once("from_file:").unwrap().1.trim();
+                let file_path = Path::new(path);
+                let root_path = Path::new(&ez_folder);
+                let full_path = root_path.join(file_path);
                 let mut file_string = String::new();
-                let mut file = File::open(path)
-                    .unwrap_or_else(|_| panic!("Unable to open file {}", path));
+                let mut file = File::open(full_path.clone())
+                    .unwrap_or_else(|_| panic!("Unable to open file {:?}", full_path));
                 file.read_to_string(&mut file_string)
-                    .unwrap_or_else(|_| panic!("Unable to read file {}", path));
+                    .unwrap_or_else(|_| panic!("Unable to read file {:?}", full_path));
                 include_files.insert(path.to_string(), file_string);
             }
         }

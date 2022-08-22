@@ -87,8 +87,9 @@ impl EzObject for Label {
         // Load text from file
         if !state.get_from_file().is_empty() {
             let includes = ez_includes();
-            text = includes.get(&state.get_from_file()).unwrap_or_else(
-                || panic!("Unable to open file for canvas: {}", state.get_from_file())).clone();
+            let key = &state.get_from_file().replace("\\", "\\\\");
+            text = includes.get(key).unwrap_or_else(
+                || panic!("Unable to open file for label: {}", state.get_from_file())).clone();
         // or take text from widget state
         } else {
             text = state.get_text();

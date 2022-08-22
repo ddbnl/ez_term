@@ -92,7 +92,8 @@ impl EzObject for Canvas {
         let mut contents;
         if !state.get_from_file().is_empty() {
             let includes = ez_includes();
-            let file_content = includes.get(&state.get_from_file()).unwrap_or_else(
+            let key = &state.get_from_file().replace("\\", "\\\\");
+            let file_content = includes.get(key).unwrap_or_else(
                 || panic!("Unable to open file for canvas widget: {}",
                         state.get_from_file())).clone();
             let mut lines: Vec<String> = file_content.lines()
