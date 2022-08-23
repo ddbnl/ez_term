@@ -1085,7 +1085,7 @@
 //! Layout view is also not a dedicated mode, but worth mentioning. It is a property that can be
 //! used with box, float, stack and table layouts. It allows you to set a view size, and only that amount
 //! of child widgets will be displayed at a time. So if you have for example a table layout that
-//! has to display a database with hundreds of records, you could set the view size to 25 to limit
+//! has to display a database with hundreds of records, you could set the view size to 100 to limit
 //! the amount of widgets displayed at one time. The view_size property determines how many children
 //! are displayed, and the view_page property determines where we are in the view. The first page is
 //! '1' (0 is not allowed). If the view_page value exceeds the max number of pages it will not panic,
@@ -1093,28 +1093,38 @@
 //!
 //! Let's look at an example. We'll create a parent layout with views enabled in an .ez file.
 //! Then we'll generate a lot of widgets in that layout programmatically. We'll also give the parent
-//! layout two buttons so the user can navigate through the views.
+//! layout two buttons so the user can navigate through the views. Finally, we are going to bind the
+//! view size to how many widget can fit inside the layout, using some EzLang math (we'll need a
+//! fixed size widget template for this).
 //!
 //! First the .ez file:
 //! ```
-//! Layout:
+//! - <ViewTest@Label>:
+//!     size_hint_y: none
+//!     height: 3
+//!     border: true
+//!
+//! - Layout:
 //!     mode: box
 //!     orientation: vertical
-//!     Layout:
+//!     - Layout:
 //!         id: view_layout
 //!         mode: box
 //!         orientation: vertical
-//!         view_size: 10
+//!         view_size: self.height / 3
 //!         view_page: 1
-//!     Layout:
+//!         size_hint_y: none
+//!         height: parent.height - parent.navigation_box.height
+//!     - Layout:
+//!         id: navigation_box
 //!         mode: box
 //!         orientation: horizontal
 //!         auto_scale: true, true
-//!         Button:
+//!         - Button:
 //!             id: back_button
 //!             text: <
 //!             auto_scale: true, true
-//!         Button:
+//!         - Button:
 //!             id: forward_button
 //!             text: >
 //!             auto_scale: true, true
@@ -1125,6 +1135,7 @@
 //!
 //! let (root_widget, mut state_tree, mut scheduler) = load_ui();
 //!
+//! // We create a callback to navigate backwards through the view
 //! let navigate_back_callback = |context: Context| {
 //!     let state = context.state_tree.get_mut("view_layout").as_layout_mut();
 //!     let current_page = state.get_view_page();
@@ -1137,6 +1148,7 @@
 //! let callback_config = CallbackConfig::from_on_press(Box::new(navigate_back_callback));
 //! scheduler.update_callback_config("back_button", callback_config);
 //!
+//! // We create a callback to navigate forwards through the view
 //! let navigate_forward_callback = |context: Context| {
 //!     let state = context.state_tree.get_mut("view_layout").as_layout_mut();
 //!     let current_page = state.get_view_page();
@@ -1146,6 +1158,15 @@
 //! };
 //! let callback_config = CallbackConfig::from_on_press(Box::new(navigate_forward_callback));
 //! scheduler.update_callback_config("forward_button", callback_config);
+//!
+//! // We programmatically create a lot of widgets to test views
+//! for x in 0..=40 {
+//!     let new_id = format!("view_test_{}", x);
+//!     let (new_widget, mut new_states) = scheduler.prepare_create_widget(
+//!         "ViewTest", new_id.as_str(), "view_layout", &mut state_tree);
+//!     new_states.as_label_mut().set_text(new_id);
+//!     scheduler.create_widget(new_widget, new_states, &mut state_tree);
+//! }
 //!
 //! run(root_widget, state_tree, scheduler);
 //! ```

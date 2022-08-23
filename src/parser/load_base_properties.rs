@@ -21,7 +21,7 @@ use crate::{GenericState, StateTree};
 pub fn resolve_property(value: &str, path: String) -> Option<String> {
 
     if value.starts_with("self.") {
-        Some(value.replace("self.", &path).replace('.', "/"))
+        Some(value.replace("self.", format!("{}/", &path).as_str()).replace('.', "/"))
     } else if value.starts_with("root.") {
         Some(value.replace(".root", "/root").replace('.', "/"))
     } else if value.starts_with("parent.") {
@@ -75,7 +75,7 @@ fn resolve_parent_path(mut path: String, mut value: &str) -> String {
 pub fn load_usize_property(value: &str, scheduler: &mut SchedulerFrontend, path: String,
                            property_name: &str, state: &mut dyn GenericState) -> Result<(), Error> {
 
-    return if value.find(|x| ['+', '-', '/', '*'].contains(&x)).is_some() {
+    return if value.find(|x| ['+', '-', '/', '*', '(', ')'].contains(&x)).is_some() {
         wrap_usize_property(value.to_string(), path, property_name.to_string(),
                             scheduler);
         state.update_property(property_name, EzValues::Usize(0));
@@ -105,11 +105,13 @@ pub fn wrap_usize_property(value: String, path: String, property_name: String,
 
 
     let mut value = value.clone();
-    let parts: Vec<String> = value.split(|x| ['+', '-', '/', '*'].contains(&x))
+    let parts: Vec<String> = value.split(|x| ['+', '-', '/', '*', '(', ')'].contains(&x))
         .map(|x|x.to_string()).collect();
     let mut values = Vec::new();
     let mut to_bind = Vec::new();
     for part in parts {
+
+        if part.trim().is_empty() { continue }
         let name = part.replace(".", "_").to_string();
         value = value.replace(&part, &name);
 
