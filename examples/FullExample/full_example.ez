@@ -73,4 +73,4 @@
     - Canvas:
         id: canvas
         auto_scale: true, true
-        from_file: ./examples/FullExample/example_art.txt
+        from_file: ./example_art.txt

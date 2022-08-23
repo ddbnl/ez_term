@@ -142,9 +142,9 @@ fn main() {
     for i in 0..40 {
         let new_id = format!("label_{}", i);
         let (new_widget, mut new_states) = scheduler.prepare_create_widget(
-            "ScalingLabel", new_id.as_str(), "view_layout", &mut state_tree);
+            "GenerationTest", new_id.as_str(), "view_layout", &mut state_tree);
 
-        new_states.get_mut(new_id.as_str()).as_label_mut()
+        new_states.get_mut("test_label").as_label_mut()
             .set_text(format!("Generated label {}", i));
 
         scheduler.create_widget(new_widget, new_states, &mut state_tree);

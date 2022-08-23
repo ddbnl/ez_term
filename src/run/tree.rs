@@ -49,7 +49,7 @@ impl<T> Tree<T> {
 
         let steps: Vec<&str> = path.split('/').collect();
         let mut steps = steps[1..].to_vec();
-        if steps[0] == "root" {
+        if steps[0] == self.id {
             steps.remove(0);
         }
         self._extend(steps, node);
@@ -74,7 +74,7 @@ impl<T> Tree<T> {
 
         let steps: Vec<&str> = path.split('/').collect();
         let mut steps = steps[1..].to_vec();
-        if steps[0] == "root" {
+        if steps[0] == self.id {
             steps.remove(0);
         }
         self._add_node(steps, node);
@@ -89,7 +89,10 @@ impl<T> Tree<T> {
             let node = Tree::new(id.to_string(), node);
             self.objects.insert(id.to_string(), node);
         } else {
-            self.objects.get_mut(steps.remove(0)).unwrap()._add_node(steps, node);
+            let id = steps.remove(0);
+            self.objects.get_mut(id).unwrap_or_else(
+                || panic!("{} not found in {}", id, self.id )
+            )._add_node(steps, node);
         }
     }
 

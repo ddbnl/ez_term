@@ -671,6 +671,8 @@ impl Layout {
     /// Get layout children that are in view based on view_size and view_page properties.
     pub fn get_children_in_view(&self, state_tree: &mut StateTree) -> &[EzObjects] {
 
+        if self.children.is_empty() { return  &[] }
+
         let state = state_tree.get_mut(&self.path).as_layout_mut();
         if state.get_view_size() == 0 { return &self.children }
         if state.get_view_page() == 0 { state.set_view_page(1) }

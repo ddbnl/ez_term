@@ -495,8 +495,10 @@ impl SchedulerFrontend {
             StateTree::new(id.to_string(), new_widget.as_ez_object().get_state());
         if let EzObjects::Layout(ref i) = new_widget {
             for child in i.get_widgets_recursive() {
-                new_states.add_node(child.as_ez_object().get_path(),
-                                    child.as_ez_object().get_state());
+                let relative_path = child.as_ez_object().get_path().split_once(
+                    new_widget.as_ez_object().get_id().as_str()).unwrap().1.to_string();
+                let widget_path  = format!("{}{}", new_widget.as_ez_object().get_id(), relative_path);
+                new_states.add_node(widget_path,child.as_ez_object().get_state());
             }
         }
         (new_widget, new_states)

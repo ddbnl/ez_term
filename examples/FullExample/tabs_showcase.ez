@@ -34,7 +34,7 @@
     selection_fg_color: red
     - Label:
         size_hint_y: none
-        from_file: ./examples/FullExample/dummy.txt
+        from_file: ./dummy.txt
 
 - <TablesTab@Layout>:
     tab_name: Tables
@@ -288,6 +288,13 @@
         text: The labels below are programmatically added to the layout:
         auto_scale_height: true
         padding_bottom: 1
+
+
+- <GenerationTest@Layout>:
+    auto_scale: true, true
+    - Label:
+        id: test_label
+        auto_scale: true, true
 
 
 - <PropertyBindsTab@Layout>:
