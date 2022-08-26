@@ -399,10 +399,14 @@ impl SchedulerFrontend {
 
         if !self.synced {
             state_tree.as_layout_mut().dismiss_modal(self);
+
+            let mut removed_paths = Vec::new();
             let removed = state_tree.remove_node("/modal".to_string());
             for state in removed.get_all() {
+                removed_paths.push(state.as_generic().get_path());
                 state.as_generic().clean_up_properties(self);
             }
+            self.backend.widgets_to_update.retain(|x| !removed_paths.contains(&x));
         } else {
             self.dismiss_modal_sender.as_ref().unwrap().send(true).unwrap();
         }

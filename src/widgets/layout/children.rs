@@ -77,7 +77,7 @@ impl Layout {
                 if let Some(size_hint_x) = state.get_size_hint().get_size_hint_x()
                 {
                     if size_hint_x != 1.0 || state.get_auto_scale().get_auto_scale_width() ||
-                        state.get_auto_scale().get_auto_scale_height() || state.get_size().get_width() > 0 {
+                        state.get_size().fixed_width {
                         all_default_size_hint_x = false;
                     }
                 } else {
@@ -89,7 +89,7 @@ impl Layout {
             if let LayoutOrientation::Vertical = own_orientation {
                 if let Some(size_hint_y) = state.get_size_hint().get_size_hint_y() {
                     if size_hint_y != 1.0 || state.get_auto_scale().get_auto_scale_height() ||
-                        state.get_auto_scale().get_auto_scale_width() || state.get_size().get_height() > 0 {
+                        state.get_size().fixed_height {
                         all_default_size_hint_y = false;
                     }
                 } else {

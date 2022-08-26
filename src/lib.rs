@@ -268,25 +268,32 @@
 //!         32. [set_selected_widget](#reference_scheduler_set_selected_widget)
 //!         33. [deselect_widget](#reference_scheduler_deselect_widget)
 //!         34. [exit](#reference_scheduler_exit)
-//! 3. Examples
 //!
 //!
 //! <a name="how_to_use"></a>
 //! ## 1. Tutorial - How to use EzTerm
 //!
 //! This section will explain how to use this framework step-by-step. It functions as a general
-//! tutorial, explaining all the features with little examples. Depending on your preferences,
-//! you could read this first and then go to the [examples], or go to [examples] first and consult
-//! this tutorial for more details. Using both this tutorial and the examples you should be able to
-//! get started on your own project. Once you are, you can use [reference] for a full API reference.
+//! tutorial, explaining all the features with small examples. Depending on your preferences,
+//! you could read this first and then check the full examples found in the repo in the /examples
+//! folder, or check the full examples first and consult this tutorial for more details.
+//! Using both this tutorial and the examples you should be able to get started on your own project.
+//! Once you are, you can use the [reference] section for all the details on widgets, callbacks, etc.
+//!
+//! It is recommended to read the tutorial on the
+//! [GitHub wiki page](https://github.com/ddbnl/ez_term/wiki), as screenshots are included
+//! with the examples there.
 //!
 //! <a name="structure"></a>
-//! ### 1.1 The structure on an EzTerm project
+//! ### 1.1 The structure of an EzTerm project
 //!
 //! First we will learn how to prepare an EzTerm project; it consists of three parts:
 //! - UI config files (files with the '.ez' extension)
 //! - UI Rust module(s)
 //! - Your actual app (also Rust modules)
+//!
+//! Below we will briefly discuss each part. Then, in the next section, we will set up an actual
+//! EzTerm project with a minimal example.
 //!
 //! <a name="ui_config_files"></a>
 //! #### 1.1.1 UI config files
@@ -337,17 +344,13 @@
 //!
 //! Initializing- and starting the UI are separate steps, because you might want to make some
 //! changes to the UI from code before it starts (we'll cover this in de Scheduler chapter).
-//! We will discuss callbacks later, but for now we will note that callbacks (either as closures
-//! or full functions) could also be defined in this same module, or a separate mode as you like.
 //!
-//! To summarize, we now have a folder with our .ez files, a module to initialize- and start our UI,
-//! and perhaps another module containing callbacks:
+//! To summarize, we now have a folder with our .ez files and a module to initialize- and start our UI:
 //! ```
 //! /project_root
 //!   /cargo.toml
 //!   /src
 //!     /main.rs
-//!     /callbacks.rs
 //!   /ui
 //!     /my_ui.ez
 //! ```
@@ -366,7 +369,6 @@
 //!   /cargo.toml
 //!   /src
 //!     /main.rs
-//!     /callbacks.rs
 //!     /my_app.rs
 //!   /ui
 //!     /my_ui.ez
@@ -457,13 +459,23 @@
 //! <a name="ez_language"></a>
 //! ### 1.2 Ez language
 //!
+//! With EzTerm, the UI is defined in the .ez files, using a YAML(ish) type syntax called EzLang.
+//! EzLang is used to define layouts and widgets. Widgets are the actual content of your UI, and
+//! layouts give you control over how to display them (while taking tedious tasks such as manual
+//! positioning and scaling out of your hands).
+//!
+//! While EzLang is fairly straight forward, the amount of widgets and their properties can seem
+//! overwhelming at first. If you follow the tutorial and compare the given examples to the
+//! screenshots, you should get a feel for it fairly quickly.
+//!
 //! <a name="ez_basics"></a>
 //! #### 1.2.1 Basics
 //!
-//! With EzTerm, the UI is defined in the .ez files, using a YAML(ish) type syntax called EzLang.
 //! Like everything in EzTerm, this language is designed to be simple to use. There are only two
 //! things you can do in EzLang: define widgets (or widget templates) and set properties on those
-//! widgets. Here is an example defining a label widget and setting its' text property:
+//! widgets. For example, you define a label, and then set the text property on it. The result is a
+//! label displaying your text on screen. Here is an example of defining a label widget and setting
+//! its' text property:
 //! ```
 //! - Label:
 //!     text: Hello world!
@@ -471,45 +483,69 @@
 //! As you can see in the above example, widget definitions start with a "-" dash. This makes it
 //! easier to read the .ez files. After a widget definition we can define the properties of that
 //! widget by indenting four spaces on the next line and using the "property: value" syntax. You
-//! can find every possible property of each widget in [reference].
+//! can find every possible property of each widget in [reference](#reference). Keep in mind that
+//! four space indentations are mandatory for each level.
 //!
-//! Every widget must defined inside of a layout. A layout may also be defined inside of another
-//! layout, or it can be the root layout. Every EzTerm project must contain exactly one root layout:
+//! The above example is not yet complete, because every widget must defined inside of a layout.
+//! A layout can also be defined inside of another layout, or it can be the root layout.
+//! Every EzTerm project must contain exactly one root layout:
 //! ```
 //! - Layout:
 //!     mode: box
 //!     - Label:
 //!         text: Hello World!
+//!         border: true
 //! ```
 //! This example contained only one Layout (the root). Here is an example of nested layouts
-//! creating multiple screens (note we still have only one root layout):
+//! creating two labels (note we still have only one root layout):
 //! ```
 //! - Layout:
-//!     mode: screen
+//!     mode: box
+//!     orientation: horizontal
 //!     - Layout:
-//!         id: screen_1
+//!         id: layout_1
 //!         mode: box
+//!         orientation: vertical
 //!         - Label:
-//!             text: Hello screen one!
+//!             text: Hello from layout 1!
+//!             border: true
+//!         - Label:
+//!             text: Hello from layout 1!
+//!             border: true
 //!     - Layout:
-//!         id: screen_2
+//!         id: layout_2
 //!         mode: box
+//!         orientation: vertical
 //!         - Label:
-//!             text: Hello screen two!
+//!             text: Hello from layout 2!
+//!             border: true
+//!         - Label:
+//!             text: Hello from layout 2!
+//!             border: true
 //! ```
-//! In the above example we gave the screen layouts an ID through the 'id' property; the ID is
-//! optional but becomes necessary when you want to refer to your layout/widget (either from code
-//! or from EzLang). It also makes the config file more readable. We will learn how to use the ID
-//! in a later section. Don't worry if the properties look unfamiliar, we'll get into them later;
-//! for now we are
-//! just discussing the basics of the syntax.
+//! In the above example we gave the sub layouts an ID through the 'id' property; the ID is
+//! optional but becomes necessary when you want to refer to your layout/widget either from code
+//! or from EzLang (we'll discuss this later). It can also make the config file more readable.
+//! You cannot set the ID property of the root layout, because it is always 'root' by default.
+//! Don't worry if the other properties look unfamiliar, we'll learn more about them in later sections;
+//! for now we are just discussing the basics of the syntax.
+//!
+//! EzLang allows empty lines anywhere, and comments that starts with '//':
+//! ```
+//! - Layout:
+//!
+//!     // Comments are allowed!
+//!     mode: box
+//!     - Label:
+//!         text: Hello World!
+//! ```
 //!
 //! <a name="ez_language_templates"></a>
 //! #### 1.2.2 Templates
 //!
 //! We'll now take a look at templates, because we'll often use them in tutorial examples. Don't
 //! worry about the unfamiliar properties we'll use, they will be explained in sections to come,
-//! for now just get an impression of what EzLang looks like.
+//! for now just get an impression of what EzLang looks like, and how to create templates.
 //!
 //! When you start writing your own .ez files, you may notice yourself writing the same types of
 //! widgets over and over again. To make your .ez files more readable and more ergonomic, you can
@@ -647,8 +683,8 @@
 //! the advantages of EzTerm is that you don't have to hardcode your widget positions and sizes and
 //! you don't have to handle UI scaling. Instead, smart layouts do the work for you unless you
 //! specify that you want manual positions. To give you control over the way in which objects are
-//! placed on the screen, you can choose between layout modes and layout orientations. Here is a
-//! short overview of the layout modes:
+//! placed on the screen, you can choose between layout modes and layout orientations. Here is an
+//! overview of the layout modes:
 //!
 //!
 //! <a name="ez_language_box"></a>
@@ -691,21 +727,21 @@
 //!         mode: box
 //!         orientation: vertical
 //!         border: true
-//!         - CumstomButton:
+//!         - CustomButton:
 //!             text: Left option 1
-//!         - CumstomButton:
+//!         - CustomButton:
 //!             text: Left option 2
-//!         - CumstomButton:
+//!         - CustomButton:
 //!             text: Left option 3
 //!     - Layout:
 //!         mode: box
 //!         orientation: vertical
 //!         border: true
-//!         - CumstomButton:
+//!         - CustomButton:
 //!             text: Right option 1
-//!         - CumstomButton:
+//!         - CustomButton:
 //!             text: Right option 2
-//!         - CumstomButton:
+//!         - CustomButton:
 //!             text: Right option 3
 //! ```
 //!
@@ -759,7 +795,7 @@
 //! will always be respected.
 //!
 //!
-//!As you can see, stack layouts are an easy way to make sure your
+//! As you can see, stack layouts are an easy way to make sure your
 //! widgets will remain visible even when the window resizes (as long as there ís enough is enough
 //! space in general of course).
 //!
@@ -800,17 +836,24 @@
 //!
 //! ```
 //! - <SudokuLabel@Label>:
-//!     auto_scale: true, true
 //!     text: -
+//!     size_hint: none, none
+//!     size: 1, 1
+//!     halign: center
+//!     valign: middle
 //!
 //! - Layout:
 //!     mode: table
 //!     border: true
 //!     orientation: lr-tb
-//!     col_default_width: 3
+//!     auto_scale: true, true
+//!
+//!     cols: 3
+//!     col_default_width: 7
 //!     force_default_col_width: true
 //!     row_default_height: 3
 //!     force_default_row_height: true
+//!
 //!     - SudokuLabel:
 //!     - SudokuLabel:
 //!     - SudokuLabel:
@@ -872,16 +915,17 @@
 //!     - Label:
 //!         text: Hello world
 //!         pos_hint: right: 0.4, bottom: 0.6
+//!         auto_scale: true, true
 //! ```
 //!
 //! Float mode also allows you to hardcode positions:
 //! ```
 //! - Layout:
 //!     mode: float
-//!     Label:
+//!     - Label:
 //!         text: Hello world
 //!         auto_scale: true, true
-//!         pos: 10, 20
+//!         pos: 10, 10
 //! ```
 //! There are use cases for hard coded positions, but keep in mind these positions won't change
 //! if the terminal is resized. In most cases position hints are the better choice as they will
@@ -896,36 +940,41 @@
 //! property is not set, the child ID is used. Here is an example with three tabs:
 //! ```
 //! - Layout:
-//!     mode: tab
-//!     active_tab: tab_one
-//!     tab_header_fg_color: white
-//!     tab_header_bg_color: black
-//!     tab_header_border_fg_color: white
-//!     tab_header_border_bg_color: black
-//!     tab_header_active_fg_color: yellow
-//!     tab_header_active_bg_color: black
-//!     border: true
+//!     mode: box
+//!     orientation: vertical
+//!     - Label:
+//!         text: Tabs example:
+//!         auto_scale: true, true
+//!         halign: center
 //!     - Layout:
-//!         id: tab_one
-//!         tab_name: Tab one
-//!         mode: box
+//!         mode: tab
+//!         active_tab: tab_one
+//!         tab_header_fg_color: white
+//!         tab_header_bg_color: black
+//!         tab_header_border_fg_color: white
+//!         tab_header_border_bg_color: black
+//!         tab_header_active_fg_color: yellow
+//!         tab_header_active_bg_color: black
+//!         selection_order: 4
 //!         border: true
-//!         - Label:
-//!             text: Hello tab one!
-//!     - Layout:
-//!         id: tab_two
-//!         tab_name: Tab two
-//!         mode: box
-//!         border: true
-//!         - Label:
-//!             text: Hello tab two!
-//!     - Layout:
-//!         id: tab_three
-//!         tab_name: Tab three
-//!         mode: box
-//!         border: true
-//!         - Label:
-//!             text: Hello tab three!
+//!         - Layout:
+//!             id: tab_one
+//!             tab_name: Tab one
+//!             mode: box
+//!             - Label:
+//!                 text: Hello tab one!
+//!         - Layout:
+//!             id: tab_two
+//!             tab_name: Tab two
+//!             mode: box
+//!             - Label:
+//!                 text: Hello tab two!
+//!         - Layout:
+//!             id: tab_three
+//!             tab_name: Tab three
+//!             mode: box
+//!             - Label:
+//!                 text: Hello tab three!
 //! ```
 //! Note that the active_tab property is optional, by default the first tab is active. Users can
 //! then switch tabs using the tab header buttons that are created automatically. This example also
@@ -1281,9 +1330,38 @@
 //! controlled through the EzLang 'size_hint_x' and 'size_hint_y' properties. These can be set to a
 //! value between 0 and 1. A value of 1 means the size of the parent; 0.5 half the size of the
 //! parent, etc. By default size hints are set to 1, so widgets are always as large as their parent
-//! by default. If a layout has multiple widgets, and they **all** have default size hints, their
-//! size hints will be se to "1 / number_of_widgets". So four widgets with default size hints will
-//! receive 0.25 size hints. This gives all layout children equal size by default.
+//! by default.
+//!
+//! If a layout has multiple widgets, and they **all** have default size hints, their
+//! size hints will be set to "1 / number_of_widgets". So four widgets with default size hints will
+//! receive 0.25 size hints. This gives all layout children equal size by default. In box mode,
+//! default size hints are only divided among children for the direction of the orientation property,
+//! meaning that in horizontal box mode, size_hint_x (when default for all children) will be divided
+//! and size_hint_y always remains 1.0. In vertical box mode it is the opposite.
+//!
+//! Let's take a look at default sizing behavior using a vertical box mode layout and four labels:
+//! ```
+//! - Layout:
+//!     mode: box
+//!     orientation: vertical
+//!     border: true
+//!     - Label:
+//!         text: Label 1
+//!         border: true
+//!     - Label:
+//!         text: Label 2
+//!         border: true
+//!     - Label:
+//!         text: Label 3
+//!         border: true
+//!     - Label:
+//!         text: Label 4
+//!         border: true
+//! ```
+//! As we can see, all labels retain the default 1.0 size hint for their width (size_hint_x), but
+//! their size_hint_y property is divided among the four labels, giving them each 0.25 (25%) height
+//! of their parent layout.
+//!
 //!
 //! As an example of using size hints, lets say we have two labels; we want one label to be 75% of
 //! the layout height and the other one 25%. They can both be 100% width:
@@ -1291,14 +1369,17 @@
 //! - Layout:
 //!     mode: box
 //!     orientation: vertical
+//!     border: true
 //!     - Label:
 //!         text: Big label
 //!         size_hint_y: 0.75
 //!         size_hint_x: 1
+//!         border: true
 //!     - Label:
 //!         text: Small label
 //!         size_hint_y: 0.25
 //!         size_hint_x: 1
+//!         border: true
 //! ```
 //! The widgets will always respect their size hints, even when the window resizes. We can make the
 //! above example shorter by removing the 'size_hint_x' properties, because size hints are already set to
@@ -1311,9 +1392,11 @@
 //!     - Label:
 //!         text: Big label
 //!         size_hint: 1, 0.75
+//!         border: true
 //!     - Label:
 //!         text: Small label
 //!         size_hint: 1, 0.25
+//!         border: true
 //! ```
 //!
 //! <a name="sizing_scaling"></a>
@@ -1367,7 +1450,7 @@
 //!     mode: box
 //!     - Label:
 //!         auto_scale_height: true
-//!         from_file: ./ui/lorem_ipsum.txt
+//!         from_file: lorem_ipsum.txt
 //!         border: true
 //! ```
 //! The Label is now growing vertically.
@@ -1384,7 +1467,7 @@
 //!     - Button:
 //!         text: Click me
 //!         size_hint: none, none
-//!         size: 10, 3
+//!         size: 15, 7
 //! ```
 //! The button will now always be fixed in size. It is of course possible to use absolute size
 //! for only one axis, while the other axis uses size_hint or auto_scale:
@@ -1416,15 +1499,16 @@
 //!     mode: box
 //!     - MyLabel:
 //!         id: label_1
-//!         size: 10, 3
+//!         size: 10, 7
 //!     - MyLabel:
 //!         width: 10
 //!         height: parent.label_1.height
-//!
 //! ```
+//! Now the second label height will always be bound to the first; if the height of the first widget
+//! were dynamic and was to change, the height of the second widget would be auto-updated.
 //!
-//! Now let's use maths to make the label the height of the parent layout minus the size of the
-//! other label:
+//! Now let's use maths to make a label the height of the parent layout minus the height of another
+//! other label (i.e. we want a widget to always use the remaining height in a layout):
 //! ```
 //! - <MyLabel@Label>:
 //!     text: My text
@@ -1433,6 +1517,8 @@
 //!
 //! - Layout:
 //!     mode: box
+//!     orientation: vertical
+//!     border: true
 //!     - MyLabel:
 //!         id: label_1
 //!         size: 10, 3
@@ -1455,7 +1541,7 @@
 //!         size: 10, 3
 //!     - MyLabel:
 //!         width: 10
-//!         height: ((parent.height - parent.label_1.height) / 2) - 10
+//!         height: ((parent.height - parent.label_1.height) / 2) - 5
 //! ```
 //!
 //! <a name="positioning"></a>
@@ -1481,8 +1567,8 @@
 //! <a name="positioning_relative"></a>
 //! ##### 1.2.6.2 Relative positioning: position hints
 //!
-//! Position hints can only be used for widgets that are in a layout in float mode. With position
-//! hints you give the relative position you want the widget to be in, and it will be handled for
+//! Position hints can only be used for widgets that are in a layout in float mode. Using position
+//! hints you specify the relative position you want the widget to be in, and it will be handled for
 //! you. There are horizontal position hints (pos_hint_x) and vertical position hints (pos_hint_y).
 //!
 //! The available settings for pos_hint_x are:
@@ -1495,16 +1581,18 @@
 //! - Middle
 //! - Bottom
 //!
-//! If you want a widget to be in the top left of the screen, you would give a widget:
-//! "pos_hint_x: left" and "pos_hint_y: top". For convenience you could use the "pos_hint" property
+//! If you want a widget to be in the bottom right of the screen, you would give a widget:
+//! "pos_hint_x: right" and "pos_hint_y: bottom". For convenience you could use the "pos_hint" property
 //! to set both at the same time in the format: "pos_hint: x, y":
 //! ```
 //! - Layout:
 //!     mode: float
+//!     border: true
 //!     - Label:
 //!         text: Hello world
 //!         auto_scale: true, true
-//!         pos_hint: left, top
+//!         pos_hint: right, bottom
+//!         border: true
 //! ```
 //! Note that in the example we auto_scale the label. If we don't, it would take up the entire
 //! screen and positioning would be pointless.
@@ -1519,10 +1607,12 @@
 //! ```
 //! - Layout:
 //!     mode: float
+//!     border: true
 //!     - Label:
 //!         text: Hello world
-//!         auto_scale: true, true
 //!         pos_hint: right: 0.9, bottom: 0.9
+//!         auto_scale: true, true
+//!         border: true
 //! ```
 //!
 //! <a name="positioning_absolute"></a>
@@ -1535,16 +1625,19 @@
 //! ```
 //! - Layout:
 //!     mode: float
+//!     border: true
 //!     - Label:
 //!         text: Hello world
-//!         pos: 10, 10
+//!         pos: 5, 5
+//!         auto_scale: true, true
+//!         border: true
 //! ```
 //!
 //! <a name="positioning_maths"></a>
 //! ##### 1.2.6.4 Absolute positioning - Maths:
 //!
 //! When setting position manually it is possible to refer to other widgets' properties and even
-//! perform maths on them (e.g. "widget1.x = widget2.x - widget3.x"). First, here is
+//! perform maths on them (e.g. "widget1.x = widget2.x + widget3.x"). First, here is
 //! an example of simply binding the y of one widget to another:
 //!
 //! ```
@@ -1555,13 +1648,14 @@
 //!
 //! - Layout:
 //!     mode: float
+//!     border: true
 //!     - MyLabel:
 //!         id: label_1
 //!         pos: 5, 5
+//!         auto_scale: true, true
 //!     - MyLabel:
-//!         x: 10
-//!         y: parent.label_1.x
-//!
+//!         pos: 15, parent.label_1.y
+//!         auto_scale: true, true
 //! ```
 //!
 //! Now let's use maths to make the label y position a fixed amount below the other label y:
@@ -1573,13 +1667,15 @@
 //!
 //! - Layout:
 //!     mode: float
+//!     border: true
 //!     - MyLabel:
 //!         id: label_1
-//!         pos: 5, 5
+//!         pos: 3, 3
+//!         auto_scale: true
 //!     - MyLabel:
 //!         x: parent.label_1.x
 //!         y: parent.label_1.y + 5
-//!
+//!         auto_scale: true
 //! ```
 //! You can use as many numbers or references to other properties as you want in these formulas. The
 //! only restriction is that the other properties should also be usize.
@@ -1614,10 +1710,12 @@
 //! - Layout:
 //!     mode: box
 //!     orientation: vertical
+//!     border: true
 //!     - Label:
 //!         text: Hello world
 //!         auto_scale: true, true
 //!         halign: center
+//!         border: true
 //! ```
 //!
 //! **Padding:**
@@ -1638,29 +1736,33 @@
 //! - Layout:
 //!     mode: box
 //!     orientation: vertical
+//!     border: true
 //!     - Label:
 //!         text: Hello world
 //!         auto_scale: true, true
+//!         border: true
 //!     - Label:
 //!         text: Hello world
 //!         auto_scale: true, true
+//!         border: true
 //! ```
 //! Here is the same example with padding:
 //! ```
 //! - Layout:
 //!     mode: box
 //!     orientation: vertical
+//!     border: true
 //!     - Label:
 //!         text: Hello world
-//!         auto_scale: true, true
-//!         border: true
 //!         padding_left: 1
 //!         padding_bottom: 1
-//!     - Label:
-//!         text: Hello world
 //!         auto_scale: true, true
 //!         border: true
+//!     - Label:
+//!         text: Hello world
 //!         padding_left: 1
+//!         auto_scale: true, true
+//!         border: true
 //! ```
 //!
 //! <a name="keyboard_selection"></a>
@@ -1747,15 +1849,18 @@
 //! - Layout:
 //!     mode: box
 //!     orientation: vertical
+//!     border: true
 //!     - Label:
 //!         id: longer_label
 //!         text: Long label text
 //!         auto_scale: true, true
+//!         border: true
 //!     - Label:
 //!         text: Short text
 //!         auto_scale_height: true
 //!         size_hint_x: none
 //!         width: parent.longer_label.width
+//!         border: true
 //! ```
 //!
 //! To bind one property to another, simply refer to that property instead of providing a value.
@@ -1792,17 +1897,20 @@
 //! - Layout:
 //!     mode: box
 //!     orientation: vertical
+//!     border: true
 //!     - Label:
 //!         id: longer_label
 //!         text: Long label text
 //!         auto_scale: true, true
 //!         halign: center
+//!         border: true
 //!     - Label:
 //!         text: Short text
 //!         size_hint_x: none
 //!         width: parent.longer_label.width
 //!         halign: parent.longer_label.halign
 //!         auto_scale_height: parent.longer_label.auto_scale_height
+//!         border: true
 //! ```
 //!
 //! <a name="binding_properties_overview"></a>
@@ -1842,13 +1950,13 @@
 //! - Layout:
 //!     mode: box
 //!     orientation: vertical
+//!     border: true
 //!     - MyLabel:
 //!         id: label_1
 //!         size: 10, 3
 //!     - MyLabel:
 //!         width: 10
 //!         height: parent.height - parent.label_1.height
-//!
 //! ```
 //!
 //! <a name="scheduler"></a>
@@ -1877,8 +1985,11 @@
 //! ```
 //! use ez_term::*;
 //! let (root_widget, mut state_tree, mut scheduler) = load_ui();
+//!
 //! let label_state = state_tree.get_mut("my_label").as_label_mut();
 //! label_state.set_text("new text".to_string());
+//!
+//! run(root_widget, state_tree, scheduler);
 //! ```
 //! Note that after getting the state of the label, we have to call the "to_label_mut" method to
 //! change the state into a label state. This is because the state tree contains generic states (due
@@ -2028,7 +2139,8 @@
 //! thread. This means that callbacks are expected to return immediately. Callbacks that only manage
 //! the UI will return immediately and can be used normally. If you want to use a callback to run your
 //! app, you can use a callback to spawn a [Threaded scheduled task]. We will learn more about this
-//! in the sections coming up, but this is important to keep in mind.
+//! in the sections coming up, but it is important to keep in mind that callbacks should never
+//! block.
 //!
 //! Now, let's look at the general structure of callbacks:
 //!
@@ -2051,7 +2163,9 @@
 //! behavior will be executed by returning 'false' (allowed to run) or 'true' (not allowed to run).
 //! This gives you the option to overwrite default widget behavior, or supplement it. If you want to
 //! know if returning true for a widget callback would overwrite default behavior, see the
-//! [reference] entry for that widget and check the callback chapter. For mouse callbacks (such as
+//! [reference] entry for that widget and check the callback chapter.
+//!
+//! For mouse callbacks (such as
 //! on_left_click, on_hover, etc.), it is also important to think about whether you want to consume
 //! the event. A mouse click will always hit multiple widgets; if you click a button, you also click
 //! the layout that contains the button, the layout that contains the layout, etc. If a widget
@@ -2093,6 +2207,24 @@
 //!
 //! Let's say we want to set an "on_press" callback on a button with the ID: "my_button".
 //! We want the callback to change the text on a label. This is how we would do it:
+//!
+//! The .ez file:
+//! ```
+//! - Layout:
+//!     mode: box
+//!     orientation: vertical
+//!     - Button:
+//!         id: my_button
+//!         text: Change label
+//!         auto_scale: true, true
+//!         halign: center
+//!         padding_bottom: 2
+//!     - Label:
+//!         id: my_label
+//!         text: Initial text
+//!         auto_scale: true, true
+//!         halign: center
+//! ```
 //! ```
 //! use ez_term::*;
 //! let (root_widget, mut state_tree, mut scheduler) = load_ui();
@@ -2106,6 +2238,8 @@
 //! };
 //! let new_callback_config = CallbackConfig::from_on_press(Box::new(my_callback));
 //! scheduler.update_callback_config("my_button", new_callback_config);
+//!
+//! run(root_widget, state_tree, scheduler);
 //! ```
 //! We created a new callback config using the "from_on_press" method. There is a "from_" method for
 //! each type of callback to make it easier to initialize a new CallbackConfig.
@@ -2114,9 +2248,8 @@
 //! unique, you can use the full widget path. Since ID is more convenient, it is recommended to make
 //! all your widget IDs unique.
 //!
-//! We will go through another example accomplishing the same thing as above, but this time we will
-//! use a function instead of a closure, and we will overwrite the callback config instead of
-//! updating it:
+//! Let's rewrite the code above to use a function instead of a closure, and overwrite the callback
+//! config instead of updating it:
 //! ```
 //! use ez_term::*;
 //! fn my_callback(context: Context) -> bool {
@@ -2131,6 +2264,8 @@
 //!
 //! let new_callback_config = CallbackConfig::from_on_press(Box::new(my_callback));
 //! scheduler.overwrite_callback_config("my_button", new_callback_config);
+//!
+//! run(root_widget, state_tree, scheduler);
 //! ```
 //!
 //! As you can see, both closures and functions can be used to write callbacks. The advantage of
@@ -2152,6 +2287,8 @@
 //! };
 //! let new_callback_config = CallbackConfig::from_on_press(Box::new(my_callback));
 //! scheduler.update_callback_config("my_button", new_callback_config);
+//!
+//! run(root_widget, state_tree, scheduler);
 //! ```
 //! Here we created a variable and moved it into the callback closure. This can be very useful, and
 //! it's a good pattern to keep in mind.
@@ -2645,7 +2782,7 @@
 //!                           Box::new(my_callback));
 //! ```
 //!
-//! If we now wanted to remove the 'a' keybind specifically:
+//! If we now wanted to remove the above keybinds specifically:
 //! ```
 //! use ez_term::*;
 //! scheduler.remove_global_key(KeyCode::Char('a'), None);
@@ -2664,9 +2801,9 @@
 //!
 //! You can bind callbacks to changes in widget properties or custom properties. This is done
 //! differently from widget callbacks. Instead, you can use the "bind" method on the property you
-//! wish to bind to. There is an example of how to bind to each property of each widget in
-//! [reference]. Here is an example of binding a callback to a labels height property,
-//! using a closure:
+//! wish to bind to.
+//!
+//! Here is an example of binding a callback to a labels height property, using a closure:
 //! ```
 //! use ez_term::*;
 //! let (root_widget, mut state_tree, mut scheduler) = load_ui();
@@ -2716,8 +2853,14 @@
 //! delay. As the delay can be 0, it can also be executed on the next frame. The scheduler method
 //! we will use is 'schedule_once'. The first parameter of this function is a &str which is the task
 //! name. You can use this name to cancel the task before it executes (see example at the bottom of
-//! this chapter). Here is  an example of scheduled a single execution task with a closure, changing
-//! a label text after 10 seconds:
+//! this chapter). Here is  an example of scheduling a single execution task with a closure, changing
+//! a label text after 3 seconds:
+//! ```
+//! - Layout:
+//!     - Label:
+//!         id: my_label
+//!         text: Waiting...
+//! ```
 //! ```
 //! use std::time::Duration;
 //! use ez_term::*;
@@ -2725,12 +2868,13 @@
 //!
 //! let my_task = |context: Context| {
 //!
-//!     let state = state_tree.get("my_label").as_label_mut();
-//!     state.set_text("10 seconds have passed!".to_string());
+//!     let state = context.state_tree.get_mut("my_label").as_label_mut();
+//!     state.set_text("3 seconds have passed!".to_string());
 //!     state.update(context.scheduler);
 //! };
 //!
-//! scheduler.schedule_once("my_task", Box::new(my_task), Duration::from_secs(10));
+//! scheduler.schedule_once("my_task", Box::new(my_task), Duration::from_secs(3));
+//! run(root_widget, state_tree, scheduler);
 //! ```
 //!
 //! The same example with a function:
@@ -2741,36 +2885,60 @@
 //!
 //! fn my_task(context: Context) {
 //!
-//!     let state = state_tree.get_by_id("my_label").as_label_mut();
-//!     state.set_text("10 seconds have passed!".to_string());
+//!     let state = context.state_tree.get_mut("my_label").as_label_mut();
+//!     state.set_text("3 seconds have passed!".to_string());
 //!     state.update(context.scheduler);
 //! };
 //!
-//! scheduler.schedule_once("my_task", Box::new(my_task), Duration::from_secs(10));
+//! scheduler.schedule_once("my_task", Box::new(my_task), Duration::from_secs(3));
+//! run(root_widget, state_tree, scheduler);
 //! ```
 //!
 //! It is of course possible to schedule a task from a callback. For example, scheduling a task with
 //! delay after a button is pushed. Here is an example: we will bind a callback to a button, that
-//! changed the text of a label after 10 seconds, using a closure:
+//! will change the text of a label after 3 seconds, using a closure:
+//! ```
+//! - Layout:
+//!     mode: box
+//!     orientation: vertical
+//!     - Button:
+//!         id: my_button
+//!         text: Change text
+//!         auto_scale: true, true
+//!         halign: center
+//!         padding_bottom: 2
+//!     - Label:
+//!         id: my_label
+//!         text: Initial text
+//!         auto_scale: true, true
+//!         halign: center
+//! ```
 //! ```
 //! use std::time::Duration;
 //! use ez_term::*;
 //! let (root_widget, mut state_tree, mut scheduler) = load_ui();
 //!
-//! let my_task = |context: Context| {
-//!
-//!     let state = state_tree.get("my_label").as_label_mut();
-//!     state.set_text("Button was pressed 10 seconds ago!".to_string());
-//!     state.update(context.scheduler);
-//! };
 //!
 //! let my_callback = |context: Context| {
 //!
-//!     scheduler.schedule_once("my_task", Box::new(my_task), Duration::from_secs(10));
+//!     let my_task = |context: Context| {
+//!
+//!         let state = context.state_tree.get_mut("my_label").as_label_mut();
+//!         state.set_text("Button was pressed 3 seconds ago!".to_string());
+//!         state.update(context.scheduler);
+//!     };
+//!
+//!     let state = context.state_tree.get_mut("my_label").as_label_mut();
+//!     state.set_text("Waiting...".to_string());
+//!     state.update(context.scheduler);
+//!
+//!     context.scheduler.schedule_once("my_task", Box::new(my_task), Duration::from_secs(3));
 //!     true
 //! };
 //! let new_callback_config = CallbackConfig::from_on_press(Box::new(my_callback));
 //! scheduler.update_callback_config("my_button", new_callback_config);
+//!
+//! run(root_widget, state_tree, scheduler);
 //!
 //! ```
 //!
@@ -2792,8 +2960,14 @@
 //! which is the task name. You can use this name to cancel the recurring task manually (as an
 //! alternative to returning 'false' from the function). See an example at the bottom of this chapter.
 //! Here is an example of updating the text of a label every second; the label text will be
-//! counting along with the seconds. Once 10 is reached we stop executing the task. For this we
+//! counting along with the seconds. Once 5 is reached we stop executing the task. For this we
 //! can only use a closure, because we cannot capture variables in regular functions:
+//! ```
+//! - Layout:
+//!     - Label:
+//!         id: my_label
+//!         text: 0
+//! ```
 //! ```
 //! use ez_term::*;
 //! use std::time::Duration;
@@ -2806,45 +2980,65 @@
 //!     state.set_text(format!("Counting {}", counter));
 //!     state.update(context.scheduler);
 //!     counter += 1;
-//!     return if counter <= 10 {
+//!     return if counter <= 5 {
 //!         true
 //!     } else {
 //!         false
 //!     };
 //! };
 //!
-//! scheduler.schedule_once("my_task", Box::new(my_task), Duration::from_secs(1));
+//! scheduler.schedule_recurring("my_task", Box::new(my_task), Duration::from_secs(1));
+//!
+//! run(root_widget, state_tree, scheduler);
 //! ```
 //!
 //! It is of course possible to schedule a task from a callback. For example, scheduling a recurring
 //! task with delay after a button is pushed. We will move the above example into a button "on_press"
 //! callback. Now, the label will not start counting until the user presses a button:
-//!
+//! ```
+//! - Layout:
+//!     mode: box
+//!     orientation: vertical
+//!     - Button:
+//!         id: my_button
+//!         text: Initial text
+//!         auto_scale: true, true
+//!         halign: center
+//!         padding_bottom: 2
+//!     - Label:
+//!         id: my_label
+//!         text: Initial text
+//!         auto_scale: true, true
+//!         halign: center
+//! ```
 //! ```
 //! use ez_term::*;
 //! use std::time::Duration;
 //! let (root_widget, mut state_tree, mut scheduler) = load_ui();
 //!
-//! let mut counter: usize = 1;
-//! let my_task = move |context: Context| {
-//!
-//!     let state = context.state_tree.get_mut("my_label").as_label_mut();
-//!     state.set_text(format!("Counting {}", counter));
-//!     state.update(context.scheduler);
-//!     counter += 1;
-//!     return if counter <= 10 {
-//!         true
-//!     } else {
-//!         false
-//!     };
-//! };
 //! let my_callback = |context: Context| {
 //!
-//!     scheduler.schedule_recurring("my_task", Box::new(my_task), Duration::from_secs(1));
+//!     let mut counter: usize = 1;
+//!
+//!     let my_task = move |context: Context| {
+//!
+//!         let state = context.state_tree.get_mut("my_label").as_label_mut();
+//!         state.set_text(format!("Counting {}", counter));
+//!         state.update(context.scheduler);
+//!         counter += 1;
+//!         return if counter <= 5 {
+//!             true
+//!         } else {
+//!             false
+//!         };
+//!     };
+//!     context.scheduler.schedule_recurring("my_task", Box::new(my_task), Duration::from_secs(1));
 //!     true
 //! };
 //! let new_callback_config = CallbackConfig::from_on_press(Box::new(my_callback));
 //! scheduler.update_callback_config("my_button", new_callback_config);
+//!
+//! run(root_widget, state_tree, scheduler);
 //! ```
 //!
 //! To cancel a recurring task use the 'cancel_recurring_task' method of the scheduler. Of course,
@@ -2884,12 +3078,31 @@
 //! <a name="scheduler_tasks_state"></a>
 //! ##### 1.3.4.3.1 Using StateTree
 //!
-//! Let's look at an example using a mock app. The mock app will sleep regularly to simulate a long
-//! running function and will manipulate the UI using the state tree. We'll assume we have a UI that
+//! Let's schedule a threaded task, and use the state tree to manipulate the UI from the thread.
+//! We'll look at an example using a mock app. The mock app will sleep regularly to simulate a long
+//! running function. We'll create UI that
 //! contains a progress bar and a label, and every time we finish sleeping we will update the
 //! progress bar and the label. We will also use an on_finish closure to make the label say
 //! "finished!" when the thread terminates (if you do not want an on_finish function, just pass
 //! "None"):
+//! ```
+//! - Layout:
+//!     mode: box
+//!     orientation: vertical
+//!     - Button:
+//!         id: my_button
+//!         text: Start
+//!         auto_scale: true, true
+//!         halign: center
+//!     - Label:
+//!         id: my_progress_label
+//!         text: Not started.
+//!         auto_scale: true, true
+//!         halign: center
+//!     - ProgressBar:
+//!         id: my_progress_bar
+//!         border: true
+//! ```
 //! ```
 //! use ez_term::*;
 //! use std::time::Duration;
@@ -2897,20 +3110,34 @@
 //!
 //! fn mock_app(mut context: ThreadedContext) {
 //!
-//!    for x in 1..=5 {
-//!        context.state_tree.get_mut("progress_bar").as_progress_bar_mut().set_value(x*20);
-//!        context.state_tree.get_mut("progress_label").as_label_mut().set_text(format!("{}%", x*20));
-//!        std::thread::sleep(Duration::from_secs(1)) };
+//!     for x in 1..=5 {
+//!         let state = context.state_tree.get_mut("my_progress_bar").as_progress_bar_mut();
+//!         state.set_value(x*20);
+//!         state.update(&mut context.scheduler);
+//!
+//!         let state = context.state_tree.get_mut("my_progress_label").as_label_mut();
+//!         state.set_text(format!("{}%", x*20));
+//!         state.update(&mut context.scheduler);
+//!
+//!         std::thread::sleep(Duration::from_secs(1)) };
 //! }
 //!
-//! let on_finish = |context: Context| {
 //!
-//!        let state = context.state_tree.get_mut("progress_label").as_label_mut();
+//! let start_button_callback = |context: Context| {
+//!
+//!     let on_finish = |context: Context| {
+//!
+//!        let state = context.state_tree.get_mut("my_progress_label").as_label_mut();
 //!        state.set_text("Finished!".to_string());
 //!        state.update(context.scheduler);
+//!     };
+//!     context.scheduler.schedule_threaded(Box::new(mock_app), Some(Box::new(on_finish)));
+//!     true
 //! };
+//! let new_callback_config = CallbackConfig::from_on_press(Box::new(start_button_callback));
+//! scheduler.update_callback_config("my_button", new_callback_config);
 //!
-//! scheduler.schedule_threaded(Box::new(mock_app), Some(Box::new(on_finish)));
+//! run(root_widget, state_tree, scheduler);
 //! ```
 //!
 //! <a name="scheduler_tasks_property"></a>
@@ -2934,17 +3161,23 @@
 //! - Layout:
 //!     mode: box
 //!     orientation: vertical
+//!     - Button:
+//!         id: my_button
+//!         text: Start
+//!         auto_scale: true, true
+//!         halign: center
 //!     - Label:
-//!         id: progress_label
+//!         id: my_progress_label
 //!         text: properties.my_progress
+//!         auto_scale: true, true
+//!         halign: center
 //!     - ProgressBar:
-//!         id: progress_bar
-//!         max: 100
+//!         id: my_progress_bar
 //!         value: properties.my_progress
 //!         border: true
 //! ```
 //! As you can see we bound the "my_progress" custom property to the progress bar and the label.
-//! We can bind a usize property to label.text because every type of property can be converted to a
+//! We can bind a usize property to 'label.text' because every type of property can be converted to a
 //! String. For any other property than String, the property types must match.
 //! We now need to make sure that the custom property actually exists at run time, and we need to
 //! change our mock_app function to make use of it:
@@ -2959,12 +3192,21 @@
 //! fn mock_app(mut context: ThreadedContext) {
 //!
 //!    for x in 1..=5 {
-//!        let my_progress = context.scheduler.get_property_mut("my_progress").unwrap();
+//!        let my_progress = context.scheduler.get_property_mut("my_progress");
 //!        my_progress.as_usize_mut().set(x*20);
 //!        std::thread::sleep(Duration::from_secs(1)) };
 //! }
 //!
-//! scheduler.schedule_threaded(Box::new(mock_app), None);
+//! let start_button_callback = |context: Context| {
+//!
+//!     context.scheduler.schedule_threaded(Box::new(mock_app), None);
+//!     true
+//! };
+//!
+//! let new_callback_config = CallbackConfig::from_on_press(Box::new(start_button_callback));
+//! scheduler.update_callback_config("my_button", new_callback_config);
+//!
+//! run(root_widget, state_tree, scheduler);
 //! ```
 //! Because we bound our label text to our custom property, we cannot manually update it to say
 //! "Finished!" any more, so we removed the on_finish closure. Of course we could just not bind
@@ -3001,7 +3243,6 @@
 //! Now the .ez file, where we bind the custom property to the progress bar:
 //! ```
 //! - Layout:
-//!     mode: box
 //!     - ProgressBar:
 //!         value: properties.my_progress
 //! ```
@@ -3015,14 +3256,17 @@
 //!     mode: box
 //!     orientation: vertical
 //!     - Button:
-//!         id: start_button
-//!         text: Start app
+//!         id: my_button
+//!         text: Start
+//!         auto_scale: true, true
+//!         halign: center
 //!     - Label:
-//!         id: progress_label
+//!         id: my_progress_label
 //!         text: properties.my_progress
+//!         auto_scale: true, true
+//!         halign: center
 //!     - ProgressBar:
-//!         id: progress_bar
-//!         max: 100
+//!         id: my_progress_bar
 //!         value: properties.my_progress
 //!         border: true
 //! ```
@@ -3038,23 +3282,24 @@
 //! // We must register our custom property!
 //! scheduler.new_usize_property("my_progress", 0);
 //!
-//! // This is our mock app, it sleeps regularly to simulate a long running function
 //! fn mock_app(mut context: ThreadedContext) {
 //!
 //!    for x in 1..=5 {
-//!        let my_progress = context.scheduler.get_property("my_progress").unwrap();
+//!        let my_progress = context.scheduler.get_property_mut("my_progress");
 //!        my_progress.as_usize_mut().set(x*20);
 //!        std::thread::sleep(Duration::from_secs(1)) };
 //! }
 //!
-//! // We bind a callback to start our mock app on button press
 //! let start_button_callback = |context: Context| {
-//!     context.scheduler.schedule_threaded(Box::new(mock_app), None);
-//! };
-//! let callback_config = CallbackConfig::from_on_press(Box::new(start_button_callback));
-//! scheduler.update_callback_config("start_button", callback_config);
-//! run(root_widget, state_tree, scheduler)
 //!
+//!     context.scheduler.schedule_threaded(Box::new(mock_app), None);
+//!     true
+//! };
+//!
+//! let new_callback_config = CallbackConfig::from_on_press(Box::new(start_button_callback));
+//! scheduler.update_callback_config("my_button", new_callback_config);
+//!
+//! run(root_widget, state_tree, scheduler);
 //! ```
 //! As you can see, we update the "my_progress" custom property in our mock app. When we do this,
 //! the progress bar and the label will update automatically too, because we bound their properties
@@ -3100,7 +3345,6 @@
 //! popups. A modal is always created from a Layout template created in an .ez file. In other words,
 //! you first define what the modal looks like in the .ez file, and then you spawn it from code.
 //!
-//!
 //! You can spawn a popup anytime you have access to the scheduler (i.e. when initializing the UI,
 //! from a callback, or from a scheduled task). Only one modal can exist at any time; if a modal is
 //! opened when another one already exists, the existing one is dismissed first. The ID of a modal
@@ -3112,7 +3356,7 @@
 //! a button in your modal that dismisses it, you need to bind a callback to the button in the modal
 //! that calls the dismiss_modal method of the scheduler. Modals can be dragged across the screen by
 //! the user (as long as they click on an empty part of the modal); if you want to disable this
-//! behavior set can_drag to false on the layout template used to spawn the modal. Lastly, when a
+//! behavior set 'can_drag' to false in the layout template used to spawn the modal. Lastly, when a
 //! modal is open only widgets in the modal can be selected or clicked; events do not reach the main
 //! UI when a modal is open.
 //!
@@ -3124,49 +3368,59 @@
 //! We'll also create a button in the main UI, which will spawn the popup:
 //! ```
 //! - Layout:
-//!     mode: box
+//!     mode: float
 //!     - Button:
 //!         id: create_button
 //!         text: Create popup
+//!         auto_scale: true, true
+//!         pos_hint: center, middle
 //!
 //! - <MyPopup@Layout>:
 //!     mode: box
 //!     orientation: vertical
 //!     size_hint: 0.5, 0.5
 //!     pos_hint: center, middle
+//!     border: true
 //!     - Label:
 //!         text: This is my popup!
-//!         size_hint_y: 0.8
+//!         size_hint_y: none
+//!         height: parent.height - parent.dismiss_button.height
+//!         auto_scale_width: true
+//!         halign: center
 //!     - Button:
 //!         id: dismiss_button
 //!         text: Close popup
-//!         size_hint_y: 0.2
+//!         auto_scale_height: true
 //! ```
 //! We now have a template we can use to spawn the popup. Note that you can only use Layout
-//! templates to spawn modals, widget templates won't work. Now we'll callbacks to create and
+//! templates to spawn modals, widget templates won't work. Now we'll write callbacks to create and
 //! dismiss the popup:
 //! ```
 //! use ez_term::*;
 //! let (root_widget, mut state_tree, mut scheduler) = load_ui();
 //!
-//! let dismiss_popup_callback = |context: Context| {
-//!     context.scheduler.dismiss_modal(context.state_tree);
-//! };
-//!
 //! let create_popup_callback = |context: Context| {
+//!
+//!     let dismiss_popup_callback = |context: Context| {
+//!         context.scheduler.dismiss_modal(context.state_tree);
+//!         true
+//!     };
+//!
 //!     context.scheduler.open_modal("MyPopup", context.state_tree);
-//!     let callback_config = CallbackConfig::from_on_press(Box::new(create_popup_callback));
-//!     scheduler.update_callback_config("dismiss_button", callback_config);
+//!     let callback_config = CallbackConfig::from_on_press(Box::new(dismiss_popup_callback));
+//!     context.scheduler.update_callback_config("dismiss_button", callback_config);
+//!     true
 //! };
 //!
 //! let callback_config = CallbackConfig::from_on_press(Box::new(create_popup_callback));
 //! scheduler.update_callback_config("create_button", callback_config);
 //!
+//! run(root_widget, state_tree, scheduler);
 //! ```
 //! Now when the create button is pressed, the popup will open. When the dismiss button is pressed
 //! from the modal, it will close again. Note that we referred to the template name when opening
 //! the popup; this is separate from any ID, it comes from the line: "- <MyPopup@Layout>:".
-//! Note also that we bind the dismiss callback to the modal button inside of the callback where we
+//! Note also that we bind the dismiss callback to the modal button from inside of the callback where we
 //! spawn the modal. We cannot bind the dismiss callback when initializing the UI, because the modal
 //! does not exist at that time. It only exists after the "open_modal" method of the scheduler is
 //! called.
@@ -3194,58 +3448,79 @@
 //!
 //! You can spawn any kind of layout or widget from code, including templates. In fact, creating
 //! widgets from templates is usually the best way to do it. Let's use the SQL record example we used
-//! above: we will create a layout template that can display an entire SQL record. Then we'll
+//! above: we will create a layout template that can display an SQL record. Then we'll
 //! iterate over SQL records from code and create widgets for them. We'll also create a UI that
-//! can display the sql record widgets. First the .ez file:
+//! can display multiple sql record widgets. First the .ez file:
 //! ```
 //! - Layout:
 //!     mode: box
 //!     orientation: vertical
+//!     border: true
 //!     - Label:
-//!         text: Retrieved SQL records:
+//!         text: Retrieved SQL records:a
 //!         auto_scale: true, true
+//!         halign: center
+//!         padding_bottom: 1
 //!     - Layout:
 //!         id: sql_records_layout
 //!         mode: box
 //!         orientation: vertical
+//!         scroll_y: true
 //!
 //! - <SqlRecord@Layout>:
 //!     mode: box
 //!     orientation: horizontal
+//!     auto_scale_height: true
 //!     - Label:
 //!         id: record_id
-//!         auto_scale: true, true
+//!         auto_scale_height: true
+//!         size_hint_x: 1
 //!     - Label:
 //!         id: record_name
-//!         auto_scale: true, true
+//!         auto_scale_height: true
+//!         size_hint_x: 1
 //!     - Label:
 //!         id: record_date
-//!         auto_scale: true, true
+//!         auto_scale_height: true
+//!         size_hint_x: 1
 //! ```
 //! We now have a main UI that can hold our records. We also have a Layout template that can be
 //! spawned to display a record. Let's now go to the code:
 //! ```
-//! use ez_term::*;
-//! let (root_widget, mut state_tree, mut scheduler) = load_ui();
+//! fn main() {
+//!     use ez_term::*;
+//!     use std::collections::HashMap;
+//!     let (root_widget, mut state_tree, mut scheduler) = load_ui();
 //!
-//! let sql_records = get_sql_records();
-//! for (i, sql_record) in sql_records.iter().enumerate() {
+//!     // Let's create some mock SQL records to spawn widgets from
+//!     let mut sql_records = Vec::new();
+//!     for x in 1..=100 {
+//!         let mut sql_record = HashMap::new();
+//!         sql_record.insert("id", format!("{}", x));
+//!         sql_record.insert("name", format!("Record {}", x));
+//!         sql_record.insert("date", format!("{}-{}-2022", (x / 31) + 1, x % 31 + 1));
+//!         sql_records.push(sql_record);
+//!     }
 //!
+//!     // Now we'll iterate over the records and spawn a template for each one
 //!     let template_name = "SqlRecord";
 //!     let parent_id = "sql_records_layout";
-//!     let new_id = format!("record_{}", i).as_str();
+//!     for (i, sql_record) in sql_records.iter().enumerate() {
 //!
-//!     let (new_widget, new_states) =
-//!             scheduler.prepare_create_widget(template_name, new_id, parent_id, &mut state_tree);
+//!         let new_id = format!("record_{}", i);
 //!
-//!     new_states.get("record_id").as_label_mut().set_text(sql_record.id);
-//!     new_states.get("record_name").as_label_mut().set_text(sql_record.name);
-//!     new_states.get("record_date").as_label_mut().set_text(sql_record.date);
+//!         let (new_widget, mut new_states) =
+//!                 scheduler.prepare_create_widget(template_name, &new_id, parent_id, &mut state_tree);
 //!
-//!     scheduler.create_widget(new_widget, new_states, &mut state_tree);
+//!         new_states.get_mut("record_id").as_label_mut().set_text(sql_record.get("id").unwrap().to_string());
+//!         new_states.get_mut("record_name").as_label_mut().set_text(sql_record.get("name").unwrap().to_string());
+//!         new_states.get_mut("record_date").as_label_mut().set_text(sql_record.get("date").unwrap().to_string());
 //!
+//!         scheduler.create_widget(new_widget, new_states, &mut state_tree);
+//!
+//!     }
+//!     run(root_widget, state_tree, scheduler);
 //! }
-//! run(root_widget, state_tree, scheduler);
 //! ```
 //! We saw the process in action above: get the new widget object and states, alter the states,
 //! then create the widget. When calling 'prepare_create_widget' we need a template or widget name
@@ -3265,7 +3540,8 @@
 //! ```
 //! scheduler.remove_widget("/root/layout/widget");
 //! ```
-//! The widget will be removed on the next frame after you call remove_widget.
+//! The widget will be removed on the next frame after you call remove_widget. If you remove a
+//! layout, all children will also be removed. You cannot remove the root layout.
 //!
 //!
 //! <a name="scheduler_updating"></a>
@@ -3279,9 +3555,11 @@
 //! ```
 //! use ez_term::*;
 //! fn my_callback(context: Context) {
+//!
 //!     let label_state = context.state_tree.get_mut("my_label").to_label_mut();
 //!     label_state.set_text("new_text".to_string());
 //!     label_state.update(context.scheduler);
+//!
 //! }
 //! ```
 //! The update method is in fact a convenience that calls "scheduler.update_widget". This scheduler
@@ -3294,24 +3572,22 @@
 //! It is also possible to call a global screen update. In this case, all widgets, starting from the
 //! root layout, will be redrawn. For performance reasons, only changed pixels will actually be
 //! redrawn, but global updates will still be more costly than updating individual states. The
-//! option is made available but should generally not be used.
+//! option is made available but should generally not be used; try updating individual states rather
+//! than using this.
 //!
 //! <a name="scheduler_updating_threaded"></a>
-//! #### 1.3.8.2 Custom properties and threads
+//! #### 1.3.8.2 Bound properties
 //!
-//! There are two cases where you do not need to manually update a state. If you bind a widget
-//! property to a custom property, and you change the value of the custom property, the widgets
-//! bound to it will update automatically.
+//! If you bind a widget property to a (custom) property, and you change the value of the (custom)
+//! property, the widgets bound to it will update automatically. This is the only case in which you
+//! never have to call an update method
 //!
-//! Also, if you manipulate the state tree from a background thread, any state that changes will
-//! trigger a widget update automatically (because you do not have access to the scheduler from
-//! threads, as its not thread-safe).
 //!
 //! <a name="scheduler_selection"></a>
 //! ### 1.3.9 Managing widget selection
 //!
 //! Widgets can be selected by the user by mouse hover and up/down arrow keyboard keys (as long as
-//! the widget has the selection_order property set). Widgets can only be selected if they're
+//! the widget has the 'selection_order' property set). Widgets can only be selected if they're
 //! selectable in general; selectable widgets are:
 //! - Layout (when scrolling or when tabbed)
 //! - Button
@@ -8342,7 +8618,7 @@
 //! let (root_widget, mut state_tree, mut scheduler) = load_ui();
 //!
 //!
-//! scheduler.remove_global_key(KeyCode::Char('a'), Some(vec!(KeyModifiers::SHIFT);
+//! scheduler.remove_global_key(KeyCode::Char('a'), Some(vec!(KeyModifiers::SHIFT)));
 //!
 //! run(root_widget, state_tree, scheduler);
 //! ```
@@ -8400,10 +8676,12 @@
 //! for x in 1..=10 {
 //!
 //!     let new_id = format!("label_{}", x).as_str();
-//!     scheduler.create_widget("Label", new_id, parent_id, &mut state_tree);
+//!     let (new_widget, mut new_states) =
+//!             scheduler.prepare_create_widget("Label", new_id, parent_id, &mut state_tree);
 //!
-//!     let new_label_state = state_tree.get_mut(new_id);
-//!     new_label_state.set_text(format!("Hello world {}!", x));
+//!     new_states.as_label_mut().set_text(format!("Hello world {}!", x));
+//!
+//!     scheduler.create_widget(new_widget, new_states, &mut state_tree);
 //!
 //! }
 //!
@@ -8664,7 +8942,7 @@
 //!
 //! let (root_widget, mut state_tree, mut scheduler) = load_ui();
 //!
-//! scheduler.new_string_property("my_property", LayoutOrientation::Vertical);
+//! scheduler.new_layout_orientation_property("my_property", LayoutOrientation::Vertical);
 //!
 //! run(root_widget, state_tree, scheduler);
 //! ```
