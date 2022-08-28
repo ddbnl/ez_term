@@ -18,30 +18,65 @@ impl Layout {
             .as_layout();
         let own_width = own_state.get_effective_size().width;
         let own_height = own_state.get_effective_size().height;
+        let own_mode = own_state.mode.value.clone();
+        let own_rows = own_state.get_table_config().rows.value;
+        let own_cols = own_state.get_table_config().cols.value;
 
         // Check if there are multiple children who ALL have size_hint=1, and in
         // that case give them '1 / number_of_children'. That way the user can add
         // multiple children in a Box layout and have them distributed equally automatically. Any
         // kind of asymmetry breaks this behavior.
         if self.children.len() > 1 &&
-            own_state.get_mode() != &LayoutMode::Tab &&
-                own_state.get_mode() != &LayoutMode::Screen {
+            [LayoutMode::Box, LayoutMode::Table].contains(own_state.get_mode()) {
             let (all_default_size_hint_x, all_default_size_hint_y) =
                 self.check_default_size_hints(state_tree);
             if all_default_size_hint_x {
-                for child in self.get_children() {
-                    let generic_child = child.as_ez_object();
-                    let state = state_tree.get_mut(&generic_child.get_path())
-                        .as_generic_mut();
-                    state.set_size_hint_x(Some(1.0 / (self.children.len() as f64)));
+                if own_mode == LayoutMode::Box {
+                    for child in self.get_children() {
+                        let generic_child = child.as_ez_object();
+                        let state = state_tree.get_mut(&generic_child.get_path())
+                            .as_generic_mut();
+                        state.set_size_hint_x(Some(1.0 / (self.children.len() as f64)));
+                    }
+                } else {
+                    let divide_by =
+                        if own_cols > 0 {
+                            own_cols
+                        } else {
+                            self.children.len() / own_rows
+                                + if self.children.len() % own_rows
+                                    > 0 {1} else {0}
+                        };
+                    for child in self.get_children() {
+                        let generic_child = child.as_ez_object();
+                        let state = state_tree.get_mut(&generic_child.get_path())
+                            .as_generic_mut();
+                        state.set_size_hint_x(Some(1.0 / divide_by as f64));
+                    }
                 }
             }
             if all_default_size_hint_y {
-                for child in self.get_children() {
-                    let generic_child = child.as_ez_object();
-                    let state = state_tree.get_mut(&generic_child.get_path())
-                        .as_generic_mut();
-                    state.set_size_hint_y(Some(1.0 / (self.children.len() as f64)));
+                if own_mode == LayoutMode::Box {
+                    for child in self.get_children() {
+                        let generic_child = child.as_ez_object();
+                        let state = state_tree.get_mut(&generic_child.get_path())
+                            .as_generic_mut();
+                        state.set_size_hint_y(Some(1.0 / (self.children.len() as f64)));
+                    }
+                } else {
+                    let divide_by =
+                        if own_rows > 0 {
+                            own_rows
+                        } else {
+                            self.children.len() / own_cols
+                                + if self.children.len() % own_cols > 0 {1} else {0}
+                        };
+                    for child in self.get_children() {
+                        let generic_child = child.as_ez_object();
+                        let state = state_tree.get_mut(&generic_child.get_path())
+                            .as_generic_mut();
+                        state.set_size_hint_y(Some(1.0 / divide_by as f64));
+                    }
                 }
             }
         }
@@ -73,7 +108,7 @@ impl Layout {
             let generic_child = child.as_ez_object();
             let state = state_tree
                 .get(&generic_child.get_path()).as_generic();
-            if let LayoutOrientation::Horizontal = own_orientation {
+            if own_orientation != LayoutOrientation::Vertical {
                 if let Some(size_hint_x) = state.get_size_hint().get_size_hint_x()
                 {
                     if size_hint_x != 1.0 || state.get_auto_scale().get_auto_scale_width() ||
@@ -86,7 +121,7 @@ impl Layout {
             } else {
                 all_default_size_hint_x = false;
             }
-            if let LayoutOrientation::Vertical = own_orientation {
+            if own_orientation != LayoutOrientation::Horizontal {
                 if let Some(size_hint_y) = state.get_size_hint().get_size_hint_y() {
                     if size_hint_y != 1.0 || state.get_auto_scale().get_auto_scale_height() ||
                         state.get_size().fixed_height {

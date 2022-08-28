@@ -1,0 +1,40 @@
+// This example will show a few different ways to use labels. Check the comments above the different labels
+// for more info.
+
+- Layout:
+    mode: box
+    orientation: vertical
+
+    // This is a label with auto scale enabled. This way it will not take up any more space than needed.
+    // Keep in mind that since auto scale width is enabled, the label will always be height 1. In the next example
+    // we'll show how to grow the label vertically.
+    - Label:
+        text: Scaled label
+        auto_scale: true, true
+        border: true
+
+    // This label loads a large dummy text from a file. We want the label to fit the text, so we want it to grow. We
+    // can accomplish this by fixing the width to the width of the layout (already true due to default
+    // 'size_hint_x: 1.0') and auto scaling height. We'll wrap it inside of a scrolling layout as well.
+    - Layout:
+        scroll_y: true
+        size_hint_y: 0.5
+        border: true
+        - Label:
+            from_file: lorem_ipsum.txt
+            auto_scale_height: true
+
+    // This label is centered. In order to center we have to scale the label, because if the label takes up the full
+    // width of the layout, it cannot be centered.
+    - Label:
+        text: Centered label
+        auto_scale: true, true
+        halign: center
+        border: true
+
+    // This label has colored text through fg_color
+    - Label:
+        text: Yellow label
+        auto_scale: true, true
+        fg_color: yellow
+        border: true

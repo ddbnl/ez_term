@@ -1,0 +1,53 @@
+// In this example we'll create a dynamic table, displaying information
+// about a shop inventory. The amount of columns is fixed
+// but the amount of rows will grow based on the widgets we add. We will
+// not force any column widths or row heights, so their size will be dynamic.
+//
+// Adding all these widgets is tedious; the table widget is a prime
+// candidate for programmatically generating widgets. See the scheduler
+// examples or scheduler tutorial on 'creating widgets programmatically'
+// for more information on this.
+
+
+- <CustomLabel@Label>:
+    auto_scale_height: true
+    halign: center
+
+
+- Layout:
+    mode: table
+    orientation: lr-tb
+    cols: 3
+    border: true
+
+    - CustomLabel:
+        text: Fruit:
+        padding_bottom: 1
+    - CustomLabel:
+        text: Stock:
+        padding_bottom: 1
+    - CustomLabel:
+        text: Price:
+        padding_bottom: 1
+
+    - CustomLabel:
+        text: Apple
+    - CustomLabel:
+        text: 42
+    - CustomLabel:
+        text: $3
+
+    - CustomLabel:
+        text: Orange
+    - CustomLabel:
+        text: 92
+    - CustomLabel:
+        text: $2
+
+
+    - CustomLabel:
+        text: Banana
+    - CustomLabel:
+        text: 12
+    - CustomLabel:
+        text: $2.50

@@ -1,0 +1,26 @@
+// This example creates a tabbed layout with two screens. The second screen is
+// made active initially. As there is no default way for users to switch between
+// screens, we have to write a callback to do it. For this we will create a button
+// on each screen, to which we will bind a callback that switches to the other screen.
+
+
+- Layout:
+    mode: screen
+    - Layout:
+        id: screen_1
+        mode: box
+        orientation: vertical
+        - Label:
+            text: Hello screen one!
+        - Button:
+            id: to_screen_2_btn
+            text: Go to screen 2
+    - Layout:
+        id: screen_2
+        mode: box
+        orientation: vertical
+        - Label:
+            text: Hello screen two!
+        - Button:
+            id: to_screen_1_btn
+            text: Go to screen 1

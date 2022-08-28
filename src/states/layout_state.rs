@@ -489,6 +489,7 @@ impl GenericState for LayoutState {
         clean_up_property(scheduler, &self.active_screen.name);
         clean_up_property(scheduler, &self.active_tab.name);
         clean_up_property(scheduler, &self.tab_name.name);
+        clean_up_property(scheduler, &self.can_drag.name);
         clean_up_property(scheduler, &self.view_size.name);
         clean_up_property(scheduler, &self.view_page.name);
         clean_up_property(scheduler, &self.fill.name);

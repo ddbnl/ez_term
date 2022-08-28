@@ -1,0 +1,43 @@
+// This example creates a tabbed layout with three tabs. The second tab is
+// made active initially. All tab color properties are used to show which
+// ones are available, but since the default fg_color is white and the
+// default bg_color is black, most could be left out in this example.
+// Note that the root layout cannot be tabbed, so we created a sub layout
+// first.
+
+- Layout:
+    mode: box
+    orientation: vertical
+    - Label:
+        text: Tabs example:
+        auto_scale: true, true
+        halign: center
+    - Layout:
+        mode: tab
+        active_tab: tab_two
+        tab_header_fg_color: white
+        tab_header_bg_color: black
+        tab_header_border_fg_color: white
+        tab_header_border_bg_color: black
+        tab_header_active_fg_color: yellow
+        tab_header_active_bg_color: black
+        selection_order: 4
+        border: true
+        - Layout:
+            id: tab_one
+            tab_name: Tab one
+            mode: box
+            - Label:
+                text: Hello tab one!
+        - Layout:
+            id: tab_two
+            tab_name: Tab two
+            mode: box
+            - Label:
+                text: Hello tab two!
+        - Layout:
+            id: tab_three
+            tab_name: Tab three
+            mode: box
+            - Label:
+                text: Hello tab three!

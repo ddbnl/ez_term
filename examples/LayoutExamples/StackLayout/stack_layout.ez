@@ -1,0 +1,19 @@
+// In this example we'll create a stack mode layout, and programmatically fill
+// it with widgets of increasing size, so we can see how the stack layout fits
+// them inside of the layout. Resizing the window might rearrange the widgets
+// and shows the usefulness of the stack layout.
+//
+// Feel free to experiment with the orientation property
+// to get an idea of the different options.
+
+
+- <MyLabel@Label>:
+    size_hint: none, none
+    height: 3
+    border: true
+
+
+- Layout:
+    mode: stack
+    orientation: lr-tb
+    border: true

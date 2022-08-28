@@ -1,0 +1,103 @@
+// This example will show how to use the progress bar in different ways. We'll set progress
+// manually, have it update on button click, have it update from a recurring scheduled task,
+// and have it update from a background thread.
+
+- Layout:
+    mode: table
+    orientation: lr-tb
+    cols: 2
+    border: true
+
+    // This is a regular progressbar. We'll set its value manually.
+    - Label:
+        text: Static
+        auto_scale: true, true
+        size_hint_x: 0.5
+        halign: center
+        valign: middle
+    - Layout:
+        size_hint_x: 0.5
+        auto_scale_height: true
+        - ProgressBar:
+            id: static_progress_bar
+            size_hint_x: none
+            width: parent.width - parent.static_label.width
+            max: 100
+            value: 50
+            border: true
+        - Label:
+            id: static_label
+            text: parent.static_progress_bar.value
+            size_hint_x: none
+            width: 4
+            auto_scale_height: true
+            valign: middle
+
+    // We'll bind a callback to this progress bar to update on button press
+    - Button:
+        id: manual_button
+        fg_color: yellow
+        text: Increase
+        size_hint_x: 0.5
+        auto_scale_height: true
+    - Layout:
+        auto_scale_height: true
+        size_hint_x: 0.5
+        - ProgressBar:
+            id: manual_progress_bar
+            size_hint_x: none
+            width: parent.width - parent.manual_label.width
+            border: true
+        - Label:
+            id: manual_label
+            text: parent.manual_progress_bar.value
+            size_hint_x: none
+            width: 4
+            auto_scale_height: true
+            valign: middle
+
+    // We'll bind a callback to update the value with a recurring task
+    - Button:
+        id: task_button
+        fg_color: yellow
+        text: Start task
+        size_hint_x: 0.5
+        auto_scale_height: true
+    - Layout:
+        size_hint_x: 0.5
+        auto_scale_height: true
+        - ProgressBar:
+            id: task_progress_bar
+            size_hint_x: none
+            width: parent.width - parent.task_label.width
+            border: true
+        - Label:
+            id: task_label
+            text: parent.task_progress_bar.value
+            size_hint_x: none
+            width: 4
+            auto_scale_height: true
+            valign: middle
+
+    // We'll bind a callback to update the value from a background thread
+    - Button:
+        id: thread_button
+        fg_color: yellow
+        text: Start thread
+        size_hint_x: 0.5
+        auto_scale_height: true
+    - Layout:
+        size_hint_x: 0.5
+        auto_scale_height: true
+        - ProgressBar:
+            id: thread_progress_bar
+            size_hint_x: none
+            width: parent.width - parent.thread_label.width
+            border: true
+        - Label:
+            id: thread_label
+            text: parent.thread_progress_bar.value
+            size_hint_x: none
+            width: 4
+            auto_scale_height: true
+            valign: middle

@@ -1,4 +1,4 @@
-use crate::EzProperty;
+use crate::{EzProperty, Pixel};
 use crate::property::ez_values::EzValues;
 use crate::run::definitions::{IsizeCoordinates, PixelMap};
 use crate::scheduler::scheduler::SchedulerFrontend;
@@ -303,14 +303,8 @@ impl CanvasState {
     /// Set the content of this Widget. You must manually fill a [PixelMap] of the same
     /// [height] and [width] as this widget and pass it here.
     pub fn set_contents(&mut self, contents: PixelMap) {
-        let mut valid_contents = Vec::new();
-        for x in 0..self.get_size().get_width() as usize {
-            valid_contents.push(Vec::new());
-            for y in 0..self.get_size().get_height() as usize {
-                valid_contents[x].push(contents[x][y].clone())
-            }
-        }
-        self.contents = valid_contents
+
+        self.contents = contents
     }
 
     pub fn get_contents(&self) -> &PixelMap {

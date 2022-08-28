@@ -1,22 +1,27 @@
+// In this example we'll put a label in each corner of the screen
+// and one in the middle, using only manual positions.
+
+
 - <MyLabelTemplate@Label>:
-    text: hello
+    text: Test
     border: True
     auto_scale: true, true
 
 - Layout:
     mode: float
+    size: 20, 20
     - MyLabelTemplate:
         id: my_upper_left_label
-        pos_hint: left, top
+        pos: 0, 0
     - MyLabelTemplate:
         id: my_middle_label
-        pos_hint: center, middle
+        pos: 7, 9
     - MyLabelTemplate:
         id: my_lower_left_label
-        pos_hint: left, bottom
+        pos: 0, 17
     - MyLabelTemplate:
         id: my_upper_right_label
-        pos_hint: right, top
+        pos: 14, 0
     - MyLabelTemplate:
         id: my_lower_right_label
-        pos_hint: right, bottom
+        pos: 14, 17

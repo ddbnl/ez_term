@@ -121,17 +121,22 @@ pub fn create_new_widgets(scheduler: &mut SchedulerFrontend, root_widget: &mut L
         let widget_path = new_widget.as_ez_object().get_path();
         let (parent_path, _) = widget_path.rsplit_once('/').unwrap();
 
-        let parent = root_widget.get_child_by_path_mut(parent_path).unwrap_or_else(
-            || panic!("Could not create new widget, parent path does not exist: {}", parent_path)
-        ).as_layout_mut();
-        callback_tree.add_node(widget_path, CallbackConfig::default());
+        callback_tree.add_node(widget_path.clone(), CallbackConfig::default());
         if let EzObjects::Layout(ref i) = new_widget {
             for child in i.get_widgets_recursive() {
                 callback_tree.add_node(child.as_ez_object().get_path(),
                                        CallbackConfig::default());
             }
         }
-        parent.add_child(new_widget, scheduler);
+        if parent_path == "/root" {
+            root_widget.add_child(new_widget, scheduler);
+        } else {
+            let parent = root_widget.get_child_by_path_mut(parent_path).unwrap_or_else(
+                || panic!("Could not create new widget, parent path does not exist: {}", parent_path)
+            ).as_layout_mut();
+            parent.add_child(new_widget, scheduler);
+        };
+
         scheduler.force_redraw();
     }
 }

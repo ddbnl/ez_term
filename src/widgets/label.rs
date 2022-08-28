@@ -60,7 +60,8 @@ impl EzObject for Label {
                 parameter_value.trim(), scheduler, self.path.clone(),
                 &parameter_name, self.get_state_mut())?,
             "text" => load_base_properties::load_string_property(
-                parameter_value.trim(), scheduler, self.path.clone(),
+                parameter_value.strip_prefix(' ').unwrap_or(
+                    parameter_value.as_str()), scheduler, self.path.clone(),
                 &parameter_name, self.get_state_mut())?,
             _ => panic!("Invalid parameter name for label: {}", parameter_name)
         }

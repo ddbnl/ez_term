@@ -186,7 +186,7 @@ impl EzObject for Dropdown {
             state.get_border_config().clone(),
             state.get_color_config().clone(),
             scheduler.new_string_property(format!("{}/choice", modal_path).as_str(),
-                                                  state.get_options()[0].to_string()),
+                                                  state.get_choice()),
             self.path.clone(),
         );
         let new_modal = DroppedDownMenu {
@@ -197,7 +197,7 @@ impl EzObject for Dropdown {
         let root_state = state_tree.as_layout_mut();
         root_state.update(scheduler);
         let new_states =
-            root_state.open_modal(ez_object::EzObjects::DroppedDownMenu(new_modal));
+            root_state.open_modal(EzObjects::DroppedDownMenu(new_modal));
         for (path, new_state) in new_states {
             state_tree.add_node(path, new_state);
             scheduler.overwrite_callback_config(&modal_path,

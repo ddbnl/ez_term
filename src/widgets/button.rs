@@ -94,7 +94,7 @@ impl EzObject for Button {
         let text = state.get_text();
 
         let write_width = if state.get_infinite_size().width ||
-            state.get_auto_scale().get_auto_scale_width() { text.len() + 1 }
+            state.get_auto_scale().get_auto_scale_width() { text.len() + 1}
             else {state.get_effective_size().width };
         let content_lines = wrap_text(text, write_width);
         let write_height =
@@ -110,6 +110,9 @@ impl EzObject for Button {
             for y in 0..write_height {
                 if y < content_lines.len() && x < content_lines[y].len() {
                     new_y.push(Pixel { symbol: content_lines[y][x..x+1].to_string(),
+                        foreground_color: fg_color, background_color: bg_color, underline: false })
+                } else {
+                    new_y.push(Pixel { symbol: " ".to_string(),
                         foreground_color: fg_color, background_color: bg_color, underline: false })
                 }
             }

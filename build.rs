@@ -14,7 +14,7 @@ fn main() {
     let ez_folder = get_ez_folder();
     println!("cargo:rerun-if-changed={}", ez_folder);
 
-    let mut config_files = load_ez_folder(ez_folder.as_str());
+    let config_files = load_ez_folder(ez_folder.as_str());
     let mut include_files: HashMap<String, String> = HashMap::new();
     for (_, content) in config_files.iter() {
         for line in content.lines() {
@@ -28,6 +28,9 @@ fn main() {
                     .unwrap_or_else(|_| panic!("Unable to open file {:?}", full_path));
                 file.read_to_string(&mut file_string)
                     .unwrap_or_else(|_| panic!("Unable to read file {:?}", full_path));
+                file_string = file_string.replace("\\", "\\\\").replace('{', "{{")
+                    .replace('}', "}}").replace('"', "\\\"")
+                    .replace( "'", "\\'");
                 include_files.insert(path.to_string(), file_string);
             }
         }
@@ -50,6 +53,7 @@ pub fn ez_includes() -> HashMap<String, String> {{
     for (path, content) in include_files {
         gen = format!("{}\n\
     files.insert(r\"{}\".to_string(), \"{}\".to_string());", gen, path, content);
+
     }
     gen = format!("{}\
     files\n\

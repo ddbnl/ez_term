@@ -1,0 +1,50 @@
+// This example will show a few different ways to use buttons. Check the comments above the different buttons
+// for more info.
+
+- Layout:
+    mode: box
+    orientation: vertical
+    border: true
+
+    // This is a button with auto scale enabled. This way it will not take up any more space than needed.
+    // Keep in mind that since auto scale width is enabled, the button will always be height 1. Check the next button
+    // for multi line button text.
+    - Button:
+        text: Scaled button
+        auto_scale: true, true
+
+    // This button has multi-line text.
+    - Button:
+        text: Multi Line
+        size_hint_x: none
+        width: 9
+        auto_scale_height: true
+
+    // This is a layout with a normal button and a disabled button. We'll give the enabled button a color so it's easier
+    // for the user to see what is enabled and what is disabled.
+    - Layout:
+        auto_scale: true, true
+        - Button:
+            text: Enabled button
+            auto_scale: true, true
+            fg_color: yellow
+        - Button:
+            text: Disabled button
+            auto_scale: true, true
+            disabled: true
+    // Buttons are of course only useful if bound to a callback. We'll bind this button to a callback that changes the
+    // text of the label next to it (see button_example.rs).
+    - Layout:
+        auto_scale: true, true
+        - Button:
+            id: change_label_button
+            text: Change label
+            auto_scale: true, true
+            selection_order: 1
+        - Label:
+            id: my_label
+            text: Original text
+            auto_scale: true, true
+            valign: middle
+
+

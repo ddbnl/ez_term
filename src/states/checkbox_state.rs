@@ -90,7 +90,7 @@ impl CheckboxState {
                                                false),
            active_symbol: scheduler.new_string_property(format!("{}/active_symbol",
                                                                 path).as_str(),"X".to_string()),
-           inactive_symbol: scheduler.new_string_property(format!("{}/active_symbol",
+           inactive_symbol: scheduler.new_string_property(format!("{}/inactive_symbol",
                                                                 path).as_str(),"-".to_string()),
            disabled: scheduler.new_bool_property(
                 format!("{}/disabled", path).as_str(),false),
@@ -320,6 +320,8 @@ impl GenericState for CheckboxState {
         clean_up_property(scheduler, &self.halign.name);
         clean_up_property(scheduler, &self.valign.name);
         clean_up_property(scheduler, &self.active.name);
+        clean_up_property(scheduler, &self.active_symbol.name);
+        clean_up_property(scheduler, &self.inactive_symbol.name);
         clean_up_property(scheduler, &self.disabled.name);
         clean_up_property(scheduler, &self.selection_order.name);
         self.border_config.clean_up_properties(scheduler);

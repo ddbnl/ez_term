@@ -57,13 +57,13 @@ impl EzObject for Checkbox {
         match parameter_name.as_str() {
             "active" => load_base_properties::load_bool_property(
                 parameter_value.trim(), scheduler, self.path.clone(),
-                &parameter_name, self.get_state_mut())?,
+                &parameter_name.trim(), self.get_state_mut())?,
             "active_symbol" => load_base_properties::load_string_property(
                 parameter_value.trim(), scheduler, self.path.clone(),
-                &parameter_name, self.get_state_mut())?,
+                &parameter_name.trim(), self.get_state_mut())?,
             "inactive_symbol" => load_base_properties::load_string_property(
                 parameter_value.trim(), scheduler, self.path.clone(),
-                &parameter_name, self.get_state_mut())?,
+                &parameter_name.trim(), self.get_state_mut())?,
             _ => return Err(
                 Error::new(ErrorKind::InvalidData,
                            format!("Invalid parameter name for checkbox: {}", parameter_name)))

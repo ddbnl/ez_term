@@ -1,3 +1,7 @@
+// This examples uses nested box layouts to divide the screen into four labels.
+// Nested box layouts are a good way to divide the screen into rectangles.
+
+
 - Layout:
     mode: box
     orientation: horizontal

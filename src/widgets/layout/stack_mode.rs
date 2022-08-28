@@ -126,7 +126,8 @@ impl Layout {
         for (i, content) in content_list.iter().enumerate() {
             if content.len() > effective_size.width + 1 { break }
             if content.len() > effective_size.width - pos.x {
-                if pos.y + largest_y >= effective_size.height { break }
+                if pos.y + content.iter().map(|x| x.len()).max().unwrap_or(0)
+                    >= effective_size.height { break }
                 pos.y = largest_y + 1;
                 let largest = content.iter().map(|x| x.len()).max().unwrap();
                 if largest > effective_size.height - pos.y { break }
@@ -222,7 +223,8 @@ impl Layout {
         for (i, content) in content_list.iter().enumerate() {
             if content.len() > effective_size.width + 1 { break }
             if content.len() > pos.x {
-                if pos.y + largest_y >= effective_size.height { break }
+                let largest = content.iter().map(|x| x.len()).max().unwrap();
+                if pos.y + largest >= effective_size.height { break }
                 pos.y = largest_y + 1;
                 let largest = content.iter().map(|x| x.len()).max().unwrap();
                 if largest > effective_size.height - pos.y { break }

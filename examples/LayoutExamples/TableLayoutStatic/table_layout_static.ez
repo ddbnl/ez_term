@@ -1,0 +1,39 @@
+// In this example we will use a table layout to create a sudoku cell.
+// These cells always contain 9 labels of fixed size, so we can use a
+// fixed amount of columns and rows, and we can force the column width
+// and row height to the value we want. This way, regardless of scaling,
+// our sudoku cell will remain compact and readable.
+
+
+- <SudokuLabel@Label>:
+    text: -
+    size_hint: none, none
+    size: 1, 1
+    halign: center
+    valign: middle
+
+- Layout:
+    mode: table
+    border: true
+    orientation: lr-tb
+    auto_scale: true, true
+
+    cols: 3
+    col_default_width: 7
+    force_default_col_width: true
+    row_default_height: 3
+    force_default_row_height: true
+
+    - SudokuLabel:
+    - SudokuLabel:
+    - SudokuLabel:
+    - SudokuLabel:
+        text: 3
+    - SudokuLabel:
+        text: 5
+    - SudokuLabel:
+    - SudokuLabel:
+        text: 9
+    - SudokuLabel:
+    - SudokuLabel:
+        text: 4

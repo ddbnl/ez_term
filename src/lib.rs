@@ -83,6 +83,7 @@
 //!         8. [Updating widgets](#scheduler_updating)
 //!         9. [Managing widget selection](#scheduler_selection)
 //!     4. [Global (key)bindings](#keybindings)
+//!     5. [Performance](#performance)
 //! 2. [Reference](#reference)
 //!     1. [Common properties](#reference_common)
 //!         1. [x](#reference_common_x)
@@ -172,6 +173,7 @@
 //!         2. [Default callback implementations](#reference_button_default_callbacks)
 //!             1. [Left click](#reference_button_default_callbacks_leftclick)
 //!             2. [Keyboard enter](#reference_button_default_callbacks_enter)
+//!             2. [On press](#reference_button_default_callbacks_press)
 //!         3. [Available callbacks](#reference_button_available_callbacks)
 //!     5. [Checkbox](#reference_checkbox)
 //!         1. [Properties](#reference_checkbox_properties)
@@ -1057,17 +1059,16 @@
 //! use ez_term::*;
 //!
 //! fn main() {
+//!     // We load the UI from the .ez files
+//!     let (root_layout, mut state_tree, mut scheduler) = load_ui();
 //!
-//! // We load the UI from the .ez files
-//! let (root_layout, mut state_tree, mut scheduler) = load_ui();
-//!
-//! // We update the callbacks for the buttons, using the functions defined below
-//! scheduler.update_callback_config("to_screen_2_btn",
-//!                                  CallbackConfig::from_on_press(Box::new(to_screen_two_callback)));
-//! scheduler.update_callback_config("to_screen_1_btn",
-//!                                  CallbackConfig::from_on_press(Box::new(to_screen_one_callback)));
-//! // We run the UI
-//! run(root_layout, state_tree, scheduler);
+//!     // We update the callbacks for the buttons, using the functions defined below
+//!     scheduler.update_callback_config("to_screen_2_btn",
+//!                                      CallbackConfig::from_on_press(Box::new(to_screen_two_callback)));
+//!     scheduler.update_callback_config("to_screen_1_btn",
+//!                                      CallbackConfig::from_on_press(Box::new(to_screen_one_callback)));
+//!     // We run the UI
+//!     run(root_layout, state_tree, scheduler);
 //! }
 //!
 //! // We define the callback functions. We could also use closures if we wanted to.
@@ -3711,6 +3712,17 @@
 //!
 //! **Mouse left click:**
 //! All interactive widgets implement an on_left_mouse_click callback with default behavior.
+//! 
+//! ## 1.5 Performance
+//! 
+//! When it comes to performance common sense applies, but there's a few points to make:
+//! 
+//! - Test performance in release mode (cargo run --release); it makes an enormous difference 
+//! compared to debug.
+//! - Call update on individual widget states when you change them, rather than calling for a 
+//! global redraw.
+//! - Make sure all callbacks and scheduled tasks return immediately (UI manipulation is always safe);
+//! use a threaded task for all functions that block, such as longer running functions of your app.
 //!
 //!
 //! <a name="reference"></a>
@@ -6931,6 +6943,7 @@
 //! - on_left_click
 //! - on_right_click
 //!
+//!
 //! <a name="reference_button"></a>
 //! ## 2.4 Button:
 //!
@@ -7117,6 +7130,13 @@
 //! #### on_keyboard_enter
 //!
 //! Calls the on_press callback.
+//!
+//! <a name="reference_button_default_callbacks_press"></a>
+//! #### on_press
+//!
+//! Button flashes to indicate it has been clicked. This is done by briefly showing the
+//! flash_fg_color and flash_bg_color.
+//!
 //!
 //! <a name="reference_button_available_callbacks"></a>
 //! ### 2.4.3 Available callbacks

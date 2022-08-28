@@ -61,7 +61,7 @@ pub fn redraw_changed_widgets(view_tree: &mut ViewTree, state_tree: &mut StateTr
         force_redraw = true;
     }
     if !force_redraw {
-        redraw_widgets(changed_states, view_tree, state_tree, root_widget);
+        force_redraw = redraw_widgets(changed_states, view_tree, state_tree, root_widget);
     }
     force_redraw
 }
@@ -69,7 +69,7 @@ pub fn redraw_changed_widgets(view_tree: &mut ViewTree, state_tree: &mut StateTr
 
 /// Redraw a list of widgets to a ViewTree.
 pub fn redraw_widgets(paths: &mut Vec<String>, view_tree: &mut ViewTree,
-                      state_tree: &mut StateTree, root_widget: &mut Layout) {
+                      state_tree: &mut StateTree, root_widget: &mut Layout) -> bool{
 
     'outer: while !paths.is_empty() {
         let mut widget_path= paths.pop().unwrap();
@@ -85,9 +85,19 @@ pub fn redraw_widgets(paths: &mut Vec<String>, view_tree: &mut ViewTree,
             // to keep the view intact.
             loop {
                 let state = state_tree.get(&widget_path);
-                if (!state.as_generic().get_infinite_size().width &&
-                    !state.as_generic().get_infinite_size().height) || widget_path == "/root" {
-                    break
+                if widget_path == "/root" {
+                    return true
+                } else if !state.as_generic().get_infinite_size().width &&
+                    !state.as_generic().get_infinite_size().height &&
+                    !state.as_generic().get_auto_scale().get_auto_scale_width() &&
+                    !state.as_generic().get_auto_scale().get_auto_scale_height() {
+                    let parent = widget_path.rsplit_once('/').unwrap().0.to_string();
+                    let state = state_tree.get(&parent).as_generic();
+                    if !state.get_auto_scale().get_auto_scale_width() &&
+                        !state.get_auto_scale().get_auto_scale_height() {
+                        break
+                    }
+                    widget_path = parent;
                 } else {
                     widget_path = widget_path.rsplit_once('/').unwrap().0.to_string()
                 }
@@ -96,4 +106,5 @@ pub fn redraw_widgets(paths: &mut Vec<String>, view_tree: &mut ViewTree,
                 .redraw(view_tree, state_tree);
         }
     }
+    false
 }

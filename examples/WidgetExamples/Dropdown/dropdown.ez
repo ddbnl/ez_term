@@ -1,0 +1,36 @@
+// This example will show a few dropdowns showing off the different options. There will also be
+// an example of binding an 'on_value_change' callback to a dropdown.
+
+- Layout:
+    mode: box
+    orientation: vertical
+    border: true
+
+    // This is a standard dropdown with four options. The second option is made initially active.
+    // An empty options is not allowed.
+    - Dropdown:
+        choice: Option 2
+        options: Option 1, Option 2, Option 3, Option 4
+        allow_none: false
+        auto_scale: true, true
+        padding_bottom: 1
+
+    // This dropdown is similar to that above, but this one allows an empty choice (this is allowed
+    // by default).
+    - Dropdown:
+        options: Option 1, Option 2, Option 3, Option 4
+        auto_scale: true, true
+        padding_bottom: 1
+
+    // This dropdown will have an 'on_value_change' callback bound to it, which will change the
+    // label next to it to reflect the current choice.
+    - Layout:
+        auto_scale: true, true
+        - Dropdown:
+            id: change_label_dropdown
+            options: Option 1, Option 2, Option 3, Option 4
+            auto_scale: true, true
+        - Label:
+            id: my_label
+            auto_scale: true, true
+            valign: middle

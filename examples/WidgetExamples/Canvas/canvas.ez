@@ -1,0 +1,18 @@
+// This example will show the two different ways to use a canvas widget. The first way is to
+// manually fill the widget from code. The second way is to load the content from a text file.
+
+- Layout:
+    mode: box
+    orientation: vertical
+
+    // This canvas content will be loaded from a text file.
+    - Canvas:
+        from_file: ./ascii_art.txt
+        auto_scale: true, true
+        border: true
+
+    // This canvas content will be filled from code (see canvas_example.rs)
+    - Canvas:
+        id: my_canvas
+        size_hint: none, none
+        border: true

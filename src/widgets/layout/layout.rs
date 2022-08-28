@@ -188,7 +188,6 @@ impl EzObject for Layout {
         merged_content = self.create_vertical_scroll_box(state_tree, merged_content);
         let state = state_tree.get(&self.get_path()).as_layout();
 
-        if merged_content.is_empty() { return merged_content } // Empty widget
         // Put border around content if border if set
         if state.get_border_config().get_border() {
             merged_content = add_border(merged_content, state.get_border_config(),

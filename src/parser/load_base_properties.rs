@@ -209,7 +209,7 @@ pub fn load_string_property(value: &str, scheduler: &mut SchedulerFrontend, path
         state.update_property(property_name, EzValues::String(String::new()));
         Ok(())
     } else {
-        state.update_property(property_name, EzValues::String(value.trim().to_string()));
+        state.update_property(property_name, EzValues::String(value.to_string()));
         Ok(())
     }
 }

@@ -1,0 +1,38 @@
+// This examples shows how to style and bind callbacks to checkboxes.
+
+- Layout:
+    mode: table
+    orientation: lr-tb
+    cols: 2
+    border: true
+
+    // This is a regular checkbox
+    - Label:
+        text: Regular:
+        auto_scale: true, true
+    - CheckBox:
+
+    // This is a checkbox with custom symbols and colors; its state is also turned to active.
+    - Label:
+        text: Styled:
+        auto_scale: true, true
+    - CheckBox:
+        active_symbol: ✓
+        inactive_symbol: x
+        fg_color: red
+        active: true
+
+    // This is a checkbox to which we will bind an 'on_value_change' callback. When the value changes
+    // from on to off or vice versa, the label will change to reflect is.
+    - Label:
+        text: Callback:
+        auto_scale: true, true
+    - Layout:
+        auto_scale: true, true
+        - CheckBox:
+            id: change_label_checkbox
+        - Label:
+            id: my_label
+            text: Inactive
+            fg_color: red
+            auto_scale: true, true
