@@ -6,7 +6,7 @@ use std::io::Error;
 use crossterm::event::Event;
 
 use crate::Context;
-use crate::run::definitions::{CallbackTree, Coordinates, PixelMap, StateTree};
+use crate::run::definitions::{CallbackTree, Coordinates, IsizeCoordinates, PixelMap, StateTree};
 use crate::run::tree::ViewTree;
 use crate::scheduler::scheduler::SchedulerFrontend;
 use crate::states::ez_state::{EzState, GenericState};
@@ -449,8 +449,8 @@ pub trait EzObject {
     /// the appropriate callback. Objects can overwrite this function but must remember to also 
     /// call the callback.
     fn on_drag(&self, state_tree: &mut StateTree, callback_tree: &mut CallbackTree,
-                scheduler: &mut SchedulerFrontend, previous_pos: Option<Coordinates>,
-               mouse_pos: Coordinates) -> bool {
+                scheduler: &mut SchedulerFrontend, previous_pos: Option<IsizeCoordinates>,
+               mouse_pos: IsizeCoordinates) -> bool {
 
         self.on_drag_callback(state_tree, callback_tree, scheduler, previous_pos, mouse_pos)
     }
@@ -459,7 +459,7 @@ pub trait EzObject {
     /// prevent a lot of duplicate ```if let Some(i)``` code.
     fn on_drag_callback(&self, state_tree: &mut StateTree,
                          callback_tree: &mut CallbackTree, scheduler: &mut SchedulerFrontend,
-                         previous_pos: Option<Coordinates>, mouse_pos: Coordinates) -> bool {
+                         previous_pos: Option<IsizeCoordinates>, mouse_pos: IsizeCoordinates) -> bool {
 
         if let Some(ref mut i) = callback_tree
             .get_mut(&self.get_path()).obj.on_drag {

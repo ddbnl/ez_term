@@ -1,6 +1,6 @@
 //! # layout
 //! Module implementing the layout struct.
-use std::cmp::min;
+use std::cmp::{max, min};
 use std::collections::HashMap;
 use std::io::{Error, ErrorKind};
 use crossterm::event::{Event, KeyCode};
@@ -319,8 +319,8 @@ impl EzObject for Layout {
 
     /// Implement clicking on the scrollbar and dragging it down or up.
     fn on_drag(&self, state_tree: &mut StateTree, callback_tree: &mut CallbackTree,
-               scheduler: &mut SchedulerFrontend, previous_pos: Option<Coordinates>,
-               mouse_pos: Coordinates) -> bool {
+               scheduler: &mut SchedulerFrontend, previous_pos: Option<IsizeCoordinates>,
+               mouse_pos: IsizeCoordinates) -> bool {
 
         let mut consumed =
             self.on_drag_callback(state_tree, callback_tree, scheduler, previous_pos, mouse_pos);
@@ -330,17 +330,17 @@ impl EzObject for Layout {
         let offset = if state.get_border_config().get_border() { 2 } else { 1 };
 
         if state.get_scrolling_config().get_is_scrolling_x() &&
-                mouse_pos.y + offset == state.get_size().get_height() {
+                mouse_pos.y + offset as isize == state.get_size().get_height() as isize {
             consumed = self.handle_scroll_drag_x(state, previous_pos, mouse_pos);
 
         } else if state.get_scrolling_config().get_is_scrolling_y() &&
-                mouse_pos.x + offset == state.get_size().get_width() {
+                mouse_pos.x + offset as isize == state.get_size().get_width() as isize {
             self.handle_scroll_drag_y(state, previous_pos, mouse_pos);
 
         } else if self.path.starts_with("/root/modal") && state.can_drag.value {
             let abs_mouse_pos = Coordinates::new(
-                state.get_absolute_position().x as usize + mouse_pos.x,
-                state.get_absolute_position().y as usize + mouse_pos.y
+                state.get_absolute_position().x as usize + max(0, mouse_pos.x) as usize,
+                state.get_absolute_position().y as usize + max(0, mouse_pos.y) as usize
             );
             if previous_pos.is_none() {
                 for child in self.children.iter() {
@@ -468,8 +468,8 @@ impl Layout {
         obj
     }
 
-    fn handle_scroll_drag_x(&self, state: &mut LayoutState, previous_pos: Option<Coordinates>,
-                            mouse_pos: Coordinates) -> bool {
+    fn handle_scroll_drag_x(&self, state: &mut LayoutState, previous_pos: Option<IsizeCoordinates>,
+                            mouse_pos: IsizeCoordinates) -> bool {
 
         let scroll_start_x = state.get_scrolling_config()
             .get_absolute_scroll_start_x(state.get_effective_size().width);
@@ -479,7 +479,8 @@ impl Layout {
                 state.get_effective_size().width, scroll_start_x);
 
         if previous_pos.is_none() {
-            return if mouse_pos.x >= scrollbar_pos && mouse_pos.x <= scrollbar_pos + scrollbar_size {
+            return if mouse_pos.x as usize >= scrollbar_pos &&
+                mouse_pos.x as usize <= scrollbar_pos + scrollbar_size {
                 true
             } else {
                 false
@@ -505,8 +506,8 @@ impl Layout {
         }
         true
     }
-    fn handle_scroll_drag_y(&self, state: &mut LayoutState, previous_pos: Option<Coordinates>,
-                            mouse_pos: Coordinates) -> bool {
+    fn handle_scroll_drag_y(&self, state: &mut LayoutState, previous_pos: Option<IsizeCoordinates>,
+                            mouse_pos: IsizeCoordinates) -> bool {
 
         let scroll_start_y = state.get_scrolling_config()
             .get_absolute_scroll_start_y(state.get_effective_size().height);
@@ -516,7 +517,8 @@ impl Layout {
                 state.get_effective_size().height,scroll_start_y);
 
         if previous_pos.is_none() {
-            return if mouse_pos.y >= scrollbar_pos && mouse_pos.y <= scrollbar_pos + scrollbar_size {
+            return if mouse_pos.y as usize >= scrollbar_pos &&
+                mouse_pos.y as usize <= scrollbar_pos + scrollbar_size {
                 true
             } else {
                 false

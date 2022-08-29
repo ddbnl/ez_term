@@ -12,6 +12,8 @@
     - Button:
         text: Scaled button
         auto_scale: true, true
+        fg_color: yellow
+        selection_order: 1
 
     // This button has multi-line text.
     - Button:
@@ -19,6 +21,9 @@
         size_hint_x: none
         width: 9
         auto_scale_height: true
+        fg_color: yellow
+        selection_order: 2
+
 
     // This is a layout with a normal button and a disabled button. We'll give the enabled button a color so it's easier
     // for the user to see what is enabled and what is disabled.
@@ -28,10 +33,14 @@
             text: Enabled button
             auto_scale: true, true
             fg_color: yellow
+            selection_order: 3
         - Button:
             text: Disabled button
             auto_scale: true, true
             disabled: true
+            fg_color: yellow
+            selection_order: 4
+
     // Buttons are of course only useful if bound to a callback. We'll bind this button to a callback that changes the
     // text of the label next to it (see button_example.rs).
     - Layout:
@@ -40,11 +49,15 @@
             id: change_label_button
             text: Change label
             auto_scale: true, true
-            selection_order: 1
+            fg_color: yellow
+            selection_order: 5
+
         - Label:
             id: my_label
             text: Original text
             auto_scale: true, true
             valign: middle
+            selection_order: 6
+
 
 

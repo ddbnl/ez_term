@@ -7,7 +7,7 @@ use crossterm::event::{KeyCode, KeyModifiers};
 
 use crate::property::ez_properties::EzProperties;
 use crate::property::ez_values::EzValues;
-use crate::run::definitions::{Coordinates, StateTree};
+use crate::run::definitions::{Coordinates, IsizeCoordinates, StateTree};
 use crate::scheduler::scheduler::{SchedulerFrontend};
 
 
@@ -32,7 +32,7 @@ pub type OptionalMouseCallbackFunction = Box<dyn FnMut(Context, Option<Coordinat
 
 /// This is used for binding mouse event callbacks to widgets, meaning that any callback functions
 /// user makes should use this signature.
-pub type MouseDragCallbackFunction = Box<dyn FnMut(Context, Option<Coordinates>, Coordinates)
+pub type MouseDragCallbackFunction = Box<dyn FnMut(Context, Option<IsizeCoordinates>, IsizeCoordinates)
     -> bool + Send>;
 
 

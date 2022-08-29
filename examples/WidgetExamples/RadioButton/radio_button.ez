@@ -1,0 +1,154 @@
+// This examples shows how to style and bind callbacks to checkboxes.
+
+- Layout:
+    mode: box
+    orientation: vertical
+    border: true
+
+    // These are regular radio buttons
+    - Layout:
+        mode: box
+        orientation: horizontal
+        auto_scale: true, true
+        padding_bottom: 1
+        border: true
+        - RadioButton:
+            active: true
+            group: regular
+            fg_color: yellow
+            selection_order: 1
+        - Label:
+            text: Option 1
+            auto_scale: true, true
+            padding_right: 1
+        - RadioButton:
+            group: regular
+            fg_color: yellow
+            selection_order: 2
+        - Label:
+            text: Option 2
+            auto_scale: true, true
+            padding_right: 1
+        - RadioButton:
+            group: regular
+            fg_color: yellow
+            selection_order: 3
+        - Label:
+            text: Option 3
+            auto_scale: true, true
+
+    // These are styled radio buttons
+    - Layout:
+        mode: box
+        orientation: horizontal
+        auto_scale: true, true
+        padding_bottom: 1
+        border: true
+        - RadioButton:
+            active: true
+            group: styled
+            fg_color: yellow
+            selection_order: 4
+            active_symbol: ✓
+            inactive_symbol: x
+        - Label:
+            text: Option 1
+            auto_scale: true, true
+            padding_right: 1
+        - RadioButton:
+            group: styled
+            fg_color: yellow
+            selection_order: 5
+            active_symbol: ✓
+            inactive_symbol: x
+        - Label:
+            text: Option 2
+            auto_scale: true, true
+            padding_right: 1
+        - RadioButton:
+            group: styled
+            fg_color: yellow
+            selection_order: 6
+            active_symbol: ✓
+            inactive_symbol: x
+        - Label:
+            text: Option 3
+            auto_scale: true, true
+
+    // These are Disabled radio buttons
+    - Layout:
+        mode: box
+        orientation: horizontal
+        auto_scale: true, true
+        padding_bottom: 1
+        border: true
+        - RadioButton:
+            active: true
+            group: disabled
+            fg_color: yellow
+            selection_order: 7
+            disabled: true
+        - Label:
+            text: Option 1
+            auto_scale: true, true
+            padding_right: 1
+        - RadioButton:
+            group: disabled
+            fg_color: yellow
+            selection_order: 8
+            disabled: true
+        - Label:
+            text: Option 2
+            auto_scale: true, true
+            padding_right: 1
+        - RadioButton:
+            group: disabled
+            fg_color: yellow
+            selection_order: 9
+            disabled: true
+        - Label:
+            text: Option 3
+            auto_scale: true, true
+
+    // These radio buttons with on_value_change callbacks, they change the label below them
+    - Layout:
+        mode: box
+        orientation: vertical
+        auto_scale: true, true
+        border: true
+        - Layout:
+            mode: box
+            orientation: horizontal
+            auto_scale: true, true
+            padding_bottom: 1
+            - RadioButton:
+                id: my_radio_1
+                active: true
+                group: callback
+                fg_color: yellow
+                selection_order: 10
+            - Label:
+                text: Option 1
+                auto_scale: true, true
+                padding_right: 1
+            - RadioButton:
+                id: my_radio_2
+                group: callback
+                fg_color: yellow
+                selection_order: 11
+            - Label:
+                text: Option 2
+                auto_scale: true, true
+                padding_right: 1
+            - RadioButton:
+                id: my_radio_3
+                group: callback
+                fg_color: yellow
+                selection_order: 12
+            - Label:
+                text: Option 3
+                auto_scale: true, true
+        - Label:
+            text: Choice: Option 1
+            id: my_label
+            auto_scale: true, true

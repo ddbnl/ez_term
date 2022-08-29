@@ -183,6 +183,9 @@ pub fn get_widget_by_position<'a>(pos: Coordinates, root_widget: &'a Layout,
             if let Some(i) = root_widget.get_child_by_path(generic_state.get_path()) {
                 results.push(i.as_ez_object());
             }
+        } else {
+            if state.as_generic().get_path().ends_with("map") {
+            }
         }
     }
     results

@@ -6,7 +6,7 @@ use std::process::exit;
 use crossterm::event::{Event, KeyCode, KeyEvent, MouseButton, MouseEvent, MouseEventKind};
 use crate::{Context, KeyMap};
 
-use crate::run::definitions::{CallbackTree, Coordinates, StateTree};
+use crate::run::definitions::{CallbackTree, Coordinates, IsizeCoordinates, StateTree};
 use crate::run::select::{get_widget_by_position, select_next, select_previous};
 use crate::run::terminal::{initialize_terminal, write_to_screen};
 use crate::run::tree::ViewTree;
@@ -47,7 +47,7 @@ pub fn handle_modal_event (event: Event, state_tree: &mut StateTree,
 pub fn handle_global_event(event: Event, state_tree: &mut StateTree,
                        root_widget: &Layout, callback_tree: &mut CallbackTree,
                        scheduler: &mut SchedulerFrontend, selected_widget: &mut String,
-                       dragging: &mut Option<String>, last_dragging_pos: &mut Coordinates,
+                       dragging: &mut Option<String>, last_dragging_pos: &mut IsizeCoordinates,
                        global_keymap: &mut KeyMap) -> bool {
 
     match event {
@@ -111,7 +111,7 @@ fn handle_key_event(key: KeyEvent, global_keymap: &mut KeyMap, state_tree: &mut 
 fn handle_mouse_event(event: MouseEvent, state_tree: &mut StateTree,
                       root_widget: &Layout, callback_tree: &mut CallbackTree,
                       scheduler: &mut SchedulerFrontend, dragging: &mut Option<String>,
-                      last_dragging_pos: &mut Coordinates, selected_widget: &str) -> bool {
+                      last_dragging_pos: &mut IsizeCoordinates, selected_widget: &str) -> bool {
 
     if let MouseEventKind::Moved = event.kind {
         return handle_mouse_hover_event(event, state_tree, root_widget, callback_tree, scheduler,
@@ -192,25 +192,35 @@ fn handle_mouse_hover_event(event: MouseEvent, state_tree: &mut StateTree,
 fn handle_mouse_drag_event(event: MouseEvent, state_tree: &mut StateTree,
                            root_widget: &Layout, callback_tree: &mut CallbackTree,
                            scheduler: &mut SchedulerFrontend, dragging: &mut Option<String>,
-                           last_dragging_pos: &mut Coordinates) -> bool {
+                           last_dragging_pos: &mut IsizeCoordinates) -> bool {
 
     let mouse_position = Coordinates::new(event.column as usize,event.row as usize);
 
-    for widget in get_widget_by_position(mouse_position, root_widget, state_tree) {
-        if let Some(ref path) = dragging {
-            if path != &widget.get_path() { continue }
+    if let Some(ref path) = dragging {
+        let widget = root_widget.get_child_by_path(&path).unwrap()
+            .as_ez_object();
+        let abs = state_tree.get(path)
+            .as_generic().get_absolute_position();
+        let relative_position = IsizeCoordinates::new(
+            mouse_position.x as isize - abs.usize_x() as isize,
+            mouse_position.y as isize - abs.usize_y() as isize);
+        let consumed = widget.on_drag(state_tree, callback_tree, scheduler,
+                       Some(*last_dragging_pos), relative_position);
+        if consumed {
+            dragging.replace(widget.get_path());
+            last_dragging_pos.x = relative_position.x;
+            last_dragging_pos.y = relative_position.y;
+            return true
         }
+    }
+    for widget in get_widget_by_position(mouse_position, root_widget, state_tree) {
         let abs = state_tree.get(&widget.get_path())
             .as_generic().get_absolute_position();
-        let relative_position = Coordinates::new(
-            mouse_position.x - abs.usize_x(), mouse_position.y - abs.usize_y());
-        let consumed = if dragging.is_some() {
-            widget.on_drag(state_tree, callback_tree, scheduler,
-                           Some(*last_dragging_pos), relative_position)
-        } else {
-            widget.on_drag(state_tree, callback_tree, scheduler,
-                           None, relative_position)
-        };
+        let relative_position = IsizeCoordinates::new(
+            mouse_position.x as isize - abs.usize_x() as isize,
+            mouse_position.y as isize - abs.usize_y() as isize);
+        let consumed  = widget.on_drag(state_tree, callback_tree, scheduler,
+                       None, relative_position);
         if consumed {
             dragging.replace(widget.get_path());
             last_dragging_pos.x = relative_position.x;

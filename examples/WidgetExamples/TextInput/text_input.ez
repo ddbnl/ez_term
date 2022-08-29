@@ -1,0 +1,51 @@
+// This example will show a few different ways to use text inputs and how to bind an 'on_value_callback' to it.
+
+- Layout:
+    mode: box
+    orientation: vertical
+    border: true
+
+    // This is a regular text input. It can be selected by mouse or keyboard and typed into.
+    - TextInput:
+        id: regular_input
+        text: Regular input
+        padding_bottom: 1
+        size_hint_x: 0.5
+        selection_order: 1
+
+    // This input has a maximum length, which when reached blocks the user from typing more text
+    - TextInput:
+        id: limited_input
+        text: Limited input
+        max_length: 20
+        padding_bottom: 1
+        size_hint_x: 0.5
+        selection_order: 2
+
+    // This input is disabled, it cannot be used.
+    - TextInput:
+        id: disabled_input
+        text: Disabled input
+        disabled: true
+        padding_bottom: 1
+        size_hint_x: 0.5
+        selection_order: 3
+
+    // This input has two callbacks bound to it: the 'on_value_change' callback changes the label below it to mirror
+    // the new text. The 'on_keyboard_enter' callback adds "CONFIRMED" to the label below it when the user presses
+    // enter.
+    - Layout:
+        mode: box
+        orientation: vertical
+        size_hint_y: none
+        height: parent.height - parent.regular_input.height - parent.limited_input.height - parent.disabled_input.height
+        - TextInput:
+            id: my_input
+            text:
+            size_hint_x: 0.5
+            selection_order: 4
+        - Label:
+            id: my_label
+            size_hint_x: 0.5
+            size_hint_y: none
+            height: parent.height - parent.my_input.height

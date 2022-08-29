@@ -6,31 +6,42 @@
     cols: 2
     border: true
 
-    // This is a regular checkbox
+    // This is an active checkbox
     - Label:
         text: Regular:
         auto_scale: true, true
+        padding_right: 1
     - CheckBox:
+        active: true
+        padding_bottom: 1
+        selection_order: 1
 
     // This is a checkbox with custom symbols and colors; its state is also turned to active.
     - Label:
         text: Styled:
         auto_scale: true, true
+        padding_right: 1
     - CheckBox:
         active_symbol: ✓
         inactive_symbol: x
         fg_color: red
         active: true
+        selection_order: 2
+        padding_bottom: 1
+        padding_right: 1
 
     // This is a checkbox to which we will bind an 'on_value_change' callback. When the value changes
-    // from on to off or vice versa, the label will change to reflect is.
+    // from on to off or vice versa, the label will change text and color.
     - Label:
         text: Callback:
         auto_scale: true, true
+        padding_right: 1
     - Layout:
         auto_scale: true, true
         - CheckBox:
             id: change_label_checkbox
+            selection_order: 3
+            padding_right: 1
         - Label:
             id: my_label
             text: Inactive

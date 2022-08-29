@@ -8,11 +8,14 @@ use crossterm::{event::{Event, MouseEventKind, poll, read}, Result};
 use crossterm::event::MouseButton;
 
 use crate::{CallbackConfig, KeyMap};
-use crate::run::definitions::{CallbackTree, Coordinates, StateTree};
+use crate::run::definitions::{CallbackTree, Coordinates, IsizeCoordinates, StateTree};
 use crate::run::terminal::{redraw_changed_widgets, write_to_screen};
 use crate::run::tree::{clean_trees, initialize_callback_tree, ViewTree};
 use crate::scheduler::scheduler::SchedulerFrontend;
-use crate::scheduler::scheduler_funcs::{add_property_callbacks, create_new_widgets, drain_property_channels, handle_next_selection, remove_widgets, run_tasks, trigger_update_funcs, update_callback_configs, update_properties, update_threads};
+use crate::scheduler::scheduler_funcs::{add_property_callbacks, create_new_widgets,
+                                        drain_property_channels, handle_next_selection,
+                                        remove_widgets, run_tasks, trigger_update_funcs,
+                                        update_callback_configs, update_properties, update_threads};
 use crate::states::ez_state::GenericState;
 use crate::widgets::ez_object::{EzObject};
 use crate::widgets::layout::layout::Layout;
@@ -117,7 +120,7 @@ fn run_loop(mut root_widget: Layout, mut state_tree: StateTree, mut callback_tre
     let mut cleanup_timer = 0; // Interval for cleaning up orphaned states and callbacks
     let mut selected_widget = String::new(); // Currently selected widget
     let mut dragging: Option<String> = None; // Widget currently being dragged if any
-    let mut last_dragging_pos = Coordinates::new(0, 0);
+    let mut last_dragging_pos = IsizeCoordinates::new(0, 0);
     let mut global_keymap = KeyMap::new();
     trigger_update_funcs(&mut scheduler, &mut state_tree);
     scheduler.force_redraw();

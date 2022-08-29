@@ -295,13 +295,10 @@ impl Layout{
             let child_content = generic_child.get_contents(state_tree);
             let state = state_tree.get_mut(&generic_child.get_path())
                 .as_generic_mut(); // re-borrow
-            if state.get_infinite_size().width {
-                state.get_size_mut().set_width(child_content.len())
-            }
-            if state.get_infinite_size().height {
-                state.get_size_mut().set_height(
-                    if !child_content.is_empty() { child_content[0].len() } else { 0 })
-            }
+
+            state.get_size_mut().set_width(child_content.len());
+            state.get_size_mut().set_height(child_content.iter()
+                .map(|x|x.len()).max().unwrap_or(0));
             content_list.push(child_content);
         }
         content_list

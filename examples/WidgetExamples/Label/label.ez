@@ -4,6 +4,7 @@
 - Layout:
     mode: box
     orientation: vertical
+    border: true
 
     // This is a label with auto scale enabled. This way it will not take up any more space than needed.
     // Keep in mind that since auto scale width is enabled, the label will always be height 1. In the next example

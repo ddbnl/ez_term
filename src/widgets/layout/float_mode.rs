@@ -33,6 +33,9 @@ impl Layout {
                 content.last_mut().unwrap().push(filler.clone());
             }
         }
+
+        let mut biggest_write_x = 0;
+        let mut biggest_write_y = 0;
         for child in self.get_children_in_view(state_tree) {
             if content.is_empty() { return content }  // No space left in widget
 
@@ -61,16 +64,28 @@ impl Layout {
             let state = state_tree.get_mut(
                 &generic_child.get_path()).as_generic_mut(); // re-borrow
             reposition_with_pos_hint(own_width, own_height, state);
+
             let child_pos = state.get_position();
             for width in 0..child_content.len() {
                 for height in 0..child_content[width].len() {
-                    if child_pos.get_x() + width < content.len()
-                        && child_pos.get_y() + height < content[child_pos.get_x() + width].len() {
-                        content[child_pos.get_x() + width][child_pos.get_y() + height] =
-                            child_content[width][height].clone();
+                    let write_x = child_pos.get_x() + width;
+                    let write_y = child_pos.get_y() + height;
+                    if write_x > biggest_write_x { biggest_write_x = write_x}
+                    if write_y > biggest_write_y { biggest_write_y = write_y}
+                    if write_x < content.len() && write_y < content[write_x].len() {
+                        content[write_x][write_y] = child_content[width][height].clone();
                     }
                 }
             }
+        }
+        let own_state = state_tree.get_mut(&self.get_path()).as_layout_mut();
+        if own_state.get_auto_scale().get_auto_scale_width() {
+            own_state.set_effective_width(if biggest_write_x > 0 {biggest_write_x + 1} else {0});
+            content = content[0..=biggest_write_x].to_vec();
+        }
+        if own_state.get_auto_scale().get_auto_scale_height() {
+            own_state.set_effective_height(if biggest_write_y > 0 {biggest_write_y + 1} else {0});
+            content = content.iter().map(|x| x[0..=biggest_write_y].to_vec()).collect();
         }
         content
     }

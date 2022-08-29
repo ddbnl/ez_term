@@ -1,5 +1,5 @@
 //! A widget that displays text non-interactively.
-use std::cmp::min;
+use std::cmp::{max, min};
 use std::io::{Error, ErrorKind};
 
 use crossterm::event::{Event, KeyCode};
@@ -7,7 +7,7 @@ use crossterm::event::{Event, KeyCode};
 use crate::Context;
 use crate::parser::load_base_properties;
 use crate::parser::load_common_properties::load_common_property;
-use crate::run::definitions::{CallbackTree, Coordinates, Pixel, PixelMap, StateTree};
+use crate::run::definitions::{CallbackTree, Coordinates, IsizeCoordinates, Pixel, PixelMap, StateTree};
 use crate::scheduler::scheduler::SchedulerFrontend;
 use crate::states::ez_state::{EzState, GenericState};
 use crate::states::slider_state::SliderState;
@@ -99,7 +99,7 @@ impl EzObject for Slider {
             state.set_value(state.get_max())
         }
 
-        state.set_height(1);
+        state.set_effective_height(1);
         if state.get_auto_scale().get_auto_scale_width() {
             state.set_effective_width(((state.get_max() - state.get_min()) /
                 state.get_step()) as usize + 1);
@@ -165,7 +165,8 @@ impl EzObject for Slider {
         let consumed = self.on_press_callback(state_tree, callback_tree, scheduler);
         if consumed { return consumed}
         let state = state_tree.get_mut(&self.path).as_slider_mut();
-        let value = self.value_from_mouse_pos(state, mouse_pos);
+        let value = self.value_from_mouse_pos(
+            state, IsizeCoordinates::new(mouse_pos.x as isize, mouse_pos.y as isize));
         state.set_value(value);
         state.update(scheduler);
         self.on_value_change_callback(state_tree, callback_tree, scheduler);
@@ -182,8 +183,8 @@ impl EzObject for Slider {
     }
 
     fn on_drag(&self, state_tree: &mut StateTree, callback_tree: &mut CallbackTree,
-               scheduler: &mut SchedulerFrontend, previous_pos: Option<Coordinates>,
-               mouse_pos: Coordinates) -> bool {
+               scheduler: &mut SchedulerFrontend, previous_pos: Option<IsizeCoordinates>,
+               mouse_pos: IsizeCoordinates) -> bool {
 
         let consumed = self.on_drag_callback(state_tree, callback_tree, scheduler,
                                              previous_pos, mouse_pos);
@@ -217,21 +218,24 @@ impl Slider {
         obj
     }
 
-    fn value_from_mouse_pos(&self, state: &mut SliderState, mouse_pos: Coordinates) -> usize {
+    fn value_from_mouse_pos(&self, state: &mut SliderState, mut mouse_pos: IsizeCoordinates) -> usize {
+
+        mouse_pos.x = max(0, mouse_pos.x);
+        mouse_pos.y = max(0, mouse_pos.y);
         let ratio = (state.get_max() - state.get_min()) as f64
             / state.get_effective_size().width as f64;
         let mut value = (ratio * mouse_pos.x as f64).round() as usize + state.get_min();
 
         // Make sure the set value is a multiple of step
-        if value >= state.get_max() - state.get_step() ||
-            mouse_pos.x == state.get_effective_size().width - 1 {
-            value = state.get_max();
-        } else if mouse_pos.x == 0 {
-            value = state.get_min();
-        } else {
-            value -= value % state.get_step();
+        let remainder = value % state.get_step();
+        let base = value / state.get_step();
+        if remainder > 0{
+            value = if remainder as f64 >= state.get_step() as f64 / 2.0 {
+                (base + 1) * state.get_step()
+            } else {
+                base * state.get_step()
+            }
         }
-
         min(value, state.get_max())
     }
 

@@ -1011,7 +1011,6 @@
 //! root. Of course, in reality we still have only one root. Here is an example of multiple screens:
 //! ```
 //! - Layout:
-//!     id: my_screen_layout
 //!     mode: screen
 //!     active_screen: screen_1
 //!     - Layout:
@@ -1096,7 +1095,7 @@
 //! Box, Stack, Table and Float layouts. If vertical scrolling is enabled and the content height
 //! is bigger than the layout height, a vertical scrolling bar will be created automatically. The
 //! same is true if horizontal scrolling is enabled and the width of the content is larger than the
-//! width of the layout. Ther user can scroll by hovering the layout and using the scroll wheel,
+//! width of the layout. The user can scroll by hovering the layout and using the scroll wheel,
 //! clicking the scrollbar, dragging the scrollbar, or selecting the layout and pressing left/right
 //! arrow or page-up/page-down (for horizontal- and vertical scrolling respectively).
 //!

@@ -1,0 +1,88 @@
+// This examples shows how to style and bind callbacks to checkboxes.
+
+- Layout:
+    mode: table
+    orientation: lr-tb
+    cols: 2
+    border: true
+
+    // This is a regular slider
+    - Label:
+        text: Regular:
+        auto_scale: true, true
+        padding_right: 1
+    - Slider:
+        min: 0
+        max: 100
+        step: 5
+        value: 50
+        padding_bottom: 1
+        selection_order: 1
+        auto_scale: true, true
+
+    // This is a disabled slider
+    - Label:
+        text: Disabled:
+        auto_scale: true, true
+        padding_right: 1
+    - Slider:
+        min: 0
+        max: 100
+        step: 5
+        disabled: true
+        value: 50
+        padding_bottom: 1
+        selection_order: 2
+        auto_scale: true, true
+
+    // This is a slider with a hovering value label
+    - Label:
+        text: With label:
+        auto_scale: true, true
+        padding_right: 1
+    - Layout:
+        mode: float
+        auto_scale: true, true
+
+        - Label:
+            id: my_label
+            text: parent.label_slider.value
+            x: ( parent.label_slider.width - 1 ) * (parent.label_slider.value / (parent.label_slider.max - parent.label_slider.min))
+            y: 0
+            auto_scale: true, true
+        - Slider:
+            id: label_slider
+            pos: 0, 1
+            min: 0
+            max: 100
+            step: 5
+            value: 50
+            padding_bottom: 1
+            selection_order: 3
+            auto_scale: true, true
+
+    // This is a slider with a synced text input; the user can use either one to set the value
+    - Label:
+        text: With text input:
+        auto_scale: true, true
+        padding_right: 1
+    - Layout:
+        mode: box
+        orientation: horizontal
+        auto_scale: true, true
+        - Slider:
+            id: input_slider
+            min: 0
+            max: 100
+            step: 5
+            value: 50
+            padding_bottom: 1
+            selection_order: 4
+            auto_scale: true, true
+            padding_right: 1
+        - TextInput:
+            id: my_input
+            text: parent.input_slider.value
+            size_hint_x: none
+            width: 4
+            max_length: 3
