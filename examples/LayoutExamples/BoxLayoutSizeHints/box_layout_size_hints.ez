@@ -2,6 +2,11 @@
 // layouts and size hints.
 
 
+- <ColoredLayout@Layout>:
+    fill: true
+    filler_bg_color: white
+
+
 - Layout:
     mode: box
     orientation: horizontal
@@ -10,60 +15,45 @@
         mode: box
         orientation: vertical
         size_hint_x: 0.45
-        - Layout:
+        - ColoredLayout:
             size_hint_y: 0.5
-            fill: true
             filler_bg_color: red
             padding_bottom: 1
-        - Layout:
+        - ColoredLayout:
             size_hint_y: 0.2
-            fill: true
-            filler_bg_color: white
             padding_bottom: 1
         - Layout:
             size_hint_y: 0.3
-            - Layout:
+            - ColoredLayout:
                 size_hint_x: 0.2
-                fill: true
                 filler_bg_color: yellow
                 padding_right: 1
-            - Layout:
+            - ColoredLayout:
                 size_hint_x: 0.8
-                fill: true
-                filler_bg_color: white
     - Layout:
         id: right_half
         mode: box
         orientation: vertical
         size_hint_x: 0.55
         padding_left: 1
-        - Layout:
+        - ColoredLayout:
             size_hint_y: 0.5
-            fill: true
-            filler_bg_color: white
             padding_bottom: 1
-        - Layout:
+        - ColoredLayout:
             size_hint_y: 0.2
-            fill: true
-            filler_bg_color: white
             padding_bottom: 1
         - Layout:
             size_hint_y: 0.3
             - Layout:
                 size_hint_x: 0.6
                 orientation: vertical
-                - Layout:
+                - ColoredLayout:
                     size_hint_y: 0.9
-                    fill: true
                     filler_bg_color: dark_blue
                     padding_bottom: 1
                     padding_right: 1
-                - Layout:
+                - ColoredLayout:
                     size_hint_y: 0.1
-                    fill: true
-                    filler_bg_color: white
                     padding_right: 1
-            - Layout:
+            - ColoredLayout:
                 size_hint_x: 0.4
-                fill: true
-                filler_bg_color: white
