@@ -1,0 +1,29 @@
+- <ViewTest@Label>:
+    size_hint_y: none
+    height: 3
+    border: true
+
+- Layout:
+    mode: box
+    orientation: vertical
+    - Layout:
+        id: view_layout
+        mode: box
+        orientation: vertical
+        view_size: self.height / 3
+        view_page: 1
+        size_hint_y: none
+        height: parent.height - parent.navigation_box.height
+    - Layout:
+        id: navigation_box
+        mode: box
+        orientation: horizontal
+        auto_scale: true, true
+        - Button:
+            id: back_button
+            text: <
+            auto_scale: true, true
+        - Button:
+            id: forward_button
+            text: >
+            auto_scale: true, true

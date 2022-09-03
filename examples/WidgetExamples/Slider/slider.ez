@@ -1,4 +1,4 @@
-// This examples shows how to style and bind callbacks to checkboxes.
+// This examples shows how to style and bind callbacks to sliders.
 
 - Layout:
     mode: table

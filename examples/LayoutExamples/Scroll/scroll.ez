@@ -1,0 +1,13 @@
+- Layout:
+    mode: box
+    orientation: vertical
+    border: true
+
+    // This label loads a large dummy text from a file. We want the label to fit the text, so we want it to grow. We
+    // can accomplish this by fixing the width to the width of the layout (already true due to default
+    // 'size_hint_x: 1.0') and auto scaling height. We'll wrap it inside of a scrolling layout.
+    - Layout:
+        scroll_y: true
+        - Label:
+            from_file: lorem_ipsum.txt
+            auto_scale_height: true

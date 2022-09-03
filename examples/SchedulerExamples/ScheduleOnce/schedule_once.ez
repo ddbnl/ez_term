@@ -1,0 +1,4 @@
+- Layout:
+    - Label:
+        id: my_label
+        text: Waiting...

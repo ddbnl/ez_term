@@ -1,0 +1,17 @@
+- Layout:
+    mode: box
+    orientation: vertical
+    - Button:
+        id: my_button
+        text: Start
+        auto_scale: true, true
+        halign: center
+    - Label:
+        id: my_progress_label
+        text: properties.my_progress
+        auto_scale: true, true
+        halign: center
+    - ProgressBar:
+        id: my_progress_bar
+        value: properties.my_progress
+        border: true

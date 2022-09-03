@@ -1,0 +1,33 @@
+- Layout:
+    mode: box
+    orientation: vertical
+    border: true
+    - Label:
+        text: Retrieved SQL records:
+        auto_scale: true, true
+        halign: center
+        padding_bottom: 1
+    // This is the layout we will spawn widgets inside of
+    - Layout:
+        id: sql_records_layout
+        mode: box
+        orientation: vertical
+        scroll_y: true
+
+// This is the template we will spawn from code
+- <SqlRecord@Layout>:
+    mode: box
+    orientation: horizontal
+    auto_scale_height: true
+    - Label:
+        id: record_id
+        auto_scale_height: true
+        size_hint_x: 1
+    - Label:
+        id: record_name
+        auto_scale_height: true
+        size_hint_x: 1
+    - Label:
+        id: record_date
+        auto_scale_height: true
+        size_hint_x: 1

@@ -1,0 +1,14 @@
+- Layout:
+    mode: box
+    orientation: vertical
+    - Button:
+        id: my_button
+        text: Initial text
+        auto_scale: true, true
+        halign: center
+        padding_bottom: 2
+    - Label:
+        id: my_label
+        text: Initial text
+        auto_scale: true, true
+        halign: center
