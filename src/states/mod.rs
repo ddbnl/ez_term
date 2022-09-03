@@ -1,12 +1,12 @@
-pub mod ez_state;
-pub mod definitions;
 pub mod button_state;
 pub mod canvas_state;
 pub mod checkbox_state;
+pub mod definitions;
 pub mod dropdown_state;
+pub mod ez_state;
 pub mod label_state;
 pub mod layout_state;
-pub mod radio_button_state;
-pub mod text_input_state;
-pub mod slider_state;
 pub mod progress_bar_state;
+pub mod radio_button_state;
+pub mod slider_state;
+pub mod text_input_state;

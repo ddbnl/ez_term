@@ -1,16 +1,17 @@
-use crate::scheduler::scheduler::SchedulerFrontend;
 use crate::property::ez_property::EzProperty;
 use crate::property::ez_values::EzValues;
-use crate::run::definitions::{IsizeCoordinates};
+use crate::run::definitions::IsizeCoordinates;
+use crate::scheduler::scheduler::SchedulerFrontend;
 use crate::scheduler::scheduler_funcs::clean_up_property;
-use crate::states::definitions::{AutoScale, BorderConfig, ColorConfig, HorizontalAlignment, Padding, PosHint, StateSize, SizeHint, StateCoordinates, VerticalAlignment, InfiniteSize};
+use crate::states::definitions::{
+    AutoScale, BorderConfig, ColorConfig, HorizontalAlignment, InfiniteSize, Padding, PosHint,
+    SizeHint, StateCoordinates, StateSize, VerticalAlignment,
+};
 use crate::states::ez_state::{EzState, GenericState};
-
 
 /// [State] implementation for [Button].
 #[derive(Clone, Debug)]
 pub struct SliderState {
-
     /// Path to the widget to which this state belongs
     pub path: String,
 
@@ -72,44 +73,44 @@ pub struct SliderState {
     selected: bool,
 }
 impl SliderState {
-
     pub fn new(path: String, scheduler: &mut SchedulerFrontend) -> Self {
-
-       SliderState {
-           path: path.clone(),
-           value: scheduler.new_usize_property(format!("{}/value", path).as_str(), 0),
-           min: scheduler.new_usize_property(format!("{}/min", path).as_str(), 0),
-           max: scheduler.new_usize_property(format!("{}/max", path).as_str(), 100),
-           step: scheduler.new_usize_property(format!("{}/step", path).as_str(), 1),
-           position: StateCoordinates::new(0, 0, path.clone(), scheduler),
-           absolute_position: IsizeCoordinates::default(),
-           size: StateSize::new(0, 0, path.clone(), scheduler),
-           infinite_size: InfiniteSize::default(),
-           size_hint: SizeHint::new(Some(1.0), Some(1.0), path.clone(), scheduler),
-           pos_hint: PosHint::new(None, None, path.clone(), scheduler),
-           auto_scale: AutoScale::new(false, false, path.clone(), scheduler),
-           padding: Padding::new(0, 0, 0, 0, path.clone(), scheduler),
-           halign: scheduler.new_horizontal_alignment_property(
-                format!("{}/halign", path).as_str(), HorizontalAlignment::Left),
-           valign: scheduler.new_vertical_alignment_property(
-                format!("{}/valign", path).as_str(), VerticalAlignment::Top),
-           disabled: scheduler.new_bool_property(
-                format!("{}/disabled", path).as_str(),false),
-           selected: false,
-           selection_order: scheduler.new_usize_property(
-                format!("{}/selection_order", path).as_str(), 0),
-           border_config: BorderConfig::new(false, path.clone(), scheduler),
-           colors: ColorConfig::new(path, scheduler),
-       }
+        SliderState {
+            path: path.clone(),
+            value: scheduler.new_usize_property(format!("{}/value", path).as_str(), 0),
+            min: scheduler.new_usize_property(format!("{}/min", path).as_str(), 0),
+            max: scheduler.new_usize_property(format!("{}/max", path).as_str(), 100),
+            step: scheduler.new_usize_property(format!("{}/step", path).as_str(), 1),
+            position: StateCoordinates::new(0, 0, path.clone(), scheduler),
+            absolute_position: IsizeCoordinates::default(),
+            size: StateSize::new(0, 0, path.clone(), scheduler),
+            infinite_size: InfiniteSize::default(),
+            size_hint: SizeHint::new(Some(1.0), Some(1.0), path.clone(), scheduler),
+            pos_hint: PosHint::new(None, None, path.clone(), scheduler),
+            auto_scale: AutoScale::new(false, false, path.clone(), scheduler),
+            padding: Padding::new(0, 0, 0, 0, path.clone(), scheduler),
+            halign: scheduler.new_horizontal_alignment_property(
+                format!("{}/halign", path).as_str(),
+                HorizontalAlignment::Left,
+            ),
+            valign: scheduler.new_vertical_alignment_property(
+                format!("{}/valign", path).as_str(),
+                VerticalAlignment::Top,
+            ),
+            disabled: scheduler.new_bool_property(format!("{}/disabled", path).as_str(), false),
+            selected: false,
+            selection_order: scheduler
+                .new_usize_property(format!("{}/selection_order", path).as_str(), 0),
+            border_config: BorderConfig::new(false, path.clone(), scheduler),
+            colors: ColorConfig::new(path, scheduler),
+        }
     }
 }
 impl GenericState for SliderState {
-
-    fn get_path(&self) -> &String { &self.path }
-
+    fn get_path(&self) -> &String {
+        &self.path
+    }
 
     fn get_property(&self, name: &str) -> EzValues {
-
         match name {
             "x" => EzValues::Usize(self.position.x.value),
             "y" => EzValues::Usize(self.position.y.value),
@@ -130,12 +131,24 @@ impl GenericState for SliderState {
             "disabled" => EzValues::Bool(self.disabled.value),
             "selection_order" => EzValues::Usize(self.selection_order.value),
             "border" => EzValues::Bool(self.border_config.border.value),
-            "horizontal_symbol" => EzValues::String(self.border_config.horizontal_symbol.value.to_string()),
-            "vertical_symbol" => EzValues::String(self.border_config.vertical_symbol.value.to_string()),
-            "top_left_symbol" => EzValues::String(self.border_config.top_left_symbol.value.to_string()),
-            "top_right_symbol" => EzValues::String(self.border_config.top_right_symbol.value.to_string()),
-            "bottom_left_symbol" => EzValues::String(self.border_config.bottom_left_symbol.value.to_string()),
-            "bottom_right_symbol" => EzValues::String(self.border_config.bottom_right_symbol.value.to_string()),
+            "horizontal_symbol" => {
+                EzValues::String(self.border_config.horizontal_symbol.value.to_string())
+            }
+            "vertical_symbol" => {
+                EzValues::String(self.border_config.vertical_symbol.value.to_string())
+            }
+            "top_left_symbol" => {
+                EzValues::String(self.border_config.top_left_symbol.value.to_string())
+            }
+            "top_right_symbol" => {
+                EzValues::String(self.border_config.top_right_symbol.value.to_string())
+            }
+            "bottom_left_symbol" => {
+                EzValues::String(self.border_config.bottom_left_symbol.value.to_string())
+            }
+            "bottom_right_symbol" => {
+                EzValues::String(self.border_config.bottom_right_symbol.value.to_string())
+            }
             "fg_color" => EzValues::Color(self.colors.fg_color.value),
             "bg_color" => EzValues::Color(self.colors.bg_color.value),
             "selection_fg_color" => EzValues::Color(self.colors.selection_fg_color.value),
@@ -153,7 +166,6 @@ impl GenericState for SliderState {
     }
 
     fn update_property(&mut self, name: &str, value: EzValues) -> bool {
-
         match name {
             "x" => self.position.x.set_from_ez_value(value),
             "y" => self.position.y.set_from_ez_value(value),
@@ -174,12 +186,21 @@ impl GenericState for SliderState {
             "disabled" => self.disabled.set_from_ez_value(value),
             "selection_order" => self.selection_order.set_from_ez_value(value),
             "border" => self.border_config.border.set_from_ez_value(value),
-            "horizontal_symbol" => self.border_config.horizontal_symbol.set_from_ez_value(value),
+            "horizontal_symbol" => self
+                .border_config
+                .horizontal_symbol
+                .set_from_ez_value(value),
             "vertical_symbol" => self.border_config.vertical_symbol.set_from_ez_value(value),
             "top_left_symbol" => self.border_config.top_left_symbol.set_from_ez_value(value),
             "top_right_symbol" => self.border_config.top_right_symbol.set_from_ez_value(value),
-            "bottom_left_symbol" => self.border_config.bottom_left_symbol.set_from_ez_value(value),
-            "bottom_right_symbol" => self.border_config.bottom_right_symbol.set_from_ez_value(value),
+            "bottom_left_symbol" => self
+                .border_config
+                .bottom_left_symbol
+                .set_from_ez_value(value),
+            "bottom_right_symbol" => self
+                .border_config
+                .bottom_right_symbol
+                .set_from_ez_value(value),
             "fg_color" => self.colors.fg_color.set_from_ez_value(value),
             "bg_color" => self.colors.bg_color.set_from_ez_value(value),
             "selection_fg_color" => self.colors.selection_fg_color.set_from_ez_value(value),
@@ -197,117 +218,223 @@ impl GenericState for SliderState {
     }
 
     fn copy_state_values(&mut self, other: EzState) {
-
         let other = other.as_slider();
         self.position.x.copy_from(&other.position.x);
         self.position.y.copy_from(&other.position.y);
         self.size.height.copy_from(&other.size.height);
         self.size.width.copy_from(&other.size.width);
-        self.size_hint.size_hint_x.copy_from(&other.size_hint.size_hint_x);
-        self.size_hint.size_hint_y.copy_from(&other.size_hint.size_hint_y);
-        self.pos_hint.pos_hint_x.copy_from(&other.pos_hint.pos_hint_x);
-        self.pos_hint.pos_hint_y.copy_from(&other.pos_hint.pos_hint_y);
-        self.auto_scale.auto_scale_width.copy_from(&other.auto_scale.auto_scale_width);
-        self.auto_scale.auto_scale_height.copy_from(&other.auto_scale.auto_scale_height);
-        self.padding.padding_top.copy_from(&other.padding.padding_top);
-        self.padding.padding_bottom.copy_from(&other.padding.padding_bottom);
-        self.padding.padding_left.copy_from(&other.padding.padding_left);
-        self.padding.padding_right.copy_from(&other.padding.padding_right);
-        self.padding.padding_right.copy_from(&other.padding.padding_right);
+        self.size_hint
+            .size_hint_x
+            .copy_from(&other.size_hint.size_hint_x);
+        self.size_hint
+            .size_hint_y
+            .copy_from(&other.size_hint.size_hint_y);
+        self.pos_hint
+            .pos_hint_x
+            .copy_from(&other.pos_hint.pos_hint_x);
+        self.pos_hint
+            .pos_hint_y
+            .copy_from(&other.pos_hint.pos_hint_y);
+        self.auto_scale
+            .auto_scale_width
+            .copy_from(&other.auto_scale.auto_scale_width);
+        self.auto_scale
+            .auto_scale_height
+            .copy_from(&other.auto_scale.auto_scale_height);
+        self.padding
+            .padding_top
+            .copy_from(&other.padding.padding_top);
+        self.padding
+            .padding_bottom
+            .copy_from(&other.padding.padding_bottom);
+        self.padding
+            .padding_left
+            .copy_from(&other.padding.padding_left);
+        self.padding
+            .padding_right
+            .copy_from(&other.padding.padding_right);
+        self.padding
+            .padding_right
+            .copy_from(&other.padding.padding_right);
         self.halign.copy_from(&other.halign);
         self.valign.copy_from(&other.valign);
         self.disabled.copy_from(&other.disabled);
         self.selection_order.copy_from(&other.selection_order);
-        self.border_config.border.copy_from(&other.border_config.border);
-        self.border_config.horizontal_symbol.copy_from(&other.border_config.horizontal_symbol);
-        self.border_config.vertical_symbol.copy_from(&other.border_config.vertical_symbol);
-        self.border_config.top_left_symbol.copy_from(&other.border_config.top_left_symbol);
-        self.border_config.top_right_symbol.copy_from(&other.border_config.top_right_symbol);
-        self.border_config.bottom_left_symbol.copy_from(&other.border_config.bottom_left_symbol);
-        self.border_config.bottom_right_symbol.copy_from(&other.border_config.bottom_right_symbol);
+        self.border_config
+            .border
+            .copy_from(&other.border_config.border);
+        self.border_config
+            .horizontal_symbol
+            .copy_from(&other.border_config.horizontal_symbol);
+        self.border_config
+            .vertical_symbol
+            .copy_from(&other.border_config.vertical_symbol);
+        self.border_config
+            .top_left_symbol
+            .copy_from(&other.border_config.top_left_symbol);
+        self.border_config
+            .top_right_symbol
+            .copy_from(&other.border_config.top_right_symbol);
+        self.border_config
+            .bottom_left_symbol
+            .copy_from(&other.border_config.bottom_left_symbol);
+        self.border_config
+            .bottom_right_symbol
+            .copy_from(&other.border_config.bottom_right_symbol);
         self.colors.fg_color.copy_from(&other.colors.fg_color);
         self.colors.bg_color.copy_from(&other.colors.bg_color);
-        self.colors.selection_fg_color.copy_from(&other.colors.selection_fg_color);
-        self.colors.selection_bg_color.copy_from(&other.colors.selection_bg_color);
-        self.colors.disabled_fg_color.copy_from(&other.colors.disabled_fg_color);
-        self.colors.disabled_bg_color.copy_from(&other.colors.disabled_bg_color);
-        self.colors.border_fg_color.copy_from(&other.colors.border_fg_color);
-        self.colors.border_bg_color.copy_from(&other.colors.border_bg_color);
-        self.colors.cursor_color.copy_from(&other.colors.cursor_color);
+        self.colors
+            .selection_fg_color
+            .copy_from(&other.colors.selection_fg_color);
+        self.colors
+            .selection_bg_color
+            .copy_from(&other.colors.selection_bg_color);
+        self.colors
+            .disabled_fg_color
+            .copy_from(&other.colors.disabled_fg_color);
+        self.colors
+            .disabled_bg_color
+            .copy_from(&other.colors.disabled_bg_color);
+        self.colors
+            .border_fg_color
+            .copy_from(&other.colors.border_fg_color);
+        self.colors
+            .border_bg_color
+            .copy_from(&other.colors.border_bg_color);
+        self.colors
+            .cursor_color
+            .copy_from(&other.colors.cursor_color);
         self.value.copy_from(&other.value);
         self.min.copy_from(&other.min);
         self.max.copy_from(&other.max);
         self.step.copy_from(&other.step);
     }
 
-    fn get_size_hint(&self) -> &SizeHint { &self.size_hint }
+    fn get_size_hint(&self) -> &SizeHint {
+        &self.size_hint
+    }
 
-    fn get_size_hint_mut(&mut self) -> &mut SizeHint { &mut self.size_hint }
+    fn get_size_hint_mut(&mut self) -> &mut SizeHint {
+        &mut self.size_hint
+    }
 
-    fn get_pos_hint(&self) -> &PosHint { &self.pos_hint }
+    fn get_pos_hint(&self) -> &PosHint {
+        &self.pos_hint
+    }
 
-    fn get_pos_hint_mut(&mut self) -> &mut PosHint { &mut self.pos_hint }
+    fn get_pos_hint_mut(&mut self) -> &mut PosHint {
+        &mut self.pos_hint
+    }
 
-    fn get_auto_scale(&self) -> &AutoScale { &self.auto_scale }
+    fn get_auto_scale(&self) -> &AutoScale {
+        &self.auto_scale
+    }
 
-    fn get_auto_scale_mut(&mut self) -> &mut AutoScale { &mut self.auto_scale }
+    fn get_auto_scale_mut(&mut self) -> &mut AutoScale {
+        &mut self.auto_scale
+    }
 
-    fn get_size(&self) -> &StateSize { &self.size }
+    fn get_size(&self) -> &StateSize {
+        &self.size
+    }
 
-    fn get_size_mut(&mut self) -> &mut StateSize { &mut self.size }
+    fn get_size_mut(&mut self) -> &mut StateSize {
+        &mut self.size
+    }
 
-    fn get_infinite_size(&self) -> &InfiniteSize { &self.infinite_size }
+    fn get_infinite_size(&self) -> &InfiniteSize {
+        &self.infinite_size
+    }
 
-    fn get_infinite_size_mut(&mut self) -> &mut InfiniteSize { &mut self.infinite_size }
+    fn get_infinite_size_mut(&mut self) -> &mut InfiniteSize {
+        &mut self.infinite_size
+    }
 
-    fn get_position(&self) -> &StateCoordinates { &self.position }
+    fn get_position(&self) -> &StateCoordinates {
+        &self.position
+    }
 
-    fn get_position_mut(&mut self) -> &mut StateCoordinates { &mut self.position }
+    fn get_position_mut(&mut self) -> &mut StateCoordinates {
+        &mut self.position
+    }
 
-    fn set_absolute_position(&mut self, pos: IsizeCoordinates) { self.absolute_position = pos }
+    fn set_absolute_position(&mut self, pos: IsizeCoordinates) {
+        self.absolute_position = pos
+    }
 
-    fn get_absolute_position(&self) -> IsizeCoordinates { self.absolute_position }
+    fn get_absolute_position(&self) -> IsizeCoordinates {
+        self.absolute_position
+    }
 
     fn set_halign(&mut self, alignment: HorizontalAlignment) {
         self.halign.set(alignment);
     }
 
-    fn get_halign(&self) -> HorizontalAlignment { self.halign.value }
+    fn get_halign(&self) -> HorizontalAlignment {
+        self.halign.value
+    }
 
     fn set_valign(&mut self, alignment: VerticalAlignment) {
         self.valign.set(alignment);
     }
 
-    fn get_valign(&self) -> VerticalAlignment { self.valign.value }
+    fn get_valign(&self) -> VerticalAlignment {
+        self.valign.value
+    }
 
-    fn get_padding(&self) -> &Padding { &self.padding }
+    fn get_padding(&self) -> &Padding {
+        &self.padding
+    }
 
-    fn get_padding_mut(&mut self) -> &mut Padding { &mut self.padding }
+    fn get_padding_mut(&mut self) -> &mut Padding {
+        &mut self.padding
+    }
 
-    fn get_border_config(&self) -> &BorderConfig { &self.border_config  }
+    fn get_border_config(&self) -> &BorderConfig {
+        &self.border_config
+    }
 
-    fn get_border_config_mut(&mut self) -> &mut BorderConfig {  &mut self.border_config  }
+    fn get_border_config_mut(&mut self) -> &mut BorderConfig {
+        &mut self.border_config
+    }
 
-    fn get_color_config(&self) -> &ColorConfig { &self.colors }
+    fn get_color_config(&self) -> &ColorConfig {
+        &self.colors
+    }
 
-    fn get_color_config_mut(&mut self) -> &mut ColorConfig { &mut self.colors }
+    fn get_color_config_mut(&mut self) -> &mut ColorConfig {
+        &mut self.colors
+    }
 
-    fn is_selectable(&self) -> bool { true }
+    fn is_selectable(&self) -> bool {
+        true
+    }
 
-    fn set_disabled(&mut self, disabled: bool) { self.disabled.set(disabled); }
+    fn set_disabled(&mut self, disabled: bool) {
+        self.disabled.set(disabled);
+    }
 
-    fn get_disabled(&self) -> bool { self.disabled.value }
+    fn get_disabled(&self) -> bool {
+        self.disabled.value
+    }
 
-    fn get_selection_order(&self) -> usize { self.selection_order.value }
+    fn get_selection_order(&self) -> usize {
+        self.selection_order.value
+    }
 
-    fn set_selection_order(&mut self, order: usize) { self.selection_order.set(order); }
+    fn set_selection_order(&mut self, order: usize) {
+        self.selection_order.set(order);
+    }
 
-    fn set_selected(&mut self, state: bool) { self.selected = state; }
+    fn set_selected(&mut self, state: bool) {
+        self.selected = state;
+    }
 
-    fn get_selected(&self) -> bool { self.selected }
+    fn get_selected(&self) -> bool {
+        self.selected
+    }
 
     fn clean_up_properties(&self, scheduler: &mut SchedulerFrontend) {
-
         self.position.clean_up_properties(scheduler);
         self.size.clean_up_properties(scheduler);
         self.size_hint.clean_up_properties(scheduler);
@@ -327,39 +454,62 @@ impl GenericState for SliderState {
     }
 }
 impl SliderState {
-
     pub fn set_value(&mut self, value: usize) {
         self.value.set(value);
     }
 
-    pub fn get_value(&self) -> usize { self.value.value }
+    pub fn get_value(&self) -> usize {
+        self.value.value
+    }
 
     pub fn set_min(&mut self, min: usize) {
         self.min.set(min);
-        if self.get_value() < min { self.set_value( min )}
+        if self.get_value() < min {
+            self.set_value(min)
+        }
     }
 
-    pub fn get_min(&self) -> usize { self.min.value }
+    pub fn get_min(&self) -> usize {
+        self.min.value
+    }
 
     pub fn set_max(&mut self, max: usize) {
         self.max.set(max);
-        if self.get_value() > max { self.set_value( max )}
+        if self.get_value() > max {
+            self.set_value(max)
+        }
     }
 
-    pub fn get_max(&self) -> usize { self.max.value }
+    pub fn get_max(&self) -> usize {
+        self.max.value
+    }
 
     pub fn set_step(&mut self, step: usize) {
         self.step.set(step);
-        if self.get_value() % step != 0 { self.set_value( self.min.value )}
+        if self.get_value() % step != 0 {
+            self.set_value(self.min.value)
+        }
     }
 
-    pub fn get_step(&self) -> usize { self.step.value }
+    pub fn get_step(&self) -> usize {
+        self.step.value
+    }
 
     pub fn validate(&self) {
-        if self.min.value >= self.max.value {panic!("Slider minimum must be lower than maximum")}
-        if self.min.value % self.step.value != 0 {panic!("Slider minimum must be a multiple of step")}
-        if self.max.value % self.step.value != 0 {panic!("Slider maximum must be a multiple of step")}
-        if self.step.value < 1 {panic!("Step value must be larger than 0")}
-        if self.value.value % self.step.value != 0 {panic!("Slider value must be a multiple of step")}
+        if self.min.value >= self.max.value {
+            panic!("Slider minimum must be lower than maximum")
+        }
+        if self.min.value % self.step.value != 0 {
+            panic!("Slider minimum must be a multiple of step")
+        }
+        if self.max.value % self.step.value != 0 {
+            panic!("Slider maximum must be a multiple of step")
+        }
+        if self.step.value < 1 {
+            panic!("Step value must be larger than 0")
+        }
+        if self.value.value % self.step.value != 0 {
+            panic!("Slider value must be a multiple of step")
+        }
     }
 }

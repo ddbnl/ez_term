@@ -1,17 +1,17 @@
-use std::collections::HashMap;
+use crate::property::ez_property::EzProperty;
+use crate::scheduler::definitions::{
+    GenericFunction, KeyboardCallbackFunction, MouseCallbackFunction, MouseDragCallbackFunction,
+    OptionalMouseCallbackFunction,
+};
+use crate::scheduler::scheduler::SchedulerFrontend;
+use crate::scheduler::scheduler_funcs::clean_up_property;
 use crossterm::event::{KeyCode, KeyModifiers};
 use crossterm::style::Color;
-use crate::property::ez_property::EzProperty;
-use crate::scheduler::definitions::{GenericFunction, KeyboardCallbackFunction, MouseCallbackFunction,
-                                    MouseDragCallbackFunction, OptionalMouseCallbackFunction};
-use crate::scheduler::scheduler::{SchedulerFrontend};
-use crate::scheduler::scheduler_funcs::clean_up_property;
-
+use std::collections::HashMap;
 
 /// The mode determining how widgets are placed in a [layout]. Default is box.
 #[derive(Clone, PartialEq, Debug)]
 pub enum LayoutMode {
-
     /// Widgets are placed next to each other or under one another depending on orientation.
     /// In horizontal orientation widgets always use the full height of the layout, and in
     /// vertical position they always use the full with.
@@ -42,7 +42,6 @@ pub enum LayoutMode {
     Tab,
 }
 
-
 /// Used with Box, stack and table mode [layout]. Default is horizontal for box,
 /// or TopBottomLeftRight for the other modes.
 #[derive(Clone, PartialEq, Debug)]
@@ -59,22 +58,20 @@ pub enum LayoutOrientation {
     BottomTopRightLeft,
 }
 
-
 /// Property determining how content is placed horizontally in a layout; default is left.
 #[derive(PartialEq, Clone, Copy, Debug)]
 pub enum HorizontalAlignment {
     Left,
     Right,
-    Center
+    Center,
 }
-
 
 /// Property determining how content is placed vertically in a layout; default is top.
 #[derive(PartialEq, Clone, Copy, Debug)]
 pub enum VerticalAlignment {
     Top,
     Bottom,
-    Middle
+    Middle,
 }
 
 pub type VerticalPosHint = Option<(VerticalAlignment, f64)>;
@@ -84,7 +81,6 @@ pub type HorizontalPosHint = Option<(HorizontalAlignment, f64)>;
 /// any of the properties, access them directly first.
 #[derive(PartialEq, Clone, Debug)]
 pub struct TableConfig {
-
     /// Maximum amount of rows. Usually you want to set either the maximum amount of rows or the
     /// maximum amount of columns, and let the other one grow with the amount of content
     pub rows: EzProperty<usize>,
@@ -112,23 +108,19 @@ pub struct TableConfig {
     pub force_default_col_width: EzProperty<bool>,
 }
 impl TableConfig {
-
     pub fn new(name: String, scheduler: &mut SchedulerFrontend) -> Self {
+        let rows_property = scheduler.new_usize_property(format!("{}/rows", name).as_str(), 0);
+        let columns_property = scheduler.new_usize_property(format!("{}/cols", name).as_str(), 4);
 
-        let rows_property = scheduler.new_usize_property(
-            format!("{}/rows", name).as_str(), 0);
-        let columns_property = scheduler.new_usize_property(
-            format!("{}/cols", name).as_str(), 4);
+        let default_height_property =
+            scheduler.new_usize_property(format!("{}/row_default_height", name).as_str(), 0);
+        let default_width_property =
+            scheduler.new_usize_property(format!("{}/col_default_width", name).as_str(), 0);
 
-        let default_height_property = scheduler.new_usize_property(
-            format!("{}/row_default_height", name).as_str(), 0);
-        let default_width_property = scheduler.new_usize_property(
-            format!("{}/col_default_width", name).as_str(), 0);
-
-        let force_default_height_property = scheduler.new_bool_property(
-            format!("{}/force_default_row_height", name).as_str(),false);
-        let force_default_width_property = scheduler.new_bool_property(
-            format!("{}/force_default_col_width", name).as_str(),false);
+        let force_default_height_property = scheduler
+            .new_bool_property(format!("{}/force_default_row_height", name).as_str(), false);
+        let force_default_width_property = scheduler
+            .new_bool_property(format!("{}/force_default_col_width", name).as_str(), false);
 
         TableConfig {
             rows: rows_property,
@@ -196,7 +188,6 @@ impl TableConfig {
     }
 }
 
-
 /// Composite object containing size related properties. If you want to bind a callback to height
 /// or width, access them directly first.
 #[derive(PartialEq, Clone, Debug)]
@@ -207,13 +198,16 @@ pub struct StateSize {
     pub fixed_height: bool,
 }
 impl StateSize {
-
-    pub fn new(width: usize, height: usize, name: String, scheduler: &mut SchedulerFrontend) -> Self {
-
-        let width_property = scheduler.new_usize_property(
-            format!("{}/width", name).as_str(), width);
-        let height_property = scheduler.new_usize_property(
-            format!("{}/height", name).as_str(), height);
+    pub fn new(
+        width: usize,
+        height: usize,
+        name: String,
+        scheduler: &mut SchedulerFrontend,
+    ) -> Self {
+        let width_property =
+            scheduler.new_usize_property(format!("{}/width", name).as_str(), width);
+        let height_property =
+            scheduler.new_usize_property(format!("{}/height", name).as_str(), height);
         StateSize {
             width: width_property,
             height: height_property,
@@ -223,27 +217,32 @@ impl StateSize {
     }
 
     pub fn set_width(&mut self, width: usize) {
-
-        if self.fixed_width { return }
+        if self.fixed_width {
+            return;
+        }
         self.width.set(width);
     }
 
-    pub fn get_width(&self) -> usize { self.width.value }
+    pub fn get_width(&self) -> usize {
+        self.width.value
+    }
 
     pub fn set_height(&mut self, height: usize) {
-
-        if self.fixed_height { return }
+        if self.fixed_height {
+            return;
+        }
         self.height.set(height);
     }
 
-    pub fn get_height(&self) -> usize { self.height.value }
+    pub fn get_height(&self) -> usize {
+        self.height.value
+    }
 
     pub fn clean_up_properties(&self, scheduler: &mut SchedulerFrontend) {
         clean_up_property(scheduler, &self.width.name);
         clean_up_property(scheduler, &self.height.name);
     }
 }
-
 
 /// Object containing infinite size properties. These are used for scrolling, indicating that
 /// content can theoretically be infinite size on that axis.
@@ -253,21 +252,22 @@ pub struct InfiniteSize {
     pub height: bool,
 }
 impl InfiniteSize {
-
     pub fn set_width(&mut self, force: bool) {
         self.width = force;
     }
 
-    pub fn get_width(&self) -> bool { self.width }
+    pub fn get_width(&self) -> bool {
+        self.width
+    }
 
     pub fn set_height(&mut self, force: bool) {
         self.height = force;
     }
 
-    pub fn get_height(&self) -> bool { self.height }
-
+    pub fn get_height(&self) -> bool {
+        self.height
+    }
 }
-
 
 /// Composite object containing both an X and a Y coordinate. If you want to set a callback for
 /// position access the 'x' or 'y' property first.
@@ -278,18 +278,17 @@ pub struct StateCoordinates {
 }
 impl StateCoordinates {
     pub fn new(x: usize, y: usize, name: String, scheduler: &mut SchedulerFrontend) -> Self {
-
-        let x_property =
-            scheduler.new_usize_property(format!("{}/x", name).as_str(), x);
-        let y_property =
-            scheduler.new_usize_property(format!("{}/y", name).as_str(), y);
-        StateCoordinates{
+        let x_property = scheduler.new_usize_property(format!("{}/x", name).as_str(), x);
+        let y_property = scheduler.new_usize_property(format!("{}/y", name).as_str(), y);
+        StateCoordinates {
             x: x_property,
-            y: y_property
+            y: y_property,
         }
     }
 
-    pub fn set_x(&mut self, x: usize) { self.x.set(x); }
+    pub fn set_x(&mut self, x: usize) {
+        self.x.set(x);
+    }
 
     pub fn get_x(&self) -> usize {
         self.x.value
@@ -309,7 +308,6 @@ impl StateCoordinates {
     }
 }
 
-
 /// Composite object containing both width and height autoscaling. If you want to set a callback for
 /// either, access the 'width' or 'height' property first.
 #[derive(PartialEq, Clone, Debug)]
@@ -318,15 +316,15 @@ pub struct AutoScale {
     pub auto_scale_height: EzProperty<bool>,
 }
 impl AutoScale {
-
     pub fn new(width: bool, height: bool, name: String, scheduler: &mut SchedulerFrontend) -> Self {
         let width_property =
-            scheduler.new_bool_property(format!("{}/auto_scale_width", name).as_str(),
-                                        width);
+            scheduler.new_bool_property(format!("{}/auto_scale_width", name).as_str(), width);
         let height_property =
-            scheduler.new_bool_property(format!("{}/auto_scale_height", name).as_str(),
-                                        height);
-        AutoScale{ auto_scale_width: width_property, auto_scale_height: height_property}
+            scheduler.new_bool_property(format!("{}/auto_scale_height", name).as_str(), height);
+        AutoScale {
+            auto_scale_width: width_property,
+            auto_scale_height: height_property,
+        }
     }
 
     pub fn set_auto_scale_width(&mut self, width: bool) {
@@ -351,7 +349,6 @@ impl AutoScale {
     }
 }
 
-
 /// Composite object containing both x and y size hints. If you want to set a callback for
 /// either, access the 'x' or 'y' property first.
 #[derive(PartialEq, Clone, Debug)]
@@ -360,16 +357,20 @@ pub struct SizeHint {
     pub size_hint_y: EzProperty<Option<f64>>,
 }
 impl SizeHint {
-
-    pub fn new(x: Option<f64>, y: Option<f64>, name: String, scheduler: &mut SchedulerFrontend)
-        -> Self {
+    pub fn new(
+        x: Option<f64>,
+        y: Option<f64>,
+        name: String,
+        scheduler: &mut SchedulerFrontend,
+    ) -> Self {
         let x_property =
-            scheduler.new_size_hint_property(format!("{}/size_hint_x", name).as_str(),
-                                        x);
+            scheduler.new_size_hint_property(format!("{}/size_hint_x", name).as_str(), x);
         let y_property =
-            scheduler.new_size_hint_property(format!("{}/size_hint_y", name).as_str(),
-                                        y);
-        SizeHint{ size_hint_x: x_property, size_hint_y: y_property}
+            scheduler.new_size_hint_property(format!("{}/size_hint_y", name).as_str(), y);
+        SizeHint {
+            size_hint_x: x_property,
+            size_hint_y: y_property,
+        }
     }
 
     pub fn set_size_hint_x(&mut self, x: Option<f64>) {
@@ -394,8 +395,6 @@ impl SizeHint {
     }
 }
 
-
-
 /// Composite object containing both x and y pos hints. If you want to set a callback for
 /// either, access the 'x' or 'y' property first.
 #[derive(PartialEq, Clone, Debug)]
@@ -404,16 +403,20 @@ pub struct PosHint {
     pub pos_hint_y: EzProperty<VerticalPosHint>,
 }
 impl PosHint {
-
-    pub fn new(x: HorizontalPosHint, y: VerticalPosHint,
-               name: String, scheduler: &mut SchedulerFrontend) -> Self {
+    pub fn new(
+        x: HorizontalPosHint,
+        y: VerticalPosHint,
+        name: String,
+        scheduler: &mut SchedulerFrontend,
+    ) -> Self {
         let x_property =
-            scheduler.new_horizontal_pos_hint_property(
-                format!("{}/pos_hint_x", name).as_str(),x);
+            scheduler.new_horizontal_pos_hint_property(format!("{}/pos_hint_x", name).as_str(), x);
         let y_property =
-            scheduler.new_vertical_pos_hint_property(
-                format!("{}/pos_hint_y", name).as_str(),y);
-        PosHint{ pos_hint_x: x_property, pos_hint_y: y_property}
+            scheduler.new_vertical_pos_hint_property(format!("{}/pos_hint_y", name).as_str(), y);
+        PosHint {
+            pos_hint_x: x_property,
+            pos_hint_y: y_property,
+        }
     }
 
     pub fn set_pos_hint_x(&mut self, x: HorizontalPosHint) {
@@ -438,7 +441,6 @@ impl PosHint {
     }
 }
 
-
 /// Convenience wrapper around a callback configuration. Here is an example of how to use this
 /// object; we will set an on_press callback:
 /// ```
@@ -455,7 +457,6 @@ impl PosHint {
 /// For more information on each callback, see the docs on the properties of this struct.
 #[derive(Default)]
 pub struct CallbackConfig {
-
     /// This callback is activated when a widget is selected. A selection can occur when the user uses
     /// the keyboard up/down buttons (and the widget has a selection_order) or when the widget is
     /// hovered. Selectable widgets are: buttons, checkboxes, dropdowns, radio buttons and sliders.
@@ -486,7 +487,7 @@ pub struct CallbackConfig {
     /// let new_callback_config = CallbackConfig::from_on_select(Box::new(my_callback));
     /// scheduler.update_callback_config("my_button", new_callback_config);
     /// ```
-    pub on_select: Option<OptionalMouseCallbackFunction> ,
+    pub on_select: Option<OptionalMouseCallbackFunction>,
 
     /// This callback is activated when a widget is deselected. A deselection occurs when the mouse
     /// cursor leaves the selection widget, or when the user uses the keyboard up/down buttons to move
@@ -804,11 +805,15 @@ pub struct CallbackConfig {
     pub property_callbacks: Vec<GenericFunction>,
 }
 impl CallbackConfig {
-
     /// Create a [CallbackConfig] from a keybinding.
     /// the callback function signature should be: (Context, KeyCode)
     /// See [Context] for more information on the context. The KeyCode is the key that was pressed.
-    pub fn bind_key(&mut self, key: KeyCode, modifiers: Option<Vec<KeyModifiers>>, func: KeyboardCallbackFunction) {
+    pub fn bind_key(
+        &mut self,
+        key: KeyCode,
+        modifiers: Option<Vec<KeyModifiers>>,
+        func: KeyboardCallbackFunction,
+    ) {
         self.keymap.bind_key(key, modifiers, func);
     }
 
@@ -928,34 +933,54 @@ impl CallbackConfig {
 
     /// Update this CallbackConfig using another CallbackConfig. Any fields that are not None on
     /// the other object will be copied.
-    pub fn update_from(&mut self, other: CallbackConfig)  {
-        if let None = other.on_value_change {}
-            else { self.on_value_change = other.on_value_change};
-        if let None = other.on_deselect {}
-            else { self.on_deselect = other.on_deselect};
-        if let None = other.on_select {}
-            else { self.on_select = other.on_select};
-        if let None = other.on_press {}
-            else { self.on_press = other.on_press};
-        if let None = other.on_left_mouse_click {}
-            else { self.on_left_mouse_click = other.on_left_mouse_click};
-        if let None = other.on_right_mouse_click {}
-            else { self.on_right_mouse_click = other.on_right_mouse_click};
-        if let None = other.on_scroll_up {}
-            else { self.on_scroll_up = other.on_scroll_up};
-        if let None = other.on_scroll_down {}
-            else { self.on_scroll_down = other.on_scroll_down};
-        if let None = other.on_keyboard_enter {}
-            else { self.on_keyboard_enter = other.on_keyboard_enter};
-        if let None = other.on_hover {}
-            else { self.on_hover = other.on_hover};
-        if let None = other.on_drag {}
-            else { self.on_drag = other.on_drag};
+    pub fn update_from(&mut self, other: CallbackConfig) {
+        if let None = other.on_value_change {
+        } else {
+            self.on_value_change = other.on_value_change
+        };
+        if let None = other.on_deselect {
+        } else {
+            self.on_deselect = other.on_deselect
+        };
+        if let None = other.on_select {
+        } else {
+            self.on_select = other.on_select
+        };
+        if let None = other.on_press {
+        } else {
+            self.on_press = other.on_press
+        };
+        if let None = other.on_left_mouse_click {
+        } else {
+            self.on_left_mouse_click = other.on_left_mouse_click
+        };
+        if let None = other.on_right_mouse_click {
+        } else {
+            self.on_right_mouse_click = other.on_right_mouse_click
+        };
+        if let None = other.on_scroll_up {
+        } else {
+            self.on_scroll_up = other.on_scroll_up
+        };
+        if let None = other.on_scroll_down {
+        } else {
+            self.on_scroll_down = other.on_scroll_down
+        };
+        if let None = other.on_keyboard_enter {
+        } else {
+            self.on_keyboard_enter = other.on_keyboard_enter
+        };
+        if let None = other.on_hover {
+        } else {
+            self.on_hover = other.on_hover
+        };
+        if let None = other.on_drag {
+        } else {
+            self.on_drag = other.on_drag
+        };
         self.keymap.keymap.extend(other.keymap.keymap);
     }
-
 }
-
 
 /// Keymap for binding keys to callbacks. As an end-user, use CallbackConfig.bind_key or
 /// scheduler.bind_global_key
@@ -964,20 +989,24 @@ pub struct KeyMap {
     pub keymap: HashMap<(KeyCode, KeyModifiers), KeyboardCallbackFunction>,
 }
 impl KeyMap {
-
     pub fn new() -> Self {
-        KeyMap { keymap: HashMap::new() }
+        KeyMap {
+            keymap: HashMap::new(),
+        }
     }
 
-
-    pub fn bind_key(&mut self, key: KeyCode, modifiers: Option<Vec<KeyModifiers>>, func: KeyboardCallbackFunction) {
+    pub fn bind_key(
+        &mut self,
+        key: KeyCode,
+        modifiers: Option<Vec<KeyModifiers>>,
+        func: KeyboardCallbackFunction,
+    ) {
         let modifiers = create_keymap_modifiers(modifiers);
         self.keymap.insert((key, modifiers), func);
     }
 
     /// Wrap method that makes keycodes uppercase insensitive
     pub fn contains(&self, key: KeyCode, modifiers: KeyModifiers) -> bool {
-
         if let KeyCode::Char(i) = key {
             if i.is_alphabetic() {
                 let other = if i.is_uppercase() {
@@ -989,33 +1018,35 @@ impl KeyMap {
                 if !contains {
                     contains = self.keymap.contains_key(&(other, modifiers));
                 }
-                return contains
+                return contains;
             }
         }
         self.keymap.contains_key(&(key, modifiers))
     }
 
-     pub fn get(&self, key: KeyCode, modifiers: KeyModifiers) -> Option<&KeyboardCallbackFunction> {
+    pub fn get(&self, key: KeyCode, modifiers: KeyModifiers) -> Option<&KeyboardCallbackFunction> {
+        if let KeyCode::Char(i) = key {
+            if i.is_alphabetic() {
+                let other = if i.is_uppercase() {
+                    KeyCode::Char(i.to_lowercase().into_iter().next().unwrap())
+                } else {
+                    KeyCode::Char(i.to_uppercase().into_iter().next().unwrap())
+                };
+                let mut contains = self.keymap.get(&(key, modifiers));
+                if contains.is_none() {
+                    contains = self.keymap.get(&(other, modifiers));
+                }
+                return contains;
+            }
+        }
+        self.keymap.get(&(key, modifiers))
+    }
 
-         if let KeyCode::Char(i) = key {
-             if i.is_alphabetic() {
-                 let other = if i.is_uppercase() {
-                     KeyCode::Char(i.to_lowercase().into_iter().next().unwrap())
-                 } else {
-                     KeyCode::Char(i.to_uppercase().into_iter().next().unwrap())
-                 };
-                 let mut contains = self.keymap.get(&(key, modifiers));
-                 if contains.is_none() {
-                     contains = self.keymap.get(&(other, modifiers));
-                 }
-                 return contains
-             }
-         }
-         self.keymap.get(&(key, modifiers))
-     }
-
-    pub fn get_mut(&mut self, key: KeyCode, modifiers: KeyModifiers) -> Option<&mut KeyboardCallbackFunction> {
-
+    pub fn get_mut(
+        &mut self,
+        key: KeyCode,
+        modifiers: KeyModifiers,
+    ) -> Option<&mut KeyboardCallbackFunction> {
         if let KeyCode::Char(i) = key {
             if i.is_alphabetic() {
                 let other = if i.is_uppercase() {
@@ -1024,9 +1055,9 @@ impl KeyMap {
                     KeyCode::Char(i.to_uppercase().into_iter().next().unwrap())
                 };
                 if self.keymap.contains_key(&(key, modifiers)) {
-                    return self.keymap.get_mut(&(key, modifiers))
+                    return self.keymap.get_mut(&(key, modifiers));
                 } else {
-                    return self.keymap.get_mut(&(other, modifiers))
+                    return self.keymap.get_mut(&(other, modifiers));
                 }
             }
         }
@@ -1055,13 +1086,11 @@ pub fn create_keymap_modifiers(modifiers: Option<Vec<KeyModifiers>>) -> KeyModif
     }
 }
 
-
 /// Composite object containing all properties related to scrolling. As an end-user, you should
 /// only set enable_x, enable_y, scroll_start_x and/or scroll_start_y. The other properties are set
 /// automatically when constructing the layout.
 #[derive(PartialEq, Clone, Debug)]
 pub struct ScrollingConfig {
-
     /// Bool representing whether the x axis should be able to scroll
     pub scroll_x: EzProperty<bool>,
 
@@ -1089,22 +1118,22 @@ pub struct ScrollingConfig {
     original_width: usize,
 }
 impl ScrollingConfig {
-
-    pub fn new(scroll_x: bool, scroll_y: bool, scroll_start_x: f64, scroll_start_y: f64,
-               name: String, scheduler: &mut SchedulerFrontend) -> Self {
-
+    pub fn new(
+        scroll_x: bool,
+        scroll_y: bool,
+        scroll_start_x: f64,
+        scroll_start_y: f64,
+        name: String,
+        scheduler: &mut SchedulerFrontend,
+    ) -> Self {
         let x_property =
-            scheduler.new_bool_property(format!("{}/scroll_x", name).as_str(),
-                                        scroll_x);
+            scheduler.new_bool_property(format!("{}/scroll_x", name).as_str(), scroll_x);
         let y_property =
-            scheduler.new_bool_property(format!("{}/scroll_y", name).as_str(),
-                                        scroll_y);
+            scheduler.new_bool_property(format!("{}/scroll_y", name).as_str(), scroll_y);
         let scroll_start_x_property =
-            scheduler.new_f64_property(format!("{}/scroll_start_x", name).as_str(),
-                                        scroll_start_x);
+            scheduler.new_f64_property(format!("{}/scroll_start_x", name).as_str(), scroll_start_x);
         let scroll_start_y_property =
-            scheduler.new_f64_property(format!("{}/scroll_start_y", name).as_str(),
-                                        scroll_start_y);
+            scheduler.new_f64_property(format!("{}/scroll_start_y", name).as_str(), scroll_start_y);
         ScrollingConfig {
             scroll_x: x_property,
             scroll_y: y_property,
@@ -1113,7 +1142,7 @@ impl ScrollingConfig {
             is_scrolling_x: false,
             is_scrolling_y: false,
             original_height: 0,
-            original_width: 0
+            original_width: 0,
         }
     }
 
@@ -1186,8 +1215,8 @@ impl ScrollingConfig {
     }
 
     pub fn get_absolute_scroll_start_x(&self, effective_widget_width: usize) -> usize {
-        (self.get_max_scroll_start_x(effective_widget_width) as f64 *
-            self.get_scroll_start_x()).round() as usize
+        (self.get_max_scroll_start_x(effective_widget_width) as f64 * self.get_scroll_start_x())
+            .round() as usize
     }
 
     pub fn get_max_scroll_start_y(&self, effective_widget_height: usize) -> usize {
@@ -1195,8 +1224,8 @@ impl ScrollingConfig {
     }
 
     pub fn get_absolute_scroll_start_y(&self, effective_widget_height: usize) -> usize {
-        (self.get_max_scroll_start_y(effective_widget_height) as f64 *
-            self.get_scroll_start_y()).round() as usize
+        (self.get_max_scroll_start_y(effective_widget_height) as f64 * self.get_scroll_start_y())
+            .round() as usize
     }
 
     pub fn clean_up_properties(&self, scheduler: &mut SchedulerFrontend) {
@@ -1205,70 +1234,70 @@ impl ScrollingConfig {
     }
 }
 
-
 /// Composite object containing properties related to layout/widget borders. If you want to bind a
 /// callback to one of the properties, access them directly first.
 #[derive(PartialEq, Clone, Debug)]
 pub struct BorderConfig {
-
     /// Bool representing whether an object should have a border
     pub border: EzProperty<bool>,
 
     /// The [Pixel.symbol] to use for the horizontal border if [border] is true
     pub horizontal_symbol: EzProperty<String>,
-    
+
     /// The [Pixel.symbol] to use for the vertical border if [border] is true
     pub vertical_symbol: EzProperty<String>,
-    
+
     /// The [Pixel.symbol] to use for the top left border if [border] is true
     pub top_left_symbol: EzProperty<String>,
-    
+
     /// The [Pixel.symbol] to use for the top right border if [border] is true
     pub top_right_symbol: EzProperty<String>,
-    
+
     /// The [Pixel.symbol] to use for the bottom left border if [border] is true
     pub bottom_left_symbol: EzProperty<String>,
-    
+
     /// The [Pixel.symbol] to use for the bottom right border if [border] is true
     pub bottom_right_symbol: EzProperty<String>,
 }
 
 impl BorderConfig {
-
     pub fn new(enable: bool, name: String, scheduler: &mut SchedulerFrontend) -> Self {
-
         let enabled_property =
-            scheduler.new_bool_property(format!("{}/border", name).as_str(),
-                                        enable);
-        let horizontal_symbol =
-            scheduler.new_string_property(format!("{}/horizontal_symbol", name).as_str(),
-                                          "─".to_string());
-        let vertical_symbol =
-            scheduler.new_string_property(format!("{}/vertical_symbol", name).as_str(),
-                                          "│".to_string());
-        let top_left_symbol =
-            scheduler.new_string_property(format!("{}/top_left_symbol", name).as_str(),
-                                          "┌".to_string());
-        let top_right_symbol =
-            scheduler.new_string_property(format!("{}/top_right_symbol", name).as_str(),
-                                          "┐".to_string());
-        let bottom_left_symbol =
-            scheduler.new_string_property(format!("{}/bottom_left_symbol", name).as_str(),
-                                          "└".to_string());
-        let bottom_right_symbol =
-            scheduler.new_string_property(format!("{}/bottom_right_symbol", name).as_str(),
-                                          "┘".to_string());
+            scheduler.new_bool_property(format!("{}/border", name).as_str(), enable);
+        let horizontal_symbol = scheduler.new_string_property(
+            format!("{}/horizontal_symbol", name).as_str(),
+            "─".to_string(),
+        );
+        let vertical_symbol = scheduler.new_string_property(
+            format!("{}/vertical_symbol", name).as_str(),
+            "│".to_string(),
+        );
+        let top_left_symbol = scheduler.new_string_property(
+            format!("{}/top_left_symbol", name).as_str(),
+            "┌".to_string(),
+        );
+        let top_right_symbol = scheduler.new_string_property(
+            format!("{}/top_right_symbol", name).as_str(),
+            "┐".to_string(),
+        );
+        let bottom_left_symbol = scheduler.new_string_property(
+            format!("{}/bottom_left_symbol", name).as_str(),
+            "└".to_string(),
+        );
+        let bottom_right_symbol = scheduler.new_string_property(
+            format!("{}/bottom_right_symbol", name).as_str(),
+            "┘".to_string(),
+        );
 
-
-       BorderConfig {
-           border: enabled_property,
-           horizontal_symbol,
-           vertical_symbol,
-           top_left_symbol,
-           top_right_symbol,
-           bottom_left_symbol,
-           bottom_right_symbol,
-       }
+        BorderConfig {
+            border: enabled_property,
+            horizontal_symbol,
+            vertical_symbol,
+            top_left_symbol,
+            top_right_symbol,
+            bottom_left_symbol,
+            bottom_right_symbol,
+        }
     }
 
     pub fn set_border(&mut self, enabled: bool) {
@@ -1338,12 +1367,10 @@ impl BorderConfig {
     }
 }
 
-
 /// Composite object containing properties related to the colors of a widget or layout. If you want
 /// to bind a callback to one of the properties, access it directly first.
 #[derive(PartialEq, Clone, Debug)]
 pub struct ColorConfig {
-
     /// The [Pixel.foreground_color] to use for this widgets' content
     pub fg_color: EzProperty<Color>,
 
@@ -1404,54 +1431,67 @@ pub struct ColorConfig {
 }
 impl ColorConfig {
     pub fn new(name: String, scheduler: &mut SchedulerFrontend) -> Self {
-
-        let foreground = scheduler.new_color_property(
-            format!("{}/fg_color", name).as_str(), Color::White);
-        let background = scheduler.new_color_property(
-            format!("{}/bg_color", name).as_str(), Color::Black);
+        let foreground =
+            scheduler.new_color_property(format!("{}/fg_color", name).as_str(), Color::White);
+        let background =
+            scheduler.new_color_property(format!("{}/bg_color", name).as_str(), Color::Black);
 
         let selection_foreground = scheduler.new_color_property(
-            format!("{}/selection_fg_color", name).as_str(), Color::Yellow);
-        let selection_background = scheduler.new_color_property(
-            format!("{}/selection_bg_color", name).as_str(), Color::Blue);
+            format!("{}/selection_fg_color", name).as_str(),
+            Color::Yellow,
+        );
+        let selection_background = scheduler
+            .new_color_property(format!("{}/selection_bg_color", name).as_str(), Color::Blue);
 
-        let disabled_foreground = scheduler.new_color_property(
-            format!("{}/disabled_fg_color", name).as_str(), Color::White);
-        let disabled_background = scheduler.new_color_property(
-            format!("{}/disabled_bg_color", name).as_str(), Color::Black);
+        let disabled_foreground = scheduler
+            .new_color_property(format!("{}/disabled_fg_color", name).as_str(), Color::White);
+        let disabled_background = scheduler
+            .new_color_property(format!("{}/disabled_bg_color", name).as_str(), Color::Black);
 
         let active_foreground = scheduler.new_color_property(
-            format!("{}/tab_header_active_fg_color", name).as_str(), Color::White);
+            format!("{}/tab_header_active_fg_color", name).as_str(),
+            Color::White,
+        );
         let active_background = scheduler.new_color_property(
-            format!("{}/tab_header_active_bg_color", name).as_str(), Color::Black);
+            format!("{}/tab_header_active_bg_color", name).as_str(),
+            Color::Black,
+        );
 
-        let flash_foreground = scheduler.new_color_property(
-            format!("{}/flash_fg_color", name).as_str(), Color::White);
-        let flash_background = scheduler.new_color_property(
-            format!("{}/flash_bg_color", name).as_str(), Color::White);
+        let flash_foreground =
+            scheduler.new_color_property(format!("{}/flash_fg_color", name).as_str(), Color::White);
+        let flash_background =
+            scheduler.new_color_property(format!("{}/flash_bg_color", name).as_str(), Color::White);
 
-        let filler_foreground = scheduler.new_color_property(
-            format!("{}/filler_fg_color", name).as_str(), Color::White);
-        let filler_background = scheduler.new_color_property(
-            format!("{}/filler_bg_color", name).as_str(), Color::Black);
+        let filler_foreground = scheduler
+            .new_color_property(format!("{}/filler_fg_color", name).as_str(), Color::White);
+        let filler_background = scheduler
+            .new_color_property(format!("{}/filler_bg_color", name).as_str(), Color::Black);
 
         let tab_foreground = scheduler.new_color_property(
-            format!("{}/tab_header_fg_color", name).as_str(), Color::White);
+            format!("{}/tab_header_fg_color", name).as_str(),
+            Color::White,
+        );
         let tab_background = scheduler.new_color_property(
-            format!("{}/tab_header_bg_color", name).as_str(), Color::Black);
+            format!("{}/tab_header_bg_color", name).as_str(),
+            Color::Black,
+        );
 
         let tab_border_foreground = scheduler.new_color_property(
-            format!("{}/tab_header_border_fg_color", name).as_str(), Color::White);
+            format!("{}/tab_header_border_fg_color", name).as_str(),
+            Color::White,
+        );
         let tab_border_background = scheduler.new_color_property(
-            format!("{}/tab_header_border_bg_color", name).as_str(), Color::Black);
+            format!("{}/tab_header_border_bg_color", name).as_str(),
+            Color::Black,
+        );
 
-        let border_foreground = scheduler.new_color_property(
-            format!("{}/border_fg_color", name).as_str(), Color::White);
-        let border_background = scheduler.new_color_property(
-            format!("{}/border_bg_color", name).as_str(), Color::Black);
+        let border_foreground = scheduler
+            .new_color_property(format!("{}/border_fg_color", name).as_str(), Color::White);
+        let border_background = scheduler
+            .new_color_property(format!("{}/border_bg_color", name).as_str(), Color::Black);
 
-        let cursor = scheduler.new_color_property(
-            format!("{}/cursor_color", name).as_str(), Color::DarkYellow);
+        let cursor = scheduler
+            .new_color_property(format!("{}/cursor_color", name).as_str(), Color::DarkYellow);
 
         ColorConfig {
             fg_color: foreground,
@@ -1649,7 +1689,6 @@ impl ColorConfig {
     }
 }
 
-
 /// Composite object containing properties related to padding. If you want to set a callback to a
 /// property, access is directly first.
 #[derive(PartialEq, Clone, Debug)]
@@ -1660,18 +1699,22 @@ pub struct Padding {
     pub padding_right: EzProperty<usize>,
 }
 impl Padding {
-    pub fn new(top: usize, bottom: usize, left: usize, right: usize, name: String,
-               scheduler: &mut SchedulerFrontend) -> Padding{
-
-
-        let top_property = scheduler.new_usize_property(
-            format!("{}/padding_top", name).as_str(), top);
-        let bottom_property = scheduler.new_usize_property(
-            format!("{}/padding_bottom", name).as_str(), bottom);
-        let left_property = scheduler.new_usize_property(
-            format!("{}/padding_left", name).as_str(), left);
-        let right_property = scheduler.new_usize_property(
-            format!("{}/padding_right", name).as_str(), right);
+    pub fn new(
+        top: usize,
+        bottom: usize,
+        left: usize,
+        right: usize,
+        name: String,
+        scheduler: &mut SchedulerFrontend,
+    ) -> Padding {
+        let top_property =
+            scheduler.new_usize_property(format!("{}/padding_top", name).as_str(), top);
+        let bottom_property =
+            scheduler.new_usize_property(format!("{}/padding_bottom", name).as_str(), bottom);
+        let left_property =
+            scheduler.new_usize_property(format!("{}/padding_left", name).as_str(), left);
+        let right_property =
+            scheduler.new_usize_property(format!("{}/padding_right", name).as_str(), right);
         Padding {
             padding_top: top_property,
             padding_bottom: bottom_property,

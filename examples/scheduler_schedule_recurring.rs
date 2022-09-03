@@ -1,22 +1,16 @@
-use std::time::Duration;
 use ez_term::*;
+use std::time::Duration;
 
 fn main() {
-
     let (root_widget, mut state_tree, mut scheduler) = load_ui();
 
     let mut counter: usize = 1;
     let my_task = move |context: Context| {
-
         let state = context.state_tree.get_mut("my_label").as_label_mut();
         state.set_text(format!("Counting {}", counter));
         state.update(context.scheduler);
         counter += 1;
-        return if counter <= 5 {
-            true
-        } else {
-            false
-        };
+        return if counter <= 5 { true } else { false };
     };
 
     scheduler.schedule_recurring("my_task", Box::new(my_task), Duration::from_secs(1));

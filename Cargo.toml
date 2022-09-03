@@ -3,6 +3,15 @@ name = "ez_term"
 version = "0.1.0"
 rust-version = "1.61.0"
 edition = "2021"
+authors = ["ddbnl <daandeboer@gmail.com>"]
+description = "A cross-platform terminal UI framework focussed on simplicity. Build your TUI using YAML(ish) config files."
+documentation = "https://github.com/ddbnl/ez_term/wiki"
+readme = true
+homepage = "https://github.com/ddbnl/ez_term"
+repository = "https://github.com/ddbnl/ez_term"
+license = "GPL-3.0-or-later"
+keywords = ["tui", "terminal", "terminal-ui"]
+categories = ["command-line-interface", "gui"]
 
 [lib]
 name = "ez_term"

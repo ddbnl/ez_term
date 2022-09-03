@@ -1,14 +1,17 @@
 //! # Widget state:
 //! A module containing the base structs and traits for widget states.
-use crossterm::style::Color;
 use crate::property::ez_values::EzValues;
+use crossterm::style::Color;
 
 use crate::run::definitions::{Coordinates, IsizeCoordinates, Size};
 use crate::scheduler::scheduler::SchedulerFrontend;
 use crate::states::button_state::ButtonState;
 use crate::states::canvas_state::CanvasState;
 use crate::states::checkbox_state::CheckboxState;
-use crate::states::definitions::{AutoScale, BorderConfig, ColorConfig, HorizontalAlignment, HorizontalPosHint, InfiniteSize, Padding, PosHint, SizeHint, StateCoordinates, StateSize, VerticalAlignment, VerticalPosHint};
+use crate::states::definitions::{
+    AutoScale, BorderConfig, ColorConfig, HorizontalAlignment, HorizontalPosHint, InfiniteSize,
+    Padding, PosHint, SizeHint, StateCoordinates, StateSize, VerticalAlignment, VerticalPosHint,
+};
 use crate::states::dropdown_state::{DropdownState, DroppedDownMenuState};
 use crate::states::label_state::LabelState;
 use crate::states::layout_state::LayoutState;
@@ -16,7 +19,6 @@ use crate::states::progress_bar_state::ProgressBarState;
 use crate::states::radio_button_state::RadioButtonState;
 use crate::states::slider_state::SliderState;
 use crate::states::text_input_state::TextInputState;
-
 
 /// Widget states are used to keep track of dynamic run time information of widgets, such as the
 /// text of a label, or whether a checkbox is currently checked. All callbacks receive a mutable
@@ -36,13 +38,11 @@ pub enum EzState {
     RadioButton(RadioButtonState),
     TextInput(TextInputState),
     Slider(SliderState),
-    ProgressBar(ProgressBarState)
+    ProgressBar(ProgressBarState),
 }
 impl EzState {
-
     /// Get an EzState based on a string containing the base widget type.
     pub fn from_string(type_name: &str, path: String, scheduler: &mut SchedulerFrontend) -> Self {
-
         match type_name {
             "Layout" => EzState::Layout(LayoutState::new(path, scheduler)),
             "Canvas" => EzState::Canvas(CanvasState::new(path, scheduler)),
@@ -54,8 +54,10 @@ impl EzState {
             "Dropdown" => EzState::Dropdown(DropdownState::new(path, scheduler)),
             "Slider" => EzState::Slider(SliderState::new(path, scheduler)),
             "ProgressBar" => EzState::ProgressBar(ProgressBarState::new(path, scheduler)),
-            _ => panic!("Cannot create state from string \"{}\". This widget type does not exist.",
-                        type_name)
+            _ => panic!(
+                "Cannot create state from string \"{}\". This widget type does not exist.",
+                type_name
+            ),
         }
     }
 
@@ -95,147 +97,212 @@ impl EzState {
         }
     }
 
-
     /// Cast this state as a layout state ref, you must be sure you have one.
     pub fn as_layout(&self) -> &LayoutState {
-        if let EzState::Layout(i) = self { i }
-        else { panic!("wrong state.") }
+        if let EzState::Layout(i) = self {
+            i
+        } else {
+            panic!("wrong state.")
+        }
     }
 
     /// Cast this state as a mutable layout state ref, you must be sure you have one.
     pub fn as_layout_mut(&mut self) -> &mut LayoutState {
-        if let EzState::Layout(i) = self { i }
-        else { panic!("wrong state.") }
+        if let EzState::Layout(i) = self {
+            i
+        } else {
+            panic!("wrong state.")
+        }
     }
 
     /// Cast this state as a Canvas widget state ref, you must be sure you have one.
     pub fn as_canvas(&self) -> &CanvasState {
-        if let EzState::Canvas(i) = self { i }
-        else { panic!("wrong state.") }
+        if let EzState::Canvas(i) = self {
+            i
+        } else {
+            panic!("wrong state.")
+        }
     }
 
     /// Cast this state as a mutable Canvas widget state ref, you must be sure you have one.
     pub fn as_canvas_mut(&mut self) -> &mut CanvasState {
-        if let EzState::Canvas(i) = self { i }
-        else { panic!("wrong state.") }
+        if let EzState::Canvas(i) = self {
+            i
+        } else {
+            panic!("wrong state.")
+        }
     }
 
     /// Cast this state as a Label widget state ref, you must be sure you have one.
     pub fn as_label(&self) -> &LabelState {
-        if let EzState::Label(i) = self { i }
-        else { panic!("wrong state.") }
+        if let EzState::Label(i) = self {
+            i
+        } else {
+            panic!("wrong state.")
+        }
     }
 
     /// Cast this state as a mutable Label widget state ref, you must be sure you have one.
     pub fn as_label_mut(&mut self) -> &mut LabelState {
-        if let EzState::Label(i) = self { i }
-        else { panic!("wrong state.") }
+        if let EzState::Label(i) = self {
+            i
+        } else {
+            panic!("wrong state.")
+        }
     }
 
     /// Cast this state as a Button widget state ref, you must be sure you have one.
     pub fn as_button(&self) -> &ButtonState {
-        if let EzState::Button(i) = self { i }
-        else { panic!("wrong state.") }
+        if let EzState::Button(i) = self {
+            i
+        } else {
+            panic!("wrong state.")
+        }
     }
 
     /// Cast this state as a mutable Button widget state ref, you must be sure you have one.
     pub fn as_button_mut(&mut self) -> &mut ButtonState {
-        if let EzState::Button(i) = self { i }
-        else { panic!("wrong state.") }
+        if let EzState::Button(i) = self {
+            i
+        } else {
+            panic!("wrong state.")
+        }
     }
 
     /// Cast this state as a Slider widget state ref, you must be sure you have one.
     pub fn as_slider(&self) -> &SliderState {
-        if let EzState::Slider(i) = self { i }
-        else { panic!("wrong state.") }
+        if let EzState::Slider(i) = self {
+            i
+        } else {
+            panic!("wrong state.")
+        }
     }
 
     /// Cast this state as a mutable Slider widget state ref, you must be sure you have one.
     pub fn as_slider_mut(&mut self) -> &mut SliderState {
-        if let EzState::Slider(i) = self { i }
-        else { panic!("wrong state.") }
+        if let EzState::Slider(i) = self {
+            i
+        } else {
+            panic!("wrong state.")
+        }
     }
 
     /// Cast this state as a Progress bar widget state ref, you must be sure you have one.
     pub fn as_progress_bar(&self) -> &ProgressBarState {
-        if let EzState::ProgressBar(i) = self { i }
-        else { panic!("wrong state.") }
+        if let EzState::ProgressBar(i) = self {
+            i
+        } else {
+            panic!("wrong state.")
+        }
     }
 
     /// Cast this state as a mutable Progress bar widget state ref, you must be sure you have one.
     pub fn as_progress_bar_mut(&mut self) -> &mut ProgressBarState {
-        if let EzState::ProgressBar(i) = self { i }
-        else { panic!("wrong state.") }
+        if let EzState::ProgressBar(i) = self {
+            i
+        } else {
+            panic!("wrong state.")
+        }
     }
 
     /// Cast this state as a Checkbox widget state ref, you must be sure you have one.
     pub fn as_checkbox(&self) -> &CheckboxState {
-        if let EzState::Checkbox(i) = self { i }
-        else { panic!("wrong state.") }
+        if let EzState::Checkbox(i) = self {
+            i
+        } else {
+            panic!("wrong state.")
+        }
     }
 
     /// Cast this state as a mutable Checkbox widget state ref, you must be sure you have one.
     pub fn as_checkbox_mut(&mut self) -> &mut CheckboxState {
-        if let EzState::Checkbox(i) = self { i }
-        else { panic!("wrong state.") }
+        if let EzState::Checkbox(i) = self {
+            i
+        } else {
+            panic!("wrong state.")
+        }
     }
 
     /// Cast this state as a Dropdown widget state ref, you must be sure you have one.
     pub fn as_dropdown(&self) -> &DropdownState {
-        if let EzState::Dropdown(i) = self { i }
-        else { panic!("wrong state.") }
+        if let EzState::Dropdown(i) = self {
+            i
+        } else {
+            panic!("wrong state.")
+        }
     }
 
     /// Cast this state as a mutable Dropdown widget state ref, you must be sure you have one.
     pub fn as_dropdown_mut(&mut self) -> &mut DropdownState {
-        if let EzState::Dropdown(i) = self { i }
-        else { panic!("wrong state.") }
+        if let EzState::Dropdown(i) = self {
+            i
+        } else {
+            panic!("wrong state.")
+        }
     }
 
     /// Cast this state as a dropped down menu modal state ref, you must be sure you have one.
     pub fn as_dropped_down_menu(&self) -> &DroppedDownMenuState {
-        if let EzState::DroppedDownMenu(i) = self { i }
-        else { panic!("wrong state.") }
+        if let EzState::DroppedDownMenu(i) = self {
+            i
+        } else {
+            panic!("wrong state.")
+        }
     }
 
     /// Cast this state as a mutable dropped down menu modal state ref, you must be sure you have one.
     pub fn as_dropped_down_menu_mut(&mut self) -> &mut DroppedDownMenuState {
-        if let EzState::DroppedDownMenu(i) = self { i }
-        else { panic!("wrong state.") }
+        if let EzState::DroppedDownMenu(i) = self {
+            i
+        } else {
+            panic!("wrong state.")
+        }
     }
 
     /// Cast this state as a RadioButton widget state ref, you must be sure you have one.
     pub fn as_radio_button(&self) -> &RadioButtonState {
-        if let EzState::RadioButton(i) = self { i }
-        else { panic!("wrong state.") }
+        if let EzState::RadioButton(i) = self {
+            i
+        } else {
+            panic!("wrong state.")
+        }
     }
 
     /// Cast this state as a mutable RadioButton widget state ref, you must be sure you have one.
     pub fn as_radio_button_mut(&mut self) -> &mut RadioButtonState {
-        if let EzState::RadioButton(i) = self { i }
-        else { panic!("wrong state.") }
+        if let EzState::RadioButton(i) = self {
+            i
+        } else {
+            panic!("wrong state.")
+        }
     }
 
     /// Cast this state as a TextInput widget state ref, you must be sure you have one.
     pub fn as_text_input(&self) -> &TextInputState {
-        if let EzState::TextInput(i) = self { i }
-        else { panic!("wrong state.") }
+        if let EzState::TextInput(i) = self {
+            i
+        } else {
+            panic!("wrong state.")
+        }
     }
 
     /// Cast this state as a mutable TextInput widget state ref, you must be sure you have one.
     pub fn as_text_input_mut(&mut self) -> &mut TextInputState {
-        if let EzState::TextInput(i) = self { i }
-        else { panic!("wrong state.") }
+        if let EzState::TextInput(i) = self {
+            i
+        } else {
+            panic!("wrong state.")
+        }
     }
 }
 
-
 /// State trait which contains methods for managing fields common to all widget states.
 pub trait GenericState {
-
     fn get_path(&self) -> &String;
-    
-    fn get_id(&self) -> String { self.get_path().rsplit_once('/').unwrap().1.to_string() }
+
+    fn get_id(&self) -> String {
+        self.get_path().rsplit_once('/').unwrap().1.to_string()
+    }
 
     /// Get a property by string (of name)
     fn get_property(&self, name: &str) -> EzValues;
@@ -315,9 +382,13 @@ pub trait GenericState {
 
     fn get_infinite_size_mut(&mut self) -> &mut InfiniteSize;
 
-    fn set_width(&mut self, width: usize) { self.get_size_mut().set_width(width) }
+    fn set_width(&mut self, width: usize) {
+        self.get_size_mut().set_width(width)
+    }
 
-    fn set_height(&mut self, height: usize) { self.get_size_mut().set_height(height) }
+    fn set_height(&mut self, height: usize) {
+        self.get_size_mut().set_height(height)
+    }
 
     fn get_width(&self) -> usize {
         self.get_size().width.value
@@ -330,33 +401,48 @@ pub trait GenericState {
     /// Get the effective amount of width and height within this object, taking off e.g. borders,
     /// padding, etc.
     fn get_effective_size(&self) -> Size {
-
         let width_result: isize = self.get_size().get_width() as isize
-            -if self.get_border_config().get_border() {2} else {0}
-            -self.get_padding().get_padding_left() as isize - self.get_padding().get_padding_right() as isize;
-        let width = if width_result < 0 {0} else { width_result };
+            - if self.get_border_config().get_border() {
+                2
+            } else {
+                0
+            }
+            - self.get_padding().get_padding_left() as isize
+            - self.get_padding().get_padding_right() as isize;
+        let width = if width_result < 0 { 0 } else { width_result };
         let height_result: isize = self.get_size().get_height() as isize
-            -if self.get_border_config().get_border() {2} else {0}
-            -self.get_padding().get_padding_top() as isize - self.get_padding().get_padding_bottom() as isize;
-        let height = if height_result < 0 {0} else { height_result };
+            - if self.get_border_config().get_border() {
+                2
+            } else {
+                0
+            }
+            - self.get_padding().get_padding_top() as isize
+            - self.get_padding().get_padding_bottom() as isize;
+        let height = if height_result < 0 { 0 } else { height_result };
         Size::new(width as usize, height as usize)
     }
 
     /// Set the how much width you want the actual content inside this widget to have. Width for
     /// e.g. border and padding will be added to this automatically.
     fn set_effective_width(&mut self, width: usize) {
-
-        let offset = if self.get_border_config().get_border() {2} else {0}
-            + self.get_padding().get_padding_left() + self.get_padding().get_padding_right();
+        let offset = if self.get_border_config().get_border() {
+            2
+        } else {
+            0
+        } + self.get_padding().get_padding_left()
+            + self.get_padding().get_padding_right();
         self.get_size_mut().set_width(width + offset);
     }
 
     /// Set the how much height you want the actual content inside this widget to have. Height for
     /// e.g. border and padding will be added to this automatically.
     fn set_effective_height(&mut self, height: usize) {
-
-        let offset = if self.get_border_config().get_border() {2} else {0}
-            + self.get_padding().get_padding_top() + self.get_padding().get_padding_bottom();
+        let offset = if self.get_border_config().get_border() {
+            2
+        } else {
+            0
+        } + self.get_padding().get_padding_top()
+            + self.get_padding().get_padding_bottom();
         self.get_size_mut().set_height(height + offset);
     }
 
@@ -385,11 +471,20 @@ pub trait GenericState {
     fn get_effective_position(&self) -> Coordinates {
         Coordinates::new(
             self.get_position().get_x()
-                +if self.get_border_config().get_border() {1} else {0}
-                +self.get_padding().get_padding_left(),
+                + if self.get_border_config().get_border() {
+                    1
+                } else {
+                    0
+                }
+                + self.get_padding().get_padding_left(),
             self.get_position().get_y()
-                +if self.get_border_config().get_border() {1} else {0}
-                +self.get_padding().get_padding_top())
+                + if self.get_border_config().get_border() {
+                    1
+                } else {
+                    0
+                }
+                + self.get_padding().get_padding_top(),
+        )
     }
 
     /// Set the absolute position of a widget, i.e. the position on screen rather than within its'
@@ -406,11 +501,20 @@ pub trait GenericState {
     fn get_effective_absolute_position(&self) -> IsizeCoordinates {
         IsizeCoordinates::new(
             self.get_absolute_position().x
-             +if self.get_border_config().get_border() {1} else {0}
-             + self.get_padding().get_padding_left() as isize,
+                + if self.get_border_config().get_border() {
+                    1
+                } else {
+                    0
+                }
+                + self.get_padding().get_padding_left() as isize,
             self.get_absolute_position().y
-             +if self.get_border_config().get_border() {1} else {0}
-             + self.get_padding().get_padding_top() as isize)
+                + if self.get_border_config().get_border() {
+                    1
+                } else {
+                    0
+                }
+                + self.get_padding().get_padding_top() as isize,
+        )
     }
 
     /// Set [HorizontalAlignment] of this widget.
@@ -462,16 +566,21 @@ pub trait GenericState {
     /// Convenience function. Get a Foreground and Background color depending on the state of
     /// the widget (e.g. disabled, selected, etc.).
     fn get_context_colors(&self) -> (Color, Color) {
+        let fg_color = if self.get_disabled() {
+            self.get_color_config().get_disabled_fg_color()
+        } else if self.get_selected() {
+            self.get_color_config().get_selection_fg_color()
+        } else {
+            self.get_color_config().get_fg_color()
+        };
 
-        let fg_color =
-            if self.get_disabled() {self.get_color_config().get_disabled_fg_color() }
-            else if self.get_selected() {self.get_color_config().get_selection_fg_color() }
-            else {self.get_color_config().get_fg_color() };
-
-        let bg_color =
-            if self.get_disabled() {self.get_color_config().get_disabled_bg_color() }
-            else if self.get_selected() {self.get_color_config().get_selection_bg_color() }
-            else {self.get_color_config().get_bg_color() };
+        let bg_color = if self.get_disabled() {
+            self.get_color_config().get_disabled_bg_color()
+        } else if self.get_selected() {
+            self.get_color_config().get_selection_bg_color()
+        } else {
+            self.get_color_config().get_bg_color()
+        };
 
         (fg_color, bg_color)
     }
@@ -481,7 +590,8 @@ pub trait GenericState {
         let top_left = self.get_absolute_position().as_coordinates();
         let bottom_right = Coordinates::new(
             top_left.x + self.get_size().get_width(),
-            top_left.y + self.get_size().get_height());
+            top_left.y + self.get_size().get_height(),
+        );
         (top_left, bottom_right)
     }
 
@@ -502,9 +612,13 @@ pub trait GenericState {
         let (l1, r1) = self.get_box();
         let (l2, r2) = other_box;
         // If one rectangle is on the left of the other there's no overlap
-        if l1.x >= r2.x || l2.x >= r1.x { return false }
+        if l1.x >= r2.x || l2.x >= r1.x {
+            return false;
+        }
         // If one rectangle is above the other there's no overlap
-        if l2.y >= r1.y || l1.y >= r2.y { return false }
+        if l2.y >= r1.y || l1.y >= r2.y {
+            return false;
+        }
         true
     }
 
@@ -523,11 +637,13 @@ pub trait GenericState {
 
     /// Returns a bool representing whether this widget can be select by keyboard or mouse. E.g.
     /// labels cannot be selected, but checkboxes can.
-    fn is_selectable(&self) -> bool { false }
+    fn is_selectable(&self) -> bool {
+        false
+    }
 
     /// Set the disabled field of a widget. Only implemented by interactive widgets (i.e. widgets
     /// that are selectable).
-    fn set_disabled(&mut self, _disabled: bool) { }
+    fn set_disabled(&mut self, _disabled: bool) {}
 
     /// Get the disabled field of a widget. Only implemented by interactive widgets (i.e. widgets
     /// that are selectable).
@@ -545,25 +661,29 @@ pub trait GenericState {
 
     fn set_selected(&mut self, _state: bool) {}
 
-    fn get_selected(&self) -> bool { false }
+    fn get_selected(&self) -> bool {
+        false
+    }
 
-    fn update(&self, scheduler: &mut SchedulerFrontend)  {
+    fn update(&self, scheduler: &mut SchedulerFrontend) {
         scheduler.update_widget(self.get_path())
     }
-    
+
     /// Copy values from another state to this state. Used to copy from templates.
     fn copy_state_values(&mut self, other: EzState);
-    
+
     fn clean_up_properties(&self, scheduler: &mut SchedulerFrontend);
 }
-
 
 /// Base func for whether a single point collides with a widget. Use [collides] or
 /// [collides_effective] depending on the situation.
 fn _collides(pos_1: IsizeCoordinates, pos_2: Coordinates, size: &Size) -> bool {
-
-    let end_pos = IsizeCoordinates::new(pos_1.x + (size.width as isize) - 1,
-                                        pos_1.y + (size.height as isize) - 1);
-    pos_2.x as isize >= pos_1.x && pos_2.x as isize <= end_pos.x &&
-        pos_2.y as isize >= pos_1.y && pos_2.y as isize <= end_pos.y
+    let end_pos = IsizeCoordinates::new(
+        pos_1.x + (size.width as isize) - 1,
+        pos_1.y + (size.height as isize) - 1,
+    );
+    pos_2.x as isize >= pos_1.x
+        && pos_2.x as isize <= end_pos.x
+        && pos_2.y as isize >= pos_1.y
+        && pos_2.y as isize <= end_pos.y
 }

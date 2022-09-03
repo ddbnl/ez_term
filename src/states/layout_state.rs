@@ -1,22 +1,22 @@
 use std::collections::HashMap;
 
-use crate::{EzObject, EzProperty};
 use crate::parser::ez_definition::Templates;
 use crate::property::ez_values::EzValues;
 use crate::run::definitions::{IsizeCoordinates, Size};
 use crate::scheduler::scheduler::SchedulerFrontend;
 use crate::scheduler::scheduler_funcs::clean_up_property;
-use crate::states::definitions::{AutoScale, BorderConfig, ColorConfig, HorizontalAlignment,
-                                 InfiniteSize, LayoutMode, LayoutOrientation, Padding, PosHint,
-                                 ScrollingConfig, SizeHint, StateCoordinates, StateSize,
-                                 TableConfig, VerticalAlignment};
+use crate::states::definitions::{
+    AutoScale, BorderConfig, ColorConfig, HorizontalAlignment, InfiniteSize, LayoutMode,
+    LayoutOrientation, Padding, PosHint, ScrollingConfig, SizeHint, StateCoordinates, StateSize,
+    TableConfig, VerticalAlignment,
+};
 use crate::states::ez_state::{EzState, GenericState};
 use crate::widgets::ez_object::EzObjects;
+use crate::{EzObject, EzProperty};
 
 /// [State] implementation.
 #[derive(Clone, Debug)]
 pub struct LayoutState {
-
     /// Path to the widget to which this state belongs
     pub path: String,
 
@@ -115,9 +115,7 @@ pub struct LayoutState {
     selected: bool,
 }
 impl LayoutState {
-
     pub fn new(path: String, scheduler: &mut SchedulerFrontend) -> Self {
-
         LayoutState {
             path: path.clone(),
             position: StateCoordinates::new(0, 0, path.clone(), scheduler),
@@ -127,52 +125,53 @@ impl LayoutState {
             size: StateSize::new(0, 0, path.clone(), scheduler),
             infinite_size: InfiniteSize::default(),
             auto_scale: AutoScale::new(false, false, path.clone(), scheduler),
-            mode: scheduler.new_layout_mode_property(
-                format!("{}/mode", path).as_str(), LayoutMode::Box),
+            mode: scheduler
+                .new_layout_mode_property(format!("{}/mode", path).as_str(), LayoutMode::Box),
             orientation: scheduler.new_layout_orientation_property(
-                format!("{}/orientation", path).as_str(), LayoutOrientation::Horizontal),
+                format!("{}/orientation", path).as_str(),
+                LayoutOrientation::Horizontal,
+            ),
             padding: Padding::new(0, 0, 0, 0, path.clone(), scheduler),
             halign: scheduler.new_horizontal_alignment_property(
-                format!("{}/halign", path).as_str(), HorizontalAlignment::Left),
+                format!("{}/halign", path).as_str(),
+                HorizontalAlignment::Left,
+            ),
             valign: scheduler.new_vertical_alignment_property(
-                format!("{}/valign", path).as_str(), VerticalAlignment::Top),
+                format!("{}/valign", path).as_str(),
+                VerticalAlignment::Top,
+            ),
             table_config: TableConfig::new(path.clone(), scheduler),
-            active_screen: scheduler.new_string_property(
-                format!("{}/active_screen", path).as_str(), String::new()),
-            tab_name: scheduler.new_string_property(
-                format!("{}/tab_name", path).as_str(), String::new()),
-            active_tab: scheduler.new_string_property(
-                format!("{}/active_tab", path).as_str(), String::new()),
+            active_screen: scheduler
+                .new_string_property(format!("{}/active_screen", path).as_str(), String::new()),
+            tab_name: scheduler
+                .new_string_property(format!("{}/tab_name", path).as_str(), String::new()),
+            active_tab: scheduler
+                .new_string_property(format!("{}/active_tab", path).as_str(), String::new()),
             selected_tab_header: String::new(),
-            fill: scheduler.new_bool_property(format!("{}/fill", path).as_str(),false),
-            filler_symbol: scheduler.new_string_property(
-                format!("{}/filler_symbol", path).as_str(), " ".to_string()),
-            view_size: scheduler.new_usize_property(
-                format!("{}/view_size", path).as_str(), 0),
-            view_page: scheduler.new_usize_property(
-                format!("{}/view_page", path).as_str(), 1),
-            scrolling_config: ScrollingConfig::new(false, false, 0.0, 0.0,
-                                                   path.clone(), scheduler),
+            fill: scheduler.new_bool_property(format!("{}/fill", path).as_str(), false),
+            filler_symbol: scheduler
+                .new_string_property(format!("{}/filler_symbol", path).as_str(), " ".to_string()),
+            view_size: scheduler.new_usize_property(format!("{}/view_size", path).as_str(), 0),
+            view_page: scheduler.new_usize_property(format!("{}/view_page", path).as_str(), 1),
+            scrolling_config: ScrollingConfig::new(false, false, 0.0, 0.0, path.clone(), scheduler),
             border_config: BorderConfig::new(false, path.clone(), scheduler),
             colors: ColorConfig::new(path.clone(), scheduler),
-            can_drag: scheduler.new_bool_property(
-                format!("{}/can_drag", path).as_str(), true),
+            can_drag: scheduler.new_bool_property(format!("{}/can_drag", path).as_str(), true),
             open_modal: None,
             templates: HashMap::new(),
-            disabled: scheduler.new_bool_property(
-                format!("{}/disabled", path).as_str(),false),
+            disabled: scheduler.new_bool_property(format!("{}/disabled", path).as_str(), false),
             selected: false,
-            selection_order: scheduler.new_usize_property(
-                format!("{}/selection_order", path).as_str(), 0),
+            selection_order: scheduler
+                .new_usize_property(format!("{}/selection_order", path).as_str(), 0),
         }
     }
 }
 impl GenericState for LayoutState {
-
-    fn get_path(&self) -> &String { &self.path }
+    fn get_path(&self) -> &String {
+        &self.path
+    }
 
     fn get_property(&self, name: &str) -> EzValues {
-
         match name {
             "x" => EzValues::Usize(self.position.x.value),
             "y" => EzValues::Usize(self.position.y.value),
@@ -193,28 +192,48 @@ impl GenericState for LayoutState {
             "disabled" => EzValues::Bool(self.disabled.value),
             "selection_order" => EzValues::Usize(self.selection_order.value),
             "border" => EzValues::Bool(self.border_config.border.value),
-            "horizontal_symbol" => EzValues::String(self.border_config.horizontal_symbol.value.to_string()),
-            "vertical_symbol" => EzValues::String(self.border_config.vertical_symbol.value.to_string()),
-            "top_left_symbol" => EzValues::String(self.border_config.top_left_symbol.value.to_string()),
-            "top_right_symbol" => EzValues::String(self.border_config.top_right_symbol.value.to_string()),
-            "bottom_left_symbol" => EzValues::String(self.border_config.bottom_left_symbol.value.to_string()),
-            "bottom_right_symbol" => EzValues::String(self.border_config.bottom_right_symbol.value.to_string()),
+            "horizontal_symbol" => {
+                EzValues::String(self.border_config.horizontal_symbol.value.to_string())
+            }
+            "vertical_symbol" => {
+                EzValues::String(self.border_config.vertical_symbol.value.to_string())
+            }
+            "top_left_symbol" => {
+                EzValues::String(self.border_config.top_left_symbol.value.to_string())
+            }
+            "top_right_symbol" => {
+                EzValues::String(self.border_config.top_right_symbol.value.to_string())
+            }
+            "bottom_left_symbol" => {
+                EzValues::String(self.border_config.bottom_left_symbol.value.to_string())
+            }
+            "bottom_right_symbol" => {
+                EzValues::String(self.border_config.bottom_right_symbol.value.to_string())
+            }
             "fg_color" => EzValues::Color(self.colors.fg_color.value),
             "bg_color" => EzValues::Color(self.colors.bg_color.value),
             "selection_fg_color" => EzValues::Color(self.colors.selection_fg_color.value),
             "selection_bg_color" => EzValues::Color(self.colors.selection_bg_color.value),
             "disabled_fg_color" => EzValues::Color(self.colors.disabled_fg_color.value),
             "disabled_bg_color" => EzValues::Color(self.colors.disabled_bg_color.value),
-            "tab_header_active_fg_color" => EzValues::Color(self.colors.tab_header_active_fg_color.value),
-            "tab_header_active_bg_color" => EzValues::Color(self.colors.tab_header_active_bg_color.value),
+            "tab_header_active_fg_color" => {
+                EzValues::Color(self.colors.tab_header_active_fg_color.value)
+            }
+            "tab_header_active_bg_color" => {
+                EzValues::Color(self.colors.tab_header_active_bg_color.value)
+            }
             "border_fg_color" => EzValues::Color(self.colors.border_fg_color.value),
             "border_bg_color" => EzValues::Color(self.colors.border_bg_color.value),
             "filler_fg_color" => EzValues::Color(self.colors.filler_fg_color.value),
             "filler_bg_color" => EzValues::Color(self.colors.filler_bg_color.value),
             "tab_header_fg_color" => EzValues::Color(self.colors.tab_header_fg_color.value),
             "tab_header_bg_color" => EzValues::Color(self.colors.tab_header_bg_color.value),
-            "tab_header_border_fg_color" => EzValues::Color(self.colors.tab_header_border_fg_color.value),
-            "tab_header_border_bg_color" => EzValues::Color(self.colors.tab_header_border_bg_color.value),
+            "tab_header_border_fg_color" => {
+                EzValues::Color(self.colors.tab_header_border_fg_color.value)
+            }
+            "tab_header_border_bg_color" => {
+                EzValues::Color(self.colors.tab_header_border_bg_color.value)
+            }
             "mode" => EzValues::LayoutMode(self.mode.value.clone()),
             "orientation" => EzValues::LayoutOrientation(self.orientation.value.clone()),
             "active_screen" => EzValues::String(self.active_screen.value.to_string()),
@@ -233,13 +252,16 @@ impl GenericState for LayoutState {
             "cols" => EzValues::Usize(self.table_config.cols.value),
             "rows_default_height" => EzValues::Usize(self.table_config.row_default_height.value),
             "cols_default_width" => EzValues::Usize(self.table_config.col_default_width.value),
-            "force_default_row_height" => EzValues::Bool(self.table_config.force_default_row_height.value),
-            "force_default_col_width" => EzValues::Bool(self.table_config.force_default_col_width.value),
+            "force_default_row_height" => {
+                EzValues::Bool(self.table_config.force_default_row_height.value)
+            }
+            "force_default_col_width" => {
+                EzValues::Bool(self.table_config.force_default_col_width.value)
+            }
             _ => panic!("Invalid property name for button state: {}", name),
         }
     }
     fn update_property(&mut self, name: &str, value: EzValues) -> bool {
-
         match name {
             "x" => self.position.x.set_from_ez_value(value),
             "y" => self.position.y.set_from_ez_value(value),
@@ -260,12 +282,21 @@ impl GenericState for LayoutState {
             "disabled" => self.disabled.set_from_ez_value(value),
             "selection_order" => self.selection_order.set_from_ez_value(value),
             "border" => self.border_config.border.set_from_ez_value(value),
-            "horizontal_symbol" => self.border_config.horizontal_symbol.set_from_ez_value(value),
+            "horizontal_symbol" => self
+                .border_config
+                .horizontal_symbol
+                .set_from_ez_value(value),
             "vertical_symbol" => self.border_config.vertical_symbol.set_from_ez_value(value),
             "top_left_symbol" => self.border_config.top_left_symbol.set_from_ez_value(value),
             "top_right_symbol" => self.border_config.top_right_symbol.set_from_ez_value(value),
-            "bottom_left_symbol" => self.border_config.bottom_left_symbol.set_from_ez_value(value),
-            "bottom_right_symbol" => self.border_config.bottom_right_symbol.set_from_ez_value(value),
+            "bottom_left_symbol" => self
+                .border_config
+                .bottom_left_symbol
+                .set_from_ez_value(value),
+            "bottom_right_symbol" => self
+                .border_config
+                .bottom_right_symbol
+                .set_from_ez_value(value),
             "fg_color" => self.colors.fg_color.set_from_ez_value(value),
             "bg_color" => self.colors.bg_color.set_from_ez_value(value),
             "selection_fg_color" => self.colors.selection_fg_color.set_from_ez_value(value),
@@ -276,10 +307,22 @@ impl GenericState for LayoutState {
             "filler_bg_color" => self.colors.filler_bg_color.set_from_ez_value(value),
             "tab_header_fg_color" => self.colors.tab_header_fg_color.set_from_ez_value(value),
             "tab_header_bg_color" => self.colors.tab_header_bg_color.set_from_ez_value(value),
-            "tab_header_border_fg_color" => self.colors.tab_header_border_fg_color.set_from_ez_value(value),
-            "tab_header_border_bg_color" => self.colors.tab_header_border_bg_color.set_from_ez_value(value),
-            "tab_header_active_fg_color" => self.colors.tab_header_active_fg_color.set_from_ez_value(value),
-            "tab_header_active_bg_color" => self.colors.tab_header_active_bg_color.set_from_ez_value(value),
+            "tab_header_border_fg_color" => self
+                .colors
+                .tab_header_border_fg_color
+                .set_from_ez_value(value),
+            "tab_header_border_bg_color" => self
+                .colors
+                .tab_header_border_bg_color
+                .set_from_ez_value(value),
+            "tab_header_active_fg_color" => self
+                .colors
+                .tab_header_active_fg_color
+                .set_from_ez_value(value),
+            "tab_header_active_bg_color" => self
+                .colors
+                .tab_header_active_bg_color
+                .set_from_ez_value(value),
             "border_fg_color" => self.colors.border_fg_color.set_from_ez_value(value),
             "border_bg_color" => self.colors.border_bg_color.set_from_ez_value(value),
             "mode" => self.mode.set_from_ez_value(value),
@@ -294,164 +337,310 @@ impl GenericState for LayoutState {
             "view_page" => self.view_page.set_from_ez_value(value),
             "scroll_x" => self.scrolling_config.scroll_x.set_from_ez_value(value),
             "scroll_y" => self.scrolling_config.scroll_y.set_from_ez_value(value),
-            "scroll_start_x" => self.scrolling_config.scroll_start_x.set_from_ez_value(value),
-            "scroll_start_y" => self.scrolling_config.scroll_start_y.set_from_ez_value(value),
+            "scroll_start_x" => self
+                .scrolling_config
+                .scroll_start_x
+                .set_from_ez_value(value),
+            "scroll_start_y" => self
+                .scrolling_config
+                .scroll_start_y
+                .set_from_ez_value(value),
             "rows" => self.table_config.rows.set_from_ez_value(value),
             "cols" => self.table_config.cols.set_from_ez_value(value),
             "col_default_width" => self.table_config.col_default_width.set_from_ez_value(value),
-            "force_default_col_width" => self.table_config.force_default_col_width.set_from_ez_value(value),
-            "row_default_height" => self.table_config.row_default_height.set_from_ez_value(value),
-            "force_default_row_height" => self.table_config.force_default_row_height.set_from_ez_value(value),
+            "force_default_col_width" => self
+                .table_config
+                .force_default_col_width
+                .set_from_ez_value(value),
+            "row_default_height" => self
+                .table_config
+                .row_default_height
+                .set_from_ez_value(value),
+            "force_default_row_height" => self
+                .table_config
+                .force_default_row_height
+                .set_from_ez_value(value),
             _ => panic!("Invalid property name for layout state: {}", name),
         }
     }
 
-    fn get_size_hint(&self) -> &SizeHint { &self.size_hint }
+    fn get_size_hint(&self) -> &SizeHint {
+        &self.size_hint
+    }
 
-    fn get_size_hint_mut(&mut self) -> &mut SizeHint { &mut self.size_hint }
+    fn get_size_hint_mut(&mut self) -> &mut SizeHint {
+        &mut self.size_hint
+    }
 
-    fn get_pos_hint(&self) -> &PosHint { &self.pos_hint }
+    fn get_pos_hint(&self) -> &PosHint {
+        &self.pos_hint
+    }
 
-    fn get_pos_hint_mut(&mut self) -> &mut PosHint { &mut self.pos_hint }
+    fn get_pos_hint_mut(&mut self) -> &mut PosHint {
+        &mut self.pos_hint
+    }
 
-    fn get_auto_scale(&self) -> &AutoScale { &self.auto_scale }
+    fn get_auto_scale(&self) -> &AutoScale {
+        &self.auto_scale
+    }
 
-    fn get_auto_scale_mut(&mut self) -> &mut AutoScale { &mut self.auto_scale }
+    fn get_auto_scale_mut(&mut self) -> &mut AutoScale {
+        &mut self.auto_scale
+    }
 
-    fn get_size(&self) -> &StateSize { &self.size  }
+    fn get_size(&self) -> &StateSize {
+        &self.size
+    }
 
-    fn get_size_mut(&mut self) -> &mut StateSize { &mut self.size }
+    fn get_size_mut(&mut self) -> &mut StateSize {
+        &mut self.size
+    }
 
-    fn get_infinite_size(&self) -> &InfiniteSize { &self.infinite_size }
+    fn get_infinite_size(&self) -> &InfiniteSize {
+        &self.infinite_size
+    }
 
-    fn get_infinite_size_mut(&mut self) -> &mut InfiniteSize { &mut self.infinite_size }
+    fn get_infinite_size_mut(&mut self) -> &mut InfiniteSize {
+        &mut self.infinite_size
+    }
 
     fn get_effective_size(&self) -> Size {
-
         let width_result: isize = self.size.get_width() as isize
-            -if self.get_border_config().get_border() {2} else {0}
-            -if self.scrolling_config.get_scroll_y() {1} else {0}
-            -self.get_padding().get_padding_left() as isize - self.get_padding().get_padding_right() as isize;
-        let width = if width_result < 0 {0} else { width_result};
+            - if self.get_border_config().get_border() {
+                2
+            } else {
+                0
+            }
+            - if self.scrolling_config.get_scroll_y() {
+                1
+            } else {
+                0
+            }
+            - self.get_padding().get_padding_left() as isize
+            - self.get_padding().get_padding_right() as isize;
+        let width = if width_result < 0 { 0 } else { width_result };
         let height_result: isize = self.size.get_height() as isize
-            -if self.get_border_config().get_border() {2} else {0}
-            -if self.scrolling_config.get_scroll_x() {1} else {0}
-            -self.get_padding().get_padding_top() as isize - self.get_padding().get_padding_bottom() as isize;
-        let height = if height_result < 0 {0} else { height_result};
+            - if self.get_border_config().get_border() {
+                2
+            } else {
+                0
+            }
+            - if self.scrolling_config.get_scroll_x() {
+                1
+            } else {
+                0
+            }
+            - self.get_padding().get_padding_top() as isize
+            - self.get_padding().get_padding_bottom() as isize;
+        let height = if height_result < 0 { 0 } else { height_result };
         Size::new(width as usize, height as usize)
     }
 
     /// Set the how much width you want the actual content inside this widget to have. Width for
     /// e.g. border and padding will be added to this automatically.
     fn set_effective_width(&mut self, width: usize) {
-        let offset = if self.get_border_config().get_border() {2} else {0}
-            + if self.scrolling_config.get_scroll_y() {1} else {0}
-            + self.get_padding().get_padding_left() + self.get_padding().get_padding_right();
+        let offset = if self.get_border_config().get_border() {
+            2
+        } else {
+            0
+        } + if self.scrolling_config.get_scroll_y() {
+            1
+        } else {
+            0
+        } + self.get_padding().get_padding_left()
+            + self.get_padding().get_padding_right();
         self.get_size_mut().set_width(width + offset);
     }
 
     /// Set the how much height you want the actual content inside this widget to have. Height for
     /// e.g. border and padding will be added to this automatically.
     fn set_effective_height(&mut self, height: usize) {
-
-        let offset = if self.get_border_config().get_border() {2} else {0}
-            + if self.scrolling_config.get_scroll_x() {1} else {0}
-            + self.get_padding().get_padding_top() + self.get_padding().get_padding_bottom();
+        let offset = if self.get_border_config().get_border() {
+            2
+        } else {
+            0
+        } + if self.scrolling_config.get_scroll_x() {
+            1
+        } else {
+            0
+        } + self.get_padding().get_padding_top()
+            + self.get_padding().get_padding_bottom();
         self.get_size_mut().set_height(height + offset);
     }
 
-    fn get_position(&self) -> &StateCoordinates { &self.position }
+    fn get_position(&self) -> &StateCoordinates {
+        &self.position
+    }
 
-    fn get_position_mut(&mut self) -> &mut StateCoordinates { &mut self.position }
+    fn get_position_mut(&mut self) -> &mut StateCoordinates {
+        &mut self.position
+    }
 
-    fn set_absolute_position(&mut self, pos: IsizeCoordinates) { self.absolute_position = pos; }
+    fn set_absolute_position(&mut self, pos: IsizeCoordinates) {
+        self.absolute_position = pos;
+    }
 
-    fn get_absolute_position(&self) -> IsizeCoordinates { self.absolute_position }
+    fn get_absolute_position(&self) -> IsizeCoordinates {
+        self.absolute_position
+    }
 
     fn set_halign(&mut self, alignment: HorizontalAlignment) {
         self.halign.set(alignment);
     }
 
-    fn get_halign(&self) -> HorizontalAlignment { self.halign.value }
+    fn get_halign(&self) -> HorizontalAlignment {
+        self.halign.value
+    }
 
     fn set_valign(&mut self, alignment: VerticalAlignment) {
         self.valign.set(alignment);
     }
 
-    fn get_valign(&self) -> VerticalAlignment { self.valign.value }
+    fn get_valign(&self) -> VerticalAlignment {
+        self.valign.value
+    }
 
-    fn get_padding(&self) -> &Padding { &self.padding }
+    fn get_padding(&self) -> &Padding {
+        &self.padding
+    }
 
-    fn get_padding_mut(&mut self) -> &mut Padding { &mut self.padding }
+    fn get_padding_mut(&mut self) -> &mut Padding {
+        &mut self.padding
+    }
 
-    fn get_border_config(&self) -> &BorderConfig { &self.border_config  }
+    fn get_border_config(&self) -> &BorderConfig {
+        &self.border_config
+    }
 
     fn get_border_config_mut(&mut self) -> &mut BorderConfig {
         &mut self.border_config
     }
 
-    fn get_color_config(&self) -> &ColorConfig { &self.colors }
+    fn get_color_config(&self) -> &ColorConfig {
+        &self.colors
+    }
 
     fn get_color_config_mut(&mut self) -> &mut ColorConfig {
         &mut self.colors
     }
 
-    fn is_selectable(&self) -> bool { self.get_scrolling_config().get_is_scrolling_x()
-        || self.get_scrolling_config().get_is_scrolling_y() || self.mode.value == LayoutMode::Tab
+    fn is_selectable(&self) -> bool {
+        self.get_scrolling_config().get_is_scrolling_x()
+            || self.get_scrolling_config().get_is_scrolling_y()
+            || self.mode.value == LayoutMode::Tab
     }
 
     fn set_disabled(&mut self, disabled: bool) {
         self.disabled.set(disabled);
     }
 
-    fn get_disabled(&self) -> bool { self.disabled.value }
+    fn get_disabled(&self) -> bool {
+        self.disabled.value
+    }
 
-    fn get_selection_order(&self) -> usize { self.selection_order.value }
+    fn get_selection_order(&self) -> usize {
+        self.selection_order.value
+    }
 
-    fn set_selection_order(&mut self, order: usize) { self.selection_order.set(order); }
+    fn set_selection_order(&mut self, order: usize) {
+        self.selection_order.set(order);
+    }
 
-    fn set_selected(&mut self, state: bool) { self.selected = state; }
+    fn set_selected(&mut self, state: bool) {
+        self.selected = state;
+    }
 
-    fn get_selected(&self) -> bool { self.selected }
+    fn get_selected(&self) -> bool {
+        self.selected
+    }
 
     fn copy_state_values(&mut self, other: EzState) {
-
         let other = other.as_layout();
         self.position.x.copy_from(&other.position.x);
         self.position.y.copy_from(&other.position.y);
         self.size.height.copy_from(&other.size.height);
         self.size.width.copy_from(&other.size.width);
-        self.size_hint.size_hint_x.copy_from(&other.size_hint.size_hint_x);
-        self.size_hint.size_hint_y.copy_from(&other.size_hint.size_hint_y);
-        self.pos_hint.pos_hint_x.copy_from(&other.pos_hint.pos_hint_x);
-        self.pos_hint.pos_hint_y.copy_from(&other.pos_hint.pos_hint_y);
-        self.auto_scale.auto_scale_width.copy_from(&other.auto_scale.auto_scale_width);
-        self.auto_scale.auto_scale_height.copy_from(&other.auto_scale.auto_scale_height);
-        self.padding.padding_top.copy_from(&other.padding.padding_top);
-        self.padding.padding_bottom.copy_from(&other.padding.padding_bottom);
-        self.padding.padding_left.copy_from(&other.padding.padding_left);
-        self.padding.padding_right.copy_from(&other.padding.padding_right);
-        self.padding.padding_right.copy_from(&other.padding.padding_right);
+        self.size_hint
+            .size_hint_x
+            .copy_from(&other.size_hint.size_hint_x);
+        self.size_hint
+            .size_hint_y
+            .copy_from(&other.size_hint.size_hint_y);
+        self.pos_hint
+            .pos_hint_x
+            .copy_from(&other.pos_hint.pos_hint_x);
+        self.pos_hint
+            .pos_hint_y
+            .copy_from(&other.pos_hint.pos_hint_y);
+        self.auto_scale
+            .auto_scale_width
+            .copy_from(&other.auto_scale.auto_scale_width);
+        self.auto_scale
+            .auto_scale_height
+            .copy_from(&other.auto_scale.auto_scale_height);
+        self.padding
+            .padding_top
+            .copy_from(&other.padding.padding_top);
+        self.padding
+            .padding_bottom
+            .copy_from(&other.padding.padding_bottom);
+        self.padding
+            .padding_left
+            .copy_from(&other.padding.padding_left);
+        self.padding
+            .padding_right
+            .copy_from(&other.padding.padding_right);
+        self.padding
+            .padding_right
+            .copy_from(&other.padding.padding_right);
         self.halign.copy_from(&other.halign);
         self.valign.copy_from(&other.valign);
         self.disabled.copy_from(&other.disabled);
         self.selection_order.copy_from(&other.selection_order);
-        self.border_config.border.copy_from(&other.border_config.border);
-        self.border_config.horizontal_symbol.copy_from(&other.border_config.horizontal_symbol);
-        self.border_config.vertical_symbol.copy_from(&other.border_config.vertical_symbol);
-        self.border_config.top_left_symbol.copy_from(&other.border_config.top_left_symbol);
-        self.border_config.top_right_symbol.copy_from(&other.border_config.top_right_symbol);
-        self.border_config.bottom_left_symbol.copy_from(&other.border_config.bottom_left_symbol);
-        self.border_config.bottom_right_symbol.copy_from(&other.border_config.bottom_right_symbol);
+        self.border_config
+            .border
+            .copy_from(&other.border_config.border);
+        self.border_config
+            .horizontal_symbol
+            .copy_from(&other.border_config.horizontal_symbol);
+        self.border_config
+            .vertical_symbol
+            .copy_from(&other.border_config.vertical_symbol);
+        self.border_config
+            .top_left_symbol
+            .copy_from(&other.border_config.top_left_symbol);
+        self.border_config
+            .top_right_symbol
+            .copy_from(&other.border_config.top_right_symbol);
+        self.border_config
+            .bottom_left_symbol
+            .copy_from(&other.border_config.bottom_left_symbol);
+        self.border_config
+            .bottom_right_symbol
+            .copy_from(&other.border_config.bottom_right_symbol);
         self.colors.fg_color.copy_from(&other.colors.fg_color);
         self.colors.bg_color.copy_from(&other.colors.bg_color);
-        self.colors.selection_fg_color.copy_from(&other.colors.selection_fg_color);
-        self.colors.selection_bg_color.copy_from(&other.colors.selection_bg_color);
-        self.colors.disabled_fg_color.copy_from(&other.colors.disabled_fg_color);
-        self.colors.disabled_bg_color.copy_from(&other.colors.disabled_bg_color);
-        self.colors.border_fg_color.copy_from(&other.colors.border_fg_color);
-        self.colors.border_bg_color.copy_from(&other.colors.border_bg_color);
-        self.colors.cursor_color.copy_from(&other.colors.cursor_color);
+        self.colors
+            .selection_fg_color
+            .copy_from(&other.colors.selection_fg_color);
+        self.colors
+            .selection_bg_color
+            .copy_from(&other.colors.selection_bg_color);
+        self.colors
+            .disabled_fg_color
+            .copy_from(&other.colors.disabled_fg_color);
+        self.colors
+            .disabled_bg_color
+            .copy_from(&other.colors.disabled_bg_color);
+        self.colors
+            .border_fg_color
+            .copy_from(&other.colors.border_fg_color);
+        self.colors
+            .border_bg_color
+            .copy_from(&other.colors.border_bg_color);
+        self.colors
+            .cursor_color
+            .copy_from(&other.colors.cursor_color);
         self.mode.copy_from(&other.mode);
         self.orientation.copy_from(&other.orientation);
         self.active_tab.copy_from(&other.active_tab);
@@ -462,20 +651,35 @@ impl GenericState for LayoutState {
         self.filler_symbol.copy_from(&other.filler_symbol);
         self.view_size.copy_from(&other.view_size);
         self.view_page.copy_from(&other.view_page);
-        self.scrolling_config.scroll_x.copy_from(&other.scrolling_config.scroll_x);
-        self.scrolling_config.scroll_y.copy_from(&other.scrolling_config.scroll_y);
-        self.scrolling_config.scroll_start_x.copy_from(&other.scrolling_config.scroll_start_x);
-        self.scrolling_config.scroll_start_y.copy_from(&other.scrolling_config.scroll_start_y);
+        self.scrolling_config
+            .scroll_x
+            .copy_from(&other.scrolling_config.scroll_x);
+        self.scrolling_config
+            .scroll_y
+            .copy_from(&other.scrolling_config.scroll_y);
+        self.scrolling_config
+            .scroll_start_x
+            .copy_from(&other.scrolling_config.scroll_start_x);
+        self.scrolling_config
+            .scroll_start_y
+            .copy_from(&other.scrolling_config.scroll_start_y);
         self.table_config.rows.copy_from(&other.table_config.rows);
         self.table_config.cols.copy_from(&other.table_config.cols);
-        self.table_config.row_default_height.copy_from(&other.table_config.row_default_height);
-        self.table_config.col_default_width.copy_from(&other.table_config.col_default_width);
-        self.table_config.force_default_row_height.copy_from(&other.table_config.force_default_row_height);
-        self.table_config.force_default_col_width.copy_from(&other.table_config.force_default_col_width);
+        self.table_config
+            .row_default_height
+            .copy_from(&other.table_config.row_default_height);
+        self.table_config
+            .col_default_width
+            .copy_from(&other.table_config.col_default_width);
+        self.table_config
+            .force_default_row_height
+            .copy_from(&other.table_config.force_default_row_height);
+        self.table_config
+            .force_default_col_width
+            .copy_from(&other.table_config.force_default_col_width);
     }
 
     fn clean_up_properties(&self, scheduler: &mut SchedulerFrontend) {
-
         self.position.clean_up_properties(scheduler);
         self.size.clean_up_properties(scheduler);
         self.size_hint.clean_up_properties(scheduler);
@@ -501,11 +705,11 @@ impl GenericState for LayoutState {
     }
 }
 impl LayoutState {
-
     /// Set [LayoutMode]
     pub fn set_mode(&mut self, mode: LayoutMode) {
-        if (mode == LayoutMode::Stack || mode == LayoutMode::Table) &&
-                self.orientation.value == LayoutOrientation::Horizontal {
+        if (mode == LayoutMode::Stack || mode == LayoutMode::Table)
+            && self.orientation.value == LayoutOrientation::Horizontal
+        {
             // Default for table and stack is different than box
             self.set_orientation(LayoutOrientation::TopBottomLeftRight)
         }
@@ -513,7 +717,9 @@ impl LayoutState {
     }
 
     /// Get [LayoutMode]
-    pub fn get_mode(&self) -> &LayoutMode { &self.mode.value }
+    pub fn get_mode(&self) -> &LayoutMode {
+        &self.mode.value
+    }
 
     /// Set [LayoutOrientation]
     pub fn set_orientation(&mut self, orientation: LayoutOrientation) {
@@ -521,24 +727,34 @@ impl LayoutState {
     }
 
     /// Get [LayoutOrientation]
-    pub fn get_orientation(&self) -> &LayoutOrientation { &self.orientation.value }
+    pub fn get_orientation(&self) -> &LayoutOrientation {
+        &self.orientation.value
+    }
 
     /// Set the ID of the child that is the currently active screen (i.e. content is showing)
-    pub fn set_active_screen(&mut self, id: &str) { self.active_screen.set(id.to_string()); }
+    pub fn set_active_screen(&mut self, id: &str) {
+        self.active_screen.set(id.to_string());
+    }
 
     /// Get the ID of the child that is the currently active screen (i.e. content is showing)
-    pub fn get_active_screen(&self) -> String { self.active_screen.value.clone() }
+    pub fn get_active_screen(&self) -> String {
+        self.active_screen.value.clone()
+    }
 
     /// Set the id of the layout that is currently active as the current tab (i.e. content is
     /// showing)
-    pub fn set_active_tab(&mut self, tab: &str) { 
-        self.active_tab.set(tab.to_string()); 
+    pub fn set_active_tab(&mut self, tab: &str) {
+        self.active_tab.set(tab.to_string());
     }
 
     /// Get the id of the layout that is currently active as a tab (i.e. content is showing)
-    pub fn get_active_tab(&self) -> String { self.active_tab.value.clone() }
+    pub fn get_active_tab(&self) -> String {
+        self.active_tab.value.clone()
+    }
 
-    pub fn set_tab_name(&mut self, name: &str) { self.tab_name.set(name.to_string()); }
+    pub fn set_tab_name(&mut self, name: &str) {
+        self.tab_name.set(name.to_string());
+    }
 
     pub fn get_tab_name(&self) -> String {
         if self.tab_name.value.is_empty() {
@@ -549,10 +765,14 @@ impl LayoutState {
     }
 
     /// Set the tab header that is currently selected
-    pub fn set_selected_tab_header(&mut self, id: String) { self.selected_tab_header = id; }
+    pub fn set_selected_tab_header(&mut self, id: String) {
+        self.selected_tab_header = id;
+    }
 
     /// Get the tab header that is currently selected
-    pub fn get_selected_tab_header(&self) -> String { self.selected_tab_header.clone() }
+    pub fn get_selected_tab_header(&self) -> String {
+        self.selected_tab_header.clone()
+    }
 
     /// Set the [ScrollingConfig] active for this layout
     pub fn set_scrolling_config(&mut self, config: ScrollingConfig) {
@@ -560,7 +780,9 @@ impl LayoutState {
     }
 
     /// Get a ref to the [ScrollingConfig] active for this layout
-    pub fn get_scrolling_config(&self) -> &ScrollingConfig { &self.scrolling_config }
+    pub fn get_scrolling_config(&self) -> &ScrollingConfig {
+        &self.scrolling_config
+    }
 
     /// Get a mutable ref to the [ScrollingConfig] active for this layout
     pub fn get_scrolling_config_mut(&mut self) -> &mut ScrollingConfig {
@@ -568,36 +790,49 @@ impl LayoutState {
     }
 
     /// Get a ref to the [TableConfig] active for this layout
-    pub fn get_table_config(&self) -> &TableConfig { &self.table_config  }
+    pub fn get_table_config(&self) -> &TableConfig {
+        &self.table_config
+    }
 
     /// Get a mutable ref to the [TableConfig] active for this layout
-    pub fn get_table_config_mut(&mut self) -> &mut TableConfig { &mut self.table_config }
+    pub fn get_table_config_mut(&mut self) -> &mut TableConfig {
+        &mut self.table_config
+    }
 
     /// Set [fill]
-    pub fn set_fill(&mut self, enable: bool) { self.fill.set(enable); }
+    pub fn set_fill(&mut self, enable: bool) {
+        self.fill.set(enable);
+    }
 
     /// Get [fill]
-    pub fn get_fill(&self) -> bool { self.fill.value }
+    pub fn get_fill(&self) -> bool {
+        self.fill.value
+    }
 
     /// Set [filler_symbol]
-    pub fn set_filler_symbol(&mut self, symbol: String) { self.filler_symbol.set(symbol); }
+    pub fn set_filler_symbol(&mut self, symbol: String) {
+        self.filler_symbol.set(symbol);
+    }
 
     /// Get [filler_symbol]
-    pub fn get_filler_symbol(&self) -> String { self.filler_symbol.value.clone() }
+    pub fn get_filler_symbol(&self) -> String {
+        self.filler_symbol.value.clone()
+    }
 
     /// Open a popup based on a template defined in the Ez file. Returns the state of the new popup
-    pub fn open_modal_from_template(&mut self, template: String,
-                                    scheduler: &mut SchedulerFrontend) -> Vec<(String, EzState)> {
+    pub fn open_modal_from_template(
+        &mut self,
+        template: String,
+        scheduler: &mut SchedulerFrontend,
+    ) -> Vec<(String, EzState)> {
         let mut popup = self.templates.get(&template).unwrap().clone();
-        let config = vec!("id: modal".to_string());
-        let init_popup = popup.parse(scheduler,"/root".to_string(), 0,
-                                     Some(config));
+        let config = vec!["id: modal".to_string()];
+        let init_popup = popup.parse(scheduler, "/root".to_string(), 0, Some(config));
         self.open_modal(init_popup)
     }
 
     /// Open a new modal. Returns the state of the new modal.
-    pub fn open_modal(&mut self, mut modal: EzObjects ) -> Vec<(String, EzState)> {
-
+    pub fn open_modal(&mut self, mut modal: EzObjects) -> Vec<(String, EzState)> {
         // State tree must be appended with the new states
         let mut extra_state_tree = Vec::new();
         if let EzObjects::Layout(ref mut i) = modal {
@@ -615,35 +850,52 @@ impl LayoutState {
         extra_state_tree.reverse();
         extra_state_tree
     }
-    
+
     /// Dismiss the current modal
     pub fn dismiss_modal(&mut self, scheduler: &mut SchedulerFrontend) {
-
         self.open_modal = None;
         self.update(scheduler);
         scheduler.deselect_widget();
         scheduler.force_redraw();
     }
 
-    pub fn set_view_size(&mut self, start: usize) { self.view_size.set(start); }
+    pub fn set_view_size(&mut self, start: usize) {
+        self.view_size.set(start);
+    }
 
-    pub fn get_view_size(&self) -> usize { self.view_size.value }
+    pub fn get_view_size(&self) -> usize {
+        self.view_size.value
+    }
 
-    pub fn set_view_page(&mut self, page: usize) { self.view_page.set(page); }
+    pub fn set_view_page(&mut self, page: usize) {
+        self.view_page.set(page);
+    }
 
-    pub fn get_view_page(&self) -> usize { self.view_page.value }
+    pub fn get_view_page(&self) -> usize {
+        self.view_page.value
+    }
 
-    pub fn set_can_drag(&mut self, can_drag: bool) { self.can_drag.set(can_drag); }
+    pub fn set_can_drag(&mut self, can_drag: bool) {
+        self.can_drag.set(can_drag);
+    }
 
-    pub fn get_can_drag(&self) -> bool { self.can_drag.value }
+    pub fn get_can_drag(&self) -> bool {
+        self.can_drag.value
+    }
 
-    pub fn has_modal(&self) -> bool { self.open_modal.is_some() }
-    
+    pub fn has_modal(&self) -> bool {
+        self.open_modal.is_some()
+    }
+
     /// Get reference to all open modals
-    pub fn get_modal(&self) -> &EzObjects { self.open_modal.as_ref().unwrap() }
+    pub fn get_modal(&self) -> &EzObjects {
+        self.open_modal.as_ref().unwrap()
+    }
 
     /// Get reference to all open modals
-    pub fn get_modal_mut(&mut self) -> &mut EzObjects { self.open_modal.as_mut().unwrap() }
+    pub fn get_modal_mut(&mut self) -> &mut EzObjects {
+        self.open_modal.as_mut().unwrap()
+    }
 
     /// Set templates. Used by [ez_parser] on the root layout to keep a hold of all templates
     /// defined by the user. They can be used to instantiate e.g. popups at runtime.
@@ -653,6 +905,7 @@ impl LayoutState {
 
     /// Get templates. Use on the root layout to get all templates defined by the user.
     /// They can be used to instantiate e.g. popups at runtime.
-    pub fn get_templates(&self) -> &Templates { &self.templates }
-
+    pub fn get_templates(&self) -> &Templates {
+        &self.templates
+    }
 }

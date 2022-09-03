@@ -5,10 +5,14 @@ fn main() {
     let (root_layout, mut state_tree, mut scheduler) = load_ui();
 
     // We update the callbacks for the buttons, using the functions defined below
-    scheduler.update_callback_config("to_screen_2_btn",
-                                     CallbackConfig::from_on_press(Box::new(to_screen_two_callback)));
-    scheduler.update_callback_config("to_screen_1_btn",
-                                     CallbackConfig::from_on_press(Box::new(to_screen_one_callback)));
+    scheduler.update_callback_config(
+        "to_screen_2_btn",
+        CallbackConfig::from_on_press(Box::new(to_screen_two_callback)),
+    );
+    scheduler.update_callback_config(
+        "to_screen_1_btn",
+        CallbackConfig::from_on_press(Box::new(to_screen_one_callback)),
+    );
     // We run the UI
     run(root_layout, state_tree, scheduler);
 }

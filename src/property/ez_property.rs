@@ -10,8 +10,10 @@ use crossterm::style::Color;
 use crate::property::ez_values::EzValues;
 use crate::scheduler::definitions::GenericFunction;
 use crate::scheduler::scheduler::SchedulerFrontend;
-use crate::states::definitions::{HorizontalAlignment, HorizontalPosHint, LayoutMode, LayoutOrientation, VerticalAlignment, VerticalPosHint};
-
+use crate::states::definitions::{
+    HorizontalAlignment, HorizontalPosHint, LayoutMode, LayoutOrientation, VerticalAlignment,
+    VerticalPosHint,
+};
 
 /// A struct wrapping a property of a widget state.
 /// A widget has a state, which has properties (such as size, position, color, etc.). This struct
@@ -20,7 +22,6 @@ use crate::states::definitions::{HorizontalAlignment, HorizontalPosHint, LayoutM
 /// well.
 #[derive(Clone, Debug)]
 pub struct EzProperty<T> {
-
     /// Name of the value. When a user creates a custom value this can be anything. If it's a
     /// widget state value then the name will be the path to the widget followed by the name of thev
     /// value, e.g. "/root/layout_1/label/height".
@@ -39,12 +40,13 @@ pub struct EzProperty<T> {
     /// the scheduler will be synced to the subscribers.
     tx: Sender<EzValues>,
 }
-impl<T> EzProperty<T> where EzValues: From<T> {
-
+impl<T> EzProperty<T>
+where
+    EzValues: From<T>,
+{
     /// Create a new EzProperty. If this property belongs to a widget state the name must be a path
     /// to the widget state, followed by the property name.
     pub fn new(name: String, value: T) -> (Self, Receiver<EzValues>) {
-
         let (tx, rx): (Sender<EzValues>, Receiver<EzValues>) = channel();
         let property = EzProperty {
             name,
@@ -56,42 +58,52 @@ impl<T> EzProperty<T> where EzValues: From<T> {
     }
 
     /// Get a ref to the name of this property
-    pub fn get_name(&self) -> &String { &self.name }
+    pub fn get_name(&self) -> &String {
+        &self.name
+    }
 
     /// Get a ref to the value of this property
-    pub fn get(&self) -> &T { &self.value }
+    pub fn get(&self) -> &T {
+        &self.value
+    }
 
     /// Set the value of this property. If any other properties are subscribed to this property,
     /// they will automatically be updated as well.
-    pub fn set(&mut self, new: T) -> bool where T: PartialEq + Clone {
-
-        if self.locked { return false }
+    pub fn set(&mut self, new: T) -> bool
+    where
+        T: PartialEq + Clone,
+    {
+        if self.locked {
+            return false;
+        }
         if new != self.value {
             self.value = new.clone();
-            self.tx.send(EzValues::from(new)).unwrap_or_else(
-                |e| panic!("Error setting value \"{}\": {}.", self.name, e)
-            );
+            self.tx
+                .send(EzValues::from(new))
+                .unwrap_or_else(|e| panic!("Error setting value \"{}\": {}.", self.name, e));
             true
         } else {
             false
         }
     }
 
-    pub fn copy_from(&mut self, other: &EzProperty<T>) where T: PartialEq + Clone {
+    pub fn copy_from(&mut self, other: &EzProperty<T>)
+    where
+        T: PartialEq + Clone,
+    {
         self.set(other.value.clone());
         self.locked = other.locked;
     }
 
     /// Bind a custom callback to this property which will be called when the value changes
     pub fn bind(&self, callback: GenericFunction, scheduler: &mut SchedulerFrontend) {
-
         scheduler.bind_property_callback(self.name.as_str(), callback);
     }
 }
 impl EzProperty<usize> {
     pub fn set_from_ez_value(&mut self, value: EzValues) -> bool {
         self.set(value.as_usize().to_owned())
-    }    
+    }
 }
 impl EzProperty<bool> {
     pub fn set_from_ez_value(&mut self, value: EzValues) -> bool {
@@ -148,45 +160,74 @@ impl EzProperty<HorizontalPosHint> {
         self.set(value.as_horizontal_pos_hint())
     }
 }
-impl<T> PartialEq for EzProperty<T> where T: PartialEq {
-    fn eq(&self, other: &Self) -> bool { self.value == other.value }
+impl<T> PartialEq for EzProperty<T>
+where
+    T: PartialEq,
+{
+    fn eq(&self, other: &Self) -> bool {
+        self.value == other.value
+    }
 }
 impl PartialEq<usize> for EzProperty<usize> {
-    fn eq(&self, other: &usize) -> bool { &self.value == other }
+    fn eq(&self, other: &usize) -> bool {
+        &self.value == other
+    }
 }
 
 impl PartialOrd<usize> for EzProperty<usize> {
-    fn partial_cmp(&self, other: &usize) -> Option<Ordering> { Some(self.value.cmp(other)) }
+    fn partial_cmp(&self, other: &usize) -> Option<Ordering> {
+        Some(self.value.cmp(other))
+    }
 }
 impl Add<usize> for EzProperty<usize> {
     type Output = usize;
-    fn add(self, rhs: usize) -> Self::Output { self.value + rhs }
+    fn add(self, rhs: usize) -> Self::Output {
+        self.value + rhs
+    }
 }
 impl Sub<usize> for EzProperty<usize> {
     type Output = usize;
-    fn sub(self, rhs: usize) -> Self::Output { self.value - rhs }
+    fn sub(self, rhs: usize) -> Self::Output {
+        self.value - rhs
+    }
 }
 impl PartialEq<String> for EzProperty<String> {
-    fn eq(&self, other: &String) -> bool { &self.value == other }
+    fn eq(&self, other: &String) -> bool {
+        &self.value == other
+    }
 }
 impl PartialEq<bool> for EzProperty<bool> {
-    fn eq(&self, other: &bool) -> bool { &self.value == other }
+    fn eq(&self, other: &bool) -> bool {
+        &self.value == other
+    }
 }
 impl PartialEq<Color> for EzProperty<Color> {
-    fn eq(&self, other: &Color) -> bool { &self.value == other }
+    fn eq(&self, other: &Color) -> bool {
+        &self.value == other
+    }
 }
 impl PartialEq<VerticalAlignment> for EzProperty<VerticalAlignment> {
-    fn eq(&self, other: &VerticalAlignment) -> bool { &self.value == other }
+    fn eq(&self, other: &VerticalAlignment) -> bool {
+        &self.value == other
+    }
 }
 impl PartialEq<HorizontalAlignment> for EzProperty<HorizontalAlignment> {
-    fn eq(&self, other: &HorizontalAlignment) -> bool { &self.value == other }
+    fn eq(&self, other: &HorizontalAlignment) -> bool {
+        &self.value == other
+    }
 }
 impl PartialEq<VerticalPosHint> for EzProperty<VerticalPosHint> {
-    fn eq(&self, other: &VerticalPosHint) -> bool { &self.value == other }
+    fn eq(&self, other: &VerticalPosHint) -> bool {
+        &self.value == other
+    }
 }
 impl PartialEq<HorizontalPosHint> for EzProperty<HorizontalPosHint> {
-    fn eq(&self, other: &HorizontalPosHint) -> bool { &self.value == other }
+    fn eq(&self, other: &HorizontalPosHint) -> bool {
+        &self.value == other
+    }
 }
 impl PartialEq<Option<f64>> for EzProperty<Option<f64>> {
-    fn eq(&self, other: &Option<f64>) -> bool { &self.value == other }
+    fn eq(&self, other: &Option<f64>) -> bool {
+        &self.value == other
+    }
 }

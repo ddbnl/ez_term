@@ -1,12 +1,10 @@
-use std::time::Duration;
 use ez_term::*;
+use std::time::Duration;
 
 fn main() {
-
     let (root_widget, mut state_tree, mut scheduler) = load_ui();
 
     let my_task = |context: Context| {
-
         let state = context.state_tree.get_mut("my_label").as_label_mut();
         state.set_text("3 seconds have passed!".to_string());
         state.update(context.scheduler);
