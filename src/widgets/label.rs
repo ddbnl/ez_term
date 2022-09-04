@@ -1,7 +1,5 @@
 //! A widget that displays text non-interactively.
 use std::collections::HashMap;
-use std::fs::File;
-use std::io::prelude::*;
 use std::io::Error; // For ez_file_gen.rs
 
 use crate::parser::load_base_properties;
@@ -109,7 +107,7 @@ impl EzObject for Label {
 
     fn get_contents(&self, state_tree: &mut StateTree) -> PixelMap {
         let state = state_tree.get_mut(&self.get_path()).as_label_mut();
-        let mut text;
+        let text;
         // Load text from file
         if !state.get_from_file().is_empty() {
             let includes = ez_includes();

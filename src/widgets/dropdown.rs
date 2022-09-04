@@ -16,7 +16,7 @@ use crate::states::definitions::{
 };
 use crate::states::dropdown_state::{DropdownState, DroppedDownMenuState};
 use crate::states::ez_state::{EzState, GenericState};
-use crate::widgets::ez_object::{self, EzObject, EzObjects};
+use crate::widgets::ez_object::{EzObject, EzObjects};
 use crate::widgets::helper_functions::{add_border, add_padding};
 use crate::{CallbackConfig, Context};
 

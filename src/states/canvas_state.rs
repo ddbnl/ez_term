@@ -7,7 +7,7 @@ use crate::states::definitions::{
     SizeHint, StateCoordinates, StateSize, VerticalAlignment,
 };
 use crate::states::ez_state::{EzState, GenericState};
-use crate::{EzProperty, Pixel};
+use crate::{EzProperty};
 
 /// [State] implementation.
 #[derive(Clone, Debug)]

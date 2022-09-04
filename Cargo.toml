@@ -1,6 +1,6 @@
 [package]
 name = "ez_term"
-version = "0.1.0"
+version = "0.1.1"
 rust-version = "1.61.0"
 edition = "2021"
 authors = ["ddbnl <daandeboer@gmail.com>"]
@@ -20,4 +20,5 @@ path = "src/lib.rs"
 [dependencies]
 crossterm = "0.24.0"
 unicode-segmentation = "1.9.0"
+rustc-hash = "1.1.0"
 meval = "0.2.0"

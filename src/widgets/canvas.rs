@@ -2,8 +2,6 @@
 //! Module defining a canvas widget, which does not generate any content but should be 'painted'
 //! manually by the user using the 'set_content' method.
 use std::collections::HashMap;
-use std::fs::File;
-use std::io::prelude::*;
 use std::io::{Error, ErrorKind}; // For ez_file_gen.rs
 
 use crate::parser::load_base_properties;

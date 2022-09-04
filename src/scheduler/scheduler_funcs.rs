@@ -231,32 +231,34 @@ pub fn update_properties(
     let mut to_update = Vec::new();
     let mut to_callback: Vec<String> = Vec::new();
 
-    let keys = if scheduler.is_syncing() {
-        let properties: Vec<String> = scheduler.backend.properties.keys().cloned().collect();
-        properties
-    } else {
-        let mut subscribers: Vec<String> = scheduler
+    let mut subscribed_properties: Vec<&String> = scheduler
+        .backend
+        .property_subscribers
+        .keys()
+        .collect();
+    subscribed_properties.extend(
+        scheduler
             .backend
             .property_subscribers
             .keys()
-            .cloned()
-            .collect();
-        let callbacks: Vec<String> = scheduler
-            .backend
-            .property_subscribers
-            .keys()
-            .cloned()
-            .collect();
-        subscribers.extend(callbacks);
-        subscribers
-    };
+            .collect::<Vec<&String>>()
+    );
+    if scheduler.is_syncing() {
+        subscribed_properties.extend(
+            scheduler.backend.properties
+                .keys()
+                .filter(|x| {
+                    let widget = &x
+                        .rsplit_once("/");
+                    if widget.is_none() { return false }
+                    scheduler.backend.widgets_to_update.contains(&widget.unwrap().0.to_string())
+                }
+                ).collect::<Vec<&String>>())
+    }
 
-    for name in keys {
+    for name in subscribed_properties {
         let (widget_path, property_name) = if scheduler.is_syncing() && name.starts_with("/root") {
             let (path, id) = name.rsplit_once('/').unwrap();
-            if !state_tree.contains(path) {
-                continue;
-            }
             (Some(path), Some(id))
         } else {
             (None, None)
@@ -266,14 +268,14 @@ pub fn update_properties(
         while let Ok(new) = scheduler
             .backend
             .property_receivers
-            .get(&name)
+            .get(name)
             .unwrap_or_else(|| panic!("Could not get property receiver for {}", name))
             .try_recv()
         {
             new_val = Some(new);
         }
         if let Some(val) = new_val {
-            if let Some(i) = scheduler.backend.property_subscribers.get(&name) {
+            if let Some(i) = scheduler.backend.property_subscribers.get(name) {
                 for subscriber in i {
                     scheduler
                         .backend
@@ -291,8 +293,12 @@ pub fn update_properties(
                 to_callback.push(name.clone());
             }
             if widget_path.is_some() {
-                let state = state_tree.get_mut(widget_path.unwrap()).as_generic_mut();
-                state.update_property(property_name.unwrap(), val);
+                let state = state_tree.try_get_mut(widget_path.unwrap());
+                if let Some(found_state) = state {
+                    found_state
+                        .as_generic_mut()
+                        .update_property(property_name.unwrap(), val);
+                }
             }
         }
     }

@@ -1,8 +1,9 @@
 //! # Tree
 //!
 //! This module contains implementations for the various runtime trees.
-use std::collections::HashMap;
-use std::io::{Error, ErrorKind};
+use rustc_hash::FxHashMap;
+use core::str::Split;
+use std::iter::Peekable;
 
 use crossterm::style::StyledContent;
 
@@ -32,17 +33,17 @@ pub struct Tree<T> {
     pub obj: T,
 
     /// HashMap of objects to provide caching and ID lookup for
-    objects: HashMap<String, Tree<T>>,
+    objects: FxHashMap<String, Tree<T>>,
 
-    id_cache: HashMap<String, Vec<String>>,
+    id_cache: FxHashMap<String, Vec<String>>,
 }
 impl<T> Tree<T> {
     pub fn new(name: String, node: T) -> Self {
         Tree {
             id: name,
             obj: node,
-            objects: HashMap::new(),
-            id_cache: HashMap::new(),
+            objects: FxHashMap::default(),
+            id_cache: FxHashMap::default(),
         }
     }
 
@@ -183,14 +184,32 @@ impl<T> Tree<T> {
     /// ```
     pub fn get(&self, node: &str) -> &Tree<T> {
         if node.starts_with('/') {
-            self.get_recursive(node).unwrap()
+            self.get_recursive(node).unwrap_or_else(||
+                panic!("Could not resolve '{:?}' from {:?}", node, self.id))
         } else {
             if self.objects.contains_key(node) {
-                self.objects.get(node).unwrap()
+                self.objects.get(node).unwrap_or_else(||
+                    panic!("Could not resolve '{:?}' from {:?}", node, self.id))
             } else if node == self.id {
                 self
             } else {
-                self.get_by_id(node).unwrap()
+                self.get_by_id(node).unwrap_or_else(||
+                    panic!("Could not resolve '{:?}' from {:?}", node, self.id))
+            }
+        }
+    }
+
+    pub fn try_get(&self, node: &str) -> Option<&Tree<T>> {
+
+        if node.starts_with('/') {
+            self.get_recursive(node)
+        } else {
+            if self.objects.contains_key(node) {
+                self.objects.get(node)
+            } else if node == self.id {
+                Some(self)
+            } else {
+                self.get_by_id(node)
             }
         }
     }
@@ -221,15 +240,35 @@ impl<T> Tree<T> {
     /// let label_state = tree.get("widget").as_label();
     /// ```
     pub fn get_mut(&mut self, id: &str) -> &mut Tree<T> {
+
+        let own_name = self.id.clone();
         if id.starts_with('/') {
-            self.get_recursive_mut(id).unwrap()
+            self.get_recursive_mut(id).unwrap_or_else(||
+                panic!("Could not resolve '{:?}' from {:?}", id, own_name))
         } else {
             if self.objects.contains_key(id) {
-                self.objects.get_mut(id).unwrap()
+                self.objects.get_mut(id).unwrap_or_else(||
+                    panic!("Could not resolve '{:?}' from {:?}", id, own_name))
             } else if id == self.id {
                 self
             } else {
-                self.get_by_id_mut(id).unwrap()
+                self.get_by_id_mut(id).unwrap_or_else(||
+                    panic!("Could not resolve '{:?}' from {:?}", id, own_name))
+            }
+        }
+    }
+
+    pub fn try_get_mut(&mut self, id: &str) -> Option<&mut Tree<T>> {
+
+        if id.starts_with('/') {
+            self.get_recursive_mut(id)
+        } else {
+            if self.objects.contains_key(id) {
+                self.objects.get_mut(id)
+            } else if id == self.id {
+                Some(self)
+            } else {
+                self.get_by_id_mut(id)
             }
         }
     }
@@ -239,74 +278,72 @@ impl<T> Tree<T> {
     /// and destroying widgets.
     pub fn contains(&self, id: &str) -> bool {
         if id.starts_with('/') {
-            self.get_recursive(id).is_ok()
+            self.get_recursive(id).is_some()
         } else {
             if self.objects.contains_key(id) {
                 self.objects.get(id).is_some()
             } else if id == self.id {
                 true
             } else {
-                self.get_by_id(id).is_ok()
+                self.get_by_id(id).is_some()
             }
         }
     }
 
-    fn get_recursive(&self, path: &str) -> Result<&Tree<T>, Error> {
-        let steps: Vec<&str> = path.split('/').collect();
-        let mut steps = steps[1..].to_vec();
-        if steps[0] == self.id {
-            if steps.len() == 1 {
-                return Ok(self);
-            } else {
-                steps.remove(0);
+    fn get_recursive(&self, path: &str) -> Option<&Tree<T>> {
+
+        let mut steps = path.split('/').peekable();
+        steps.next(); // Skip empty first element
+        if steps.peek().unwrap() == &self.id {
+            steps.next();
+            if steps.peek().is_none() {
+                return Some(self);
             }
         }
-        Ok(self._get_recursive(&steps)?)
+        Some(self._get_recursive(steps)?)
     }
 
-    fn _get_recursive(&self, steps: &Vec<&str>) -> Result<&Tree<T>, Error> {
+    fn _get_recursive(&self, mut steps: Peekable<Split<char>>) -> Option<&Tree<T>> {
+
         let mut node = self;
-        for step in steps {
-            let next = node.objects.get(*step);
+        while let Some(step) = steps.next() {
+            let next = node.objects.get(step);
             if let Some(i) = next {
                 node = i;
             } else {
-                return Err(Error::new(
-                    ErrorKind::InvalidData,
-                    format!("Could not resolve '{:?}'", steps),
-                ));
+                return None;
             }
         }
-        Ok(node)
+        Some(node)
     }
 
-    fn get_recursive_mut(&mut self, path: &str) -> Result<&mut Tree<T>, Error> {
-        let steps: Vec<&str> = path.split('/').collect();
-        let mut steps = steps[1..].to_vec();
-        if steps[0] == self.id {
-            if steps.len() == 1 {
-                return Ok(self);
-            } else {
-                steps.remove(0);
+    fn get_recursive_mut(&mut self, path: &str) -> Option<&mut Tree<T>> {
+
+
+        let mut steps = path.split('/').peekable();
+        steps.next(); // Skip empty first element
+        if steps.peek().unwrap() == &self.id {
+            steps.next();
+            if steps.peek().is_none() {
+                return Some(self);
             }
         }
-        Ok(self._get_recursive_mut(&steps)?)
+        Some(self._get_recursive_mut(steps)?)
     }
 
-    fn _get_recursive_mut(&mut self, steps: &Vec<&str>) -> Result<&mut Tree<T>, Error> {
+    fn _get_recursive_mut(&mut self, mut steps: Peekable<Split<char>>) -> Option<&mut Tree<T>> {
+
+
         let mut node = self;
-        for step in steps {
-            let next = node.objects.get_mut(*step);
+        while let Some(step) = steps.next() {
+            let next = node.objects.get_mut(step);
             if let Some(i) = next {
                 node = i;
             } else {
-                return Err(Error::new(
-                    ErrorKind::InvalidData,
-                    format!("Could not resolve '{:?}'", steps),
-                ));
+                return None
             }
         }
-        Ok(node)
+        Some(node)
     }
 
     /// Get object refs in the tree recursively, including self.
@@ -332,39 +369,58 @@ impl<T> Tree<T> {
     /// Get a ref by full widget ID. If the widget ID is not globally unique it will panic in
     /// order to prevent unexpected behavior. If you want to find widgets by ID make sure the ID
     /// is unique.
-    fn get_by_id(&self, id: &str) -> Result<&Tree<T>, Error> {
-        let steps = self.id_cache.get(id).cloned();
+    fn get_by_id(&self, id: &str) -> Option<&Tree<T>> {
+
+        let steps = self.id_cache.get(id);
         if let Some(path) = steps {
-            Ok(self._get_recursive(&path.iter().map(|x| x.as_str()).collect())?)
+            Some(self._get_by_id_recursive(path.clone())?)
         } else {
-            return Err(Error::new(
-                ErrorKind::InvalidData,
-                format!(
-                    "ID '{}' could not be found in '{}'. It either does not \
-                       exist or is not unique in this tree",
-                    id, self.id
-                ),
-            ));
+            return None
         }
+    }
+
+    fn _get_by_id_recursive(&self, steps: Vec<String>) -> Option<&Tree<T>> {
+
+        let mut node = self;
+        let mut step_iter = steps.iter();
+        while let Some(step) = step_iter.next() {
+            let next = node.objects.get(step);
+            if let Some(i) = next {
+                node = i;
+            } else {
+                return None
+            }
+        }
+        Some(node)
     }
 
     /// Get a mut ref by full widget ID. If the widget ID is not globally unique it will panic in
     /// order to prevent unexpected behavior. If you want to find widgets by ID make sure the ID
     /// is unique.
-    fn get_by_id_mut(&mut self, id: &str) -> Result<&mut Tree<T>, Error> {
-        let steps = self.id_cache.get(id).cloned();
+    fn get_by_id_mut(&mut self, id: &str) -> Option<&mut Tree<T>> {
+
+        let steps = self.id_cache.get(id);
         if let Some(path) = steps {
-            Ok(self._get_recursive_mut(&path.iter().map(|x| x.as_str()).collect())?)
+            let path = path.clone();
+            Some(self._get_by_id_recursive_mut(path)?)
         } else {
-            return Err(Error::new(
-                ErrorKind::InvalidData,
-                format!(
-                    "ID '{}' could not be found in '{}'. It either does not \
-                       exist or is not unique in this tree",
-                    id, self.id
-                ),
-            ));
+            return None
         }
+    }
+
+    fn _get_by_id_recursive_mut(&mut self, steps: Vec<String>) -> Option<&mut Tree<T>> {
+
+        let mut node = self;
+        let mut step_iter = steps.iter();
+        while let Some(step) = step_iter.next() {
+            let next = node.objects.get_mut(step);
+            if let Some(i) = next {
+                node = i;
+            } else {
+                return None
+            }
+        }
+        Some(node)
     }
 }
 impl Tree<EzState> {

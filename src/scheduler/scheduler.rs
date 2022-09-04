@@ -41,6 +41,9 @@ pub struct SchedulerFrontend {
     /// Whether this is a synced frontend (i.e. running in a thread)
     synced: bool,
 
+    sync_thread_sender: Option<Sender<bool>>,
+    sync_thread_receiver: Option<Receiver<bool>>,
+
     schedule_once_sender: Option<Sender<(String, GenericTask, Duration)>>,
     schedule_once_receiver: Option<Receiver<(String, GenericTask, Duration)>>,
 
@@ -191,6 +194,11 @@ impl SchedulerFrontend {
             let task = Task::new(name.to_string(), func, after);
             self.backend.tasks.push(task);
         } else {
+            self.sync_thread_sender
+                .as_ref()
+                .unwrap()
+                .send(true)
+                .unwrap();
             self.schedule_once_sender
                 .as_ref()
                 .unwrap()
@@ -238,6 +246,11 @@ impl SchedulerFrontend {
                 self.backend.tasks.remove(i);
             }
         } else {
+            self.sync_thread_sender
+                .as_ref()
+                .unwrap()
+                .send(true)
+                .unwrap();
             self.cancel_task_sender
                 .as_ref()
                 .unwrap()
@@ -292,6 +305,11 @@ impl SchedulerFrontend {
             let task = RecurringTask::new(name.to_string(), func, interval);
             self.backend.recurring_tasks.push(task);
         } else {
+            self.sync_thread_sender
+                .as_ref()
+                .unwrap()
+                .send(true)
+                .unwrap();
             self.schedule_recurring_sender
                 .as_ref()
                 .unwrap()
@@ -345,6 +363,11 @@ impl SchedulerFrontend {
                 self.backend.recurring_tasks.remove(i);
             }
         } else {
+            self.sync_thread_sender
+                .as_ref()
+                .unwrap()
+                .send(true)
+                .unwrap();
             self.cancel_recurring_sender
                 .as_ref()
                 .unwrap()
@@ -395,6 +418,11 @@ impl SchedulerFrontend {
                 .threads_to_start
                 .push((threaded_func, on_finish));
         } else {
+            self.sync_thread_sender
+                .as_ref()
+                .unwrap()
+                .send(true)
+                .unwrap();
             self.schedule_threaded_sender
                 .as_ref()
                 .unwrap()
@@ -457,6 +485,11 @@ impl SchedulerFrontend {
         if !self.synced {
             open_and_register_modal(template.to_string(), state_tree, self);
         } else {
+            self.sync_thread_sender
+                .as_ref()
+                .unwrap()
+                .send(true)
+                .unwrap();
             self.open_modal_sender
                 .as_ref()
                 .unwrap()
@@ -498,6 +531,11 @@ impl SchedulerFrontend {
                 .widgets_to_update
                 .retain(|x| !removed_paths.contains(&x));
         } else {
+            self.sync_thread_sender
+                .as_ref()
+                .unwrap()
+                .send(true)
+                .unwrap();
             self.dismiss_modal_sender
                 .as_ref()
                 .unwrap()
@@ -533,6 +571,11 @@ impl SchedulerFrontend {
                 .new_callback_configs
                 .push((for_widget.to_string(), callback_config));
         } else {
+            self.sync_thread_sender
+                .as_ref()
+                .unwrap()
+                .send(true)
+                .unwrap();
             self.overwrite_callback_config_sender
                 .as_ref()
                 .unwrap()
@@ -575,6 +618,11 @@ impl SchedulerFrontend {
                 .updated_callback_configs
                 .push((for_widget.to_string(), callback_config));
         } else {
+            self.sync_thread_sender
+                .as_ref()
+                .unwrap()
+                .send(true)
+                .unwrap();
             self.update_callback_config_sender
                 .as_ref()
                 .unwrap()
@@ -628,7 +676,7 @@ impl SchedulerFrontend {
         state_tree: &mut StateTree,
     ) -> (EzObjects, StateTree) {
         let path = if !parent.contains('/') {
-            /// parent is an ID, resolve it
+            // parent is an ID, resolve it
             state_tree.get(parent).as_generic().get_path().clone()
         } else {
             parent.to_string()
@@ -732,6 +780,11 @@ impl SchedulerFrontend {
             let mut receivers = HashMap::new();
             swap(&mut receivers, &mut self.backend.property_receivers);
             state_tree.extend(path, new_states.clone());
+            self.sync_thread_sender
+                .as_ref()
+                .unwrap()
+                .send(true)
+                .unwrap();
             self.create_widget_sender
                 .as_ref()
                 .unwrap()
@@ -784,6 +837,11 @@ impl SchedulerFrontend {
             }
             self.backend.widgets_to_remove.push(name.to_string());
         } else {
+            self.sync_thread_sender
+                .as_ref()
+                .unwrap()
+                .send(true)
+                .unwrap();
             self.remove_widget_sender
                 .as_ref()
                 .unwrap()
@@ -1411,6 +1469,11 @@ impl SchedulerFrontend {
                 .unwrap()
                 .push(subscriber);
         } else {
+            self.sync_thread_sender
+                .as_ref()
+                .unwrap()
+                .send(true)
+                .unwrap();
             self.subscribe_to_property_sender
                 .as_ref()
                 .unwrap()
@@ -1449,6 +1512,11 @@ impl SchedulerFrontend {
                 self.backend.widgets_to_update.push(path);
             }
         } else {
+            self.sync_thread_sender
+                .as_ref()
+                .unwrap()
+                .send(true)
+                .unwrap();
             self.update_widget_sender
                 .as_ref()
                 .unwrap()
@@ -1481,6 +1549,11 @@ impl SchedulerFrontend {
         if !self.synced {
             self.backend.force_redraw = true;
         } else {
+            self.sync_thread_sender
+                .as_ref()
+                .unwrap()
+                .send(true)
+                .unwrap();
             self.force_redraw_sender
                 .as_ref()
                 .unwrap()
@@ -1543,6 +1616,11 @@ impl SchedulerFrontend {
                 self.backend.property_callbacks.push(name);
             }
         } else {
+            self.sync_thread_sender
+                .as_ref()
+                .unwrap()
+                .send(true)
+                .unwrap();
             self.bind_property_sender
                 .as_ref()
                 .unwrap()
@@ -1589,6 +1667,11 @@ impl SchedulerFrontend {
                 .update_global_keymap
                 .insert((key, modifiers), callback);
         } else {
+            self.sync_thread_sender
+                .as_ref()
+                .unwrap()
+                .send(true)
+                .unwrap();
             self.bind_global_key_sender
                 .as_ref()
                 .unwrap()
@@ -1621,6 +1704,11 @@ impl SchedulerFrontend {
             let modifiers = create_keymap_modifiers(modifiers);
             self.backend.remove_global_keymap.push((key, modifiers));
         } else {
+            self.sync_thread_sender
+                .as_ref()
+                .unwrap()
+                .send(true)
+                .unwrap();
             self.remove_global_key_sender
                 .as_ref()
                 .unwrap()
@@ -1652,6 +1740,11 @@ impl SchedulerFrontend {
         if !self.synced {
             self.backend.clear_global_keymap = true;
         } else {
+            self.sync_thread_sender
+                .as_ref()
+                .unwrap()
+                .send(true)
+                .unwrap();
             self.clear_global_keys_sender
                 .as_ref()
                 .unwrap()
@@ -1686,6 +1779,11 @@ impl SchedulerFrontend {
         if !self.synced {
             self.backend.next_selection = Some((widget.to_string(), mouse_pos));
         } else {
+            self.sync_thread_sender
+                .as_ref()
+                .unwrap()
+                .send(true)
+                .unwrap();
             self.set_selected_widget_sender
                 .as_ref()
                 .unwrap()
@@ -1717,6 +1815,11 @@ impl SchedulerFrontend {
         if !self.synced {
             self.backend.deselect = true
         } else {
+            self.sync_thread_sender
+                .as_ref()
+                .unwrap()
+                .send(true)
+                .unwrap();
             self.deselect_widget_sender
                 .as_ref()
                 .unwrap()
@@ -1745,6 +1848,11 @@ impl SchedulerFrontend {
         if !self.synced {
             stop();
         } else {
+            self.sync_thread_sender
+                .as_ref()
+                .unwrap()
+                .send(true)
+                .unwrap();
             self.exit_sender.as_ref().unwrap().send(true).unwrap();
         }
     }
@@ -1789,6 +1897,11 @@ impl SchedulerFrontend {
     /// other thread(s). Often it is not important to have an up to date state tree in your thread,
     /// but if it is necessary at any point, call this method first.
     pub fn sync_state_tree(&mut self) -> StateTree {
+        self.sync_thread_sender
+            .as_ref()
+            .unwrap()
+            .send(true)
+            .unwrap();
         self.ask_sync_state_tree_sender
             .as_ref()
             .unwrap()
@@ -1807,6 +1920,11 @@ impl SchedulerFrontend {
     /// other thread(s). Often it is not important to have up to date properties in your thread,
     /// but if it is necessary at any point, call this method first.
     pub fn sync_properties(&mut self) {
+        self.sync_thread_sender
+            .as_ref()
+            .unwrap()
+            .send(true)
+            .unwrap();
         self.ask_sync_properties_sender
             .as_ref()
             .unwrap()
@@ -1821,9 +1939,19 @@ impl SchedulerFrontend {
     }
 
     pub fn _check_method_channels(&mut self, state_tree: &mut StateTree) {
+
         if self.syncing == 0 {
             return;
         }
+        let mut something_to_do = false;
+        while let Ok(_) = self.sync_thread_receiver
+            .as_ref()
+            .unwrap()
+            .try_recv()
+        {
+            something_to_do = true
+        }
+        if !something_to_do { return }
 
         while let Ok((name, func, after)) = self.schedule_once_receiver.as_ref().unwrap().try_recv()
         {
@@ -2023,6 +2151,13 @@ impl SchedulerFrontend {
         let mut synced_frontend = SchedulerFrontend::default();
         self.syncing += 1;
         synced_frontend.synced = true;
+
+        if self.sync_thread_receiver.is_none() {
+            let (sender, receiver) = channel();
+            self.sync_thread_receiver = Some(receiver);
+            self.sync_thread_sender = Some(sender.clone());
+        }
+        synced_frontend.sync_thread_sender = self.sync_thread_sender.clone();
 
         if self.schedule_once_receiver.is_none() {
             let (sender, receiver) = channel();
