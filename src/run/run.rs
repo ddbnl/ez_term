@@ -117,8 +117,8 @@ fn run_loop(
 ) -> Result<()> {
     let mut view_tree = initialize_widgets(&mut root_widget, &mut state_tree);
     let last_update = Instant::now(); // Time of last screen update,
-    let tick_rate = (1 / 60) as u64; // Screen update interval
     let mut last_mouse_pos: (u16, u16) = (0, 0); // To ignore move events if pos is not different
+    let mut last_key_event = Instant::now();
     let mut cleanup_timer = 0; // Interval for cleaning up orphaned states and callbacks
     let mut selected_widget = String::new(); // Currently selected widget
     let mut dragging: Option<String> = None; // Widget currently being dragged if any
@@ -126,12 +126,24 @@ fn run_loop(
     let mut global_keymap = KeyMap::new();
     trigger_update_funcs(&mut scheduler, &mut state_tree);
     scheduler.force_redraw();
+
+    let mut consumed= false;
     loop {
+
         // We check for and deal with a possible event
-        if poll(Duration::from_millis(tick_rate))? {
+        if poll(Duration::from_millis(scheduler.backend.tick_rate))? {
+            consumed = false;
             // Get the event; it can only be consumed once
-            let mut consumed = false;
             let mut event = read().unwrap();
+
+            if let Event::Key(_) = event {
+                if last_key_event.elapsed() <
+                    Duration::from_millis(scheduler.backend.keyboard_cooldown) {
+                    consumed = true;
+                } else {
+                    last_key_event = Instant::now();
+                }
+            }
 
             // Prevent mouse moved spam. if a mouse move event is detected, drain as many of those
             // events as possible before the next frame, then check if it moved position.
@@ -238,9 +250,8 @@ fn run_loop(
                 }
             }
         }
-
         // We only update the screen if the tick timer has elapsed
-        if last_update.elapsed() < Duration::from_millis(tick_rate) {
+        if last_update.elapsed() < Duration::from_millis(scheduler.backend.tick_rate) {
             continue;
         }
 

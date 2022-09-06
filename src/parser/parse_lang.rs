@@ -68,7 +68,7 @@ pub fn load_ez_text(files: HashMap<String, String>) -> Result<(Layout, Scheduler
         }
     }
 
-    let mut scheduler = Scheduler::default();
+    let mut scheduler = Scheduler::new();
     scheduler.templates = templates.clone();
     let mut scheduler_frontend = SchedulerFrontend::default();
     scheduler_frontend.backend = scheduler;
