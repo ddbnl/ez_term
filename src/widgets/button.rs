@@ -127,8 +127,7 @@ impl EzObject for Button {
         let default_pixel = Pixel::new(" ".to_string(),
                                        fg_color,bg_color);
         let (text, pixels) = format_text(text, default_pixel.clone());
-        let content_lines = wrap_text(text, write_width, pixels,
-                                      default_pixel.clone());
+        let content_lines = wrap_text(text, write_width, pixels);
         let write_height =
             if state.get_infinite_size().height || state.get_auto_scale().get_auto_scale_height() {
                 content_lines.len()

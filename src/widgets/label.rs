@@ -128,7 +128,7 @@ impl EzObject for Label {
             " ".to_string(),
             state.get_color_config().get_fg_color(),
             state.get_color_config().get_bg_color());
-        let (text, mut pixels) = format_text(text, default_pixel.clone());
+        let (text, pixels) = format_text(text, default_pixel.clone());
 
         let chunk_size =
             if state.get_infinite_size().width || state.get_auto_scale().get_auto_scale_width() {
@@ -136,8 +136,7 @@ impl EzObject for Label {
             } else {
                 state.get_effective_size().width
             };
-        let content_lines = wrap_text(text, chunk_size, pixels,
-                                      default_pixel.clone());
+        let content_lines = wrap_text(text, chunk_size, pixels);
         // If content is scrolled simply scale to length of content on that axis
         if state.get_infinite_size().width {
             let longest_line = content_lines.iter().map(|x| x.len()).max();

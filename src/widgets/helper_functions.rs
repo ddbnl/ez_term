@@ -284,7 +284,7 @@ pub fn align_content_vertically(
 // Make list of lines, splitting into lines at line breaks in the text or when the widget width
 // has been exceeded. If the latter occurs, we will try to split on a word boundary if there is
 // any in that chunk of text, to keep things readable.
-pub fn wrap_text(mut text: String, width: usize, mut pixels: Vec<Pixel>, default_pixel: Pixel)
+pub fn wrap_text(mut text: String, width: usize, mut pixels: Vec<Pixel>)
     -> Vec<Vec<Pixel>> {
 
     let mut content_lines: Vec<Vec<Pixel>> = Vec::new();
