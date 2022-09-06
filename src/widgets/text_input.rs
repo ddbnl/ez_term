@@ -142,31 +142,27 @@ impl EzObject for TextInput {
             let mut new_y = Vec::new();
             for _ in 0..write_height {
                 if !text.is_empty() {
-                    new_y.push(Pixel {
-                        symbol: text.pop().unwrap().to_string(),
-                        foreground_color: fg_color,
-                        background_color: if state.get_blink_switch()
+                    new_y.push(Pixel::new(
+                        text.pop().unwrap().to_string(),
+                        fg_color,
+                        if state.get_blink_switch()
                             && x == state.get_cursor_pos().x
                         {
                             state.get_color_config().get_cursor_color()
                         } else {
                             bg_color
-                        },
-                        underline: true,
-                    })
+                        }))
                 } else {
-                    new_y.push(Pixel {
-                        symbol: " ".to_string(),
-                        foreground_color: fg_color,
-                        background_color: if state.get_blink_switch()
+                    new_y.push(Pixel::new(
+                        " ".to_string(),
+                        fg_color,
+                        if state.get_blink_switch()
                             && x == state.get_cursor_pos().x
                         {
                             state.get_color_config().get_cursor_color()
                         } else {
                             bg_color
-                        },
-                        underline: true,
-                    })
+                        }))
                 }
             }
             contents.push(new_y);

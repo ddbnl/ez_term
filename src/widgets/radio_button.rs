@@ -143,36 +143,22 @@ impl EzObject for RadioButton {
         };
         let (fg_color, bg_color) = state.get_context_colors();
         let mut contents = vec![
-            vec![Pixel {
-                symbol: "(".to_string(),
-                foreground_color: fg_color,
-                background_color: bg_color,
-                underline: false,
-            }],
-            vec![Pixel {
-                symbol: " ".to_string(),
-                foreground_color: fg_color,
-                background_color: bg_color,
-                underline: false,
-            }],
-            vec![Pixel {
-                symbol: active_symbol.to_string(),
-                foreground_color: fg_color,
-                background_color: bg_color,
-                underline: false,
-            }],
-            vec![Pixel {
-                symbol: " ".to_string(),
-                foreground_color: fg_color,
-                background_color: bg_color,
-                underline: false,
-            }],
-            vec![Pixel {
-                symbol: ")".to_string(),
-                foreground_color: fg_color,
-                background_color: bg_color,
-                underline: false,
-            }],
+            vec![Pixel::new(
+                "(".to_string(),
+                fg_color,bg_color)],
+            vec![Pixel::new(
+                " ".to_string(),
+                fg_color,bg_color)],
+            vec![Pixel::new(
+                active_symbol.to_string(),
+                fg_color,bg_color)],
+            vec![Pixel::new(
+                " ".to_string(),
+                fg_color,bg_color)],
+            vec![Pixel::new(
+                ")".to_string(),
+                fg_color,
+                bg_color)],
         ];
         if state.get_border_config().get_border() {
             contents = add_border(

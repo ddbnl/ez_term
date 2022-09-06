@@ -385,14 +385,12 @@ impl EzObject for DroppedDownMenu {
                     state.get_color_config().get_bg_color()
                 };
                 if !options[y].is_empty() {
-                    new_y.push(Pixel {
-                        symbol: options[y].pop().unwrap().to_string(),
-                        foreground_color: fg,
-                        background_color: bg,
-                        underline: false,
-                    })
+                    new_y.push(Pixel::new(
+                        options[y].pop().unwrap().to_string(),
+                        fg, bg));
                 } else {
-                    new_y.push(Pixel::new(" ".to_string(), fg, bg))
+                    new_y.push(Pixel::new(" ".to_string(),
+                                          fg, bg))
                 }
             }
             contents.push(new_y.clone());

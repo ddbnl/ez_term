@@ -1,4 +1,4 @@
-mod parse_properties;
+pub mod parse_properties;
 
 /// A module with a struct wrapping a widget definition
 pub mod ez_definition;

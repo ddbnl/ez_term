@@ -148,19 +148,15 @@ impl EzObject for Canvas {
                 widget_content.push(Vec::new());
                 for y in 0..state.get_effective_size().height {
                     if y < lines.len() && !lines[y].is_empty() {
-                        widget_content[x].push(Pixel {
-                            symbol: lines[y].pop().unwrap().to_string(),
-                            foreground_color: state.get_color_config().get_fg_color(),
-                            background_color: state.get_color_config().get_bg_color(),
-                            underline: false,
-                        })
+                        widget_content[x].push(Pixel::new(
+                            lines[y].pop().unwrap().to_string(),
+                            state.get_color_config().get_fg_color(),
+                            state.get_color_config().get_bg_color()));
                     } else {
-                        widget_content[x].push(Pixel {
-                            symbol: " ".to_string(),
-                            foreground_color: state.get_color_config().get_fg_color(),
-                            background_color: state.get_color_config().get_bg_color(),
-                            underline: false,
-                        })
+                        widget_content[x].push(Pixel::new(
+                            " ".to_string(),
+                            state.get_color_config().get_fg_color(),
+                            state.get_color_config().get_bg_color()));
                     }
                 }
             }

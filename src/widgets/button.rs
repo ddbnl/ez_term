@@ -10,9 +10,7 @@ use crate::states::button_state::ButtonState;
 use crate::states::definitions::{HorizontalAlignment, VerticalAlignment};
 use crate::states::ez_state::{EzState, GenericState};
 use crate::widgets::ez_object::{EzObject, EzObjects};
-use crate::widgets::helper_functions::{
-    add_border, add_padding, align_content_horizontally, align_content_vertically, wrap_text,
-};
+use crate::widgets::helper_functions::{add_border, add_padding, align_content_horizontally, align_content_vertically, format_text, wrap_text};
 use crate::Context;
 
 #[derive(Clone, Debug)]
@@ -105,6 +103,7 @@ impl EzObject for Button {
     }
 
     fn get_contents(&self, state_tree: &mut StateTree) -> PixelMap {
+
         let state = state_tree.get_mut(&self.get_path()).as_button_mut();
 
         let (fg_color, bg_color) = if state.get_flashing() {
@@ -124,7 +123,12 @@ impl EzObject for Button {
             } else {
                 state.get_effective_size().width
             };
-        let content_lines = wrap_text(text, write_width);
+
+        let default_pixel = Pixel::new(" ".to_string(),
+                                       fg_color,bg_color);
+        let (text, pixels) = format_text(text, default_pixel.clone());
+        let content_lines = wrap_text(text, write_width, pixels,
+                                      default_pixel.clone());
         let write_height =
             if state.get_infinite_size().height || state.get_auto_scale().get_auto_scale_height() {
                 content_lines.len()
@@ -136,22 +140,12 @@ impl EzObject for Button {
         let longest_line = if let Some(i) = longest_line { i } else { 0 };
         let mut contents = Vec::new();
         for x in 0..longest_line {
-            let mut new_y = Vec::new();
+            let mut new_y: Vec<Pixel> = Vec::new();
             for y in 0..write_height {
                 if y < content_lines.len() && x < content_lines[y].len() {
-                    new_y.push(Pixel {
-                        symbol: content_lines[y][x..x + 1].to_string(),
-                        foreground_color: fg_color,
-                        background_color: bg_color,
-                        underline: false,
-                    })
+                    new_y.push(content_lines[y][x].clone());
                 } else {
-                    new_y.push(Pixel {
-                        symbol: " ".to_string(),
-                        foreground_color: fg_color,
-                        background_color: bg_color,
-                        underline: false,
-                    })
+                    new_y.push(default_pixel.clone());
                 }
             }
             contents.push(new_y);

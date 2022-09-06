@@ -4,6 +4,8 @@ use crate::states::definitions::{
 };
 use crate::states::ez_state::{EzState, GenericState};
 use crossterm::style::Color;
+use unicode_segmentation::UnicodeSegmentation;
+use crate::parser::parse_properties::parse_color_property;
 
 /// Resize an object according to its' size hint values.
 pub fn resize_with_size_hint(state: &mut EzState, parent_width: usize, parent_height: usize) {
@@ -184,12 +186,8 @@ pub fn align_content_horizontally(
     if content.len() >= total_width {
         return (content, 0);
     }
-    let empty_pixel = Pixel {
-        symbol: filler_symbol,
-        foreground_color: fg_color,
-        background_color: bg_color,
-        underline: false,
-    };
+    let empty_pixel =
+        Pixel::new(filler_symbol, fg_color, bg_color);
     let mut offset = 0;
     for i in 0..total_width - content.len() {
         match halign {
@@ -250,12 +248,8 @@ pub fn align_content_vertically(
         return (content, 0);
     }
 
-    let empty_pixel = Pixel {
-        symbol: filler_symbol,
-        foreground_color: fg_color,
-        background_color: bg_color,
-        underline: false,
-    };
+    let empty_pixel =
+        Pixel::new(filler_symbol, fg_color, bg_color);
 
     let mut offset = 0;
     for (i, x) in content.iter_mut().enumerate() {
@@ -290,8 +284,10 @@ pub fn align_content_vertically(
 // Make list of lines, splitting into lines at line breaks in the text or when the widget width
 // has been exceeded. If the latter occurs, we will try to split on a word boundary if there is
 // any in that chunk of text, to keep things readable.
-pub fn wrap_text(mut text: String, width: usize) -> Vec<String> {
-    let mut content_lines = Vec::new();
+pub fn wrap_text(mut text: String, width: usize, mut pixels: Vec<Pixel>, default_pixel: Pixel)
+    -> Vec<Vec<Pixel>> {
+
+    let mut content_lines: Vec<Vec<Pixel>> = Vec::new();
     loop {
         if width == 0 {
             break;
@@ -307,9 +303,19 @@ pub fn wrap_text(mut text: String, width: usize) -> Vec<String> {
                 // of a larger sentence, and we're no longer filling full widget width.
                 for line in lines[0..lines.len() - 1].iter() {
                     if line.is_empty() {
-                        content_lines.push(' '.to_string());
+                        content_lines.push(vec!());
                     } else {
-                        content_lines.push(line.to_string());
+                        let mut new = Vec::new();
+
+                        for char in line.graphemes(true) {
+                            let mut pixel;
+                            loop {
+                                pixel = pixels.remove(0);
+                                if pixel.symbol == char { break }
+                            }
+                            new.push(pixel);
+                        }
+                        content_lines.push(new);
                     }
                 }
                 if !lines.last().unwrap().is_empty() {
@@ -320,21 +326,50 @@ pub fn wrap_text(mut text: String, width: usize) -> Vec<String> {
             }
             // Chunk naturally ends on word boundary, so just push the chunk.
             else if peek.ends_with(' ') {
-                content_lines.push(peek);
+                let mut new = Vec::new();
+                for char in peek.graphemes(true) {
+                    let mut pixel;
+                    loop {
+                        pixel = pixels.remove(0);
+                        if pixel.symbol == char { break }
+                    }
+                    new.push(pixel);
+                }
+                content_lines.push(new);
                 text = text[width..].to_string();
                 // We can find a word boundary somewhere to split the string on. Push up until the
                 // boundary.
             } else if let Some(index) = peek.rfind(' ') {
-                content_lines.push(peek[..index].to_string());
+
+                let mut new = Vec::new();
+                for char in peek[..index].graphemes(true) {
+                    let mut pixel;
+                    loop {
+                        pixel = pixels.remove(0);
+                        if pixel.symbol == char { break }
+                    }
+                    new.push(pixel);
+                }
+                pixels.remove(0); // whitespace
+                content_lines.push(new);
                 text = text[index + 1..].to_string();
                 // No boundaries at all, just push the entire chunk.
             } else {
-                content_lines.push(peek);
+                let mut new = Vec::new();
+                for char in peek.graphemes(true) {
+                    let mut pixel;
+                    loop {
+                        pixel = pixels.remove(0);
+                        if pixel.symbol == char { break }
+                    }
+                    new.push(pixel);
+                }
+                content_lines.push(new);
                 text = text[width..].to_string();
             }
             // Not enough content left to fill widget width. Just push entire text
         } else {
-            content_lines.push(text);
+            content_lines.push(pixels);
             break;
         }
     }
@@ -358,4 +393,106 @@ pub fn offset_scrolled_absolute_position(
         absolute_position.y -= offset as isize;
     }
     absolute_position
+}
+
+
+/// Create pixels from text, consuming formatting text, e.g. \[underline\] becomes a formatted pixel.
+pub fn format_text(
+    text: String,
+    default: Pixel,
+) -> (String, Vec<Pixel>) {
+
+    let mut underline = false;
+    let mut bold = false;
+    let mut italic = false;
+    let mut strike_through = false;
+    let mut color = None;
+    let mut bg_color = None;
+
+    let mut tag_start = false;
+    let mut tag_content = String::new();
+    let mut escaped = false;
+
+    let mut pixels = Vec::new();
+    let mut formatted_text = String::new();
+
+    for grapheme in text.graphemes(true).into_iter() {
+
+        if grapheme == "]" && !escaped {
+            let close = if tag_content.starts_with('/') {
+                tag_content = tag_content.strip_prefix('/').unwrap().to_string();
+                true
+            } else {
+                false
+            };
+            tag_content = tag_content.to_lowercase();
+            if tag_content == "b" {
+                if !close {
+                    bold = true
+                } else {
+                    bold = false
+                }
+            } else if tag_content == "u" {
+                if !close {
+                    underline = true
+                } else {
+                    underline = false
+                }
+            } else if tag_content == "i" {
+                if !close {
+                    italic = true
+                } else {
+                    italic = false
+                }
+            } else if tag_content == "s" {
+                if !close {
+                    strike_through = true
+                } else {
+                    strike_through = false
+                }
+            } else if tag_content.starts_with("color") {
+                if !close {
+                    let color_str = tag_content.split_once("color=").unwrap().1;
+                    color = Some(parse_color_property(color_str).unwrap());
+                } else {
+                    color = None;
+                }
+            } else if tag_content.starts_with("bg_color") {
+                if !close {
+                    let color_str = tag_content.split_once("bg_color=").unwrap().1;
+                    bg_color = Some(parse_color_property(color_str).unwrap());
+                } else {
+                    bg_color = None;
+                }
+            }
+            tag_start = false;
+            tag_content.clear();
+            continue
+        }
+
+        if tag_start {
+            tag_content.push(grapheme.chars().next().unwrap());
+            continue
+        }
+
+        if grapheme == "[" && !escaped {
+            tag_start = true;
+            continue
+        }
+        escaped =  grapheme == "\\" ;
+
+        let mut new_pixel = default.clone();
+        new_pixel.symbol = grapheme.to_string();
+        if bold { new_pixel.bold = true }
+        if underline { new_pixel.underline = true }
+        if italic { new_pixel.italic = true }
+        if strike_through { new_pixel.strike_through = true }
+        if color.is_some() { new_pixel.foreground_color = color.unwrap()}
+        if bg_color.is_some() { new_pixel.background_color = color.unwrap() }
+        pixels.push(new_pixel);
+        formatted_text.push(grapheme.chars().next().unwrap())
+    }
+
+    (formatted_text, pixels)
+
 }

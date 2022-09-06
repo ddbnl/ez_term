@@ -83,6 +83,12 @@ pub struct Pixel {
 
     /// Whether symbol should be underlined
     pub underline: bool,
+
+    pub bold: bool,
+
+    pub strike_through: bool,
+
+    pub italic: bool,
 }
 impl Pixel {
     /// Turn this pixel into a crossterm StyledContent which can be drawn on screen.
@@ -95,6 +101,15 @@ impl Pixel {
         if self.underline {
             pixel = pixel.underlined();
         }
+        if self.bold {
+            pixel = pixel.bold();
+        }
+        if self.strike_through {
+            pixel = pixel.crossed_out();
+        }
+        if self.italic {
+            pixel = pixel.italic();
+        }
         pixel
     }
 }
@@ -105,6 +120,9 @@ impl Pixel {
             foreground_color,
             background_color,
             underline: false,
+            bold: false,
+            strike_through: false,
+            italic: false,
         }
     }
 }
@@ -113,8 +131,11 @@ impl Default for Pixel {
         Pixel {
             symbol: " ".to_string(),
             foreground_color: Color::White,
-            background_color: Color::Blue,
+            background_color: Color::Black,
             underline: false,
+            bold: false,
+            strike_through: false,
+            italic: false,
         }
     }
 }

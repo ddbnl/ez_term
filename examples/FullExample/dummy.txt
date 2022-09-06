@@ -1,5 +1,5 @@
-This is a label with a large amount of text. We will use it to test scroll bars. The layout that contains this label
-has scrolling_y enabled. If the content does not fit in the height of the layout, a scrollbar will now be added automatically.
+[i][color=255,0,0]This is a label with a large amount of text. We will use it to test scroll bars. The layout that contains this label
+has scrolling_y enabled. If the content does not fit in the height of the layout, a scrollbar will now be added automatically.[/color][/i]
 
 Lorem ipsum dolor sit amet, consectetur adipiscing elit. Etiam non nunc ac arcu pulvinar mattis at et ligula.
 Maecenas lectus lectus, mattis ut mollis luctus, fringilla vitae sem. Vivamus vestibulum, justo et aliquet ornare,

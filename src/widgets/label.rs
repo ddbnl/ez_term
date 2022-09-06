@@ -9,7 +9,7 @@ use crate::scheduler::scheduler::SchedulerFrontend;
 use crate::states::ez_state::{EzState, GenericState};
 use crate::states::label_state::LabelState;
 use crate::widgets::ez_object::{EzObject, EzObjects};
-use crate::widgets::helper_functions::{add_border, add_padding, wrap_text};
+use crate::widgets::helper_functions::{add_border, add_padding, format_text, wrap_text};
 include!(concat!(env!("OUT_DIR"), "/ez_file_gen.rs"));
 
 #[derive(Clone, Debug)]
@@ -106,6 +106,7 @@ impl EzObject for Label {
     }
 
     fn get_contents(&self, state_tree: &mut StateTree) -> PixelMap {
+
         let state = state_tree.get_mut(&self.get_path()).as_label_mut();
         let text;
         // Load text from file
@@ -123,13 +124,20 @@ impl EzObject for Label {
             text = state.get_text();
         }
 
+        let default_pixel = Pixel::new(
+            " ".to_string(),
+            state.get_color_config().get_fg_color(),
+            state.get_color_config().get_bg_color());
+        let (text, mut pixels) = format_text(text, default_pixel.clone());
+
         let chunk_size =
             if state.get_infinite_size().width || state.get_auto_scale().get_auto_scale_width() {
                 text.len() + 1
             } else {
                 state.get_effective_size().width
             };
-        let content_lines = wrap_text(text, chunk_size);
+        let content_lines = wrap_text(text, chunk_size, pixels,
+                                      default_pixel.clone());
         // If content is scrolled simply scale to length of content on that axis
         if state.get_infinite_size().width {
             let longest_line = content_lines.iter().map(|x| x.len()).max();
@@ -158,23 +166,14 @@ impl EzObject for Label {
 
         // Now we'll create the actual PixelMap using the lines we've created by wrapping the text
         let mut contents = Vec::new();
+
         for x in 0..state.get_effective_size().width {
             let mut new_y = Vec::new();
             for y in 0..state.get_effective_size().height {
                 if y < content_lines.len() && x < content_lines[y].len() {
-                    new_y.push(Pixel {
-                        symbol: content_lines[y][x..x + 1].to_string(),
-                        foreground_color: state.get_color_config().get_fg_color(),
-                        background_color: state.get_color_config().get_bg_color(),
-                        underline: false,
-                    })
+                    new_y.push(content_lines[y][x].clone());
                 } else {
-                    new_y.push(Pixel {
-                        symbol: " ".to_string(),
-                        foreground_color: state.get_color_config().get_fg_color(),
-                        background_color: state.get_color_config().get_bg_color(),
-                        underline: false,
-                    })
+                    new_y.push(default_pixel.clone());
                 }
             }
             contents.push(new_y);
