@@ -159,6 +159,54 @@ pub struct SchedulerFrontend {
 }
 
 impl SchedulerFrontend {
+
+    /// Method that allows you to set the tick rate in milliseconds.
+    /// The UI is refreshed every tick rate interval. Default is 60 FPS.
+    ///
+    /// # Parameters:
+    ///
+    /// - Cooldown in milliseconds: u64
+    ///
+    /// # Example:
+    ///
+    /// ```
+    /// use ez_term::*;
+    ///
+    /// let (root_widget, mut state_tree, mut scheduler) = load_ui();
+    ///
+    /// scheduler.set_keyboard_cooldown(500);
+    ///
+    /// run(root_widget, state_tree, scheduler);
+    /// ```
+    pub fn set_tick_rate(&mut self, rate: u64) {
+        self.backend.tick_rate = rate
+    }
+
+    /// Method that allows you to set a cooldown in milliseconds for keyboard events. The default
+    /// is 500 milliseconds, allowing 2 events per second.
+    /// After a keyboard event is handled, new keyboard events are dismissed during the cooldown
+    /// period. Can be 0 for no cooldown, but generally the default value is recommended to prevent
+    /// spam when a key is held down.
+    ///
+    /// # Parameters:
+    ///
+    /// - Cooldown in milliseconds: u64
+    ///
+    /// # Example:
+    ///
+    /// ```
+    /// use ez_term::*;
+    ///
+    /// let (root_widget, mut state_tree, mut scheduler) = load_ui();
+    ///
+    /// scheduler.set_keyboard_cooldown(500);
+    ///
+    /// run(root_widget, state_tree, scheduler);
+    /// ```
+    pub fn set_keyboard_cooldown(&mut self, cooldown: u64) {
+        self.backend.keyboard_cooldown = cooldown
+    }
+
     /// Method that allows you to schedule a closure or function for single execution after a delay
     /// (which can be 0).
     /// Only intended for code that returns immediately (like manipulating the UI); to run blocking
@@ -2449,6 +2497,13 @@ impl SchedulerFrontend {
 /// See [SchedulerFrontend] for more info.
 #[derive(Default)]
 pub struct Scheduler {
+
+    /// Rate at which screen is refreshed
+    pub tick_rate: u64,
+
+    /// Cool down period for keyboard events, to prevent spam events.
+    pub keyboard_cooldown: u64,
+
     /// List of widgets that will be redrawn on the next frame. Don't use this directly, use
     /// [update_widget] or EzState.update instead.
     pub widgets_to_update: Vec<String>,
@@ -2538,6 +2593,14 @@ pub struct Scheduler {
 
     /// Entire global keymap will be cleared on the next frame.
     pub clear_global_keymap: bool,
+}
+impl Scheduler {
+    pub fn new() -> Self {
+        let mut scheduler = Scheduler::default();
+        scheduler.tick_rate = ((1.0 / 60.0) * 1000.0) as u64;
+        scheduler.keyboard_cooldown = 500;
+        scheduler
+    }
 }
 
 /// A struct representing a run-once. This struct is not directly used by the
