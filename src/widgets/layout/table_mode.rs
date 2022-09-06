@@ -422,7 +422,8 @@ impl Layout {
         for x in 0..cols {
             write_pos.y = 0;
             for y in 0..rows {
-                if x >= child_table.len() || y >= child_table[x].len() {
+                if x >= child_table.len() || y >= child_table[x].len() ||
+                    child_table[x][y] >= children.len() {
                     continue;
                 }
                 let state = state_tree

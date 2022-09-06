@@ -26,7 +26,7 @@ use crate::states::definitions::{
 };
 use crate::states::ez_state::EzState;
 use crate::widgets::ez_object::EzObjects;
-use crate::{CallbackConfig, EzPropertiesMap};
+use crate::{CallbackConfig, CustomData, EzPropertiesMap};
 
 /// The Scheduler is a key component of the framework. It, along with the [StateTree], gives
 /// you control over the UI at runtime.
@@ -1397,6 +1397,23 @@ impl SchedulerFrontend {
         property
     }
 
+    pub fn new_data(
+        &mut self,
+        name: &str,
+        data: Box<dyn CustomData + Send>,
+    ) {
+        self.backend
+            .custom_data
+            .insert(name.to_string(), data);
+    }
+
+    pub fn get_data(&self, name: &str) -> &Box<dyn CustomData + Send> {
+        self.backend.custom_data.get(name).unwrap()
+    }
+    pub fn get_data_mut(&mut self, name: &str) -> &mut Box<dyn CustomData + Send> {
+        self.backend.custom_data.get_mut(name).unwrap()
+    }
+
     /// Get a reference to a custom property.
     ///
     /// # Parameters:
@@ -2500,6 +2517,9 @@ pub struct Scheduler {
     /// Every frame these property callbacks are registered. Allows user to add property callbacks
     /// without having access to the CallbackTree.
     pub new_property_callbacks: Vec<(String, GenericFunction)>,
+
+    /// Data that end-user can add to the scheduler to have available in callbaks.
+    pub custom_data: HashMap<String, Box<dyn CustomData + Send>>,
 
     /// The widget (ID or path) set here will be selected on the next frame, deselecting the current
     /// selection if any and calling the appropriate callbacks. The optional mouse_position will be

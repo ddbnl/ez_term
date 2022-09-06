@@ -1,6 +1,7 @@
 //! # Scheduler definitions
 //!
 //! This module implements definitions for the [Scheduler] struct.
+use std::any::Any;
 use std::collections::HashMap;
 
 use crossterm::event::{KeyCode, KeyModifiers};
@@ -9,6 +10,13 @@ use crate::property::ez_properties::EzProperties;
 use crate::property::ez_values::EzValues;
 use crate::run::definitions::{Coordinates, IsizeCoordinates, StateTree};
 use crate::scheduler::scheduler::SchedulerFrontend;
+
+/// Custom data that the end-user can add to the scheduler to access in callbacks
+pub trait CustomData {
+    fn as_any(&self) -> &dyn Any;
+    fn as_any_mut(&mut self) -> &mut dyn Any;
+
+}
 
 /// A <Name, EzProperties> HashMap.
 pub type EzPropertiesMap = HashMap<String, EzProperties>;
