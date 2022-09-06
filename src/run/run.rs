@@ -127,7 +127,7 @@ fn run_loop(
     trigger_update_funcs(&mut scheduler, &mut state_tree);
     scheduler.force_redraw();
 
-    let mut consumed= false;
+    let mut consumed;
     loop {
 
         // We check for and deal with a possible event
