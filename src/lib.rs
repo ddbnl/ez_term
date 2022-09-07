@@ -14,7 +14,7 @@ mod widgets;
 pub use crate::parser::parse_lang::load_ui;
 pub use crate::run::run::run;
 
-pub use crate::run::definitions::Coordinates;
+pub use crate::run::definitions::{Coordinates, IsizeCoordinates};
 pub use crossterm::event::{KeyCode, KeyModifiers};
 pub use crossterm::style::Color;
 

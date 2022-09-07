@@ -225,6 +225,7 @@ pub fn get_widget_by_position<'a>(
             if state.as_generic().get_path().ends_with("map") {}
         }
     }
+    results.push(root_widget as &dyn EzObject); // Every pos collides the root widget
     results
 }
 
