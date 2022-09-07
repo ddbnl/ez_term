@@ -593,6 +593,34 @@ pub trait EzObject {
         false
     }
 
+    /// Called on an object when it was mouse hovered but now the mouse has left the widget.
+    /// This default implementation only calls the
+    /// appropriate callback. Objects can overwrite this function but must remember to also call
+    /// the callback.
+    fn on_hover_exit(
+        &self,
+        state_tree: &mut StateTree,
+        callback_tree: &mut CallbackTree,
+        scheduler: &mut SchedulerFrontend,
+    ) -> bool {
+        self.on_hover_exit_callback(state_tree, callback_tree, scheduler)
+    }
+
+    /// Call the bound callback if there is any. This method can always be called safely. Used to
+    /// prevent a lot of duplicate ```if let Some(i)``` code.
+    fn on_hover_exit_callback(
+        &self,
+        state_tree: &mut StateTree,
+        callback_tree: &mut CallbackTree,
+        scheduler: &mut SchedulerFrontend,
+    ) -> bool {
+        if let Some(ref mut i) = callback_tree.get_mut(&self.get_path()).obj.on_hover_exit {
+            return i(
+                Context::new(self.get_path(), state_tree, scheduler));
+        };
+        false
+    }
+
     /// Called on an object when it is left mouse dragged. This default implementation only calls
     /// the appropriate callback. Objects can overwrite this function but must remember to also
     /// call the callback.

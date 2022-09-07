@@ -121,6 +121,7 @@ fn run_loop(
     let mut last_key_event = Instant::now();
     let mut cleanup_timer = 0; // Interval for cleaning up orphaned states and callbacks
     let mut selected_widget = String::new(); // Currently selected widget
+    let mut hovered_widget = String::new(); // Currently selected widget
     let mut dragging: Option<String> = None; // Widget currently being dragged if any
     let mut last_dragging_pos = IsizeCoordinates::new(0, 0);
     let mut global_keymap = KeyMap::new();
@@ -217,6 +218,7 @@ fn run_loop(
                     &mut dragging,
                     &mut last_dragging_pos,
                     &mut global_keymap,
+                    &mut hovered_widget,
                 );
             }
             // Try to let currently selected widget handle and consume the event

@@ -1,0 +1,6 @@
+- Layout:
+    - Label:
+        id: my_label
+        text: Not hovered
+        border: true
+        auto_scale: true, true

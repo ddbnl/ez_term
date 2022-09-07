@@ -1,6 +1,7 @@
 //! # Input
 //!
 //! This module has functions that handle user input through keyboard and mouse.
+use std::mem::replace;
 use std::process::exit;
 
 use crate::{Context, KeyMap};
@@ -62,6 +63,7 @@ pub fn handle_global_event(
     dragging: &mut Option<String>,
     last_dragging_pos: &mut IsizeCoordinates,
     global_keymap: &mut KeyMap,
+    hovered_widget: &mut String,
 ) -> bool {
     match event {
         Event::Key(key) => handle_key_event(
@@ -82,6 +84,7 @@ pub fn handle_global_event(
             dragging,
             last_dragging_pos,
             selected_widget,
+            hovered_widget,
         ),
         _ => false,
     }
@@ -157,6 +160,7 @@ fn handle_mouse_event(
     dragging: &mut Option<String>,
     last_dragging_pos: &mut IsizeCoordinates,
     selected_widget: &str,
+    hovered_widget: &mut String,
 ) -> bool {
     if let MouseEventKind::Moved = event.kind {
         return handle_mouse_hover_event(
@@ -166,6 +170,7 @@ fn handle_mouse_event(
             callback_tree,
             scheduler,
             selected_widget,
+            hovered_widget,
         );
     }
     if let MouseEventKind::Drag(_) = event.kind {
@@ -249,8 +254,19 @@ fn handle_mouse_hover_event(
     callback_tree: &mut CallbackTree,
     scheduler: &mut SchedulerFrontend,
     selected_widget: &str,
+    hovered_widget: &mut String,
 ) -> bool {
     let mouse_position = Coordinates::new(event.column as usize, event.row as usize);
+
+    if !hovered_widget.is_empty() {
+        let state = state_tree.get(hovered_widget).as_generic();
+        if !state.collides_effective(mouse_position) {
+            root_widget.get_child_by_path(hovered_widget)
+                .unwrap()
+                .as_ez_object()
+                .on_hover_exit(state_tree, callback_tree, scheduler);
+        }
+    }
 
     for widget in get_widget_by_position(mouse_position, root_widget, state_tree) {
         let abs = state_tree
@@ -261,7 +277,9 @@ fn handle_mouse_hover_event(
             mouse_position.x - abs.usize_x(),
             mouse_position.y - abs.usize_y(),
         );
+
         if widget.on_hover(state_tree, callback_tree, scheduler, relative_position) {
+            let _ = replace(hovered_widget,widget.get_path().clone());
             return true;
         }
     }

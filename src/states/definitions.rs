@@ -665,6 +665,34 @@ pub struct CallbackConfig {
     /// ```
     pub on_hover: Option<MouseCallbackFunction>,
 
+    /// This callback is activated when a widget was being hovered by the mouse, but the mouse
+    /// has now left the widget.
+    /// To set this callback with a closure:
+    /// ```
+    /// use ez_term::*;
+    /// let (root_widget, mut state_tree, mut scheduler) = load_ui();
+    ///
+    /// let my_callback = move |context: Context| {
+    ///
+    ///     true
+    /// };
+    /// let new_callback_config = CallbackConfig::from_on_hover_exit(Box::new(my_callback));
+    /// scheduler.update_callback_config("my_label", new_callback_config);
+    /// ```
+    /// To set this callback with a function:
+    /// ```
+    /// use ez_term::*;
+    /// let (root_widget, mut state_tree, mut scheduler) = load_ui();
+    ///
+    /// fn my_callback(context: Context) -> bool {
+    ///
+    ///     true
+    /// };
+    /// let new_callback_config = CallbackConfig::from_on_hover_exit(Box::new(my_callback));
+    /// scheduler.update_callback_config("my_label", new_callback_config);
+    /// ```
+    pub on_hover_exit: Option<GenericFunction>,
+
     /// This callback is activated when a widget is left mouse clicked and the click is not released.
     /// As long as the click is not released, the widget will receive a new event every time the mouse
     /// cursor changes position, as long as the mouse cursor stays on that widget. The callback receives
@@ -911,6 +939,15 @@ impl CallbackConfig {
         obj
     }
 
+    /// Create a [CallbackConfig] from an on_hover_exit callback.
+    /// the callback function signature should be: (Context)
+    /// See [Context] for more information on the context.
+    pub fn from_on_hover_exit(func: GenericFunction) -> Self {
+        let mut obj = CallbackConfig::default();
+        obj.on_hover_exit = Some(func);
+        obj
+    }
+
     /// Create a [CallbackConfig] from an on_drag callback.
     /// the callback function signature should be: (Context, Option`<Coordinates`>, Coordinates)
     /// See [Context] for more information on the context. The optional coordinates are the
@@ -973,6 +1010,10 @@ impl CallbackConfig {
         if let None = other.on_hover {
         } else {
             self.on_hover = other.on_hover
+        };
+        if let None = other.on_hover_exit {
+        } else {
+            self.on_hover_exit = other.on_hover_exit
         };
         if let None = other.on_drag {
         } else {
