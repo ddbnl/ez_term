@@ -183,7 +183,7 @@ fn handle_mouse_event(
             dragging,
             last_dragging_pos,
         );
-    } else if let MouseEventKind::Down(button) = event.kind {
+    } else if let MouseEventKind::Up(button) = event.kind {
         return handle_mouse_press_event(
             event,
             button,

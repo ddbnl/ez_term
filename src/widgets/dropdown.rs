@@ -438,7 +438,7 @@ impl EzObject for DroppedDownMenu {
             },
             Event::Mouse(event) => {
                 let mouse_position = Coordinates::new(event.column as usize, event.row as usize);
-                if let MouseEventKind::Down(button) = event.kind {
+                if let MouseEventKind::Up(button) = event.kind {
                     if button == MouseButton::Left {
                         self.handle_left_click(
                             state_tree,

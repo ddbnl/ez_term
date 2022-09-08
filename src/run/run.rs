@@ -161,6 +161,8 @@ fn run_loop(
                                     last_mouse_pos = pos;
                                     break;
                                 }
+                            } else {
+                                event = spam_event.unwrap();
                             }
                         } else {
                             event = spam_event.unwrap();
