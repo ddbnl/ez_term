@@ -142,8 +142,8 @@ pub fn parse_size_hint_property(value: &str) -> Result<Option<f64>, Error> {
                 return Err(Error::new(
                     ErrorKind::InvalidData,
                     format!(
-                        "This value is not allowed for pos_hint_x: {}. \
-                           Use left/right/center",
+                        "This value is not allowed for a size hint: {}. \
+                           Use None or a value between 0 and 1 (e.g. '0.5')",
                         value
                     ),
                 ))

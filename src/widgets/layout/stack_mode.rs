@@ -26,7 +26,7 @@ impl Layout {
             )
         }
 
-        let own_effective_size = state.get_effective_size();
+        let mut own_effective_size = state.get_effective_size();
         let own_infinite_size = state.get_infinite_size().clone();
         let own_colors = state.get_color_config().clone();
         let own_scrolling = state.get_scrolling_config().clone();
@@ -39,6 +39,18 @@ impl Layout {
             &own_scrolling,
             &own_effective_size,
         );
+        if own_auto_scaling.get_auto_scale_width() {
+            let state = state_tree.get_mut(&self.get_path()).as_layout_mut();
+            state.set_effective_width(content_list.iter().map(|x| x.len()).sum());
+            own_effective_size = state.get_effective_size();
+        }
+        if own_auto_scaling.get_auto_scale_height() {
+            let state = state_tree.get_mut(&self.get_path()).as_layout_mut();
+            state.set_effective_height(content_list.iter()
+                .map(|x| x.iter().map(|y| y.len()).max().unwrap_or(0))
+                .sum());
+            own_effective_size = state.get_effective_size();
+        }
         self.get_orientated_content(
             own_orientation,
             state_tree,
@@ -62,6 +74,8 @@ impl Layout {
         fill: bool,
         filler_symbol: String,
     ) -> PixelMap {
+
+        if self.children.is_empty() { return PixelMap::new() }
         match orientation {
             LayoutOrientation::LeftRightTopBottom => self.get_left_right_top_bottom_content(
                 state_tree,
