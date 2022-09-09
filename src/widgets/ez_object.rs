@@ -661,6 +661,47 @@ pub trait EzObject {
         false
     }
 
+    /// Called on an existing drag is stopped. This default implementation only calls
+    /// the appropriate callback. Objects can overwrite this function but must remember to also
+    /// call the callback.
+    fn on_drag_exit(
+        &self,
+        state_tree: &mut StateTree,
+        callback_tree: &mut CallbackTree,
+        scheduler: &mut SchedulerFrontend,
+        previous_pos: Option<IsizeCoordinates>,
+        mouse_pos: IsizeCoordinates,
+    ) -> bool {
+        self.on_drag_exit_callback(
+            state_tree,
+            callback_tree,
+            scheduler,
+            previous_pos,
+            mouse_pos,
+        )
+    }
+
+    /// Call the bound callback if there is any. This method can always be called safely. Used to
+    /// prevent a lot of duplicate ```if let Some(i)``` code.
+    fn on_drag_exit_callback(
+        &self,
+        state_tree: &mut StateTree,
+        callback_tree: &mut CallbackTree,
+        scheduler: &mut SchedulerFrontend,
+        previous_pos: Option<IsizeCoordinates>,
+        mouse_pos: IsizeCoordinates,
+    ) -> bool {
+        if let Some(ref mut i) = callback_tree
+            .get_mut(&self.get_path())
+            .obj.on_drag_exit {
+            return i(
+                Context::new(self.get_path(), state_tree, scheduler),
+                previous_pos,
+                mouse_pos,
+            );
+        };
+        false
+    }
     /// Called on an object when it is mouse scrolled up. This default implementation only calls the
     /// appropriate callback. Objects can overwrite this function but must remember to also call
     /// the callback.

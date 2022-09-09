@@ -1,10 +1,11 @@
 //! # Run:
 //! A module containing the functions to start and stop the main App run loop. The exposed "Run"
 //! function allows starting the app based on a root layout and scheduler.
+use std::mem::replace;
 use std::process::exit;
 use std::time::{Duration, Instant};
 
-use crossterm::event::MouseButton;
+use crossterm::event::{MouseButton, MouseEvent};
 use crossterm::{
     event::{poll, read, Event, MouseEventKind},
     Result,
@@ -150,7 +151,6 @@ fn run_loop(
             // events as possible before the next frame, then check if it moved position.
             if let Event::Mouse(mouse_event) = event {
                 if let MouseEventKind::Moved = mouse_event.kind {
-                    dragging = None;
                     let pos = (mouse_event.column, mouse_event.row);
                     while let Ok(true) = poll(Duration::from_millis(1)) {
                         let spam_event = read();
@@ -193,8 +193,16 @@ fn run_loop(
                         }
                     }
                 }
-            } else {
-                dragging = None;
+            }
+
+            if dragging.is_some() {
+                if let Event::Mouse(mouse_event) = event {
+                    if !(mouse_event.kind == MouseEventKind::Drag(MouseButton::Left)) {
+                        handle_drag_exit(&mut state_tree, &mut callback_tree, &mut scheduler,
+                                         &mouse_event, &root_widget,
+                                         Some(last_dragging_pos), &mut dragging)
+                    }
+                }
             }
 
             // Modals get top priority in consuming events
@@ -324,4 +332,29 @@ fn run_loop(
             cleanup_timer += 1;
         }
     }
+}
+
+
+fn handle_drag_exit(
+    state_tree: &mut StateTree,
+    callback_tree: &mut CallbackTree,
+    scheduler: &mut SchedulerFrontend,
+    mouse_event: &MouseEvent,
+    root_widget: &Layout,
+    last_dragging_pos: Option<IsizeCoordinates>,
+    dragging: &mut Option<String>) {
+
+    let widget_path = dragging.as_ref().unwrap();
+    let abs = state_tree
+        .get(&widget_path)
+        .as_generic()
+        .get_absolute_position();
+    let relative_position = IsizeCoordinates::new(
+        mouse_event.column as isize - abs.x,
+        mouse_event.row as isize - abs.y,
+    );
+    root_widget.get_child_by_path(&widget_path).unwrap()
+        .as_ez_object().on_drag_exit(
+        state_tree, callback_tree, scheduler,last_dragging_pos, relative_position);
+    let _ = replace(dragging, None);
 }

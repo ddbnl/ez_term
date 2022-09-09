@@ -729,6 +729,42 @@ pub struct CallbackConfig {
     /// ```
     pub on_drag: Option<MouseDragCallbackFunction>,
 
+
+    /// This callback is activated when an ongoing drag is stopped (i.e. when left mouse button is
+    /// releeased after a drag). The callback receives
+    /// two extra arguments: one is the previous drag position, and one is the current drag position.
+    /// The previous drag position argument is an Option<Coordinates>; on the very first drag event,
+    /// the previous drag position will be None. This is how you know the drag is new. Subsequently,
+    /// the previous drag position will contain Coordinates. Because you have both the current and the
+    /// previous position, you know which direction the drag was going when it ended.
+    /// To set this callback with a closure:
+    /// ```
+    /// use ez_term::*;
+    /// let (root_widget, mut state_tree, mut scheduler) = load_ui();
+    ///
+    /// let my_callback = move |context: Context, previous_mouse_pos: Option<Coordinates>,
+    ///                         mouse_pos: Coordinates| {
+    ///
+    ///     true
+    /// };
+    /// let new_callback_config = CallbackConfig::from_on_drag_exit(Box::new(my_callback));
+    /// scheduler.update_callback_config("my_label", new_callback_config);
+    /// ```
+    /// To set this callback with a function:
+    /// ```
+    /// use ez_term::*;
+    /// let (root_widget, mut state_tree, mut scheduler) = load_ui();
+    ///
+    /// fn my_callback(context: Context, previous_mouse_pos: Option<Coordinates>,
+    ///                mouse_pos: Coordinates) -> bool {
+    ///
+    ///     true
+    /// };
+    /// let new_callback_config = CallbackConfig::from_on_drag_exit(Box::new(my_callback));
+    /// scheduler.update_callback_config("my_label", new_callback_config);
+    /// ```
+    pub on_drag_exit: Option<MouseDragCallbackFunction>,
+    
     /// This callback is activated when a widget is scrolled up by the mouse. Keep in mind that
     /// when a widget is scrolled, any layouts underneath it are also scrolled. The root layout is the
     /// first to receive the scroll event, followed by sub layouts, and finally the widget. If any
@@ -960,6 +996,18 @@ impl CallbackConfig {
         obj
     }
 
+    /// Create a [CallbackConfig] from an on_drag_exit callback.
+    /// the callback function signature should be: (Context, Option`<Coordinates`>, Coordinates)
+    /// See [Context] for more information on the context. The optional coordinates are the
+    /// previous drag position; if they are None, the drag just started. The second pair of
+    /// coordinates are the current drag position. This allows your func to determine which way the
+    /// drag was heading when it stopped.
+    pub fn from_on_drag_exit(func: MouseDragCallbackFunction) -> Self {
+        let mut obj = CallbackConfig::default();
+        obj.on_drag_exit = Some(func);
+        obj
+    }
+
     /// Create a new CallbackConfig based on an existing [KeyMap]. Allows you to fully set a KeyMap
     /// and then derive a CallbackConfig from it.
     pub fn from_keymap(keymap: KeyMap) -> Self {
@@ -1018,6 +1066,10 @@ impl CallbackConfig {
         if let None = other.on_drag {
         } else {
             self.on_drag = other.on_drag
+        };
+        if let None = other.on_drag_exit {
+        } else {
+            self.on_drag_exit = other.on_drag_exit
         };
         self.keymap.keymap.extend(other.keymap.keymap);
     }
