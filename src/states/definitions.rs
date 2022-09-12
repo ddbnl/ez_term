@@ -1304,7 +1304,11 @@ impl ScrollingConfig {
     }
 
     pub fn get_max_scroll_start_x(&self, effective_widget_width: usize) -> usize {
-        self.get_original_width() - effective_widget_width
+        if self.get_original_width() < effective_widget_width {
+             0
+        } else {
+            self.get_original_width() - effective_widget_width
+        }
     }
 
     pub fn get_absolute_scroll_start_x(&self, effective_widget_width: usize) -> usize {
@@ -1313,7 +1317,11 @@ impl ScrollingConfig {
     }
 
     pub fn get_max_scroll_start_y(&self, effective_widget_height: usize) -> usize {
-        self.get_original_height() - effective_widget_height
+        if self.get_original_height() < effective_widget_height {
+            0
+        } else {
+            self.get_original_height() - effective_widget_height
+        }
     }
 
     pub fn get_absolute_scroll_start_y(&self, effective_widget_height: usize) -> usize {
