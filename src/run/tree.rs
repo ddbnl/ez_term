@@ -77,8 +77,13 @@ impl<T> Tree<T> {
     /// Add a node to the state tree. There's generally no reason to use this as an
     /// end-user.
     pub fn add_node(&mut self, path: String, node: T) {
-        let steps: Vec<&str> = path.split('/').collect();
-        let mut steps = steps[1..].to_vec();
+        let mut steps = if !path.contains('/') {
+            vec!(path.as_str())
+        } else {
+            let steps: Vec<&str> = path.split('/').collect();
+            let mut steps = steps[1..].to_vec();
+            steps
+        };
         if steps[0] == self.id {
             steps.remove(0);
         }

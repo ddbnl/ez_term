@@ -37,6 +37,7 @@ impl Layout {
                         state.set_size_hint_x(Some(1.0 / (self.children.len() as f64)));
                     }
                 } else {
+                    if own_rows == 0 && own_cols == 0 { return }
                     let divide_by = if own_cols > 0 {
                         own_cols
                     } else {
@@ -66,6 +67,7 @@ impl Layout {
                         state.set_size_hint_y(Some(1.0 / (self.children.len() as f64)));
                     }
                 } else {
+                    if own_rows == 0 && own_cols == 0 { return }
                     let divide_by = if own_rows > 0 {
                         own_rows
                     } else {
@@ -220,16 +222,14 @@ impl Layout {
         let generic_child = child.as_ez_object_mut();
         let id = generic_child.get_id();
         let parent_path = self.path.clone();
-        if self.child_lookup.contains_key(&id) {
-            panic!(
-                "A layout may not contain two children with identical IDs: \"{}\"",
-                generic_child.get_id()
-            );
-        }
 
-        self.child_lookup
-            .insert(generic_child.get_id(), self.children.len());
-        self.children.push(child.clone());
+        if let Some(i) =  self.child_lookup.get(&id) {
+            self.children[*i] = child.clone();
+        } else {
+            self.child_lookup
+                .insert(generic_child.get_id(), self.children.len());
+            self.children.push(child.clone());
+        }
 
         if self.state.get_mode() == &LayoutMode::Tab {
             if let EzObjects::Layout(_) = child.clone() {
