@@ -26,12 +26,8 @@ impl Layout {
                 self.id
             )
         }
-        if own_table_config.get_rows() == 0 && own_table_config.get_cols() == 0 {
-            panic!(
-                "Error in layout: {}. When in table mode, rows or columns (or both) should be \
-            constrained. Set the \"rows\" or \"cols\" property to a value above 0.",
-                self.id
-            );
+        if own_table_config.rows == 0 && own_table_config.cols == 0 {
+            return PixelMap::new()
         }
 
         let own_effective_size = state.get_effective_size();

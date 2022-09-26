@@ -197,7 +197,11 @@ pub fn update_callback_configs(
 ) {
     while !scheduler.backend.new_callback_configs.is_empty() {
         let (path, callback_config) = scheduler.backend.new_callback_configs.remove(0);
-        callback_tree.add_node(path, callback_config);
+        if let Some(i) = callback_tree.try_get_mut(&path) {
+            i.obj = callback_config;
+        } else {
+            callback_tree.add_node(path, callback_config);
+        }
     }
     while !scheduler.backend.updated_callback_configs.is_empty() {
         let (path_or_id, callback_config) = scheduler.backend.updated_callback_configs.remove(0);

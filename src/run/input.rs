@@ -265,6 +265,7 @@ fn handle_mouse_hover_event(
                 .unwrap()
                 .as_ez_object()
                 .on_hover_exit(state_tree, callback_tree, scheduler);
+            hovered_widget.clear();
         }
     }
 
