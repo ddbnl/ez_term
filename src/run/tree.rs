@@ -47,6 +47,14 @@ impl<T> Tree<T> {
         }
     }
 
+    pub fn get_children(&self) -> Vec<&Tree<T>> {
+        self.objects.values().collect()
+    }
+
+    pub fn get_children_mut(&mut self) -> Vec<&mut Tree<T>> {
+        self.objects.values_mut().collect()
+    }
+
     /// Append another tree to this tree.
     pub fn extend(&mut self, path: String, node: Tree<T>) {
         let steps: Vec<&str> = path.split('/').collect();

@@ -125,7 +125,7 @@ impl EzObject for ProgressBar {
             let symbol = if value_pos != 0 && x <= value_pos {
                 "█"
             } else {
-                "░"
+                "▓"
             };
             contents.push(vec![Pixel::new(
                 symbol.to_string(),
