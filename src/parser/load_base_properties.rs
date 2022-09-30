@@ -26,7 +26,9 @@ pub fn resolve_property(value: &str, path: String) -> Option<String> {
                 .replace('.', "/"),
         )
     } else if value.starts_with("root.") {
-        Some(value.replace(".root", "/root").replace('.', "/"))
+        let mut new_val = value.strip_prefix("root.").unwrap();
+        let new_val = format!("/root/{}", new_val);
+        Some(new_val.replace('.', "/"))
     } else if value.starts_with("parent.") {
         Some(resolve_parent_path(path, value))
     } else if value.starts_with("properties.") {

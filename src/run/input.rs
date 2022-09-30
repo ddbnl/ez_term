@@ -259,12 +259,16 @@ fn handle_mouse_hover_event(
     let mouse_position = Coordinates::new(event.column as usize, event.row as usize);
 
     if !hovered_widget.is_empty() {
-        let state = state_tree.get(hovered_widget).as_generic();
-        if !state.collides_effective(mouse_position) {
-            root_widget.get_child_by_path(hovered_widget)
-                .unwrap()
-                .as_ez_object()
-                .on_hover_exit(state_tree, callback_tree, scheduler);
+        let maybe_state = state_tree.try_get(hovered_widget);
+        if let Some(i) = maybe_state {
+            if !i.as_generic().collides_effective(mouse_position) {
+                root_widget.get_child_by_path(hovered_widget)
+                    .unwrap()
+                    .as_ez_object()
+                    .on_hover_exit(state_tree, callback_tree, scheduler);
+                hovered_widget.clear();
+            }
+        } else {
             hovered_widget.clear();
         }
     }
@@ -285,7 +289,12 @@ fn handle_mouse_hover_event(
         }
     }
     if !selected_widget.is_empty() && !scheduler.backend.deselect {
-        if let EzState::TextInput(_) = state_tree.get(selected_widget).obj {
+        let maybe_state = state_tree.try_get(selected_widget);
+        if let Some(i) = maybe_state {
+            if let EzState::TextInput(_) = i.obj {
+            } else {
+                scheduler.deselect_widget();
+            }
         } else {
             scheduler.deselect_widget();
         }
