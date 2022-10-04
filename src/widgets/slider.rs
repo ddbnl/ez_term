@@ -15,6 +15,7 @@ use crate::states::slider_state::SliderState;
 use crate::widgets::ez_object::{EzObject, EzObjects};
 use crate::widgets::helper_functions::add_padding;
 use crate::Context;
+use crate::scheduler::definitions::CustomDataMap;
 
 #[derive(Clone, Debug)]
 pub struct Slider {
@@ -194,13 +195,14 @@ impl EzObject for Slider {
         state_tree: &mut StateTree,
         callback_tree: &mut CallbackTree,
         scheduler: &mut SchedulerFrontend,
+        custom_data: &mut CustomDataMap,
     ) -> bool {
         if let Event::Key(key) = event {
             if key.code == KeyCode::Left {
-                self.handle_left(state_tree, callback_tree, scheduler);
+                self.handle_left(state_tree, callback_tree, scheduler, custom_data);
                 return true;
             } else if key.code == KeyCode::Right {
-                self.handle_right(state_tree, callback_tree, scheduler);
+                self.handle_right(state_tree, callback_tree, scheduler, custom_data);
                 return true;
             } else if callback_tree
                 .get(&self.get_path())
@@ -214,7 +216,8 @@ impl EzObject for Slider {
                     .keymap
                     .get_mut(key.code, key.modifiers)
                     .unwrap();
-                let context = Context::new(self.get_path(), state_tree, scheduler);
+                let context = Context::new(self.get_path(),
+                                           state_tree, scheduler, custom_data);
                 func(context, key.code, key.modifiers);
                 return true;
             }
@@ -228,8 +231,9 @@ impl EzObject for Slider {
         callback_tree: &mut CallbackTree,
         scheduler: &mut SchedulerFrontend,
         mouse_pos: Coordinates,
+        custom_data: &mut CustomDataMap,
     ) -> bool {
-        let consumed = self.on_press_callback(state_tree, callback_tree, scheduler);
+        let consumed = self.on_press_callback(state_tree, callback_tree, scheduler, custom_data);
         if consumed {
             return consumed;
         }
@@ -240,7 +244,7 @@ impl EzObject for Slider {
         );
         state.set_value(value);
         state.update(scheduler);
-        self.on_value_change_callback(state_tree, callback_tree, scheduler);
+        self.on_value_change_callback(state_tree, callback_tree, scheduler, custom_data);
         true
     }
 
@@ -250,8 +254,9 @@ impl EzObject for Slider {
         callback_tree: &mut CallbackTree,
         scheduler: &mut SchedulerFrontend,
         mouse_pos: Coordinates,
+        custom_data: &mut CustomDataMap,
     ) -> bool {
-        let consumed = self.on_hover_callback(state_tree, callback_tree, scheduler, mouse_pos);
+        let consumed = self.on_hover_callback(state_tree, callback_tree, scheduler, mouse_pos, custom_data);
         if consumed {
             return consumed;
         }
@@ -266,6 +271,7 @@ impl EzObject for Slider {
         scheduler: &mut SchedulerFrontend,
         previous_pos: Option<IsizeCoordinates>,
         mouse_pos: IsizeCoordinates,
+        custom_data: &mut CustomDataMap,
     ) -> bool {
         let consumed = self.on_drag_callback(
             state_tree,
@@ -273,6 +279,7 @@ impl EzObject for Slider {
             scheduler,
             previous_pos,
             mouse_pos,
+            custom_data
         );
         if consumed {
             return consumed;
@@ -281,13 +288,14 @@ impl EzObject for Slider {
         let value = self.value_from_mouse_pos(state, mouse_pos);
         state.set_value(value);
         state.update(scheduler);
-        self.on_value_change_callback(state_tree, callback_tree, scheduler);
+        self.on_value_change_callback(state_tree, callback_tree, scheduler, custom_data);
         self.on_drag_callback(
             state_tree,
             callback_tree,
             scheduler,
             previous_pos,
             mouse_pos,
+            custom_data
         );
         true
     }
@@ -344,6 +352,7 @@ impl Slider {
         state_tree: &mut StateTree,
         callback_tree: &mut CallbackTree,
         scheduler: &mut SchedulerFrontend,
+        custom_data: &mut CustomDataMap,
     ) {
         let state = state_tree.get_mut(&self.path).as_slider_mut();
         if state.get_value() == state.get_min() {
@@ -351,13 +360,14 @@ impl Slider {
         }
         state.set_value(state.get_value() - state.get_step());
         state.update(scheduler);
-        self.on_value_change_callback(state_tree, callback_tree, scheduler);
+        self.on_value_change_callback(state_tree, callback_tree, scheduler, custom_data);
     }
     fn handle_right(
         &self,
         state_tree: &mut StateTree,
         callback_tree: &mut CallbackTree,
         scheduler: &mut SchedulerFrontend,
+        custom_data: &mut CustomDataMap,
     ) {
         let state = state_tree.get_mut(&self.path).as_slider_mut();
         if state.get_value() == state.get_max() {
@@ -365,6 +375,6 @@ impl Slider {
         }
         state.set_value(state.get_value() + state.get_step());
         state.update(scheduler);
-        self.on_value_change_callback(state_tree, callback_tree, scheduler);
+        self.on_value_change_callback(state_tree, callback_tree, scheduler, custom_data);
     }
 }

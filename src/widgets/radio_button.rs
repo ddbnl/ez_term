@@ -8,6 +8,7 @@ use std::io::{Error, ErrorKind};
 use crate::parser::load_base_properties;
 use crate::parser::load_common_properties::load_common_property;
 use crate::run::definitions::{CallbackTree, Coordinates, Pixel, PixelMap, StateTree};
+use crate::scheduler::definitions::CustomDataMap;
 use crate::scheduler::scheduler::SchedulerFrontend;
 use crate::states::ez_state::{EzState, GenericState};
 use crate::states::radio_button_state::RadioButtonState;
@@ -186,12 +187,13 @@ impl EzObject for RadioButton {
         state_tree: &mut StateTree,
         callback_tree: &mut CallbackTree,
         scheduler: &mut SchedulerFrontend,
+        custom_data: &mut CustomDataMap,
     ) -> bool {
-        let consumed = self.on_press_callback(state_tree, callback_tree, scheduler);
+        let consumed = self.on_press_callback(state_tree, callback_tree, scheduler, custom_data);
         if consumed {
             return consumed;
         }
-        self.handle_press(state_tree, callback_tree, scheduler);
+        self.handle_press(state_tree, callback_tree, scheduler, custom_data);
         true
     }
 
@@ -201,8 +203,10 @@ impl EzObject for RadioButton {
         callback_tree: &mut CallbackTree,
         scheduler: &mut SchedulerFrontend,
         mouse_pos: Coordinates,
+        custom_data: &mut CustomDataMap,
     ) -> bool {
-        let consumed = self.on_hover_callback(state_tree, callback_tree, scheduler, mouse_pos);
+        let consumed = self.on_hover_callback(state_tree, callback_tree, scheduler, mouse_pos,
+                                              custom_data);
         if consumed {
             return consumed;
         }
@@ -239,6 +243,7 @@ impl RadioButton {
         state_tree: &mut StateTree,
         callback_tree: &mut CallbackTree,
         scheduler: &mut SchedulerFrontend,
+        custom_data: &mut CustomDataMap,
     ) {
         // Find all other radio buttons in same group and make them inactive (mutual exclusivity)
         let group_name = state_tree.get(&self.path).as_radio_button().get_group();
@@ -254,7 +259,7 @@ impl RadioButton {
         if !state.get_active() {
             state.set_active(true);
             state.update(scheduler);
-            self.on_value_change_callback(state_tree, callback_tree, scheduler);
+            self.on_value_change_callback(state_tree, callback_tree, scheduler, custom_data);
         } else {
             return; // Nothing to do
         }

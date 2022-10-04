@@ -20,6 +20,7 @@ use crate::widgets::radio_button::RadioButton;
 use crate::widgets::slider::Slider;
 use crate::widgets::text_input::TextInput;
 use crate::Context;
+use crate::scheduler::definitions::CustomDataMap;
 
 /// Enum with variants representing Layouts and each widget type. A layout is not considered a
 /// widget, so this enum gathers widgets and layouts in one place, as they do have methods in
@@ -405,6 +406,7 @@ pub trait EzObject {
         state_tree: &mut StateTree,
         callback_tree: &mut CallbackTree,
         scheduler: &mut SchedulerFrontend,
+        custom_data: &mut CustomDataMap,
     ) -> bool {
         if let Event::Key(key) = event {
             if callback_tree
@@ -419,7 +421,8 @@ pub trait EzObject {
                     .keymap
                     .get_mut(key.code, key.modifiers)
                     .unwrap();
-                let context = Context::new(self.get_path(), state_tree, scheduler);
+                let context = Context::new(self.get_path(), state_tree, scheduler,
+                                           custom_data);
                 func(context, key.code, key.modifiers);
                 return true;
             }
@@ -435,10 +438,11 @@ pub trait EzObject {
         state_tree: &mut StateTree,
         callback_tree: &mut CallbackTree,
         scheduler: &mut SchedulerFrontend,
+        custom_data: &mut CustomDataMap,
     ) -> bool {
-        let consumed = self.on_keyboard_enter_callback(state_tree, callback_tree, scheduler);
+        let consumed = self.on_keyboard_enter_callback(state_tree, callback_tree, scheduler, custom_data);
         if !consumed {
-            return self.on_press(state_tree, callback_tree, scheduler);
+            return self.on_press(state_tree, callback_tree, scheduler, custom_data);
         }
         false
     }
@@ -450,13 +454,14 @@ pub trait EzObject {
         state_tree: &mut StateTree,
         callback_tree: &mut CallbackTree,
         scheduler: &mut SchedulerFrontend,
+        custom_data: &mut CustomDataMap,
     ) -> bool {
         if let Some(ref mut i) = callback_tree
             .get_mut(&self.get_path())
             .obj
             .on_keyboard_enter
         {
-            return i(Context::new(self.get_path(), state_tree, scheduler));
+            return i(Context::new(self.get_path(), state_tree, scheduler, custom_data));
         };
         false
     }
@@ -470,11 +475,12 @@ pub trait EzObject {
         callback_tree: &mut CallbackTree,
         scheduler: &mut SchedulerFrontend,
         mouse_pos: Coordinates,
+        custom_data: &mut CustomDataMap,
     ) -> bool {
         let consumed =
-            self.on_left_mouse_click_callback(state_tree, callback_tree, scheduler, mouse_pos);
+            self.on_left_mouse_click_callback(state_tree, callback_tree, scheduler, mouse_pos, custom_data);
         if !consumed {
-            return self.on_press(state_tree, callback_tree, scheduler);
+            return self.on_press(state_tree, callback_tree, scheduler, custom_data);
         }
         false
     }
@@ -487,6 +493,7 @@ pub trait EzObject {
         callback_tree: &mut CallbackTree,
         scheduler: &mut SchedulerFrontend,
         mouse_pos: Coordinates,
+        custom_data: &mut CustomDataMap,
     ) -> bool {
         if let Some(ref mut i) = callback_tree
             .get_mut(&self.get_path())
@@ -494,7 +501,7 @@ pub trait EzObject {
             .on_left_mouse_click
         {
             return i(
-                Context::new(self.get_path(), state_tree, scheduler),
+                Context::new(self.get_path(), state_tree, scheduler, custom_data),
                 mouse_pos,
             );
         };
@@ -509,8 +516,9 @@ pub trait EzObject {
         state_tree: &mut StateTree,
         callback_tree: &mut CallbackTree,
         scheduler: &mut SchedulerFrontend,
+        custom_data: &mut CustomDataMap,
     ) -> bool {
-        self.on_press_callback(state_tree, callback_tree, scheduler)
+        self.on_press_callback(state_tree, callback_tree, scheduler, custom_data)
     }
 
     /// Call the bound callback if there is any. This method can always be called safely. Used to
@@ -520,9 +528,10 @@ pub trait EzObject {
         state_tree: &mut StateTree,
         callback_tree: &mut CallbackTree,
         scheduler: &mut SchedulerFrontend,
+        custom_data: &mut CustomDataMap,
     ) -> bool {
         if let Some(ref mut i) = callback_tree.get_mut(&self.get_path()).obj.on_press {
-            return i(Context::new(self.get_path(), state_tree, scheduler));
+            return i(Context::new(self.get_path(), state_tree, scheduler, custom_data));
         };
         false
     }
@@ -536,8 +545,10 @@ pub trait EzObject {
         callback_tree: &mut CallbackTree,
         scheduler: &mut SchedulerFrontend,
         mouse_pos: Coordinates,
+        custom_data: &mut CustomDataMap,
     ) -> bool {
-        self.on_right_mouse_click_callback(state_tree, callback_tree, scheduler, mouse_pos)
+        self.on_right_mouse_click_callback(state_tree, callback_tree, scheduler, mouse_pos,
+                                           custom_data)
     }
 
     /// Call the bound callback if there is any. This method can always be called safely. Used to
@@ -548,6 +559,7 @@ pub trait EzObject {
         callback_tree: &mut CallbackTree,
         scheduler: &mut SchedulerFrontend,
         mouse_pos: Coordinates,
+        custom_data: &mut CustomDataMap,
     ) -> bool {
         if let Some(ref mut i) = callback_tree
             .get_mut(&self.get_path())
@@ -555,7 +567,7 @@ pub trait EzObject {
             .on_right_mouse_click
         {
             return i(
-                Context::new(self.get_path(), state_tree, scheduler),
+                Context::new(self.get_path(), state_tree, scheduler, custom_data),
                 mouse_pos,
             );
         };
@@ -571,8 +583,9 @@ pub trait EzObject {
         callback_tree: &mut CallbackTree,
         scheduler: &mut SchedulerFrontend,
         mouse_pos: Coordinates,
+        custom_data: &mut CustomDataMap,
     ) -> bool {
-        self.on_hover_callback(state_tree, callback_tree, scheduler, mouse_pos)
+        self.on_hover_callback(state_tree, callback_tree, scheduler, mouse_pos, custom_data)
     }
 
     /// Call the bound callback if there is any. This method can always be called safely. Used to
@@ -583,10 +596,11 @@ pub trait EzObject {
         callback_tree: &mut CallbackTree,
         scheduler: &mut SchedulerFrontend,
         mouse_pos: Coordinates,
+        custom_data: &mut CustomDataMap,
     ) -> bool {
         if let Some(ref mut i) = callback_tree.get_mut(&self.get_path()).obj.on_hover {
             return i(
-                Context::new(self.get_path(), state_tree, scheduler),
+                Context::new(self.get_path(), state_tree, scheduler, custom_data),
                 mouse_pos,
             );
         };
@@ -602,8 +616,9 @@ pub trait EzObject {
         state_tree: &mut StateTree,
         callback_tree: &mut CallbackTree,
         scheduler: &mut SchedulerFrontend,
+        custom_data: &mut CustomDataMap,
     ) -> bool {
-        self.on_hover_exit_callback(state_tree, callback_tree, scheduler)
+        self.on_hover_exit_callback(state_tree, callback_tree, scheduler, custom_data)
     }
 
     /// Call the bound callback if there is any. This method can always be called safely. Used to
@@ -613,10 +628,11 @@ pub trait EzObject {
         state_tree: &mut StateTree,
         callback_tree: &mut CallbackTree,
         scheduler: &mut SchedulerFrontend,
+        custom_data: &mut CustomDataMap,
     ) -> bool {
         if let Some(ref mut i) = callback_tree.get_mut(&self.get_path()).obj.on_hover_exit {
             return i(
-                Context::new(self.get_path(), state_tree, scheduler));
+                Context::new(self.get_path(), state_tree, scheduler, custom_data));
         };
         false
     }
@@ -631,6 +647,7 @@ pub trait EzObject {
         scheduler: &mut SchedulerFrontend,
         previous_pos: Option<IsizeCoordinates>,
         mouse_pos: IsizeCoordinates,
+        custom_data: &mut CustomDataMap,
     ) -> bool {
         self.on_drag_callback(
             state_tree,
@@ -638,6 +655,7 @@ pub trait EzObject {
             scheduler,
             previous_pos,
             mouse_pos,
+            custom_data
         )
     }
 
@@ -650,10 +668,11 @@ pub trait EzObject {
         scheduler: &mut SchedulerFrontend,
         previous_pos: Option<IsizeCoordinates>,
         mouse_pos: IsizeCoordinates,
+        custom_data: &mut CustomDataMap,
     ) -> bool {
         if let Some(ref mut i) = callback_tree.get_mut(&self.get_path()).obj.on_drag {
             return i(
-                Context::new(self.get_path(), state_tree, scheduler),
+                Context::new(self.get_path(), state_tree, scheduler, custom_data),
                 previous_pos,
                 mouse_pos,
             );
@@ -671,6 +690,7 @@ pub trait EzObject {
         scheduler: &mut SchedulerFrontend,
         previous_pos: Option<IsizeCoordinates>,
         mouse_pos: IsizeCoordinates,
+        custom_data: &mut CustomDataMap,
     ) -> bool {
         self.on_drag_exit_callback(
             state_tree,
@@ -678,6 +698,7 @@ pub trait EzObject {
             scheduler,
             previous_pos,
             mouse_pos,
+            custom_data,
         )
     }
 
@@ -690,12 +711,13 @@ pub trait EzObject {
         scheduler: &mut SchedulerFrontend,
         previous_pos: Option<IsizeCoordinates>,
         mouse_pos: IsizeCoordinates,
+        custom_data: &mut CustomDataMap,
     ) -> bool {
         if let Some(ref mut i) = callback_tree
             .get_mut(&self.get_path())
             .obj.on_drag_exit {
             return i(
-                Context::new(self.get_path(), state_tree, scheduler),
+                Context::new(self.get_path(), state_tree, scheduler, custom_data),
                 previous_pos,
                 mouse_pos,
             );
@@ -710,8 +732,9 @@ pub trait EzObject {
         state_tree: &mut StateTree,
         callback_tree: &mut CallbackTree,
         scheduler: &mut SchedulerFrontend,
+        custom_data: &mut CustomDataMap,
     ) -> bool {
-        self.on_scroll_up_callback(state_tree, callback_tree, scheduler)
+        self.on_scroll_up_callback(state_tree, callback_tree, scheduler, custom_data)
     }
 
     /// Call the bound callback if there is any. This method can always be called safely. Used to
@@ -721,9 +744,10 @@ pub trait EzObject {
         state_tree: &mut StateTree,
         callback_tree: &mut CallbackTree,
         scheduler: &mut SchedulerFrontend,
+        custom_data: &mut CustomDataMap,
     ) -> bool {
         if let Some(ref mut i) = callback_tree.get_mut(&self.get_path()).obj.on_scroll_up {
-            return i(Context::new(self.get_path(), state_tree, scheduler));
+            return i(Context::new(self.get_path(), state_tree, scheduler, custom_data));
         };
         false
     }
@@ -736,8 +760,9 @@ pub trait EzObject {
         state_tree: &mut StateTree,
         callback_tree: &mut CallbackTree,
         scheduler: &mut SchedulerFrontend,
+        custom_data: &mut CustomDataMap,
     ) -> bool {
-        self.on_scroll_down_callback(state_tree, callback_tree, scheduler)
+        self.on_scroll_down_callback(state_tree, callback_tree, scheduler, custom_data)
     }
 
     /// Call the bound callback if there is any. This method can always be called safely. Used to
@@ -747,9 +772,10 @@ pub trait EzObject {
         state_tree: &mut StateTree,
         callback_tree: &mut CallbackTree,
         scheduler: &mut SchedulerFrontend,
+        custom_data: &mut CustomDataMap,
     ) -> bool {
         if let Some(ref mut i) = callback_tree.get_mut(&self.get_path()).obj.on_scroll_down {
-            return i(Context::new(self.get_path(), state_tree, scheduler));
+            return i(Context::new(self.get_path(), state_tree, scheduler, custom_data));
         };
         false
     }
@@ -762,8 +788,9 @@ pub trait EzObject {
         state_tree: &mut StateTree,
         callback_tree: &mut CallbackTree,
         scheduler: &mut SchedulerFrontend,
+        custom_data: &mut CustomDataMap,
     ) -> bool {
-        self.on_value_change_callback(state_tree, callback_tree, scheduler)
+        self.on_value_change_callback(state_tree, callback_tree, scheduler, custom_data)
     }
 
     /// Call the bound callback if there is any. This method can always be called safely. Used to
@@ -773,9 +800,10 @@ pub trait EzObject {
         state_tree: &mut StateTree,
         callback_tree: &mut CallbackTree,
         scheduler: &mut SchedulerFrontend,
+        custom_data: &mut CustomDataMap,
     ) -> bool {
         if let Some(ref mut i) = callback_tree.get_mut(&self.get_path()).obj.on_value_change {
-            return i(Context::new(self.get_path(), state_tree, scheduler));
+            return i(Context::new(self.get_path(), state_tree, scheduler, custom_data));
         };
         false
     }
@@ -789,8 +817,9 @@ pub trait EzObject {
         callback_tree: &mut CallbackTree,
         scheduler: &mut SchedulerFrontend,
         mouse_pos: Option<Coordinates>,
+        custom_data: &mut CustomDataMap,
     ) -> bool {
-        self.on_select_callback(state_tree, callback_tree, scheduler, mouse_pos)
+        self.on_select_callback(state_tree, callback_tree, scheduler, mouse_pos, custom_data)
     }
 
     /// Call the bound callback if there is any. This method can always be called safely. Used to
@@ -801,10 +830,11 @@ pub trait EzObject {
         callback_tree: &mut CallbackTree,
         scheduler: &mut SchedulerFrontend,
         mouse_pos: Option<Coordinates>,
+        custom_data: &mut CustomDataMap,
     ) -> bool {
         if let Some(ref mut i) = callback_tree.get_mut(&self.get_path()).obj.on_select {
             return i(
-                Context::new(self.get_path(), state_tree, scheduler),
+                Context::new(self.get_path(), state_tree, scheduler, custom_data),
                 mouse_pos,
             );
         };
@@ -819,8 +849,9 @@ pub trait EzObject {
         state_tree: &mut StateTree,
         callback_tree: &mut CallbackTree,
         scheduler: &mut SchedulerFrontend,
+        custom_data: &mut CustomDataMap,
     ) -> bool {
-        self.on_deselect_callback(state_tree, callback_tree, scheduler)
+        self.on_deselect_callback(state_tree, callback_tree, scheduler, custom_data)
     }
 
     /// Call the bound callback if there is any. This method can always be called safely. Used to
@@ -830,9 +861,10 @@ pub trait EzObject {
         state_tree: &mut StateTree,
         callback_tree: &mut CallbackTree,
         scheduler: &mut SchedulerFrontend,
+        custom_data: &mut CustomDataMap,
     ) -> bool {
         if let Some(ref mut i) = callback_tree.get_mut(&self.get_path()).obj.on_deselect {
-            return i(Context::new(self.get_path(), state_tree, scheduler));
+            return i(Context::new(self.get_path(), state_tree, scheduler, custom_data));
         };
         false
     }

@@ -445,7 +445,7 @@ impl PosHint {
 /// object; we will set an on_press callback:
 /// ```
 /// use ez_term::*;
-/// let (root_widget, mut state_tree, mut scheduler) = load_ui();
+/// let (root_widget, mut state_tree, mut scheduler, mut custom_data) = load_ui();
 ///
 /// let my_callback = move |context: Context| {
 ///
@@ -466,7 +466,7 @@ pub struct CallbackConfig {
     /// it will contains coordinates.To set this callback with a closure:
     /// ```
     /// use ez_term::*;
-    /// let (root_widget, mut state_tree, mut scheduler) = load_ui();
+    /// let (root_widget, mut state_tree, mut scheduler, mut custom_data) = load_ui();
     ///
     /// let my_callback = move |context: Context, mouse_pos: Option<Coordinates>| {
     ///
@@ -478,7 +478,7 @@ pub struct CallbackConfig {
     /// To set this callback with a function:
     /// ```
     /// use ez_term::*;
-    /// let (root_widget, mut state_tree, mut scheduler) = load_ui();
+    /// let (root_widget, mut state_tree, mut scheduler, mut custom_data) = load_ui();
     ///
     /// fn my_callback(context: Context, mouse_pos: Option<Coordinates>) -> bool {
     ///
@@ -494,7 +494,7 @@ pub struct CallbackConfig {
     /// on from the selected widget. To set this callback with a closure:
     /// ```
     /// use ez_term::*;
-    /// let (root_widget, mut state_tree, mut scheduler) = load_ui();
+    /// let (root_widget, mut state_tree, mut scheduler, mut custom_data) = load_ui();
     ///
     /// let my_callback = move |context: Context| {
     ///
@@ -506,7 +506,7 @@ pub struct CallbackConfig {
     /// To set this callback with a function:
     /// ```
     /// use ez_term::*;
-    /// let (root_widget, mut state_tree, mut scheduler) = load_ui();
+    /// let (root_widget, mut state_tree, mut scheduler, mut custom_data) = load_ui();
     ///
     /// fn my_callback(context: Context) -> bool {
     ///
@@ -524,7 +524,7 @@ pub struct CallbackConfig {
     /// button. To set this callback with a closure:
     /// ```
     /// use ez_term::*;
-    /// let (root_widget, mut state_tree, mut scheduler) = load_ui();
+    /// let (root_widget, mut state_tree, mut scheduler, mut custom_data) = load_ui();
     ///
     /// let my_callback = move |context: Context| {
     ///
@@ -536,7 +536,7 @@ pub struct CallbackConfig {
     /// To set this callback with a function:
     /// ```
     /// use ez_term::*;
-    /// let (root_widget, mut state_tree, mut scheduler) = load_ui();
+    /// let (root_widget, mut state_tree, mut scheduler, mut custom_data) = load_ui();
     ///
     /// fn my_callback(context: Context) -> bool {
     ///
@@ -552,7 +552,7 @@ pub struct CallbackConfig {
     /// To set this callback with a closure:
     /// ```
     /// use ez_term::*;
-    /// let (root_widget, mut state_tree, mut scheduler) = load_ui();
+    /// let (root_widget, mut state_tree, mut scheduler, mut custom_data) = load_ui();
     ///
     /// let my_callback = move |context: Context| {
     ///
@@ -564,7 +564,7 @@ pub struct CallbackConfig {
     /// To set this callback with a function:
     /// ```
     /// use ez_term::*;
-    /// let (root_widget, mut state_tree, mut scheduler) = load_ui();
+    /// let (root_widget, mut state_tree, mut scheduler, mut custom_data) = load_ui();
     ///
     /// fn my_callback(context: Context) -> bool {
     ///
@@ -582,7 +582,7 @@ pub struct CallbackConfig {
     /// layouts or widgets. To set this callback with a closure:
     /// ```
     /// use ez_term::*;
-    /// let (root_widget, mut state_tree, mut scheduler) = load_ui();
+    /// let (root_widget, mut state_tree, mut scheduler, mut custom_data) = load_ui();
     ///
     /// let my_callback = move |context: Context, mouse_pos: Coordinates| {
     ///
@@ -594,7 +594,7 @@ pub struct CallbackConfig {
     /// To set this callback with a function:
     /// ```
     /// use ez_term::*;
-    /// let (root_widget, mut state_tree, mut scheduler) = load_ui();
+    /// let (root_widget, mut state_tree, mut scheduler, mut custom_data) = load_ui();
     ///
     /// fn my_callback(context: Context, mouse_pos: Coordinates) -> bool {
     ///
@@ -612,7 +612,7 @@ pub struct CallbackConfig {
     /// layouts or widgets. To set this callback with a closure:
     /// ```
     /// use ez_term::*;
-    /// let (root_widget, mut state_tree, mut scheduler) = load_ui();
+    /// let (root_widget, mut state_tree, mut scheduler, mut custom_data) = load_ui();
     ///
     /// let my_callback = move |context: Context, mouse_pos: Coordinates| {
     ///
@@ -624,7 +624,7 @@ pub struct CallbackConfig {
     /// To set this callback with a function:
     /// ```
     /// use ez_term::*;
-    /// let (root_widget, mut state_tree, mut scheduler) = load_ui();
+    /// let (root_widget, mut state_tree, mut scheduler, mut custom_data) = load_ui();
     ///
     /// fn my_callback(context: Context, mouse_pos: Coordinates) -> bool {
     ///
@@ -642,7 +642,7 @@ pub struct CallbackConfig {
     /// layouts or widgets. To set this callback with a closure:
     /// ```
     /// use ez_term::*;
-    /// let (root_widget, mut state_tree, mut scheduler) = load_ui();
+    /// let (root_widget, mut state_tree, mut scheduler, mut custom_data) = load_ui();
     ///
     /// let my_callback = move |context: Context, mouse_pos: Coordinates| {
     ///
@@ -654,7 +654,7 @@ pub struct CallbackConfig {
     /// To set this callback with a function:
     /// ```
     /// use ez_term::*;
-    /// let (root_widget, mut state_tree, mut scheduler) = load_ui();
+    /// let (root_widget, mut state_tree, mut scheduler, mut custom_data) = load_ui();
     ///
     /// fn my_callback(context: Context, mouse_pos: Coordinates) -> bool {
     ///
@@ -670,7 +670,7 @@ pub struct CallbackConfig {
     /// To set this callback with a closure:
     /// ```
     /// use ez_term::*;
-    /// let (root_widget, mut state_tree, mut scheduler) = load_ui();
+    /// let (root_widget, mut state_tree, mut scheduler, mut custom_data) = load_ui();
     ///
     /// let my_callback = move |context: Context| {
     ///
@@ -682,7 +682,7 @@ pub struct CallbackConfig {
     /// To set this callback with a function:
     /// ```
     /// use ez_term::*;
-    /// let (root_widget, mut state_tree, mut scheduler) = load_ui();
+    /// let (root_widget, mut state_tree, mut scheduler, mut custom_data) = load_ui();
     ///
     /// fn my_callback(context: Context) -> bool {
     ///
@@ -704,7 +704,7 @@ pub struct CallbackConfig {
     /// To set this callback with a closure:
     /// ```
     /// use ez_term::*;
-    /// let (root_widget, mut state_tree, mut scheduler) = load_ui();
+    /// let (root_widget, mut state_tree, mut scheduler, mut custom_data) = load_ui();
     ///
     /// let my_callback = move |context: Context, previous_mouse_pos: Option<Coordinates>,
     ///                         mouse_pos: Coordinates| {
@@ -717,7 +717,7 @@ pub struct CallbackConfig {
     /// To set this callback with a function:
     /// ```
     /// use ez_term::*;
-    /// let (root_widget, mut state_tree, mut scheduler) = load_ui();
+    /// let (root_widget, mut state_tree, mut scheduler, mut custom_data) = load_ui();
     ///
     /// fn my_callback(context: Context, previous_mouse_pos: Option<Coordinates>,
     ///                mouse_pos: Coordinates) -> bool {
@@ -740,7 +740,7 @@ pub struct CallbackConfig {
     /// To set this callback with a closure:
     /// ```
     /// use ez_term::*;
-    /// let (root_widget, mut state_tree, mut scheduler) = load_ui();
+    /// let (root_widget, mut state_tree, mut scheduler, mut custom_data) = load_ui();
     ///
     /// let my_callback = move |context: Context, previous_mouse_pos: Option<Coordinates>,
     ///                         mouse_pos: Coordinates| {
@@ -753,7 +753,7 @@ pub struct CallbackConfig {
     /// To set this callback with a function:
     /// ```
     /// use ez_term::*;
-    /// let (root_widget, mut state_tree, mut scheduler) = load_ui();
+    /// let (root_widget, mut state_tree, mut scheduler, mut custom_data) = load_ui();
     ///
     /// fn my_callback(context: Context, previous_mouse_pos: Option<Coordinates>,
     ///                mouse_pos: Coordinates) -> bool {
@@ -772,7 +772,7 @@ pub struct CallbackConfig {
     /// layouts or widgets. To set this callback with a closure:
     /// ```
     /// use ez_term::*;
-    /// let (root_widget, mut state_tree, mut scheduler) = load_ui();
+    /// let (root_widget, mut state_tree, mut scheduler, mut custom_data) = load_ui();
     ///
     /// let my_callback = move |context: EzContex| {
     ///
@@ -784,7 +784,7 @@ pub struct CallbackConfig {
     /// To set this callback with a function:
     /// ```
     /// use ez_term::*;
-    /// let (root_widget, mut state_tree, mut scheduler) = load_ui();
+    /// let (root_widget, mut state_tree, mut scheduler, mut custom_data) = load_ui();
     ///
     /// fn my_callback(context: Context) -> bool {
     ///
@@ -802,7 +802,7 @@ pub struct CallbackConfig {
     /// layouts or widgets. To set this callback with a closure:
     /// ```
     /// use ez_term::*;
-    /// let (root_widget, mut state_tree, mut scheduler) = load_ui();
+    /// let (root_widget, mut state_tree, mut scheduler, mut custom_data) = load_ui();
     ///
     /// let my_callback = move |context: EzContex| {
     ///
@@ -814,7 +814,7 @@ pub struct CallbackConfig {
     /// To set this callback with a function:
     /// ```
     /// use ez_term::*;
-    /// let (root_widget, mut state_tree, mut scheduler) = load_ui();
+    /// let (root_widget, mut state_tree, mut scheduler, mut custom_data) = load_ui();
     ///
     /// fn my_callback(context: Context) -> bool {
     ///
@@ -833,7 +833,7 @@ pub struct CallbackConfig {
     /// To set this callback with a closure:
     /// ```
     /// use ez_term::*;
-    /// let (root_widget, mut state_tree, mut scheduler) = load_ui();
+    /// let (root_widget, mut state_tree, mut scheduler, mut custom_data) = load_ui();
     ///
     /// let my_callback = move |context: Context| {
     ///
@@ -845,7 +845,7 @@ pub struct CallbackConfig {
     /// To set this callback with a function:
     /// ```
     /// use ez_term::*;
-    /// let (root_widget, mut state_tree, mut scheduler) = load_ui();
+    /// let (root_widget, mut state_tree, mut scheduler, mut custom_data) = load_ui();
     ///
     /// fn my_callback(context: Context) -> bool {
     ///

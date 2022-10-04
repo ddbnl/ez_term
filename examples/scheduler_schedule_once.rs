@@ -2,7 +2,7 @@ use ez_term::*;
 use std::time::Duration;
 
 fn main() {
-    let (root_widget, mut state_tree, mut scheduler) = load_ui();
+    let (root_widget, mut state_tree, mut scheduler, mut custom_data) = load_ui();
 
     let my_task = |context: Context| {
         let state = context.state_tree.get_mut("my_label").as_label_mut();
@@ -11,5 +11,5 @@ fn main() {
     };
 
     scheduler.schedule_once("my_task", Box::new(my_task), Duration::from_secs(3));
-    run(root_widget, state_tree, scheduler);
+    run(root_widget, state_tree, scheduler, custom_data);
 }

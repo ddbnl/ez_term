@@ -19,6 +19,7 @@ use crate::states::ez_state::{EzState, GenericState};
 use crate::widgets::ez_object::{EzObject, EzObjects};
 use crate::widgets::helper_functions::{add_border, add_padding};
 use crate::{CallbackConfig, Context};
+use crate::scheduler::definitions::CustomDataMap;
 
 #[derive(Clone, Debug)]
 pub struct Dropdown {
@@ -188,8 +189,9 @@ impl EzObject for Dropdown {
         state_tree: &mut StateTree,
         callback_tree: &mut CallbackTree,
         scheduler: &mut SchedulerFrontend,
+        custom_data: &mut CustomDataMap,
     ) -> bool {
-        let consumed = self.on_press_callback(state_tree, callback_tree, scheduler);
+        let consumed = self.on_press_callback(state_tree, callback_tree, scheduler, custom_data);
         if consumed {
             return consumed;
         }
@@ -268,8 +270,10 @@ impl EzObject for Dropdown {
         callback_tree: &mut CallbackTree,
         scheduler: &mut SchedulerFrontend,
         mouse_pos: Coordinates,
+        custom_data: &mut CustomDataMap,
     ) -> bool {
-        let consumed = self.on_hover_callback(state_tree, callback_tree, scheduler, mouse_pos);
+        let consumed = self.on_hover_callback(state_tree, callback_tree, scheduler, mouse_pos,
+                                                    custom_data);
         if consumed {
             return consumed;
         }
@@ -416,6 +420,7 @@ impl EzObject for DroppedDownMenu {
         state_tree: &mut StateTree,
         callback_tree: &mut CallbackTree,
         scheduler: &mut SchedulerFrontend,
+        custom_data: &mut CustomDataMap,
     ) -> bool {
         let state = state_tree
             .get_mut(&self.get_path())
@@ -423,7 +428,7 @@ impl EzObject for DroppedDownMenu {
         match event {
             Event::Key(key) => match key.code {
                 KeyCode::Enter => {
-                    self.handle_enter(state_tree, callback_tree, scheduler);
+                    self.handle_enter(state_tree, callback_tree, scheduler, custom_data);
                     return true;
                 }
                 KeyCode::Down => {
@@ -444,6 +449,7 @@ impl EzObject for DroppedDownMenu {
                             state_tree,
                             callback_tree,
                             scheduler,
+                            custom_data,
                             mouse_position,
                         );
                         return true;
@@ -475,6 +481,7 @@ impl DroppedDownMenu {
         state_tree: &mut StateTree,
         callback_tree: &mut CallbackTree,
         scheduler: &mut SchedulerFrontend,
+        custom_data: &mut CustomDataMap,
     ) {
         let selected = state_tree
             .get(&self.get_path())
@@ -496,7 +503,7 @@ impl DroppedDownMenu {
         state.dismiss_modal(scheduler);
         state.update(scheduler);
         if let Some(ref mut i) = callback_tree.get_mut(&parent).obj.on_value_change {
-            let context = Context::new(parent.clone(), state_tree, scheduler);
+            let context = Context::new(parent.clone(), state_tree, scheduler, custom_data);
             i(context);
         }
     }
@@ -525,6 +532,7 @@ impl DroppedDownMenu {
         state_tree: &mut StateTree,
         callback_tree: &mut CallbackTree,
         scheduler: &mut SchedulerFrontend,
+        custom_data: &mut CustomDataMap,
         pos: Coordinates,
     ) {
         let state = state_tree.get(&self.get_path()).as_dropped_down_menu();
@@ -540,7 +548,7 @@ impl DroppedDownMenu {
                 scheduler.dismiss_modal(state_tree);
                 scheduler.force_redraw();
                 if let Some(ref mut i) = callback_tree.get_mut(&parent).obj.on_value_change {
-                    let context = Context::new(parent, state_tree, scheduler);
+                    let context = Context::new(parent, state_tree, scheduler, custom_data);
                     i(context);
                 }
             }

@@ -15,15 +15,12 @@ use crate::run::definitions::{CallbackTree, Coordinates, IsizeCoordinates, State
 use crate::run::terminal::{redraw_changed_widgets, write_to_screen};
 use crate::run::tree::{clean_trees, initialize_callback_tree, ViewTree};
 use crate::scheduler::scheduler::SchedulerFrontend;
-use crate::scheduler::scheduler_funcs::{
-    add_property_callbacks, create_new_widgets, drain_property_channels, handle_next_selection,
-    remove_widgets, run_tasks, trigger_update_funcs, update_callback_configs, update_properties,
-    update_threads,
-};
+use crate::scheduler::scheduler_funcs::{add_custom_data, add_property_callbacks, create_new_widgets, drain_property_channels, handle_next_selection, remove_widgets, run_tasks, trigger_update_funcs, update_callback_configs, update_properties, update_threads};
 use crate::states::ez_state::GenericState;
 use crate::widgets::ez_object::EzObject;
 use crate::widgets::layout::layout::Layout;
 use crate::{CallbackConfig, KeyMap};
+use crate::scheduler::definitions::CustomDataMap;
 
 use super::input::{handle_global_event, handle_modal_event, handle_resize};
 use super::terminal::{initialize_terminal, shutdown_terminal};
@@ -32,17 +29,19 @@ use super::terminal::{initialize_terminal, shutdown_terminal};
 ///
 /// Make sure you load a root layout from a .ez file first and pass it to this func, like this:
 /// ```
-/// let (root_widget, state_tree, scheduler) = load_ui("root.ez");
+/// use ez_term::*;
+/// let (root_widget, state_tree, scheduler, custom_data) = load_ui();
 /// ```
 /// After loading the root layout, make all the manual changes you require, such as setting
 /// keybindings or binding callbacks to events. Then call this function.
 /// ```
-/// run(root_widget, state_tree, scheduler);
+/// run(root_widget, state_tree, scheduler, custom_data);
 /// ```
-pub fn run(root_widget: Layout, state_tree: StateTree, scheduler: SchedulerFrontend) {
+pub fn run(root_widget: Layout, state_tree: StateTree, scheduler: SchedulerFrontend,
+           custom_data: CustomDataMap) {
     initialize_terminal().unwrap();
     let callback_tree = initialize_callback_tree(&root_widget);
-    run_loop(root_widget, state_tree, callback_tree, scheduler).unwrap();
+    run_loop(root_widget, state_tree, callback_tree, scheduler, custom_data).unwrap();
 }
 
 /// Gracefully stop the app, restoring the terminal to its' original state.
@@ -115,6 +114,7 @@ fn run_loop(
     mut state_tree: StateTree,
     mut callback_tree: CallbackTree,
     mut scheduler: SchedulerFrontend,
+    mut custom_data: CustomDataMap,
 ) -> Result<()> {
     let mut view_tree = initialize_widgets(&mut root_widget, &mut state_tree);
     let last_update = Instant::now(); // Time of last screen update,
@@ -199,7 +199,7 @@ fn run_loop(
                 if let Event::Mouse(mouse_event) = event {
                     if !(mouse_event.kind == MouseEventKind::Drag(MouseButton::Left)) {
                         handle_drag_exit(&mut state_tree, &mut callback_tree, &mut scheduler,
-                                         &mouse_event, &root_widget,
+                                         &mut custom_data, &mouse_event, &root_widget,
                                          Some(last_dragging_pos), &mut dragging)
                     }
                 }
@@ -213,6 +213,7 @@ fn run_loop(
                     &root_widget,
                     &mut callback_tree,
                     &mut scheduler,
+                    &mut custom_data,
                 );
             }
 
@@ -224,6 +225,7 @@ fn run_loop(
                     &root_widget,
                     &mut callback_tree,
                     &mut scheduler,
+                    &mut custom_data,
                     &mut selected_widget,
                     &mut dragging,
                     &mut last_dragging_pos,
@@ -240,6 +242,7 @@ fn run_loop(
                             &mut state_tree,
                             &mut callback_tree,
                             &mut scheduler,
+                            &mut custom_data
                         );
                     }
                 }
@@ -278,16 +281,18 @@ fn run_loop(
         );
         selected_widget = handle_next_selection(
             &mut scheduler,
+            &mut custom_data,
             &mut state_tree,
             &root_widget,
             &mut callback_tree,
             selected_widget,
         );
+        add_custom_data(&mut scheduler, &mut custom_data);
         update_callback_configs(&mut scheduler, &mut callback_tree, &mut global_keymap);
         add_property_callbacks(&mut scheduler, &mut callback_tree);
-        run_tasks(&mut scheduler, &mut state_tree);
-        update_threads(&mut scheduler, &mut state_tree);
-        update_properties(&mut scheduler, &mut state_tree, &mut callback_tree);
+        run_tasks(&mut scheduler, &mut state_tree, &mut custom_data);
+        update_threads(&mut scheduler, &mut state_tree, &mut custom_data);
+        update_properties(&mut scheduler, &mut state_tree, &mut callback_tree, &mut custom_data);
         // Update root widget state as it might contain new modals it need to access internally
         if state_tree.as_layout().open_modal.is_some() && root_widget.state.open_modal.is_none() {
             root_widget.state.open_modal = state_tree.as_layout().open_modal.clone();
@@ -339,6 +344,7 @@ fn handle_drag_exit(
     state_tree: &mut StateTree,
     callback_tree: &mut CallbackTree,
     scheduler: &mut SchedulerFrontend,
+    custom_data: &mut CustomDataMap,
     mouse_event: &MouseEvent,
     root_widget: &Layout,
     last_dragging_pos: Option<IsizeCoordinates>,
@@ -355,6 +361,7 @@ fn handle_drag_exit(
     );
     root_widget.get_child_by_path(&widget_path).unwrap()
         .as_ez_object().on_drag_exit(
-        state_tree, callback_tree, scheduler,last_dragging_pos, relative_position);
+        state_tree, callback_tree, scheduler,last_dragging_pos,
+        relative_position, custom_data);
     let _ = replace(dragging, None);
 }

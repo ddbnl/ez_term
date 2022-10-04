@@ -9,6 +9,7 @@ use unicode_segmentation::UnicodeSegmentation;
 use crate::parser::ez_definition::{EzWidgetDefinition, Templates};
 use crate::run::definitions::StateTree;
 use crate::run::tree::initialize_state_tree;
+use crate::scheduler::definitions::CustomDataMap;
 use crate::scheduler::scheduler::{Scheduler, SchedulerFrontend};
 use crate::widgets::layout::layout::Layout;
 
@@ -16,11 +17,11 @@ include!(concat!(env!("OUT_DIR"), "/ez_file_gen.rs"));
 
 /// Load a file path into a root layout. Return the root widget, state tree and a new scheduler.
 /// These will be needed to run the ui.
-pub fn load_ui<'a>() -> (Layout, StateTree, SchedulerFrontend) {
+pub fn load_ui<'a>() -> (Layout, StateTree, SchedulerFrontend, CustomDataMap) {
     let contents = ez_config(); // ez_config is generated from build.rs
     let (root_widget, scheduler) = load_ez_text(contents).unwrap();
     let state_tree = initialize_state_tree(&root_widget);
-    (root_widget, state_tree, scheduler)
+    (root_widget, state_tree, scheduler, CustomDataMap::new())
 }
 
 /// Load a string from an Ez file into a root widget. Parse the first level and interpret the

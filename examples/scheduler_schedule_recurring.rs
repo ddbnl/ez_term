@@ -2,7 +2,7 @@ use ez_term::*;
 use std::time::Duration;
 
 fn main() {
-    let (root_widget, mut state_tree, mut scheduler) = load_ui();
+    let (root_widget, mut state_tree, mut scheduler, mut custom_data) = load_ui();
 
     let mut counter: usize = 1;
     let my_task = move |context: Context| {
@@ -15,5 +15,5 @@ fn main() {
 
     scheduler.schedule_recurring("my_task", Box::new(my_task), Duration::from_secs(1));
 
-    run(root_widget, state_tree, scheduler);
+    run(root_widget, state_tree, scheduler, custom_data);
 }

@@ -1,7 +1,7 @@
 use ez_term::*;
 
 fn main() {
-    let (root_widget, mut state_tree, mut scheduler) = load_ui();
+    let (root_widget, mut state_tree, mut scheduler, mut custom_data) = load_ui();
 
     // Let's write the callback that syncs a new text input value to the slider
     let sync_slider_callback = |context: Context| {
@@ -31,5 +31,5 @@ fn main() {
     let callback_config = CallbackConfig::from_on_value_change(Box::new(sync_slider_callback));
     scheduler.update_callback_config("my_input", callback_config);
 
-    run(root_widget, state_tree, scheduler);
+    run(root_widget, state_tree, scheduler, custom_data);
 }

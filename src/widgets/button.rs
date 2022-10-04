@@ -12,6 +12,7 @@ use crate::states::ez_state::{EzState, GenericState};
 use crate::widgets::ez_object::{EzObject, EzObjects};
 use crate::widgets::helper_functions::{add_border, add_padding, align_content_horizontally, align_content_vertically, format_text, wrap_text};
 use crate::Context;
+use crate::scheduler::definitions::CustomDataMap;
 
 #[derive(Clone, Debug)]
 pub struct Button {
@@ -200,8 +201,9 @@ impl EzObject for Button {
         state_tree: &mut StateTree,
         callback_tree: &mut CallbackTree,
         scheduler: &mut SchedulerFrontend,
+        custom_data: &mut CustomDataMap,
     ) -> bool {
-        let consumed = self.on_press_callback(state_tree, callback_tree, scheduler);
+        let consumed = self.on_press_callback(state_tree, callback_tree, scheduler, custom_data);
         if consumed {
             return consumed;
         }
@@ -215,8 +217,10 @@ impl EzObject for Button {
         callback_tree: &mut CallbackTree,
         scheduler: &mut SchedulerFrontend,
         mouse_pos: Coordinates,
+        custom_data: &mut CustomDataMap,
     ) -> bool {
-        let consumed = self.on_hover_callback(state_tree, callback_tree, scheduler, mouse_pos);
+        let consumed = self.on_hover_callback(state_tree, callback_tree, scheduler, mouse_pos,
+                                              custom_data);
         if consumed {
             return consumed;
         }

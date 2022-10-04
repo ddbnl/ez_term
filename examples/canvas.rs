@@ -1,7 +1,7 @@
 use ez_term::*;
 
 fn main() {
-    let (root_widget, mut state_tree, mut scheduler) = load_ui();
+    let (root_widget, mut state_tree, mut scheduler, mut custom_data) = load_ui();
 
     // We will create a square of 'S' symbols like this:
     // ```
@@ -22,5 +22,5 @@ fn main() {
 
     state.set_contents(content);
 
-    run(root_widget, state_tree, scheduler);
+    run(root_widget, state_tree, scheduler, custom_data);
 }

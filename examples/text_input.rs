@@ -1,7 +1,7 @@
 use ez_term::*;
 
 fn main() {
-    let (root_widget, mut state_tree, mut scheduler) = load_ui();
+    let (root_widget, mut state_tree, mut scheduler, mut custom_data) = load_ui();
 
     // First we write the mirroring on_value_change callback
     let change_label_callback = |context: Context| {
@@ -27,5 +27,5 @@ fn main() {
     let callback_config = CallbackConfig::from_on_keyboard_enter(Box::new(confirm_label_callback));
     scheduler.update_callback_config("my_input", callback_config);
 
-    run(root_widget, state_tree, scheduler);
+    run(root_widget, state_tree, scheduler, custom_data);
 }

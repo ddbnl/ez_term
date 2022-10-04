@@ -11,6 +11,7 @@ use crate::run::definitions::{CallbackTree, Coordinates, IsizeCoordinates, State
 use crate::run::select::{get_widget_by_position, select_next, select_previous};
 use crate::run::terminal::{initialize_terminal, write_to_screen};
 use crate::run::tree::ViewTree;
+use crate::scheduler::definitions::CustomDataMap;
 use crate::scheduler::scheduler::SchedulerFrontend;
 use crate::states::ez_state::EzState;
 use crate::widgets::ez_object::{EzObject, EzObjects};
@@ -26,6 +27,7 @@ pub fn handle_modal_event(
     root_widget: &Layout,
     callback_tree: &mut CallbackTree,
     scheduler: &mut SchedulerFrontend,
+    custom_data: &mut CustomDataMap,
 ) -> bool {
     if !state_tree.as_layout().has_modal() {
         return false;
@@ -34,14 +36,14 @@ pub fn handle_modal_event(
     let mut consumed =
         modal
             .as_ez_object()
-            .handle_event(event, state_tree, callback_tree, scheduler);
+            .handle_event(event, state_tree, callback_tree, scheduler, custom_data);
     if !consumed {
         if let EzObjects::Layout(layout) = modal {
             for child in layout.get_widgets_recursive() {
                 consumed =
                     child
                         .as_ez_object()
-                        .handle_event(event, state_tree, callback_tree, scheduler);
+                        .handle_event(event, state_tree, callback_tree, scheduler, custom_data);
                 if consumed {
                     return true;
                 }
@@ -59,6 +61,7 @@ pub fn handle_global_event(
     root_widget: &Layout,
     callback_tree: &mut CallbackTree,
     scheduler: &mut SchedulerFrontend,
+    custom_data: &mut CustomDataMap,
     selected_widget: &mut String,
     dragging: &mut Option<String>,
     last_dragging_pos: &mut IsizeCoordinates,
@@ -71,6 +74,7 @@ pub fn handle_global_event(
             global_keymap,
             state_tree,
             root_widget,
+            custom_data,
             callback_tree,
             scheduler,
             selected_widget,
@@ -81,6 +85,7 @@ pub fn handle_global_event(
             root_widget,
             callback_tree,
             scheduler,
+            custom_data,
             dragging,
             last_dragging_pos,
             selected_widget,
@@ -97,6 +102,7 @@ fn handle_key_event(
     global_keymap: &mut KeyMap,
     state_tree: &mut StateTree,
     root_widget: &Layout,
+    custom_data: &mut CustomDataMap,
     callback_tree: &mut CallbackTree,
     scheduler: &mut SchedulerFrontend,
     selected_widget: &mut String,
@@ -130,7 +136,7 @@ fn handle_key_event(
                     .get_child_by_path(selected_widget)
                     .unwrap()
                     .as_ez_object()
-                    .on_keyboard_enter(state_tree, callback_tree, scheduler);
+                    .on_keyboard_enter(state_tree, callback_tree, scheduler, custom_data);
             }
             true
         }
@@ -141,7 +147,7 @@ fn handle_key_event(
         _ => false,
     };
     if !consumed && global_keymap.contains(key.code, key.modifiers) {
-        let context = Context::new("".to_string(), state_tree, scheduler);
+        let context = Context::new("".to_string(), state_tree, scheduler, custom_data);
         let callback = global_keymap.get_mut(key.code, key.modifiers).unwrap();
         return callback(context, key.code, key.modifiers);
     }
@@ -157,6 +163,7 @@ fn handle_mouse_event(
     root_widget: &Layout,
     callback_tree: &mut CallbackTree,
     scheduler: &mut SchedulerFrontend,
+    custom_data: &mut CustomDataMap,
     dragging: &mut Option<String>,
     last_dragging_pos: &mut IsizeCoordinates,
     selected_widget: &str,
@@ -169,6 +176,7 @@ fn handle_mouse_event(
             root_widget,
             callback_tree,
             scheduler,
+            custom_data,
             selected_widget,
             hovered_widget,
         );
@@ -180,6 +188,7 @@ fn handle_mouse_event(
             root_widget,
             callback_tree,
             scheduler,
+            custom_data,
             dragging,
             last_dragging_pos,
         );
@@ -191,6 +200,7 @@ fn handle_mouse_event(
             root_widget,
             callback_tree,
             scheduler,
+            custom_data
         );
     } else if let MouseEventKind::ScrollUp = event.kind {
         return handle_mouse_scroll_up_event(
@@ -199,6 +209,7 @@ fn handle_mouse_event(
             root_widget,
             callback_tree,
             scheduler,
+            custom_data,
         );
     } else if let MouseEventKind::ScrollDown = event.kind {
         return handle_mouse_scroll_down_event(
@@ -207,6 +218,7 @@ fn handle_mouse_event(
             root_widget,
             callback_tree,
             scheduler,
+            custom_data,
         );
     }
     false
@@ -219,6 +231,7 @@ fn handle_mouse_press_event(
     root_widget: &Layout,
     callback_tree: &mut CallbackTree,
     scheduler: &mut SchedulerFrontend,
+    custom_data: &mut CustomDataMap,
 ) -> bool {
     let consumed = false;
     let mouse_position = Coordinates::new(event.column as usize, event.row as usize);
@@ -233,10 +246,12 @@ fn handle_mouse_press_event(
         );
         let consumed = match button {
             MouseButton::Left => {
-                widget.on_left_mouse_click(state_tree, callback_tree, scheduler, relative_position)
+                widget.on_left_mouse_click(state_tree, callback_tree, scheduler,
+                                           relative_position, custom_data)
             }
             MouseButton::Right => {
-                widget.on_right_mouse_click(state_tree, callback_tree, scheduler, relative_position)
+                widget.on_right_mouse_click(state_tree, callback_tree, scheduler,
+                                            relative_position, custom_data)
             }
             _ => false,
         };
@@ -253,6 +268,7 @@ fn handle_mouse_hover_event(
     root_widget: &Layout,
     callback_tree: &mut CallbackTree,
     scheduler: &mut SchedulerFrontend,
+    custom_data: &mut CustomDataMap,
     selected_widget: &str,
     hovered_widget: &mut String,
 ) -> bool {
@@ -265,7 +281,7 @@ fn handle_mouse_hover_event(
                 root_widget.get_child_by_path(hovered_widget)
                     .unwrap()
                     .as_ez_object()
-                    .on_hover_exit(state_tree, callback_tree, scheduler);
+                    .on_hover_exit(state_tree, callback_tree, scheduler, custom_data);
                 hovered_widget.clear();
             }
         } else {
@@ -283,7 +299,7 @@ fn handle_mouse_hover_event(
             mouse_position.y - abs.usize_y(),
         );
 
-        if widget.on_hover(state_tree, callback_tree, scheduler, relative_position) {
+        if widget.on_hover(state_tree, callback_tree, scheduler, relative_position, custom_data) {
             let _ = replace(hovered_widget,widget.get_path().clone());
             return true;
         }
@@ -308,6 +324,7 @@ fn handle_mouse_drag_event(
     root_widget: &Layout,
     callback_tree: &mut CallbackTree,
     scheduler: &mut SchedulerFrontend,
+    custom_data: &mut CustomDataMap,
     dragging: &mut Option<String>,
     last_dragging_pos: &mut IsizeCoordinates,
 ) -> bool {
@@ -326,6 +343,7 @@ fn handle_mouse_drag_event(
             scheduler,
             Some(*last_dragging_pos),
             relative_position,
+            custom_data,
         );
         if consumed {
             dragging.replace(widget.get_path());
@@ -349,6 +367,7 @@ fn handle_mouse_drag_event(
             scheduler,
             None,
             relative_position,
+            custom_data,
         );
         if consumed {
             dragging.replace(widget.get_path());
@@ -366,11 +385,12 @@ fn handle_mouse_scroll_up_event(
     root_widget: &Layout,
     callback_tree: &mut CallbackTree,
     scheduler: &mut SchedulerFrontend,
+    custom_data: &mut CustomDataMap,
 ) -> bool {
     let consumed = false;
     let mouse_position = Coordinates::new(event.column as usize, event.row as usize);
     for widget in get_widget_by_position(mouse_position, root_widget, state_tree) {
-        let consumed = widget.on_scroll_up(state_tree, callback_tree, scheduler);
+        let consumed = widget.on_scroll_up(state_tree, callback_tree, scheduler, custom_data);
         if consumed {
             return consumed;
         }
@@ -384,11 +404,12 @@ fn handle_mouse_scroll_down_event(
     root_widget: &Layout,
     callback_tree: &mut CallbackTree,
     scheduler: &mut SchedulerFrontend,
+    custom_data: &mut CustomDataMap,
 ) -> bool {
     let consumed = false;
     let mouse_position = Coordinates::new(event.column as usize, event.row as usize);
     for widget in get_widget_by_position(mouse_position, root_widget, state_tree) {
-        let consumed = widget.on_scroll_down(state_tree, callback_tree, scheduler);
+        let consumed = widget.on_scroll_down(state_tree, callback_tree, scheduler, custom_data);
         if consumed {
             return consumed;
         }

@@ -1,7 +1,7 @@
 use ez_term::*;
 
 fn main() {
-    let (root_widget, mut state_tree, mut scheduler) = load_ui();
+    let (root_widget, mut state_tree, mut scheduler, mut custom_data) = load_ui();
 
     for x in 1..=30 {
         let new_id = format!("label_{}", x);
@@ -12,5 +12,5 @@ fn main() {
         scheduler.create_widget(new_widget, new_states, &mut state_tree);
     }
 
-    run(root_widget, state_tree, scheduler);
+    run(root_widget, state_tree, scheduler, custom_data);
 }

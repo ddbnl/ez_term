@@ -1,22 +1,25 @@
 //! # Scheduler funcs
 //!
 //! This module contains supporting functions for the [Scheduler] struct.
+use std::collections::HashMap;
+use std::mem::replace;
 use std::thread::{spawn, JoinHandle};
 use std::time::Instant;
 
 use crate::run::definitions::{CallbackTree, StateTree};
 use crate::run::select::{deselect_widget, select_widget};
-use crate::scheduler::definitions::ThreadedContext;
+use crate::scheduler::definitions::{CustomDataMap, ThreadedContext};
 use crate::scheduler::scheduler::SchedulerFrontend;
 use crate::widgets::ez_object::EzObjects;
 use crate::widgets::layout::layout::Layout;
-use crate::{CallbackConfig, Context, EzObject, KeyMap, LayoutMode};
+use crate::{CallbackConfig, Context, CustomData, EzObject, KeyMap, LayoutMode};
 
 /// Check if any new thread are ready to be spawned, or if any spawned threads are ready to be
 /// joined.
-pub fn update_threads(scheduler: &mut SchedulerFrontend, state_tree: &mut StateTree) {
+pub fn update_threads(scheduler: &mut SchedulerFrontend, state_tree: &mut StateTree,
+                      custom_data: &mut CustomDataMap) {
     start_new_threads(scheduler, state_tree);
-    check_finished_threads(scheduler, state_tree)
+    check_finished_threads(scheduler, state_tree, custom_data)
 }
 
 /// Any threads that are scheduled to be started will be spawned. Threads can be scheduled by the
@@ -35,7 +38,8 @@ pub fn start_new_threads(scheduler: &mut SchedulerFrontend, state_tree: &mut Sta
 }
 
 /// Check if any threads have finished running. Joined them if so and remove all references.
-pub fn check_finished_threads(scheduler: &mut SchedulerFrontend, state_tree: &mut StateTree) {
+pub fn check_finished_threads(scheduler: &mut SchedulerFrontend, state_tree: &mut StateTree,
+                              custom_data: &mut CustomDataMap) {
     let mut finished = Vec::new();
     for (i, (handle, _)) in scheduler.backend.thread_handles.iter_mut().enumerate() {
         if handle.is_finished() {
@@ -45,7 +49,7 @@ pub fn check_finished_threads(scheduler: &mut SchedulerFrontend, state_tree: &mu
     for i in finished {
         let (handle, on_finish) = scheduler.backend.thread_handles.remove(i);
         if let Some(mut func) = on_finish {
-            let context = Context::new(String::new(), state_tree, scheduler);
+            let context = Context::new(String::new(), state_tree, scheduler, custom_data);
             func(context);
         }
         handle.join().unwrap();
@@ -55,14 +59,14 @@ pub fn check_finished_threads(scheduler: &mut SchedulerFrontend, state_tree: &mu
 
 /// Check if any scheduled tasks are ready to be run, or if any RunOnce tasks were scheduled by the
 /// user.
-pub fn run_tasks(scheduler: &mut SchedulerFrontend, state_tree: &mut StateTree) {
+pub fn run_tasks(scheduler: &mut SchedulerFrontend, state_tree: &mut StateTree, custom_data: &mut CustomDataMap) {
     let mut remaining_tasks = Vec::new();
     while !scheduler.backend.tasks.is_empty() {
         let mut task = scheduler.backend.tasks.pop().unwrap();
         if task.canceled {
             continue;
         }
-        let context = Context::new(String::new(), state_tree, scheduler);
+        let context = Context::new(String::new(), state_tree, scheduler, custom_data);
 
         let elapsed = task.created.elapsed();
         if elapsed >= task.delay {
@@ -76,7 +80,7 @@ pub fn run_tasks(scheduler: &mut SchedulerFrontend, state_tree: &mut StateTree) 
     let mut remaining_tasks = Vec::new();
     while !scheduler.backend.recurring_tasks.is_empty() {
         let mut task = scheduler.backend.recurring_tasks.pop().unwrap();
-        let context = Context::new(String::new(), state_tree, scheduler);
+        let context = Context::new(String::new(), state_tree, scheduler, custom_data);
         if task.canceled {
             continue;
         }
@@ -231,6 +235,7 @@ pub fn update_properties(
     scheduler: &mut SchedulerFrontend,
     state_tree: &mut StateTree,
     callback_tree: &mut CallbackTree,
+    custom_data: &mut CustomDataMap,
 ) {
     let mut to_update = Vec::new();
     let mut to_callback: Vec<String> = Vec::new();
@@ -313,7 +318,7 @@ pub fn update_properties(
             .property_callbacks
             .iter_mut()
         {
-            let context = Context::new(name.to_string(), state_tree, scheduler);
+            let context = Context::new(name.to_string(), state_tree, scheduler, custom_data);
             callback(context);
         }
     }
@@ -342,6 +347,19 @@ pub fn trigger_update_funcs(scheduler: &mut SchedulerFrontend, state_tree: &mut 
             updater(state_tree, val.clone());
         }
     }
+}
+
+/// Take new custom data and add it to the existing custom data map
+pub fn add_custom_data(scheduler: &mut SchedulerFrontend, custom_data: &mut CustomDataMap) {
+
+    if scheduler.backend.new_custom_data.is_empty() { return }
+
+    let new_data = replace(&mut scheduler.backend.new_custom_data,
+                           HashMap::new());
+    for (name, data) in new_data.into_iter() {
+        custom_data.insert(name, data);
+    }
+    scheduler.backend.new_custom_data.clear();
 }
 
 /// Take new property callbacks and add them to the existing callback config in the callback tree
@@ -383,6 +401,7 @@ pub fn clean_up_property(scheduler: &mut SchedulerFrontend, name: &str) {
 
 pub fn handle_next_selection(
     scheduler: &mut SchedulerFrontend,
+    custom_data: &mut CustomDataMap,
     state_tree: &mut StateTree,
     root_widget: &Layout,
     callback_tree: &mut CallbackTree,
@@ -395,6 +414,7 @@ pub fn handle_next_selection(
             root_widget,
             callback_tree,
             scheduler,
+            custom_data,
         );
         current_selection.clear();
     }
@@ -410,6 +430,7 @@ pub fn handle_next_selection(
                     root_widget,
                     callback_tree,
                     scheduler,
+                    custom_data,
                 );
             }
             select_widget(
@@ -418,6 +439,7 @@ pub fn handle_next_selection(
                 root_widget,
                 callback_tree,
                 scheduler,
+                custom_data,
                 mouse_pos,
             );
         }

@@ -8,7 +8,7 @@ fn main() {
     // subwidgets and make any changes we need before starting the app.
     // We can use the scheduler to schedule any (recurring) functions we need to before starting
     // the app.
-    let (root_widget, mut state_tree, mut scheduler) = load_ui();
+    let (root_widget, mut state_tree, mut scheduler, mut custom_data) = load_ui();
 
     // Step 2: Customize widgets where needed. Here are some examples:
     // We will set up the menu screen buttons with closures.
@@ -247,7 +247,7 @@ fn main() {
 
     // Step 3: Run app
     // Now everything must happen from bindings as root widget is passed over
-    run(root_widget, state_tree, scheduler);
+    run(root_widget, state_tree, scheduler, custom_data);
 }
 
 // As an example we will change the label next to a checkbox to say "enabled" or

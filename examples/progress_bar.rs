@@ -2,7 +2,7 @@ use ez_term::*;
 use std::time::Duration;
 
 fn main() {
-    let (root_widget, mut state_tree, mut scheduler) = load_ui();
+    let (root_widget, mut state_tree, mut scheduler, mut custom_data) = load_ui();
 
     // Manual progress bar callback
     let manual_progress_callback = |context: Context| {
@@ -92,5 +92,5 @@ fn main() {
     let callback_config = CallbackConfig::from_on_press(Box::new(thread_progress_callback));
     scheduler.update_callback_config("thread_button", callback_config);
 
-    run(root_widget, state_tree, scheduler);
+    run(root_widget, state_tree, scheduler, custom_data);
 }

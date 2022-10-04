@@ -18,6 +18,7 @@ use crossterm::event::{Event, KeyCode};
 use std::cmp::{max, min};
 use std::collections::HashMap;
 use std::io::{Error, ErrorKind};
+use crate::scheduler::definitions::CustomDataMap;
 
 /// A layout is where widgets live. They implements methods for hardcoding widget placement or
 /// placing them automatically in various ways.
@@ -329,6 +330,7 @@ impl EzObject for Layout {
         state_tree: &mut StateTree,
         callback_tree: &mut CallbackTree,
         scheduler: &mut SchedulerFrontend,
+        custom_data: &mut CustomDataMap,
     ) -> bool {
         if let Event::Key(key) = event {
             if callback_tree
@@ -343,7 +345,8 @@ impl EzObject for Layout {
                     .keymap
                     .get_mut(key.code, key.modifiers)
                     .unwrap();
-                let context = Context::new(self.get_path(), state_tree, scheduler);
+                let context = Context::new(self.get_path(), state_tree, scheduler,
+                                                    custom_data);
                 let consumed = func(context, key.code, key.modifiers);
                 if consumed {
                     return true;
@@ -382,8 +385,9 @@ impl EzObject for Layout {
         state_tree: &mut StateTree,
         callback_tree: &mut CallbackTree,
         scheduler: &mut SchedulerFrontend,
+        custom_data: &mut CustomDataMap,
     ) -> bool {
-        if self.on_keyboard_enter_callback(state_tree, callback_tree, scheduler) {
+        if self.on_keyboard_enter_callback(state_tree, callback_tree, scheduler, custom_data) {
             return true;
         }
         let state = state_tree.get_mut(&self.path).as_layout_mut();
@@ -409,8 +413,9 @@ impl EzObject for Layout {
         callback_tree: &mut CallbackTree,
         scheduler: &mut SchedulerFrontend,
         mouse_pos: Coordinates,
+        custom_data: &mut CustomDataMap,
     ) -> bool {
-        if self.on_left_mouse_click_callback(state_tree, callback_tree, scheduler, mouse_pos) {
+        if self.on_left_mouse_click_callback(state_tree, callback_tree, scheduler, mouse_pos, custom_data) {
             return true;
         }
         let state = state_tree.get_mut(&self.path).as_layout_mut();
@@ -471,6 +476,7 @@ impl EzObject for Layout {
         scheduler: &mut SchedulerFrontend,
         previous_pos: Option<IsizeCoordinates>,
         mouse_pos: IsizeCoordinates,
+        custom_data: &mut CustomDataMap,
     ) -> bool {
         let mut consumed = self.on_drag_callback(
             state_tree,
@@ -478,6 +484,7 @@ impl EzObject for Layout {
             scheduler,
             previous_pos,
             mouse_pos,
+            custom_data
         );
 
         let state = state_tree.get_mut(&self.path).as_layout_mut();
@@ -551,8 +558,9 @@ impl EzObject for Layout {
         state_tree: &mut StateTree,
         callback_tree: &mut CallbackTree,
         scheduler: &mut SchedulerFrontend,
+        custom_data: &mut CustomDataMap,
     ) -> bool {
-        if self.on_scroll_up_callback(state_tree, callback_tree, scheduler) {
+        if self.on_scroll_up_callback(state_tree, callback_tree, scheduler, custom_data) {
             return true;
         }
         let state = state_tree.get_mut(&self.path).as_layout_mut();
@@ -571,8 +579,9 @@ impl EzObject for Layout {
         state_tree: &mut StateTree,
         callback_tree: &mut CallbackTree,
         scheduler: &mut SchedulerFrontend,
+        custom_data: &mut CustomDataMap,
     ) -> bool {
-        if self.on_scroll_down_callback(state_tree, callback_tree, scheduler) {
+        if self.on_scroll_down_callback(state_tree, callback_tree, scheduler, custom_data) {
             return true;
         }
         let state = state_tree.get_mut(&self.path).as_layout_mut();
@@ -592,8 +601,9 @@ impl EzObject for Layout {
         callback_tree: &mut CallbackTree,
         scheduler: &mut SchedulerFrontend,
         mouse_pos: Option<Coordinates>,
+        custom_data: &mut CustomDataMap,
     ) -> bool {
-        if self.on_select_callback(state_tree, callback_tree, scheduler, mouse_pos) {
+        if self.on_select_callback(state_tree, callback_tree, scheduler, mouse_pos, custom_data) {
             return true;
         }
         let state = state_tree.get_mut(&self.path).as_layout_mut();
@@ -615,8 +625,9 @@ impl EzObject for Layout {
         state_tree: &mut StateTree,
         callback_tree: &mut CallbackTree,
         scheduler: &mut SchedulerFrontend,
+        custom_data: &mut CustomDataMap,
     ) -> bool {
-        if self.on_deselect_callback(state_tree, callback_tree, scheduler) {
+        if self.on_deselect_callback(state_tree, callback_tree, scheduler, custom_data) {
             return true;
         }
         let state = state_tree.get_mut(&self.path).as_layout_mut();

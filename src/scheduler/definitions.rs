@@ -60,6 +60,8 @@ pub type EzPropertyUpdater = Box<dyn FnMut(&mut StateTree, EzValues) + Send>;
 /// Ez properties can be bound to widgets, so updating an EzProperty in a thread can update the UI.
 pub type EzThread = Box<dyn FnOnce(ThreadedContext) + Send>;
 
+pub type CustomDataMap = HashMap<String, Box<dyn CustomData + Send>>;
+
 /// This object is provided to callbacks. You can use it to gain access to the [StateTree] and the
 /// [Scheduler].
 /// # Change widget states
@@ -75,7 +77,7 @@ pub type EzThread = Box<dyn FnOnce(ThreadedContext) + Send>;
 /// ```
 /// context.scheduler
 /// ```
-pub struct Context<'a, 'b> {
+pub struct Context<'a, 'b, 'c> {
     /// Path to the widget this context refers to, e.g. the widget a callback originated from
     pub widget_path: String,
 
@@ -84,17 +86,22 @@ pub struct Context<'a, 'b> {
 
     /// The current [Scheduler]
     pub scheduler: &'b mut SchedulerFrontend,
+
+    /// Custom user data
+    pub custom_data: &'c mut CustomDataMap,
 }
-impl<'a, 'b> Context<'a, 'b> {
+impl<'a, 'b, 'c> Context<'a, 'b, 'c> {
     pub fn new(
         widget_path: String,
         state_tree: &'a mut StateTree,
         scheduler: &'b mut SchedulerFrontend,
+        custom_data: &'c mut CustomDataMap,
     ) -> Self {
         Context {
             widget_path,
             state_tree,
             scheduler,
+            custom_data,
         }
     }
 }

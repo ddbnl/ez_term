@@ -1,7 +1,7 @@
 use ez_term::*;
 
 fn main() {
-    let (root_widget, mut state_tree, mut scheduler) = load_ui();
+    let (root_widget, mut state_tree, mut scheduler, mut custom_data) = load_ui();
 
     // We create a callback to navigate backwards through the view
     let navigate_back_callback = |context: Context| {
@@ -40,5 +40,5 @@ fn main() {
         scheduler.create_widget(new_widget, new_states, &mut state_tree);
     }
 
-    run(root_widget, state_tree, scheduler);
+    run(root_widget, state_tree, scheduler, custom_data);
 }

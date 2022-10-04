@@ -2,7 +2,7 @@ use ez_term::*;
 use std::time::Duration;
 
 fn main() {
-    let (root_widget, mut state_tree, mut scheduler) = load_ui();
+    let (root_widget, mut state_tree, mut scheduler, mut custom_data) = load_ui();
 
     // We must register our custom property!
     scheduler.new_usize_property("my_progress", 0);

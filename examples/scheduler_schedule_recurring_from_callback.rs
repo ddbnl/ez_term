@@ -2,7 +2,7 @@ use ez_term::*;
 use std::time::Duration;
 
 fn main() {
-    let (root_widget, mut state_tree, mut scheduler) = load_ui();
+    let (root_widget, mut state_tree, mut scheduler, mut custom_data) = load_ui();
 
     let my_callback = |context: Context| {
         let mut counter: usize = 1;
@@ -22,5 +22,5 @@ fn main() {
     let new_callback_config = CallbackConfig::from_on_press(Box::new(my_callback));
     scheduler.update_callback_config("my_button", new_callback_config);
 
-    run(root_widget, state_tree, scheduler);
+    run(root_widget, state_tree, scheduler, custom_data);
 }

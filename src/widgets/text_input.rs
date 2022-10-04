@@ -16,6 +16,7 @@ use crate::states::text_input_state::TextInputState;
 use crate::widgets::ez_object::{EzObject, EzObjects};
 use crate::widgets::helper_functions::{add_border, add_padding};
 use crate::Context;
+use crate::scheduler::definitions::CustomDataMap;
 
 #[derive(Clone, Debug)]
 pub struct TextInput {
@@ -201,17 +202,18 @@ impl EzObject for TextInput {
         state_tree: &mut StateTree,
         callback_tree: &mut CallbackTree,
         scheduler: &mut SchedulerFrontend,
+        custom_data: &mut CustomDataMap,
     ) -> bool {
         let state = state_tree.get_mut(&self.get_path()).as_text_input_mut();
         let current_text = state.get_text().clone();
         if let Event::Key(key) = event {
             if key.code == KeyCode::Backspace {
                 handle_backspace(state, scheduler);
-                self.check_changed_text(state_tree, callback_tree, scheduler, current_text);
+                self.check_changed_text(state_tree, callback_tree, scheduler, custom_data,current_text);
                 return true;
             } else if key.code == KeyCode::Delete {
                 handle_delete(state, scheduler);
-                self.check_changed_text(state_tree, callback_tree, scheduler, current_text);
+                self.check_changed_text(state_tree, callback_tree, scheduler, custom_data, current_text);
                 return true;
             } else if key.code == KeyCode::Left {
                 handle_left(state, scheduler);
@@ -221,7 +223,7 @@ impl EzObject for TextInput {
                 return true;
             } else if let KeyCode::Char(c) = key.code {
                 handle_char(state, c, scheduler);
-                self.check_changed_text(state_tree, callback_tree, scheduler, current_text);
+                self.check_changed_text(state_tree, callback_tree, scheduler, custom_data, current_text);
                 return true;
             }
         }
@@ -234,9 +236,10 @@ impl EzObject for TextInput {
         callback_tree: &mut CallbackTree,
         scheduler: &mut SchedulerFrontend,
         mouse_pos: Coordinates,
+        custom_data: &mut CustomDataMap,
     ) -> bool {
         let consumed =
-            self.on_left_mouse_click_callback(state_tree, callback_tree, scheduler, mouse_pos);
+            self.on_left_mouse_click_callback(state_tree, callback_tree, scheduler, mouse_pos, custom_data);
         if consumed {
             return consumed;
         }
@@ -251,8 +254,9 @@ impl EzObject for TextInput {
         callback_tree: &mut CallbackTree,
         scheduler: &mut SchedulerFrontend,
         mouse_pos: Coordinates,
+        custom_data: &mut CustomDataMap,
     ) -> bool {
-        let consumed = self.on_hover_callback(state_tree, callback_tree, scheduler, mouse_pos);
+        let consumed = self.on_hover_callback(state_tree, callback_tree, scheduler, mouse_pos, custom_data);
         if consumed {
             return consumed;
         }
@@ -265,8 +269,9 @@ impl EzObject for TextInput {
         callback_tree: &mut CallbackTree,
         scheduler: &mut SchedulerFrontend,
         mouse_pos: Option<Coordinates>,
+        custom_data: &mut CustomDataMap,
     ) -> bool {
-        let consumed = self.on_select_callback(state_tree, callback_tree, scheduler, mouse_pos);
+        let consumed = self.on_select_callback(state_tree, callback_tree, scheduler, mouse_pos, custom_data);
         if consumed {
             return consumed;
         }
@@ -386,11 +391,12 @@ impl TextInput {
         state_tree: &mut StateTree,
         callback_tree: &mut CallbackTree,
         scheduler: &mut SchedulerFrontend,
+        custom_data: &mut CustomDataMap,
         old_text: String,
     ) {
         let state = state_tree.get(&self.path).as_text_input();
         if state.get_text() != old_text {
-            self.on_value_change_callback(state_tree, callback_tree, scheduler);
+            self.on_value_change_callback(state_tree, callback_tree, scheduler, custom_data);
         }
     }
 }

@@ -1,7 +1,7 @@
 use ez_term::*;
 
 fn main() {
-    let (root_widget, mut state_tree, mut scheduler) = load_ui();
+    let (root_widget, mut state_tree, mut scheduler, mut custom_data) = load_ui();
 
     for x in 1..=3 {
         let radio_id = format!("my_radio_{}", x);
@@ -16,5 +16,5 @@ fn main() {
         scheduler.update_callback_config(&radio_id, callback_config);
     }
 
-    run(root_widget, state_tree, scheduler);
+    run(root_widget, state_tree, scheduler, custom_data);
 }

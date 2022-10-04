@@ -172,11 +172,11 @@ impl SchedulerFrontend {
     /// ```
     /// use ez_term::*;
     ///
-    /// let (root_widget, mut state_tree, mut scheduler) = load_ui();
+    /// let (root_widget, mut state_tree, mut scheduler, mut custom_data) = load_ui();
     ///
     /// scheduler.set_keyboard_cooldown(500);
     ///
-    /// run(root_widget, state_tree, scheduler);
+    /// run(root_widget, state_tree, scheduler, custom_data);
     /// ```
     pub fn set_tick_rate(&mut self, rate: u64) {
         self.backend.tick_rate = rate
@@ -197,11 +197,11 @@ impl SchedulerFrontend {
     /// ```
     /// use ez_term::*;
     ///
-    /// let (root_widget, mut state_tree, mut scheduler) = load_ui();
+    /// let (root_widget, mut state_tree, mut scheduler, mut custom_data) = load_ui();
     ///
     /// scheduler.set_keyboard_cooldown(500);
     ///
-    /// run(root_widget, state_tree, scheduler);
+    /// run(root_widget, state_tree, scheduler, custom_data);
     /// ```
     pub fn set_keyboard_cooldown(&mut self, cooldown: u64) {
         self.backend.keyboard_cooldown = cooldown
@@ -226,7 +226,7 @@ impl SchedulerFrontend {
     /// use std::time::Duration;
     /// use ez_term::*;
     ///
-    /// let (root_widget, mut state_tree, mut scheduler) = load_ui();
+    /// let (root_widget, mut state_tree, mut scheduler, mut custom_data) = load_ui();
     ///
     /// let my_closure = |context: Context| {
     ///     let state = context.state_tree.get_mut("my_label").as_label_mut();
@@ -235,7 +235,7 @@ impl SchedulerFrontend {
     /// };
     /// scheduler.schedule_once("my_task", Box::new(my_closure), Duration::from_secs(0));
     ///
-    /// run(root_widget, state_tree, scheduler);
+    /// run(root_widget, state_tree, scheduler, custom_data);
     /// ```
     pub fn schedule_once(&mut self, name: &str, func: GenericTask, after: Duration) {
         if !self.synced {
@@ -270,7 +270,7 @@ impl SchedulerFrontend {
     /// ```
     /// use std::time::Duration;
     /// use ez_term::*;
-    /// let (root_widget, mut state_tree, mut scheduler) = load_ui();
+    /// let (root_widget, mut state_tree, mut scheduler, mut custom_data) = load_ui();
     ///
     /// let my_closure = |context: Context| {
     ///     let state = context.state_tree.get_mut("my_label").as_label_mut();
@@ -280,7 +280,7 @@ impl SchedulerFrontend {
     /// scheduler.schedule_once("my_task", Box::new(my_closure), Duration::from_secs(0));
     ///
     /// scheduler.cancel_task("my_task");
-    /// run(root_widget, state_tree, scheduler);
+    /// run(root_widget, state_tree, scheduler, custom_data);
     /// ```
     pub fn cancel_task(&mut self, name: &str) {
         if !self.synced {
@@ -326,7 +326,7 @@ impl SchedulerFrontend {
     /// use std::time::Duration;
     /// use ez_term::*;
     ///
-    /// let (root_widget, mut state_tree, mut scheduler) = load_ui();
+    /// let (root_widget, mut state_tree, mut scheduler, mut custom_data) = load_ui();
     ///
     /// let counter: usize = 0;
     /// let my_closure = move |context: Context| {
@@ -341,7 +341,7 @@ impl SchedulerFrontend {
     /// };
     /// scheduler.schedule_recurring("my_task", Box::new(my_closure), Duration::from_secs(1));
     ///
-    /// run(root_widget, state_tree, scheduler);
+    /// run(root_widget, state_tree, scheduler, custom_data);
     /// ```
     pub fn schedule_recurring(
         &mut self,
@@ -381,7 +381,7 @@ impl SchedulerFrontend {
     /// ```
     /// use std::time::Duration;
     /// use ez_term::*;
-    /// let (root_widget, mut state_tree, mut scheduler) = load_ui();
+    /// let (root_widget, mut state_tree, mut scheduler, mut custom_data) = load_ui();
     ///
     /// let counter: usize = 0;
     /// let my_closure = move |context: Context| {
@@ -397,7 +397,7 @@ impl SchedulerFrontend {
     /// scheduler.schedule_recurring("my_task", Box::new(my_closure), Duration::from_secs(1));
     ///
     /// scheduler.cancel_recurring_task("my_task");
-    /// run(root_widget, state_tree, scheduler);
+    /// run(root_widget, state_tree, scheduler, custom_data);
     /// ```
     pub fn cancel_recurring_task(&mut self, name: &str) {
         if !self.synced {
@@ -441,7 +441,7 @@ impl SchedulerFrontend {
     /// ```
     /// use std::time::Duration;
     /// use ez_term::*;
-    /// let (root_widget, mut state_tree, mut scheduler) = load_ui();
+    /// let (root_widget, mut state_tree, mut scheduler, mut custom_data) = load_ui();
     ///
     /// fn example_app(mut properties: EzPropertiesMap, mut state_tree: StateTree) {
     ///
@@ -458,7 +458,7 @@ impl SchedulerFrontend {
     /// }
     ///
     /// scheduler.schedule_threaded(Box::new(example_app), Some(Box::new(on_finish_callback)));
-    /// run(root_widget, state_tree, scheduler);
+    /// run(root_widget, state_tree, scheduler, custom_data);
     /// ```
     pub fn schedule_threaded(&mut self, threaded_func: EzThread, on_finish: Option<GenericTask>) {
         if !self.synced {
@@ -515,7 +515,7 @@ impl SchedulerFrontend {
     /// ```
     /// use ez_term::*;
     ///
-    /// let (root_widget, mut state_tree, mut scheduler) = load_ui();
+    /// let (root_widget, mut state_tree, mut scheduler, mut custom_data) = load_ui();
     ///
     /// let dismiss = |context: Context| {
     ///
@@ -527,7 +527,7 @@ impl SchedulerFrontend {
     ///                                  CallbackConfig::from_on_press(Box::new(dismiss)));
     ///
     /// scheduler.open_modal("MyPopupTemplate", &mut state_tree);
-    /// run(root_widget, state_tree, scheduler);
+    /// run(root_widget, state_tree, scheduler, custom_data);
     /// ```
     pub fn open_modal(&mut self, template: &str, state_tree: &mut StateTree) {
         if !self.synced {
@@ -560,10 +560,10 @@ impl SchedulerFrontend {
     /// ```
     /// use ez_term::*;
     ///
-    /// let (root_widget, mut state_tree, mut scheduler) = load_ui();
+    /// let (root_widget, mut state_tree, mut scheduler, mut custom_data) = load_ui();
     ///
     /// scheduler.dismiss_modal(&mut state_tree);
-    /// run(root_widget, state_tree, scheduler);
+    /// run(root_widget, state_tree, scheduler, custom_data);
     /// ```
     pub fn dismiss_modal(&mut self, state_tree: &mut StateTree) {
         if !self.synced {
@@ -607,11 +607,11 @@ impl SchedulerFrontend {
     /// ```
     /// use ez_term::*;
     ///
-    /// let (root_widget, mut state_tree, mut scheduler) = load_ui();
+    /// let (root_widget, mut state_tree, mut scheduler, mut custom_data) = load_ui();
     ///
     /// let callback_config = CallbackConfig::default();
     /// scheduler.overwrite_callback_config("my_button", callback_config);
-    /// run(root_widget, state_tree, scheduler);
+    /// run(root_widget, state_tree, scheduler, custom_data);
     /// ```
     pub fn overwrite_callback_config(&mut self, for_widget: &str, callback_config: CallbackConfig) {
         if !self.synced {
@@ -648,7 +648,7 @@ impl SchedulerFrontend {
     /// ```
     /// use ez_term::*;
     ///
-    /// let (root_widget, mut state_tree, mut scheduler) = load_ui();
+    /// let (root_widget, mut state_tree, mut scheduler, mut custom_data) = load_ui();
     ///
     /// let my_callback = |context: Context| {
     ///     let state = context.state_tree.get_mut("my_button").as_button_mut();
@@ -658,7 +658,7 @@ impl SchedulerFrontend {
     ///
     /// let callback_config = CallbackConfig::from_on_press(Box::new(my_callback));
     /// scheduler.update_callback_config("my_button", callback_config);
-    /// run(root_widget, state_tree, scheduler);
+    /// run(root_widget, state_tree, scheduler, custom_data);
     /// ```
     pub fn update_callback_config(&mut self, for_widget: &str, callback_config: CallbackConfig) {
         if !self.synced {
@@ -698,7 +698,7 @@ impl SchedulerFrontend {
     /// ```
     /// use ez_term::*;
     ///
-    /// let (root_widget, mut state_tree, mut scheduler) = load_ui();
+    /// let (root_widget, mut state_tree, mut scheduler, mut custom_data) = load_ui();
     ///
     /// let parent_id = "my_layout";
     ///
@@ -714,7 +714,7 @@ impl SchedulerFrontend {
     ///
     /// }
     ///
-    /// run(root_widget, state_tree, scheduler);
+    /// run(root_widget, state_tree, scheduler, custom_data);
     /// ```
     pub fn prepare_create_widget(
         &mut self,
@@ -786,7 +786,7 @@ impl SchedulerFrontend {
     /// ```
     /// use ez_term::*;
     ///
-    /// let (root_widget, mut state_tree, mut scheduler) = load_ui();
+    /// let (root_widget, mut state_tree, mut scheduler, mut custom_data) = load_ui();
     ///
     /// let parent_id = "my_layout";
     ///
@@ -802,7 +802,7 @@ impl SchedulerFrontend {
     ///
     /// }
     ///
-    /// run(root_widget, state_tree, scheduler);
+    /// run(root_widget, state_tree, scheduler, custom_data);
     /// ```
     pub fn create_widget(
         &mut self,
@@ -866,7 +866,7 @@ impl SchedulerFrontend {
     /// ```
     /// use ez_term::*;
     ///
-    /// let (root_widget, mut state_tree, mut scheduler) = load_ui();
+    /// let (root_widget, mut state_tree, mut scheduler, mut custom_data) = load_ui();
     ///
     /// for x in 1..=10 {
     ///
@@ -874,7 +874,7 @@ impl SchedulerFrontend {
     ///     scheduler.remove_widget(label_id);
     /// }
     ///
-    /// run(root_widget, state_tree, scheduler);
+    /// run(root_widget, state_tree, scheduler, custom_data);
     /// ```
     pub fn remove_widget(&mut self, name: &str) {
         if !self.synced {
@@ -933,11 +933,11 @@ impl SchedulerFrontend {
     /// ```
     /// use ez_term::*;
     ///
-    /// let (root_widget, mut state_tree, mut scheduler) = load_ui();
+    /// let (root_widget, mut state_tree, mut scheduler, mut custom_data) = load_ui();
     ///
     /// scheduler.new_usize_property("my_property", 1);
     ///
-    /// run(root_widget, state_tree, scheduler);
+    /// run(root_widget, state_tree, scheduler, custom_data);
     /// ```
     ///
     /// Now the .ez file:
@@ -976,11 +976,11 @@ impl SchedulerFrontend {
     /// ```
     /// use ez_term::*;
     ///
-    /// let (root_widget, mut state_tree, mut scheduler) = load_ui();
+    /// let (root_widget, mut state_tree, mut scheduler, mut custom_data) = load_ui();
     ///
     /// scheduler.new_f64_property("my_property", 0.5);
     ///
-    /// run(root_widget, state_tree, scheduler);
+    /// run(root_widget, state_tree, scheduler, custom_data);
     /// ```
     /// Now the .ez file:
     /// ```
@@ -1017,11 +1017,11 @@ impl SchedulerFrontend {
     /// ```
     /// use ez_term::*;
     ///
-    /// let (root_widget, mut state_tree, mut scheduler) = load_ui();
+    /// let (root_widget, mut state_tree, mut scheduler, mut custom_data) = load_ui();
     ///
     /// scheduler.new_string_property("my_property", "Hello world!".to_string());
     ///
-    /// run(root_widget, state_tree, scheduler);
+    /// run(root_widget, state_tree, scheduler, custom_data);
     /// ```
     /// Now the .ez file:
     /// ```
@@ -1058,11 +1058,11 @@ impl SchedulerFrontend {
     /// ```
     /// use ez_term::*;
     ///
-    /// let (root_widget, mut state_tree, mut scheduler) = load_ui();
+    /// let (root_widget, mut state_tree, mut scheduler, mut custom_data) = load_ui();
     ///
     /// scheduler.new_bool_property("my_property", true);
     ///
-    /// run(root_widget, state_tree, scheduler);
+    /// run(root_widget, state_tree, scheduler, custom_data);
     /// ```
     /// Now the .ez file:
     /// ```
@@ -1099,11 +1099,11 @@ impl SchedulerFrontend {
     /// ```
     /// use ez_term::*;
     ///
-    /// let (root_widget, mut state_tree, mut scheduler) = load_ui();
+    /// let (root_widget, mut state_tree, mut scheduler, mut custom_data) = load_ui();
     ///
     /// scheduler.new_color_property("my_property", Color::Yellow);
     ///
-    /// run(root_widget, state_tree, scheduler);
+    /// run(root_widget, state_tree, scheduler, custom_data);
     /// ```
     /// Now the .ez file:
     /// ```
@@ -1140,11 +1140,11 @@ impl SchedulerFrontend {
     /// ```
     /// use ez_term::*;
     ///
-    /// let (root_widget, mut state_tree, mut scheduler) = load_ui();
+    /// let (root_widget, mut state_tree, mut scheduler, mut custom_data) = load_ui();
     ///
     /// scheduler.new_layout_mode_property("my_property", LayoutMode::Table);
     ///
-    /// run(root_widget, state_tree, scheduler);
+    /// run(root_widget, state_tree, scheduler, custom_data);
     /// ```
     /// Now the .ez file:
     /// ```
@@ -1184,11 +1184,11 @@ impl SchedulerFrontend {
     /// ```
     /// use ez_term::*;
     ///
-    /// let (root_widget, mut state_tree, mut scheduler) = load_ui();
+    /// let (root_widget, mut state_tree, mut scheduler, mut custom_data) = load_ui();
     ///
     /// scheduler.new_layout_orientation_property("my_property", LayoutOrientation::Vertical);
     ///
-    /// run(root_widget, state_tree, scheduler);
+    /// run(root_widget, state_tree, scheduler, custom_data);
     /// ```
     /// Now the .ez file:
     /// ```
@@ -1229,11 +1229,11 @@ impl SchedulerFrontend {
     /// ```
     /// use ez_term::*;
     ///
-    /// let (root_widget, mut state_tree, mut scheduler) = load_ui();
+    /// let (root_widget, mut state_tree, mut scheduler, mut custom_data) = load_ui();
     ///
     /// scheduler.new_horizontal_alignment_property("my_property", HorizontalAlignment::Center);
     ///
-    /// run(root_widget, state_tree, scheduler);
+    /// run(root_widget, state_tree, scheduler, custom_data);
     /// ```
     /// Now the .ez file:
     /// ```
@@ -1275,11 +1275,11 @@ impl SchedulerFrontend {
     /// ```
     /// use ez_term::*;
     ///
-    /// let (root_widget, mut state_tree, mut scheduler) = load_ui();
+    /// let (root_widget, mut state_tree, mut scheduler, mut custom_data) = load_ui();
     ///
     /// scheduler.new_vertical_alignment_property("my_property", VerticalAlignment::Middle);
     ///
-    /// run(root_widget, state_tree, scheduler);
+    /// run(root_widget, state_tree, scheduler, custom_data);
     /// ```
     /// Now the .ez file:
     /// ```
@@ -1321,12 +1321,12 @@ impl SchedulerFrontend {
     /// ```
     /// use ez_term::*;
     ///
-    /// let (root_widget, mut state_tree, mut scheduler) = load_ui();
+    /// let (root_widget, mut state_tree, mut scheduler, mut custom_data) = load_ui();
     ///
     /// scheduler.new_horizontal_pos_hint_property("my_property",
     ///                                            Some((HorizontalAlignment::Right, 0.75)));
     ///
-    /// run(root_widget, state_tree, scheduler);
+    /// run(root_widget, state_tree, scheduler, custom_data);
     /// ```
     /// Now the .ez file:
     /// ```
@@ -1369,12 +1369,12 @@ impl SchedulerFrontend {
     /// ```
     /// use ez_term::*;
     ///
-    /// let (root_widget, mut state_tree, mut scheduler) = load_ui();
+    /// let (root_widget, mut state_tree, mut scheduler, mut custom_data) = load_ui();
     ///
     /// scheduler.new_vertical_pos_hint_property("my_property",
     ///                                            Some((VerticalAlignment::Middle, 0.75)));
     ///
-    /// run(root_widget, state_tree, scheduler);
+    /// run(root_widget, state_tree, scheduler, custom_data);
     /// ```
     /// Now the .ez file:
     /// ```
@@ -1416,11 +1416,11 @@ impl SchedulerFrontend {
     /// ```
     /// use ez_term::*;
     ///
-    /// let (root_widget, mut state_tree, mut scheduler) = load_ui();
+    /// let (root_widget, mut state_tree, mut scheduler, mut custom_data) = load_ui();
     ///
     /// scheduler.new_size_hint_property("my_property", Some(0.75));
     ///
-    /// run(root_widget, state_tree, scheduler);
+    /// run(root_widget, state_tree, scheduler, custom_data);
     /// ```
     /// Now the .ez file:
     /// ```
@@ -1451,15 +1451,8 @@ impl SchedulerFrontend {
         data: Box<dyn CustomData + Send>,
     ) {
         self.backend
-            .custom_data
+            .new_custom_data
             .insert(name.to_string(), data);
-    }
-
-    pub fn get_data(&self, name: &str) -> &Box<dyn CustomData + Send> {
-        self.backend.custom_data.get(name).unwrap()
-    }
-    pub fn get_data_mut(&mut self, name: &str) -> &mut Box<dyn CustomData + Send> {
-        self.backend.custom_data.get_mut(name).unwrap()
     }
 
     /// Get a reference to a custom property.
@@ -1475,12 +1468,12 @@ impl SchedulerFrontend {
     /// ```
     /// use ez_term::*;
     ///
-    /// let (root_widget, mut state_tree, mut scheduler) = load_ui();
+    /// let (root_widget, mut state_tree, mut scheduler, mut custom_data) = load_ui();
     ///
     /// scheduler.new_usize_property("my_property", 10);
     /// let property = scheduler.get_property("my_property");
     ///
-    /// run(root_widget, state_tree, scheduler);
+    /// run(root_widget, state_tree, scheduler, custom_data);
     /// ```
     pub fn get_property(&self, name: &str) -> &EzProperties {
         self.backend
@@ -1501,13 +1494,13 @@ impl SchedulerFrontend {
     /// ```
     /// use ez_term::*;
     ///
-    /// let (root_widget, mut state_tree, mut scheduler) = load_ui();
+    /// let (root_widget, mut state_tree, mut scheduler, mut custom_data) = load_ui();
     ///
     /// scheduler.new_usize_property("my_property", 10);
     /// let property = scheduler.get_property_mut("my_property");
     /// property.set(20);
     ///
-    /// run(root_widget, state_tree, scheduler);
+    /// run(root_widget, state_tree, scheduler, custom_data);
     /// ```
     pub fn get_property_mut(&mut self, name: &str) -> &mut EzProperties {
         self.backend
@@ -1560,11 +1553,11 @@ impl SchedulerFrontend {
     /// ```
     /// use ez_term::*;
     ///
-    /// let (root_widget, mut state_tree, mut scheduler) = load_ui();
+    /// let (root_widget, mut state_tree, mut scheduler, mut custom_data) = load_ui();
     ///
     /// scheduler.update_widget("/root/my_layout/my_label");
     ///
-    /// run(root_widget, state_tree, scheduler);
+    /// run(root_widget, state_tree, scheduler, custom_data);
     /// ```
     pub fn update_widget(&mut self, path: &str) {
         if !self.synced {
@@ -1604,11 +1597,11 @@ impl SchedulerFrontend {
     /// ```
     /// use ez_term::*;
     ///
-    /// let (root_widget, mut state_tree, mut scheduler) = load_ui();
+    /// let (root_widget, mut state_tree, mut scheduler, mut custom_data) = load_ui();
     ///
     /// scheduler.force_redraw();
     ///
-    /// run(root_widget, state_tree, scheduler);
+    /// run(root_widget, state_tree, scheduler, custom_data);
     /// ```
     pub fn force_redraw(&mut self) {
         if !self.synced {
@@ -1645,7 +1638,7 @@ impl SchedulerFrontend {
     /// ```
     /// use ez_term::*;
     ///
-    /// let (root_widget, mut state_tree, mut scheduler) = load_ui();
+    /// let (root_widget, mut state_tree, mut scheduler, mut custom_data) = load_ui();
     ///
     /// fn my_callback(context: Context) {
     ///     let state = context.state_tree.get_mut("my_label").as_label_mut();
@@ -1661,7 +1654,7 @@ impl SchedulerFrontend {
     ///     state.size.width.bind(Box::new(my_callback), &mut scheduler);
     ///
     ///
-    /// run(root_widget, state_tree, scheduler);
+    /// run(root_widget, state_tree, scheduler, custom_data);
     /// ```
     pub fn bind_property_callback(&mut self, name: &str, callback: GenericFunction) {
         if !self.synced {
@@ -1709,7 +1702,7 @@ impl SchedulerFrontend {
     /// ```
     /// use ez_term::*;
     ///
-    /// let (root_widget, mut state_tree, mut scheduler) = load_ui();
+    /// let (root_widget, mut state_tree, mut scheduler, mut custom_data) = load_ui();
     ///
     /// fn my_callback(context: Context) {
     ///     let state = context.state_tree.get_mut("my_label").as_label_mut();
@@ -1719,7 +1712,7 @@ impl SchedulerFrontend {
     /// scheduler.bind_global_key(KeyCode::Char('a'), Some(vec!(KeyModifiers::SHIFT)),
     ///                           Box::new(my_callback));
     ///
-    /// run(root_widget, state_tree, scheduler);
+    /// run(root_widget, state_tree, scheduler, custom_data);
     pub fn bind_global_key(
         &mut self,
         key: KeyCode,
@@ -1758,11 +1751,11 @@ impl SchedulerFrontend {
     /// ```
     /// use ez_term::*;
     ///
-    /// let (root_widget, mut state_tree, mut scheduler) = load_ui();
+    /// let (root_widget, mut state_tree, mut scheduler, mut custom_data) = load_ui();
     ///
     /// scheduler.remove_global_key(KeyCode::Char('a'), Some(vec!(KeyModifiers::SHIFT)));
     ///
-    /// run(root_widget, state_tree, scheduler);
+    /// run(root_widget, state_tree, scheduler, custom_data);
     /// ```
     pub fn remove_global_key(&mut self, key: KeyCode, modifiers: Option<Vec<KeyModifiers>>) {
         if !self.synced {
@@ -1794,12 +1787,12 @@ impl SchedulerFrontend {
     /// ```
     /// use ez_term::*;
     ///
-    /// let (root_widget, mut state_tree, mut scheduler) = load_ui();
+    /// let (root_widget, mut state_tree, mut scheduler, mut custom_data) = load_ui();
     ///
     ///
     /// scheduler.clear_global_keys();
     ///
-    /// run(root_widget, state_tree, scheduler);
+    /// run(root_widget, state_tree, scheduler, custom_data);
     /// ```
     pub fn clear_global_keys(&mut self) {
         if !self.synced {
@@ -1833,12 +1826,12 @@ impl SchedulerFrontend {
     /// ```
     /// use ez_term::*;
     ///
-    /// let (root_widget, mut state_tree, mut scheduler) = load_ui();
+    /// let (root_widget, mut state_tree, mut scheduler, mut custom_data) = load_ui();
     ///
     /// scheduler.set_selected_widget("my_button", None);
     /// scheduler.set_selected_widget("my_button", Some(Coordinates::new(3, 1)));
     ///
-    /// run(root_widget, state_tree, scheduler);
+    /// run(root_widget, state_tree, scheduler, custom_data);
     /// ```
     pub fn set_selected_widget(&mut self, widget: &str, mouse_pos: Option<Coordinates>) {
         if !self.synced {
@@ -1870,11 +1863,11 @@ impl SchedulerFrontend {
     /// ```
     /// use ez_term::*;
     ///
-    /// let (root_widget, mut state_tree, mut scheduler) = load_ui();
+    /// let (root_widget, mut state_tree, mut scheduler, mut custom_data) = load_ui();
     ///
     /// scheduler.deselect_widget();
     ///
-    /// run(root_widget, state_tree, scheduler);
+    /// run(root_widget, state_tree, scheduler, custom_data);
     /// ```
     pub fn deselect_widget(&mut self) {
         if !self.synced {
@@ -1905,7 +1898,7 @@ impl SchedulerFrontend {
     /// ```
     /// use ez_term::*;
     ///
-    /// let (root_widget, mut state_tree, mut scheduler) = load_ui();
+    /// let (root_widget, mut state_tree, mut scheduler, mut custom_data) = load_ui();
     ///
     /// scheduler.exit();
     /// ```
@@ -2574,7 +2567,7 @@ pub struct Scheduler {
     pub new_property_callbacks: Vec<(String, GenericFunction)>,
 
     /// Data that end-user can add to the scheduler to have available in callbaks.
-    pub custom_data: HashMap<String, Box<dyn CustomData + Send>>,
+    pub new_custom_data: HashMap<String, Box<dyn CustomData + Send>>,
 
     /// The widget (ID or path) set here will be selected on the next frame, deselecting the current
     /// selection if any and calling the appropriate callbacks. The optional mouse_position will be

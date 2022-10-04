@@ -5,6 +5,7 @@ use std::io::{Error, ErrorKind};
 use crate::parser::load_base_properties;
 use crate::parser::load_common_properties::load_common_property;
 use crate::run::definitions::{CallbackTree, Coordinates, Pixel, PixelMap, StateTree};
+use crate::scheduler::definitions::CustomDataMap;
 use crate::scheduler::scheduler::SchedulerFrontend;
 use crate::states::checkbox_state::CheckboxState;
 use crate::states::ez_state::{EzState, GenericState};
@@ -169,12 +170,13 @@ impl EzObject for Checkbox {
         state_tree: &mut StateTree,
         callback_tree: &mut CallbackTree,
         scheduler: &mut SchedulerFrontend,
+        custom_data: &mut CustomDataMap,
     ) -> bool {
-        let consumed = self.on_press_callback(state_tree, callback_tree, scheduler);
+        let consumed = self.on_press_callback(state_tree, callback_tree, scheduler, custom_data);
         if consumed {
             return consumed;
         }
-        self.handle_toggle(state_tree, callback_tree, scheduler);
+        self.handle_toggle(state_tree, callback_tree, scheduler, custom_data);
         true
     }
 
@@ -184,8 +186,10 @@ impl EzObject for Checkbox {
         callback_tree: &mut CallbackTree,
         scheduler: &mut SchedulerFrontend,
         mouse_pos: Coordinates,
+        custom_data: &mut CustomDataMap,
     ) -> bool {
-        let consumed = self.on_hover_callback(state_tree, callback_tree, scheduler, mouse_pos);
+        let consumed = self.on_hover_callback(state_tree, callback_tree, scheduler, mouse_pos,
+                                                    custom_data);
         if consumed {
             return consumed;
         }
@@ -221,10 +225,11 @@ impl Checkbox {
         state_tree: &mut StateTree,
         callback_tree: &mut CallbackTree,
         scheduler: &mut SchedulerFrontend,
+        custom_data: &mut CustomDataMap,
     ) {
         let state = state_tree.get_mut(&self.get_path()).as_checkbox_mut();
         state.set_active(!state.get_active());
         state.update(scheduler);
-        self.on_value_change_callback(state_tree, callback_tree, scheduler);
+        self.on_value_change_callback(state_tree, callback_tree, scheduler, custom_data);
     }
 }

@@ -4,6 +4,7 @@
 //! Widgets can be selected by keyboard (next/previous widget) or mouse (widget under mouse_pos).
 //! This module provides functions to handle that.
 use crate::run::definitions::{CallbackTree, Coordinates, StateTree};
+use crate::scheduler::definitions::CustomDataMap;
 use crate::scheduler::scheduler::SchedulerFrontend;
 use crate::states::definitions::LayoutMode;
 use crate::states::ez_state::{EzState, GenericState};
@@ -17,6 +18,7 @@ pub fn select_widget(
     root_widget: &Layout,
     callback_tree: &mut CallbackTree,
     scheduler: &mut SchedulerFrontend,
+    custom_data: &mut CustomDataMap,
     mouse_pos: Option<Coordinates>,
 ) {
     let state = state_tree.get_mut(path).as_generic_mut();
@@ -26,7 +28,7 @@ pub fn select_widget(
         .get_child_by_path(path)
         .unwrap()
         .as_ez_object()
-        .on_select(state_tree, callback_tree, scheduler, mouse_pos);
+        .on_select(state_tree, callback_tree, scheduler, mouse_pos, custom_data);
 }
 
 /// Handle a widget being deselected.
@@ -36,6 +38,7 @@ pub fn deselect_widget(
     root_widget: &Layout,
     callback_tree: &mut CallbackTree,
     scheduler: &mut SchedulerFrontend,
+    custom_data: &mut CustomDataMap,
 ) {
     if !state_tree.contains(&path) {
         return;
@@ -46,7 +49,7 @@ pub fn deselect_widget(
     if let Some(widget) = root_widget.get_child_by_path(path) {
         widget
             .as_ez_object()
-            .on_deselect(state_tree, callback_tree, scheduler);
+            .on_deselect(state_tree, callback_tree, scheduler, custom_data);
     }
 }
 
