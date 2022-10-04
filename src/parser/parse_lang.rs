@@ -29,6 +29,7 @@ pub fn load_ui<'a>() -> (Layout, StateTree, SchedulerFrontend, CustomDataMap) {
 /// root widget definition into the actual widget, which will parse sub-widgets, who will parse
 /// their sub-widgets, etc. Thus recursively loading the UI.
 pub fn load_ez_text(files: HashMap<String, String>) -> Result<(Layout, SchedulerFrontend), Error> {
+
     let mut widgets: Vec<EzWidgetDefinition> = Vec::new();
     let mut templates = Templates::new();
     for (path, config) in files {

@@ -143,6 +143,7 @@ impl EzWidgetDefinition {
         parent_path: String,
         order: usize,
     ) -> Result<EzObjects, Error> {
+
         if self.is_root {
             let id = peek_id_from_config(&config);
             if !id.is_empty() {

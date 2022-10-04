@@ -19,7 +19,8 @@ pub use crossterm::event::{KeyCode, KeyModifiers};
 pub use crossterm::style::Color;
 
 pub use crate::run::definitions::{Pixel, PixelMap, StateTree};
-pub use crate::scheduler::definitions::{Context, EzPropertiesMap, ThreadedContext, CustomData};
+pub use crate::scheduler::definitions::{Context, EzPropertiesMap, ThreadedContext, CustomData,
+                                        CustomDataMap};
 pub use crate::scheduler::scheduler::SchedulerFrontend;
 
 pub use crate::property::ez_properties::EzProperties;

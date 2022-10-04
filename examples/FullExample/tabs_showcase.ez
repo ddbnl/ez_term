@@ -131,12 +131,6 @@
             orientation: bt-rl
 
 
-- <TableCell@Label>:
-    text: 1
-    auto_scale: true, true
-    halign: center
-    valign: middle
-
 - <TableShowcase@Layout>:
     mode: table
     auto_scale: true, true
@@ -145,24 +139,51 @@
     col_default_width: 3
     padding_bottom: 1
     halign: center
-    - TableCell:
+    - Label:
         text: 1
-    - TableCell:
+        auto_scale: true, true
+        halign: center
+        valign: middle
+    - Label:
         text: 2
-    - TableCell:
+        auto_scale: true, true
+        halign: center
+        valign: middle
+    - Label:
         text: 3
-    - TableCell:
+        auto_scale: true, true
+        halign: center
+        valign: middle
+    - Label:
         text: 4
-    - TableCell:
+        auto_scale: true, true
+        halign: center
+        valign: middle
+    - Label:
         text: 5
-    - TableCell:
+        auto_scale: true, true
+        halign: center
+        valign: middle
+    - Label:
         text: 6
-    - TableCell:
+        auto_scale: true, true
+        halign: center
+        valign: middle
+    - Label:
         text: 7
-    - TableCell:
+        auto_scale: true, true
+        halign: center
+        valign: middle
+    - Label:
         text: 8
-    - TableCell:
+        auto_scale: true, true
+        halign: center
+        valign: middle
+    - Label:
         text: 9
+        auto_scale: true, true
+        halign: center
+        valign: middle
 
 - <StacksTab@Layout>:
     tab_name: Stacks
@@ -258,27 +279,36 @@
         - StackShowcase:
             orientation: bt-rl
 
-- <StackLabel@Label>:
-    text: Stack test
-    border: true
-    auto_scale_height: true
-    size_hint_x: 0.4
-
 - <StackShowcase@Layout>:
     mode: stack
     auto_scale_width: true
     size_hint_y: None
     height: 9
-    - StackLabel:
+    - Label:
         text: 1
-    - StackLabel:
+        border: true
+        auto_scale_height: true
+        size_hint_x: 0.4
+    - Label:
         text: 2
-    - StackLabel:
+        border: true
+        auto_scale_height: true
+        size_hint_x: 0.4
+    - Label:
         text: 3
-    - StackLabel:
+        border: true
+        auto_scale_height: true
+        size_hint_x: 0.4
+    - Label:
         text: 4
-    - StackLabel:
+        border: true
+        auto_scale_height: true
+        size_hint_x: 0.4
+    - Label:
         text: 5
+        border: true
+        auto_scale_height: true
+        size_hint_x: 0.4
 
 - <GenerationTab@Layout>:
     tab_name: Generation

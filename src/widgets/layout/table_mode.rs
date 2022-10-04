@@ -13,6 +13,7 @@ impl Layout {
     /// set to [Horizontal]. Merges contents of sub layouts and/or widgets horizontally, using
     /// own [height] for each.
     pub fn get_table_mode_contents(&self, state_tree: &mut StateTree) -> PixelMap {
+
         let state = state_tree.get_mut(&self.get_path()).as_layout();
 
         let own_table_config = state.get_table_config().clone();
