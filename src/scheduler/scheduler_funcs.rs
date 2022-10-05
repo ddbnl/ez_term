@@ -153,10 +153,15 @@ pub fn remove_widgets(
     state_tree: &mut StateTree,
     callback_tree: &mut CallbackTree,
 ) {
-    while !scheduler.backend.widgets_to_remove.is_empty() {
+    'outer: while !scheduler.backend.widgets_to_remove.is_empty() {
         let name = scheduler.backend.widgets_to_remove.pop().unwrap();
         let full_path = state_tree.get(&name).as_generic().get_path().clone();
 
+        for widget in scheduler.backend.widgets_to_create.iter() {
+            if widget.as_ez_object().get_path() == full_path {
+                continue 'outer
+            }
+        }
         let (parent, id) = full_path.rsplit_once('/').unwrap();
         let parent_widget = root_widget
             .get_child_by_path_mut(parent)

@@ -272,13 +272,13 @@ fn run_loop(
 
         // Update scheduler
         scheduler._check_method_channels(&mut state_tree);
-        create_new_widgets(&mut scheduler, &mut root_widget, &mut callback_tree);
         remove_widgets(
             &mut scheduler,
             &mut root_widget,
             &mut state_tree,
             &mut callback_tree,
         );
+        create_new_widgets(&mut scheduler, &mut root_widget, &mut callback_tree);
         selected_widget = handle_next_selection(
             &mut scheduler,
             &mut custom_data,

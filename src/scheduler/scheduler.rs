@@ -883,7 +883,10 @@ impl SchedulerFrontend {
             } else if name == "modal" || name == "/root/modal" {
                 panic!("Cannot remove modal widget; use scheduler.dismiss_modal instead.")
             }
-            self.backend.widgets_to_remove.push(name.to_string());
+            let name_string = name.to_string();
+            if !self.backend.widgets_to_remove.contains(&name_string) {
+                self.backend.widgets_to_remove.push(name_string);
+            }
         } else {
             self.sync_thread_sender
                 .as_ref()
