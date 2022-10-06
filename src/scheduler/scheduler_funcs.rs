@@ -62,7 +62,7 @@ pub fn check_finished_threads(scheduler: &mut SchedulerFrontend, state_tree: &mu
 pub fn run_tasks(scheduler: &mut SchedulerFrontend, state_tree: &mut StateTree, custom_data: &mut CustomDataMap) {
     let mut remaining_tasks = Vec::new();
     while !scheduler.backend.tasks.is_empty() {
-        let mut task = scheduler.backend.tasks.pop().unwrap();
+        let mut task = scheduler.backend.tasks.remove(0);
         if task.canceled {
             continue;
         }
@@ -79,7 +79,7 @@ pub fn run_tasks(scheduler: &mut SchedulerFrontend, state_tree: &mut StateTree, 
 
     let mut remaining_tasks = Vec::new();
     while !scheduler.backend.recurring_tasks.is_empty() {
-        let mut task = scheduler.backend.recurring_tasks.pop().unwrap();
+        let mut task = scheduler.backend.recurring_tasks.remove(0);
         let context = Context::new(String::new(), state_tree, scheduler, custom_data);
         if task.canceled {
             continue;
